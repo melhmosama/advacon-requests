@@ -253,6 +253,28 @@ textarea{resize:vertical;min-height:80px}
   .tbl-wrap{overflow-x:auto}
   .tbl{min-width:640px}
 }
+/* archive row details */
+.arch-det{display:flex;flex-wrap:wrap;gap:4px 16px;margin-top:6px;font-size:12px;color:var(--steel)}
+.arch-det span{white-space:nowrap}
+.arch-det b{color:var(--grey);font-weight:700}
+.tbl .ico.wide{display:inline-flex;align-items:center;gap:5px;width:auto;padding:0 12px;height:32px;white-space:nowrap;font-weight:700;font-size:12.5px}
+/* ===== IMAGE GALLERY ===== */
+.gal-bg{background:rgba(10,20,35,.92)!important;flex-direction:column;gap:14px}
+.gal-close{position:fixed;top:18px;inset-inline-end:18px;width:44px;height:44px;border-radius:50%;border:none;background:rgba(255,255,255,.15);color:#fff;font-size:22px;cursor:pointer;z-index:170;display:flex;align-items:center;justify-content:center;transition:.15s}
+.gal-close:hover{background:rgba(255,255,255,.3)}
+.gal-count{color:#fff;font-size:14px;font-weight:700;letter-spacing:.05em;background:rgba(0,0,0,.4);padding:5px 14px;border-radius:20px}
+.gal-stage{position:relative;display:flex;align-items:center;justify-content:center;max-width:94vw;max-height:74vh}
+.gal-img{max-width:94vw;max-height:74vh;border-radius:12px;box-shadow:0 12px 40px rgba(0,0,0,.5);object-fit:contain}
+.gal-nav{position:absolute;top:50%;transform:translateY(-50%);width:48px;height:48px;border-radius:50%;border:none;background:rgba(255,255,255,.85);color:var(--navy);font-size:28px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(0,0,0,.3);transition:.15s;line-height:1}
+.gal-nav:hover{background:#fff}
+.gal-nav.prev{inset-inline-start:10px}
+.gal-nav.next{inset-inline-end:10px}
+body[dir="rtl"] .gal-nav.prev{transform:translateY(-50%) scaleX(-1)}
+body[dir="rtl"] .gal-nav.next{transform:translateY(-50%) scaleX(-1)}
+.gal-thumbs{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;max-width:94vw;padding:4px}
+.gal-thumbs img{width:56px;height:56px;object-fit:cover;border-radius:8px;cursor:pointer;border:2px solid transparent;opacity:.55;transition:.15s}
+.gal-thumbs img:hover{opacity:.85}
+.gal-thumbs img.on{border-color:#fff;opacity:1}
 </style>
 </head>
 <body>
@@ -437,18 +459,37 @@ function openAdmin(){
   setTimeout(()=>{var p=document.getElementById('pin');if(p)p.focus();},100);
 }
 async function pick(l){L=l;await saveLang();state.role='employee';state.route='request';document.getElementById('gate').innerHTML='';document.getElementById('app').style.display='flex';applyDir();render();}
-async function tryAdmin(){const v=document.getElementById('pin').value.trim();if(v==='Ahmad1001'){try{await LS.set('advacon_admin','1');}catch(e){}state.role='admin';state.route='dashboard';if(!L)L='en';await saveLang();document.getElementById('gate').innerHTML='';document.getElementById('app').style.display='flex';applyDir();render();startRealtime();}else{const p=document.getElementById('pin');p.value='';p.placeholder=(L==='ar'?'رمز غير صحيح':'Incorrect code');p.style.borderColor='var(--red)';}}
-async function enterAdminDirect(){try{await LS.set('advacon_admin','1');}catch(e){}state.role='admin';state.route='dashboard';if(!L)L='en';document.getElementById('gate').innerHTML='';document.getElementById('app').style.display='flex';applyDir();render();startRealtime();}
+function setAdminFlag(){try{localStorage.setItem('advacon_admin','1');}catch(e){}try{LS.set('advacon_admin','1');}catch(e){}}
+function clearAdminFlag(){try{localStorage.removeItem('advacon_admin');}catch(e){}try{LS.delete('advacon_admin');}catch(e){}}
+async function checkAdminFlag(){try{if(localStorage.getItem('advacon_admin')==='1')return true;}catch(e){}try{const a=await LS.get('advacon_admin');if(a&&a.value==='1')return true;}catch(e){}return false;}
+async function tryAdmin(){const v=document.getElementById('pin').value.trim();if(v==='Ahmad1001'){setAdminFlag();state.role='admin';state.route='dashboard';if(!L)L='en';await saveLang();document.getElementById('gate').innerHTML='';document.getElementById('app').style.display='flex';applyDir();render();startRealtime();}else{const p=document.getElementById('pin');p.value='';p.placeholder=(L==='ar'?'رمز غير صحيح':'Incorrect code');p.style.borderColor='var(--red)';}}
+async function enterAdminDirect(){setAdminFlag();state.role='admin';state.route='dashboard';if(!L)L='en';document.getElementById('gate').innerHTML='';document.getElementById('app').style.display='flex';applyDir();render();startRealtime();}
 function applyDir(){document.body.setAttribute('dir',L==='ar'?'rtl':'ltr');document.documentElement.lang=L;}
 async function toggleLang(){L=(L==='en'?'ar':'en');await saveLang();applyDir();render();}
-function exitToGate(){state.role='employee';try{LS.delete('advacon_admin');}catch(e){}renderGate();document.getElementById('app').style.display='none';}
+function exitToGate(){state.role='employee';clearAdminFlag();renderGate();document.getElementById('app').style.display='none';}
 function go(r){state.route=r;sideOpen=false;render();}
 function toggleSide(){sideOpen=!sideOpen;render();}
 
 /* realtime */
-let _rt=null,_rtRef=1,_rtHb=null;
-async function refreshNow(){if(state.role!=='admin')return;if(document.activeElement&&['INPUT','SELECT','TEXTAREA'].includes(document.activeElement.tagName)){const sb=await sbFetchAll();if(sb!==null)state.requests=sb;return;}const sb=await sbFetchAll();if(sb!==null){state.requests=sb;render();}}
-function startRealtime(){try{if(_rt)return;const ws=SB_URL.replace('https://','wss://')+'/realtime/v1/websocket?apikey='+encodeURIComponent(SB_KEY)+'&vsn=1.0.0';_rt=new WebSocket(ws);_rt.onopen=()=>{_rt.send(JSON.stringify({topic:'realtime:public:requests',event:'phx_join',payload:{config:{postgres_changes:[{event:'*',schema:'public',table:'requests'}]}},ref:String(_rtRef++)}));_rtHb=setInterval(()=>{if(_rt&&_rt.readyState===1)_rt.send(JSON.stringify({topic:'phoenix',event:'heartbeat',payload:{},ref:String(_rtRef++)}));},25000);};_rt.onmessage=(m)=>{try{const d=JSON.parse(m.data);if(d.event==='postgres_changes'||(d.payload&&d.payload.data))refreshNow();}catch(e){}};_rt.onclose=()=>{_rt=null;if(_rtHb){clearInterval(_rtHb);_rtHb=null;}setTimeout(()=>{if(state.role==='admin')startRealtime();},3000);};_rt.onerror=()=>{try{_rt.close();}catch(e){}};}catch(e){}}
+let _rt=null,_rtRef=1,_rtHb=null,_poll=null;
+async function refreshNow(){if(state.role!=='admin')return;
+  // don't disrupt if a modal is open or user is typing in a field
+  if(modal)return;
+  if(document.activeElement&&['INPUT','SELECT','TEXTAREA'].includes(document.activeElement.tagName))return;
+  const sb=await sbFetchAll();
+  if(sb!==null){
+    // only re-render if data actually changed (avoid needless flicker)
+    const sig=JSON.stringify(sb.map(r=>[r.id,r.status,r.accepted,r.archived,r.assignedTo,r.duration,r.start,r.notes].join('|')));
+    if(sig!==_lastSig){_lastSig=sig;state.requests=sb;render();}
+    else{state.requests=sb;}
+  }
+}
+let _lastSig='';
+function startRealtime(){
+  // reliable auto-refresh: poll every 6s so new requests appear without manual refresh
+  if(!_poll)_poll=setInterval(refreshNow,6000);
+  // also attempt websocket realtime for near-instant updates
+  try{if(_rt)return;const ws=SB_URL.replace('https://','wss://')+'/realtime/v1/websocket?apikey='+encodeURIComponent(SB_KEY)+'&vsn=1.0.0';_rt=new WebSocket(ws);_rt.onopen=()=>{_rt.send(JSON.stringify({topic:'realtime:public:requests',event:'phx_join',payload:{config:{postgres_changes:[{event:'*',schema:'public',table:'requests'}]}},ref:String(_rtRef++)}));_rtHb=setInterval(()=>{if(_rt&&_rt.readyState===1)_rt.send(JSON.stringify({topic:'phoenix',event:'heartbeat',payload:{},ref:String(_rtRef++)}));},25000);};_rt.onmessage=(m)=>{try{const d=JSON.parse(m.data);if(d.event==='postgres_changes'||(d.payload&&d.payload.data))refreshNow();}catch(e){}};_rt.onclose=()=>{_rt=null;if(_rtHb){clearInterval(_rtHb);_rtHb=null;}setTimeout(()=>{if(state.role==='admin')startRealtime();},3000);};_rt.onerror=()=>{try{_rt.close();}catch(e){}};}catch(e){}}
 
 function opts(arr,sel){return [`<option value="">${t('select')}</option>`].concat(arr.map(x=>`<option ${x===sel?'selected':''}>${esc(x)}</option>`)).join('');}
 
@@ -570,7 +611,7 @@ function taskRow(r){
   const stColor=STATUS_COLORS[r.effStatus]||'#6E7A87';
   const dl=dueCell(r);
   const isDone=r.effStatus==='Complete';
-  const imgIcon=(()=>{let a=[];try{a=JSON.parse(r.images||'[]');}catch(e){}return a.length?`<button class="lk" onclick="openLightbox('${esc(a[0])}')" title="${t('viewImages')}">🖼 ${a.length}</button>`:'';})();
+  const imgIcon=(()=>{let a=[];try{a=JSON.parse(r.images||'[]');}catch(e){}return a.length?`<button class="lk" onclick="openGallery(${r.id})" title="${t('viewImages')}">🖼 ${a.length}</button>`:'';})();
   let acts=`<button class="ico" title="${t('edit')}" onclick="openEdit(${r.id})">✎</button>`;
   if(isDone)acts+=`<button class="ico" title="${t('reopen')}" onclick="reopenTask(${r.id})">↺</button>`;
   else acts+=`<button class="ico ok" title="${t('closeTask')}" onclick="askClose(${r.id})">✓</button>`;
@@ -605,7 +646,7 @@ function viewManage(){
   const total=Math.max(1,Math.ceil(acc.length/PAGE_SIZE));
   if(pageNum.manage>total)pageNum.manage=total;
   const pageRows=acc.slice((pageNum.manage-1)*PAGE_SIZE,(pageNum.manage-1)*PAGE_SIZE+PAGE_SIZE);
-  const inc=pending.length?`<div class="tbl-wrap"><table class="tbl in-tbl"><thead><tr><th>${t('mTaskId')}</th><th>${t('reqLabel')}</th><th>${t('mReqBy')}</th><th>${t('mProj')}</th><th>${t('mCat')}</th><th>${t('priority')}</th><th>${t('mRecv')}</th><th></th></tr></thead><tbody>`+pending.map(r=>{const imgIcon=(()=>{let a=[];try{a=JSON.parse(r.images||'[]');}catch(e){}return a.length?` <button class="lk" onclick="openLightbox('${esc(a[0])}')" title="${t('viewImages')}">🖼 ${a.length}</button>`:'';})();return `<tr><td class="c-id">${fmtID(r.id)}</td><td class="c-title"><div class="ttl">${esc(r.title)}</div>${imgIcon}</td><td>${esc(r.requestedBy)}</td><td>${esc(r.project)}</td><td>${esc(r.category)}</td><td><span class="prio ${r.priority}">${esc(r.priority)}</span></td><td>${esc(r.received)}</td><td class="c-act"><button class="ico ok" title="${t('accept')}" onclick="acceptReq(${r.id})">✓</button><button class="ico del" title="${t('decline')}" onclick="declineReq(${r.id})">✕</button></td></tr>`;}).join('')+`</tbody></table></div>`:`<div class="empty">${t('noNew')}</div>`;
+  const inc=pending.length?`<div class="tbl-wrap"><table class="tbl in-tbl"><thead><tr><th>${t('mTaskId')}</th><th>${t('reqLabel')}</th><th>${t('mReqBy')}</th><th>${t('mProj')}</th><th>${t('mCat')}</th><th>${t('priority')}</th><th>${t('mRecv')}</th><th></th></tr></thead><tbody>`+pending.map(r=>{const imgIcon=(()=>{let a=[];try{a=JSON.parse(r.images||'[]');}catch(e){}return a.length?` <button class="lk" onclick="openGallery(${r.id})" title="${t('viewImages')}">🖼 ${a.length}</button>`:'';})();return `<tr><td class="c-id">${fmtID(r.id)}</td><td class="c-title"><div class="ttl">${esc(r.title)}</div>${imgIcon}</td><td>${esc(r.requestedBy)}</td><td>${esc(r.project)}</td><td>${esc(r.category)}</td><td><span class="prio ${r.priority}">${esc(r.priority)}</span></td><td>${esc(r.received)}</td><td class="c-act"><button class="ico ok" title="${t('accept')}" onclick="acceptReq(${r.id})">✓</button><button class="ico del" title="${t('decline')}" onclick="declineReq(${r.id})">✕</button></td></tr>`;}).join('')+`</tbody></table></div>`:`<div class="empty">${t('noNew')}</div>`;
   const body=pageRows.length?taskTable(pageRows):`<div class="empty">${t('noAccepted')}</div>`;
   return `<div class="phead"><div class="eyebrow">${t('opsEye')}</div><h1>${t('manageH1')}</h1><p>${t('manageP')}</p></div>
   <div class="section-head"><span class="sec-dot inbox"></span> ${t('incoming')} <span class="count-chip" style="margin-inline-start:8px">${pending.length} ${t('waiting')}</span></div>
@@ -637,11 +678,23 @@ function viewArchive(){
   const total=Math.max(1,Math.ceil(rows.length/PAGE_SIZE));
   if(pageNum.archive>total)pageNum.archive=total;
   const pageRows=rows.slice((pageNum.archive-1)*PAGE_SIZE,(pageNum.archive-1)*PAGE_SIZE+PAGE_SIZE);
-  const body=pageRows.length?`<div class="tbl-wrap"><table class="tbl"><thead><tr><th>${t('mTaskId')}</th><th>${t('reqLabel')}</th><th>${t('mReqBy')}</th><th>${t('mProj')}</th><th>${t('mCat')}</th><th>${t('priority')}</th><th>${t('mAssign')}</th><th>${t('mRecv')}</th><th>${t('mStart')}</th><th>${t('mDur')}</th><th>${t('mDue')}</th><th>${t('mStatus')}</th><th></th></tr></thead><tbody>`+pageRows.map(r=>{
+  const body=pageRows.length?`<div class="tbl-wrap"><table class="tbl"><thead><tr><th>${t('mTaskId')}</th><th>${t('reqLabel')}</th><th>${t('mProj')}</th><th>${t('mStatus')}</th><th></th></tr></thead><tbody>`+pageRows.map(r=>{
     const tag=r.archived?t('deleted'):t('declined');
     const tagColor=r.archived?'var(--steel)':'var(--red)';
-    const imgIcon=(()=>{let a=[];try{a=JSON.parse(r.images||'[]');}catch(e){}return a.length?`<button class="lk" onclick="openLightbox('${esc(a[0])}')" title="${t('viewImages')}">🖼 ${a.length}</button>`:'';})();
-    return `<tr><td class="c-id">${fmtID(r.id)}</td><td class="c-title"><div class="ttl">${esc(r.title)}</div>${r.notes?`<div class="nt">📝 ${esc(r.notes)}</div>`:''}${imgIcon}</td><td>${esc(r.requestedBy||'—')}</td><td>${esc(r.project)}</td><td>${esc(r.category)}</td><td><span class="prio ${r.priority}">${esc(r.priority)}</span></td><td>${esc(r.assignedTo||'—')}</td><td>${esc(r.received||'—')}</td><td>${esc(r.start||'—')}</td><td>${esc(r.duration||'—')}</td><td>${esc(r.due||'—')}</td><td><span class="st" style="background:${tagColor}">${tag}</span></td><td class="c-act"><button class="ico" title="${t('restore')}" onclick="restoreTask(${r.id})">↩</button></td></tr>`;
+    const imgIcon=(()=>{let a=[];try{a=JSON.parse(r.images||'[]');}catch(e){}return a.length?`<button class="lk" onclick="openGallery(${r.id})" title="${t('viewImages')}">🖼 ${a.length}</button>`:'';})();
+    const det=`<div class="arch-det">`+
+      `<span><b>${t('mReqBy')}:</b> ${esc(r.requestedBy||'—')}</span>`+
+      `<span><b>${t('mCat')}:</b> ${esc(r.category||'—')}</span>`+
+      `<span><b>${t('priority')}:</b> ${esc(r.priority||'—')}</span>`+
+      `<span><b>${t('mAssign')}:</b> ${esc(r.assignedTo||'—')}</span>`+
+      `<span><b>${t('mRecv')}:</b> ${esc(r.received||'—')}</span>`+
+      `<span><b>${t('mStart')}:</b> ${esc(r.start||'—')}</span>`+
+      `<span><b>${t('mDur')}:</b> ${esc(r.duration||'—')}</span>`+
+      `<span><b>${t('mDue')}:</b> ${esc(r.due||'—')}</span>`+
+      (r.closed?`<span><b>${t('mClosed')}:</b> ${esc(r.closed)}</span>`:'')+
+      `</div>`;
+    const note=r.notes?`<div class="nt">📝 ${esc(r.notes)}</div>`:'';
+    return `<tr><td class="c-id">${fmtID(r.id)}</td><td class="c-title"><div class="ttl">${esc(r.title)}</div>${note}${det}${imgIcon}</td><td>${esc(r.project)}</td><td><span class="st" style="background:${tagColor}">${tag}</span></td><td class="c-act"><button class="ico wide" title="${t('restore')}" onclick="restoreTask(${r.id})">↩ ${t('restore')}</button></td></tr>`;
   }).join('')+`</tbody></table></div>`:`<div class="empty">${t('noMatch')}</div>`;
   return `<div class="phead"><div class="eyebrow">${t('archEye')}</div><h1>${t('archH1')}</h1><p>${t('archP')}</p></div>
   <div class="filterbar"><input placeholder="${t('search')}" value="${esc(filters.q)}" oninput="filters.q=this.value;rerenderSoft()"/><div class="spacer"></div><span class="count-chip">${rows.length}</span></div>
@@ -664,7 +717,10 @@ function openEdit(id){modal={type:'edit',id};renderModal();}
 function askClose(id){modal={type:'close',id};renderModal();}
 function doClose(id){const r=state.requests.find(x=>x.id===id);if(!r)return;r.status='Complete';r.closed=today();modal=null;render();toast(fmtID(id)+' '+t('closedToast'));saveBg(id,r);}
 function reopenTask(id){const r=state.requests.find(x=>x.id===id);if(!r)return;r.status='In Progress';r.closed='';r.archived=false;if(!r.start)r.start=today();render();toast(fmtID(id));saveBg(id,r);}
-function openLightbox(url){modal={type:'img',url};renderModal();}
+function openLightbox(url){modal={type:'img',imgs:[url],idx:0};renderModal();}
+function openGallery(id){const r=state.requests.find(x=>x.id===id);if(!r)return;let a=[];try{a=JSON.parse(r.images||'[]');}catch(e){}if(!a.length)return;modal={type:'img',imgs:a,idx:0};renderModal();}
+function galNav(d){if(!modal||modal.type!=='img')return;const n=modal.imgs.length;modal.idx=(modal.idx+d+n)%n;renderModal();}
+function galGo(i){if(!modal||modal.type!=='img')return;modal.idx=i;renderModal();}
 
 // Save handler for accept / edit / add forms
 async function saveTaskForm(mode,id){
@@ -714,7 +770,19 @@ function renderModal(){
     el.innerHTML=`<div class="modal-bg" ${close}><div class="modal" style="max-width:430px"><h3>${t('confirmCloseTitle')}</h3><p>${t('confirmCloseMsg')}<br><b>${fmtID(modal.id)}</b></p><div class="btnrow" style="justify-content:flex-end"><button class="btn sec" onclick="modal=null;renderModal()">${t('cancel')}</button><button class="btn green" onclick="doClose(${modal.id})">${t('confirmCloseYes')}</button></div></div></div>`;return;
   }
   if(modal.type==='img'){
-    el.innerHTML=`<div class="modal-bg" ${close} style="background:rgba(0,0,0,.8)"><img src="${esc(modal.url)}" style="max-width:92vw;max-height:90vh;border-radius:10px"/></div>`;return;
+    const imgs=modal.imgs||[];const i=modal.idx||0;const multi=imgs.length>1;
+    const nav=multi?`<button class="gal-nav prev" onclick="event.stopPropagation();galNav(-1)">‹</button><button class="gal-nav next" onclick="event.stopPropagation();galNav(1)">›</button>`:'';
+    const counter=multi?`<div class="gal-count">${i+1} / ${imgs.length}</div>`:'';
+    const thumbs=multi?`<div class="gal-thumbs">`+imgs.map((u,k)=>`<img src="${esc(u)}" class="${k===i?'on':''}" onclick="event.stopPropagation();galGo(${k})"/>`).join('')+`</div>`:'';
+    el.innerHTML=`<div class="modal-bg gal-bg" ${close}>
+      <button class="gal-close" onclick="modal=null;renderModal()">✕</button>
+      ${counter}
+      <div class="gal-stage" onclick="event.stopPropagation()">
+        ${nav}
+        <img class="gal-img" src="${esc(imgs[i])}"/>
+      </div>
+      ${thumbs}
+    </div>`;return;
   }
   if(modal.type==='accept'){
     const r=state.requests.find(x=>x.id===modal.id);if(!r){modal=null;return;}
@@ -829,7 +897,7 @@ function exportExcel(){
 }
 
 /* ===== boot ===== */
-(async function(){await load();const p=(location.pathname||'').toLowerCase();if(p.indexOf('/admin')>=0){if(!L)L='en';let authed=false;try{const a=await LS.get('advacon_admin');authed=!!(a&&a.value==='1');}catch(e){}if(authed)enterAdminDirect();else openAdmin();}else renderGate();})();
+(async function(){await load();const p=(location.pathname||'').toLowerCase();if(p.indexOf('/admin')>=0){if(!L)L='en';const authed=await checkAdminFlag();if(authed)enterAdminDirect();else openAdmin();}else renderGate();})();
 
 </script>
 </body>
