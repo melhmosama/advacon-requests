@@ -561,11 +561,18 @@ function openAdmin(){
   setTimeout(()=>{var p=document.getElementById('pin');if(p)p.focus();},100);
 }
 async function pick(l){L=l;await saveLang();state.role='employee';state.route='request';document.getElementById('gate').innerHTML='';document.getElementById('app').style.display='flex';applyDir();render();}
-function setAdminFlag(){try{localStorage.setItem('advacon_admin','1');}catch(e){}try{LS.set('advacon_admin','1');}catch(e){}}
-function clearAdminFlag(){try{localStorage.removeItem('advacon_admin');}catch(e){}try{LS.delete('advacon_admin');}catch(e){}}
-async function checkAdminFlag(){try{if(localStorage.getItem('advacon_admin')==='1')return true;}catch(e){}try{const a=await LS.get('advacon_admin');if(a&&a.value==='1')return true;}catch(e){}return false;}
+function setAdminFlag(){try{sessionStorage.setItem('advacon_admin','1');}catch(e){}}
+function clearAdminFlag(){try{sessionStorage.removeItem('advacon_admin');}catch(e){}try{localStorage.removeItem('advacon_admin');}catch(e){}try{LS.delete('advacon_admin');}catch(e){}}
+async function checkAdminFlag(){
+  // session-only: cleared automatically when the browser is fully closed
+  try{if(sessionStorage.getItem('advacon_admin')==='1')return true;}catch(e){}
+  // clean up any old persistent flags from previous versions
+  try{localStorage.removeItem('advacon_admin');}catch(e){}
+  try{LS.delete('advacon_admin');}catch(e){}
+  return false;
+}
 async function tryAdmin(){const v=document.getElementById('pin').value.trim();if(v==='Ahmad1001'){setAdminFlag();state.role='admin';state.route='dashboard';if(!L)L='en';await saveLang();document.getElementById('gate').innerHTML='';document.getElementById('app').style.display='flex';applyDir();render();startRealtime();}else{const p=document.getElementById('pin');p.value='';p.placeholder=(L==='ar'?'رمز غير صحيح':'Incorrect code');p.style.borderColor='var(--red)';}}
-async function enterAdminDirect(){setAdminFlag();state.role='admin';state.route='dashboard';if(!L)L='en';document.getElementById('gate').innerHTML='';document.getElementById('app').style.display='flex';applyDir();render();startRealtime();}
+async function enterAdminDirect(){state.role='admin';state.route='dashboard';if(!L)L='en';document.getElementById('gate').innerHTML='';document.getElementById('app').style.display='flex';applyDir();render();startRealtime();}
 function applyDir(){document.body.setAttribute('dir',L==='ar'?'rtl':'ltr');document.documentElement.lang=L;}
 async function toggleLang(){L=(L==='en'?'ar':'en');await saveLang();applyDir();render();}
 function exitToGate(){state.role='employee';clearAdminFlag();renderGate();document.getElementById('app').style.display='none';}
