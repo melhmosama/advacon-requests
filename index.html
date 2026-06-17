@@ -224,6 +224,35 @@ textarea{resize:vertical;min-height:80px}
 .card-imgs img:hover{transform:scale(1.05)}
 .note-box{background:#FBF8F2;border:1px solid #E8D6BC;border-radius:8px;padding:9px 11px;font-size:13px;color:var(--txt);margin:8px 0;line-height:1.5}
 .note-box .ml{display:block;font-size:10px;letter-spacing:.03em;text-transform:uppercase;color:var(--amber);font-weight:700;margin-bottom:3px}
+/* ===== CLEAN TABLES ===== */
+.tbl-wrap{background:var(--white);border:1px solid var(--grid);border-radius:12px;box-shadow:var(--shadow);overflow:hidden;margin-bottom:6px}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl thead th{background:var(--head);color:var(--navy);font-weight:700;font-size:11px;letter-spacing:.03em;text-transform:uppercase;text-align:start;padding:11px 12px;border-bottom:2px solid var(--grid);white-space:nowrap}
+.tbl tbody td{padding:11px 12px;border-bottom:1px solid var(--grid);vertical-align:middle;color:var(--txt)}
+.tbl tbody tr:last-child td{border-bottom:none}
+.tbl tbody tr:hover{background:var(--lgray)}
+.tbl tbody tr.ov{background:#FBF0EF}
+.tbl tbody tr.ov:hover{background:#F7E6E4}
+.tbl tbody tr.warn{background:#FBF6EC}
+.tbl .c-id{font-weight:700;color:var(--med);white-space:nowrap;font-size:12px}
+.tbl .c-title{min-width:200px;max-width:340px}
+.tbl .c-title .ttl{font-weight:600;line-height:1.4}
+.tbl .c-title .nt{font-size:11.5px;color:var(--amber);margin-top:3px;line-height:1.4}
+.tbl .st{display:inline-block;font-size:11px;font-weight:700;color:#fff;padding:3px 9px;border-radius:14px;white-space:nowrap}
+.tbl .dl{font-weight:700;white-space:nowrap}
+.tbl .c-act{white-space:nowrap;text-align:end}
+.tbl .ico{width:30px;height:30px;border:1px solid var(--grid);background:var(--white);border-radius:7px;cursor:pointer;font-size:14px;margin-inline-start:4px;transition:.15s;line-height:1}
+.tbl .ico:hover{background:var(--pale);border-color:var(--accent)}
+.tbl .ico.ok{color:var(--green);border-color:#BFD9CB}
+.tbl .ico.ok:hover{background:#EAF3EE}
+.tbl .ico.del{color:var(--red);border-color:#E8C9C7}
+.tbl .ico.del:hover{background:#FBF0EF}
+.tbl .lk{background:var(--lblue);color:var(--navy);border:none;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;cursor:pointer;margin-top:4px}
+.tbl .lk:hover{background:#CDDcEC}
+@media(max-width:860px){
+  .tbl-wrap{overflow-x:auto}
+  .tbl{min-width:640px}
+}
 </style>
 </head>
 <body>
@@ -252,7 +281,7 @@ async function sbUploadImage(file){
 
 const SEED={
   projects:["324","324-03","324-04","324-06","324-A","324-B","324-C","336","339","374","382","385","388","392","Offices","Workshops & Warehouses","Eng - Residences Saq","Eng - Residences Sk3","Labors - Residences SK","Labors - Residences Sa","Labors - Residences 324-03","Labors - Residences 339","Labors - Residences 336","For all","Others"],
-  categories:["Maint 🔧","Movement 🔄","Procurement 🛒","Fuel Supply ⛽","Material Transport 🚛","Others 🧩","Administrative"],
+  categories:["Maintenance","Movement","Procurement","Fuel Supply","Material Transport","Others","Administrative"],
   priorities:["Low","Med","High"],
   statuses:["Not Started","In Progress","Complete","On Hold","Overdue","Needs Review","Needs Update","Cancelled"],
   employees:["Ahmad M. Masoud","Mohamed Fouad","Mustafa Tohami Mahdy","Mustafa M.El Amin","Mohamed Aly","Hamdy Ahmed","Mohammed Abdo Alshaebi","Waliedin Ahmed","Alameldin Ahmad","Mahmoud Gomaa","Raqeb","Mohammed Hageb","Ele Team","Mech Team","Civil Team","Irr & Plumbing Team","All Teams","Others"]
@@ -276,7 +305,7 @@ const T={
   incoming:"Incoming requests",waiting:"waiting",accepted:"Accepted tasks",exportXl:"Export to Excel",allStatuses:"All statuses",allProjects:"All projects",allEmployees:"All team",search:"Search…",addTask:"Add task",
   accept:"Accept",decline:"Decline",noNew:"No new requests waiting.",noAccepted:"No accepted tasks yet.",noMatch:"Nothing here.",
   reqLabel:"Request",noteLabel:"Manager note",notesPh:"Note / instructions for the team member",
-  mProj:"Project",mCat:"Category",mReqBy:"Requested by",mRecv:"Received",mAssign:"Assigned to",mStart:"Start",mDur:"Duration (days)",mStatus:"Status",mDue:"Due",mClosed:"Closed",mLeft:"Time left",
+  mTaskId:"Task ID",mProj:"Project",mCat:"Category",mReqBy:"Requested by",mRecv:"Received",mAssign:"Assigned to",mStart:"Start",mDur:"Duration (days)",mStatus:"Status",mDue:"Due",mClosed:"Closed",mLeft:"Time left",
   openEye:"Active work",openH1:"Open Tasks",openP:"Everything that still needs action. Close a task and it moves out of here.",
   closeTask:"Close task",delTask:"Delete",restore:"Restore",
   archEye:"Archive",archH1:"Archived / Declined",archP:"Declined or deleted tasks. Numbers are preserved — restore any task and it returns to incoming.",
@@ -299,33 +328,33 @@ const T={
  ar:{co:"شركة المفاهيم المتقدمة للمقاولات المحدودة",sys:"طلبات خدمة التشغيل والصيانة",
   nav:{dashboard:"لوحة المعلومات",manage:"إدارة الطلبات",open:"المهام المفتوحة",archive:"الملغية / المحذوفة",settings:"الإعدادات"},
   navIc:{dashboard:"▦",manage:"📥",open:"⚙",archive:"🗂",settings:"⚙️"},
-  reqEye:"طلب جديد",reqH1:"طلب خدمة",reqP:"عبّئ التفاصيل وأرسل — طلبك بيوصل فريق التشغيل والصيانة مباشرة.",
-  requestedBy:"مقدّم الطلب",namePh:"الاسم الكامل",projLoc:"المشروع / الموقع",svcType:"نوع الخدمة",needs:"شو بدك؟",needsPh:"صف الخدمة المطلوبة",
+  reqEye:"طلب جديد",reqH1:"طلب خدمة",reqP:"يُرجى تعبئة التفاصيل وإرسال الطلب؛ ليصل مباشرةً إلى قسم التشغيل والصيانة.",
+  requestedBy:"مقدّم الطلب",namePh:"الاسم الكامل",projLoc:"المشروع / الموقع",svcType:"نوع الخدمة",needs:"تفاصيل الطلب",needsPh:"يُرجى وصف الخدمة المطلوبة بوضوح",
   priority:"الأولوية",dateReq:"تاريخ الطلب",autoToday:"يُحدّد تلقائياً بتاريخ اليوم",submit:"إرسال الطلب",select:"— اختر —",
-  manageH1:"إدارة الطلبات",manageP:"اقبل الطلبات الواردة لبدء العمل، ثم وزّعها وجدولها.",opsEye:"العمليات",
+  manageH1:"إدارة الطلبات",manageP:"راجع الطلبات الواردة واقبلها لبدء العمل، ثم وزّعها وجدوِلها.",opsEye:"العمليات",
   incoming:"الطلبات الواردة",waiting:"بالانتظار",accepted:"المهام المقبولة",exportXl:"تصدير لإكسل",allStatuses:"كل الحالات",allProjects:"كل المشاريع",allEmployees:"كل الفريق",search:"بحث…",addTask:"إضافة مهمة",
-  accept:"قبول",decline:"رفض",noNew:"لا توجد طلبات جديدة بالانتظار.",noAccepted:"لا مهام مقبولة بعد.",noMatch:"لا يوجد شيء هنا.",
-  reqLabel:"الطلب",noteLabel:"ملاحظة المسؤول",notesPh:"ملاحظة / تعليمات لعضو الفريق",
-  mProj:"المشروع",mCat:"الفئة",mReqBy:"مقدّم الطلب",mRecv:"تاريخ الطلب",mAssign:"المسؤول",mStart:"البدء",mDur:"المدة (أيام)",mStatus:"الحالة",mDue:"الاستحقاق",mClosed:"الإقفال",mLeft:"المتبقّي",
-  openEye:"العمل النشط",openH1:"المهام المفتوحة",openP:"كل ما يحتاج عملاً. أقفل المهمة فتخرج من هنا.",
+  accept:"قبول",decline:"رفض",noNew:"لا توجد طلبات جديدة قيد الانتظار.",noAccepted:"لا توجد مهام مقبولة حتى الآن.",noMatch:"لا توجد عناصر للعرض.",
+  reqLabel:"الطلب",noteLabel:"ملاحظة المسؤول",notesPh:"ملاحظات أو تعليمات موجَّهة لعضو الفريق المكلَّف",
+  mTaskId:"رقم المهمة",mProj:"المشروع",mCat:"الفئة",mReqBy:"مقدّم الطلب",mRecv:"تاريخ الطلب",mAssign:"المسؤول",mStart:"البدء",mDur:"المدة (أيام)",mStatus:"الحالة",mDue:"الاستحقاق",mClosed:"الإقفال",mLeft:"المتبقّي",
+  openEye:"العمل النشط",openH1:"المهام المفتوحة",openP:"جميع المهام التي ما زالت قيد التنفيذ. عند إقفال أي مهمة تخرج من هذه القائمة.",
   closeTask:"إقفال المهمة",delTask:"حذف",restore:"إرجاع",
-  archEye:"الأرشيف",archH1:"الملغية / المحذوفة",archP:"المهام المرفوضة أو المحذوفة. الأرقام محفوظة — أرجِع أي مهمة فتعود لقائمة الواردة.",
+  archEye:"الأرشيف",archH1:"الملغية / المحذوفة",archP:"المهام المرفوضة أو المحذوفة، مع الاحتفاظ بأرقامها. يمكن إرجاع أي مهمة لتعود إلى قائمة الطلبات الواردة.",
   declined:"مرفوضة",deleted:"محذوفة",
-  dashEye:"نظرة تنفيذية",dashH1:"لوحة المعلومات",dashP:"لقطة حيّة لكل طلبات الخدمة.",
+  dashEye:"نظرة تنفيذية",dashH1:"لوحة المعلومات",dashP:"نظرة عامة محدَّثة على جميع طلبات الخدمة.",
   kTotal:"إجمالي الطلبات",kPending:"بانتظار القبول",kOpen:"مفتوحة",kDueWk:"تستحق هذا الأسبوع",kOver:"متأخرة",kDone:"مكتملة",kRate:"نسبة الإنجاز",kAvgDays:"متوسط الإنجاز (أيام)",
   byCat:"الطلبات حسب الفئة",bySt:"الطلبات حسب الحالة",byPri:"الطلبات حسب الأولوية",byProj:"الطلبات حسب المشروع",wlTeam:"توزيع العمل على الفريق",overTime:"الطلبات عبر الزمن",topReq:"الأكثر طلباً",alerts:"يحتاج انتباه",dueIn:"تستحق خلال",overdueBy:"متأخرة",noAlerts:"لا شيء متأخر أو قريب الاستحقاق.",noData:"لا توجد بيانات بعد",
-  setEye:"الإعدادات",setH1:"الإعدادات",setP:"تحكّم بالقوائم وعناصر اللوحة. التغييرات تُطبّق فوراً.",
-  chartsCfg:"عناصر لوحة المعلومات",chartsCfgHint:"اختر ما يظهر على لوحة المعلومات.",
+  setEye:"الإعدادات",setH1:"الإعدادات",setP:"إدارة القوائم وعناصر لوحة المعلومات. تُطبَّق التغييرات مباشرةً في جميع أنحاء النظام.",
+  chartsCfg:"عناصر لوحة المعلومات",chartsCfgHint:"حدِّد العناصر التي تظهر على لوحة المعلومات.",
   sProjects:"المشاريع",sCats:"أنواع الخدمات",sEmps:"أعضاء الفريق",sPris:"الأولويات",addNew:"إضافة جديد…",add:"إضافة",
-  thanksH:"شكراً جزيلاً",thanksMsg:"تم استلام طلبك وستتم متابعته.",thanksContact:"للمتابعة، تواصل مع مدير قسم التشغيل والصيانة",thanksName:"أحمد مصطفى مسعود",thanksNew:"تقديم طلب آخر",
-  fillReq:"الرجاء تعبئة الحقول المطلوبة",submitted:"تم إرسال الطلب",acceptedToast:"تاريخ البدء = اليوم",declinedToast:"مرفوض",exported:"طلب تم تصديره",added:"تمت الإضافة",exists:"موجود بالقائمة",connErr:"خطأ بالاتصال",closedToast:"تم الإقفال",deletedToast:"تمت الأرشفة",restoredToast:"تم الإرجاع",
+  thanksH:"شكراً جزيلاً",thanksMsg:"تم استلام طلبكم بنجاح، وستتم متابعته من قِبل القسم المختص.",thanksContact:"للاستفسار أو المتابعة، يُرجى التواصل مع مدير قسم التشغيل والصيانة",thanksName:"أحمد مصطفى مسعود",thanksNew:"تقديم طلب آخر",
+  fillReq:"الرجاء تعبئة الحقول المطلوبة",submitted:"تم إرسال الطلب",acceptedToast:"تم القبول، وحُدِّد تاريخ البدء بتاريخ اليوم",declinedToast:"تم الرفض",exported:"طلب تم تصديره",added:"تمت الإضافة بنجاح",exists:"العنصر موجود بالفعل في القائمة",connErr:"تعذَّر الاتصال بالخادم",closedToast:"تم الإقفال",deletedToast:"تمت الأرشفة",restoredToast:"تم الإرجاع",
   exitAdmin:"خروج",enter:"دخول",page:"صفحة",of:"من",
-  confirmDelTitle:"حذف المهمة؟",confirmDelMsg:"سيتم نقلها للأرشيف (الرقم محفوظ). تقدر ترجّعها متى ما بدك.",confirmDelYes:"حذف",cancel:"إلغاء",
+  confirmDelTitle:"حذف المهمة؟",confirmDelMsg:"سيتم نقل المهمة إلى الأرشيف مع الاحتفاظ برقمها، ويمكن إرجاعها في أي وقت.",confirmDelYes:"حذف",cancel:"إلغاء",
   addTaskTitle:"إضافة مهمة",save:"حفظ",lang:"English",
   acceptTitle:"قبول الطلب",editTitle:"تعديل المهمة",edit:"تعديل",reopen:"إعادة فتح",
-  confirmCloseTitle:"إقفال هذه المهمة؟",confirmCloseMsg:"سيتم تعليمها كمكتملة بتاريخ اليوم كتاريخ إقفال، وستخرج من المهام المفتوحة.",confirmCloseYes:"إقفال كمكتملة",
-  durReq:"المدة مطلوبة لجدولة المهمة",
-  addImages:"إضافة صور (اختياري)",addImagesHint:"أرفق صوراً للتوضيح — التقط صورة أو اختر من المعرض.",uploading:"جارٍ الرفع…",photo:"صورة",photos:"صور",viewImages:"الصور"}
+  confirmCloseTitle:"إقفال هذه المهمة؟",confirmCloseMsg:"سيتم اعتماد المهمة كمكتملة، وتسجيل تاريخ اليوم تاريخًا للإقفال، وستخرج من قائمة المهام المفتوحة.",confirmCloseYes:"إقفال كمكتملة",
+  durReq:"يلزم إدخال المدة لجدولة المهمة",
+  addImages:"إضافة صور (اختياري)",addImagesHint:"يمكنكم إرفاق صور للتوضيح، سواء بالتقاط صورة أو اختيارها من المعرض.",uploading:"جارٍ الرفع…",photo:"صورة",photos:"صور",viewImages:"الصور"}
 };
 let L='en';
 function t(k){return T[L][k];}
@@ -343,6 +372,15 @@ async function load(){
   try{const r=await LS.get('advacon_lists');if(r&&r.value)state.lists=JSON.parse(r.value);}catch(e){}
   try{const r=await LS.get('advacon_lang');if(r&&r.value)L=r.value;}catch(e){}
   try{const r=await LS.get('advacon_widgets');if(r&&r.value)state.widgets=Object.assign(JSON.parse(JSON.stringify(DEFAULT_WIDGETS)),JSON.parse(r.value));}catch(e){}
+  // migrate old category names (strip symbols/emoji) so lists stay clean & professional
+  if(state.lists&&Array.isArray(state.lists.categories)){
+    const CLEAN={"Maint 🔧":"Maintenance","Movement 🔄":"Movement","Procurement 🛒":"Procurement","Fuel Supply ⛽":"Fuel Supply","Material Transport 🚛":"Material Transport","Others 🧩":"Others"};
+    let changed=false;
+    state.lists.categories=state.lists.categories.map(c=>{if(CLEAN[c]){changed=true;return CLEAN[c];}return c;});
+    // de-duplicate
+    state.lists.categories=[...new Set(state.lists.categories)];
+    if(changed){try{await LS.set('advacon_lists',JSON.stringify(state.lists));}catch(e){}}
+  }
 }
 async function saveLists(){try{await LS.set('advacon_lists',JSON.stringify(state.lists));}catch(e){}}
 async function saveLang(){try{await LS.set('advacon_lang',L);}catch(e){}}
@@ -365,8 +403,10 @@ function calc(r){
   else o.progress=P[o.effStatus]!=null?P[o.effStatus]:0;
   return o;
 }
-function isOpen(r){return r.accepted && !r.archived && r.effStatus!=='Complete' && r.effStatus!=='Cancelled';}
+function isOpen(r){return r.accepted && !r.archived && r.effStatus!=='Complete' && r.effStatus!=='Cancelled' && r.status!=='Cancelled';}
 function isArchived(r){return r.archived || r.status==='Cancelled';}
+function isIncoming(r){return !isArchived(r) && !r.accepted;}
+function isAccepted(r){return !isArchived(r) && r.accepted;}
 
 /* gate */
 function renderGate(){
@@ -375,7 +415,7 @@ function renderGate(){
     <div class="co">ADVANCED CONCEPTS CONTRACTING CO. LTD.</div>
     <div class="intro">
       <p class="intro-ar">هذا الموقع مخصّص لتقديم الطلبات الخاصة بالشركة إلى قسم الصيانة والتشغيل والخدمات العامة.</p>
-      <p class="intro-ar-sub">قدّم طلبك بسهولة، وتابعه فريق التشغيل والصيانة مباشرة — اختر لغتك للبدء.</p>
+      <p class="intro-ar-sub">يُرجى اختيار اللغة المفضّلة لبدء تقديم الطلب، الذي تتم متابعته مباشرةً من قِبل القسم المختص.</p>
       <p class="intro-en">This portal is for submitting company requests to the Operations, Maintenance &amp; General Services department.</p>
       <p class="intro-en-sub">Submit your request in a few steps — choose your language to begin.</p>
     </div>
@@ -397,10 +437,11 @@ function openAdmin(){
   setTimeout(()=>{var p=document.getElementById('pin');if(p)p.focus();},100);
 }
 async function pick(l){L=l;await saveLang();state.role='employee';state.route='request';document.getElementById('gate').innerHTML='';document.getElementById('app').style.display='flex';applyDir();render();}
-async function tryAdmin(){const v=document.getElementById('pin').value.trim();if(v==='Ahmad1001'){state.role='admin';state.route='dashboard';if(!L)L='en';await saveLang();document.getElementById('gate').innerHTML='';document.getElementById('app').style.display='flex';applyDir();render();startRealtime();}else{const p=document.getElementById('pin');p.value='';p.placeholder=(L==='ar'?'رمز غير صحيح':'Incorrect code');p.style.borderColor='var(--red)';}}
+async function tryAdmin(){const v=document.getElementById('pin').value.trim();if(v==='Ahmad1001'){try{await LS.set('advacon_admin','1');}catch(e){}state.role='admin';state.route='dashboard';if(!L)L='en';await saveLang();document.getElementById('gate').innerHTML='';document.getElementById('app').style.display='flex';applyDir();render();startRealtime();}else{const p=document.getElementById('pin');p.value='';p.placeholder=(L==='ar'?'رمز غير صحيح':'Incorrect code');p.style.borderColor='var(--red)';}}
+async function enterAdminDirect(){try{await LS.set('advacon_admin','1');}catch(e){}state.role='admin';state.route='dashboard';if(!L)L='en';document.getElementById('gate').innerHTML='';document.getElementById('app').style.display='flex';applyDir();render();startRealtime();}
 function applyDir(){document.body.setAttribute('dir',L==='ar'?'rtl':'ltr');document.documentElement.lang=L;}
 async function toggleLang(){L=(L==='en'?'ar':'en');await saveLang();applyDir();render();}
-function exitToGate(){state.role='employee';renderGate();document.getElementById('app').style.display='none';}
+function exitToGate(){state.role='employee';try{LS.delete('advacon_admin');}catch(e){}renderGate();document.getElementById('app').style.display='none';}
 function go(r){state.route=r;sideOpen=false;render();}
 function toggleSide(){sideOpen=!sideOpen;render();}
 
@@ -428,7 +469,7 @@ function render(){
   // admin: sidebar shell
   const navk=["dashboard","manage","open","archive","settings"];
   const rows=state.requests.map(calc);
-  const pendingCount=rows.filter(r=>!r.accepted&&!r.archived).length;
+  const pendingCount=rows.filter(isIncoming).length;
   let nav=navk.map(k=>{
     const badge=(k==='manage'&&pendingCount>0)?`<span class="badge">${pendingCount}</span>`:'';
     return `<button class="${state.route===k?'active':''}" onclick="go('${k}')"><span class="ic">${t('navIc')[k]}</span><span>${t('nav')[k]}</span>${badge}</button>`;
@@ -517,53 +558,55 @@ function imgThumbs(r){
   if(!arr.length)return '';
   return '<div class="card-imgs">'+arr.map(u=>'<img src="'+esc(u)+'" onclick="openLightbox(\''+esc(u)+'\')"/>').join('')+'</div>';
 }
-function taskCard(r){
-  const cls=r.effStatus==='Overdue'?'ov':(typeof r.daysleft==='number'&&r.daysleft>=0&&r.daysleft<=2?'warn':'');
-  const stColor=STATUS_COLORS[r.effStatus]||'#6E7A87';
+function dueCell(r){
   let dl=r.daysleft,dlTxt=dl,dlCol='var(--green)';
   if(dl==='✓'){dlTxt='✓';}
   else if(typeof dl==='number'){if(dl<0){dlTxt=Math.abs(dl)+'d '+t('overdueBy');dlCol='var(--red)';}else if(dl<=2){dlTxt=dl+'d';dlCol='var(--amber)';}else{dlTxt=dl+'d';}}
-  const pct=Math.round((r.progress||0)*100);
+  return {txt:dlTxt,col:dlCol};
+}
+// clean table row (open + manage accepted)
+function taskRow(r){
+  const rowCls=r.effStatus==='Overdue'?'ov':(typeof r.daysleft==='number'&&r.daysleft>=0&&r.daysleft<=2?'warn':'');
+  const stColor=STATUS_COLORS[r.effStatus]||'#6E7A87';
+  const dl=dueCell(r);
   const isDone=r.effStatus==='Complete';
-  let foot='';
-  foot+=`<button class="btn sm sec" onclick="openEdit(${r.id})">✎ ${t('edit')}</button>`;
-  if(isDone)foot+=`<button class="btn sm" onclick="reopenTask(${r.id})">↺ ${t('reopen')}</button>`;
-  else foot+=`<button class="btn sm green" onclick="askClose(${r.id})">✓ ${t('closeTask')}</button>`;
-  foot+=`<button class="btn sm danger" onclick="askDelete(${r.id})">🗑</button>`;
-  const note=r.notes?`<div class="note-box"><span class="ml">${t('noteLabel')}</span>${esc(r.notes)}</div>`:'';
-  return `<div class="tcard ${cls}">
-    <div class="tcard-head"><span class="id">${fmtID(r.id)}</span><span class="prio ${r.priority}">${esc(r.priority)}</span><span class="st" style="background:${stColor}">${esc(r.effStatus)}</span></div>
-    <div class="tcard-body">
-      <div class="req-q">${esc(r.title)}</div>
-      ${imgThumbs(r)}
-      ${note}
-      <div class="meta">
-        <div><span class="ml">${t('mReqBy')}</span><span class="mv">${esc(r.requestedBy||'—')}</span></div>
-        <div><span class="ml">${t('mProj')}</span><span class="mv">${esc(r.project)}</span></div>
-        <div><span class="ml">${t('mCat')}</span><span class="mv">${esc(r.category)}</span></div>
-        <div><span class="ml">${t('mAssign')}</span><span class="mv">${esc(r.assignedTo||'—')}</span></div>
-        <div><span class="ml">${t('mStart')}</span><span class="mv">${esc(r.start||'—')}</span></div>
-        <div><span class="ml">${t('mDur')}</span><span class="mv">${esc(r.duration||'—')}</span></div>
-        <div><span class="ml">${t('mDue')}</span><span class="mv">${esc(r.due||'—')}</span></div>
-        <div><span class="ml">${t('mLeft')}</span><span class="dl" style="color:${dlCol}">${dlTxt}</span></div>
-        ${r.closed?`<div><span class="ml">${t('mClosed')}</span><span class="mv">${esc(r.closed)}</span></div>`:''}
-      </div>
-      <div class="progress-wrap"><div class="progress-bar" style="width:${pct}%"></div><div class="progress-txt">${pct}%</div></div>
-    </div>
-    <div class="tcard-foot">${foot}</div>
-  </div>`;
+  const imgIcon=(()=>{let a=[];try{a=JSON.parse(r.images||'[]');}catch(e){}return a.length?`<button class="lk" onclick="openLightbox('${esc(a[0])}')" title="${t('viewImages')}">🖼 ${a.length}</button>`:'';})();
+  let acts=`<button class="ico" title="${t('edit')}" onclick="openEdit(${r.id})">✎</button>`;
+  if(isDone)acts+=`<button class="ico" title="${t('reopen')}" onclick="reopenTask(${r.id})">↺</button>`;
+  else acts+=`<button class="ico ok" title="${t('closeTask')}" onclick="askClose(${r.id})">✓</button>`;
+  acts+=`<button class="ico del" title="${t('delTask')}" onclick="askDelete(${r.id})">🗑</button>`;
+  return `<tr class="${rowCls}">
+    <td class="c-id">${fmtID(r.id)}</td>
+    <td class="c-title"><div class="ttl">${esc(r.title)}</div>${r.notes?`<div class="nt">📝 ${esc(r.notes)}</div>`:''}${imgIcon}</td>
+    <td>${esc(r.project)}</td>
+    <td>${esc(r.assignedTo||'—')}</td>
+    <td><span class="prio ${r.priority}">${esc(r.priority)}</span></td>
+    <td><span class="st" style="background:${stColor}">${esc(r.effStatus)}</span></td>
+    <td>${esc(r.due||'—')}</td>
+    <td class="dl" style="color:${dl.col}">${dl.txt}</td>
+    <td class="c-act">${acts}</td>
+  </tr>`;
+}
+function taskTable(rows){
+  return `<div class="tbl-wrap"><table class="tbl">
+    <thead><tr>
+      <th>${t('mTaskId')}</th><th>${t('reqLabel')}</th><th>${t('mProj')}</th><th>${t('mAssign')}</th>
+      <th>${t('priority')}</th><th>${t('mStatus')}</th><th>${t('mDue')}</th><th>${t('mLeft')}</th><th></th>
+    </tr></thead>
+    <tbody>${rows.map(r=>taskRow(r)).join('')}</tbody>
+  </table></div>`;
 }
 
 /* ===== MANAGE ===== */
 function viewManage(){
   let all=state.requests.map(calc);
-  const pending=byNumberDesc(all.filter(r=>!r.accepted&&!r.archived));
-  let acc=byNumberDesc(applyFilters(all.filter(r=>r.accepted&&!r.archived&&r.effStatus!=='Cancelled')));
+  const pending=byNumberDesc(all.filter(isIncoming));
+  let acc=byNumberDesc(applyFilters(all.filter(isAccepted)));
   const total=Math.max(1,Math.ceil(acc.length/PAGE_SIZE));
   if(pageNum.manage>total)pageNum.manage=total;
   const pageRows=acc.slice((pageNum.manage-1)*PAGE_SIZE,(pageNum.manage-1)*PAGE_SIZE+PAGE_SIZE);
-  const inc=pending.length?`<div class="in-cards">`+pending.map(r=>`<div class="in-card"><div class="top"><span class="id" style="font-weight:700;color:var(--med)">${fmtID(r.id)}</span><span class="prio ${r.priority}">${esc(r.priority)}</span></div><div class="q">${esc(r.title)}</div>${imgThumbs(r)}<div class="meta"><b>${t('mReqBy')}:</b> ${esc(r.requestedBy)}</div><div class="meta"><b>${t('mProj')}:</b> ${esc(r.project)} &nbsp; <b>${t('mCat')}:</b> ${esc(r.category)}</div><div class="meta"><b>${t('mRecv')}:</b> ${esc(r.received)}</div><div class="acts"><button class="btn sm green" onclick="acceptReq(${r.id})">✓ ${t('accept')}</button><button class="btn sm danger" onclick="declineReq(${r.id})">${t('decline')}</button></div></div>`).join('')+`</div>`:`<div class="empty">${t('noNew')}</div>`;
-  const body=pageRows.length?`<div class="cards">`+pageRows.map(r=>taskCard(r)).join('')+`</div>`:`<div class="empty">${t('noAccepted')}</div>`;
+  const inc=pending.length?`<div class="tbl-wrap"><table class="tbl in-tbl"><thead><tr><th>${t('mTaskId')}</th><th>${t('reqLabel')}</th><th>${t('mReqBy')}</th><th>${t('mProj')}</th><th>${t('mCat')}</th><th>${t('priority')}</th><th>${t('mRecv')}</th><th></th></tr></thead><tbody>`+pending.map(r=>{const imgIcon=(()=>{let a=[];try{a=JSON.parse(r.images||'[]');}catch(e){}return a.length?` <button class="lk" onclick="openLightbox('${esc(a[0])}')" title="${t('viewImages')}">🖼 ${a.length}</button>`:'';})();return `<tr><td class="c-id">${fmtID(r.id)}</td><td class="c-title"><div class="ttl">${esc(r.title)}</div>${imgIcon}</td><td>${esc(r.requestedBy)}</td><td>${esc(r.project)}</td><td>${esc(r.category)}</td><td><span class="prio ${r.priority}">${esc(r.priority)}</span></td><td>${esc(r.received)}</td><td class="c-act"><button class="ico ok" title="${t('accept')}" onclick="acceptReq(${r.id})">✓</button><button class="ico del" title="${t('decline')}" onclick="declineReq(${r.id})">✕</button></td></tr>`;}).join('')+`</tbody></table></div>`:`<div class="empty">${t('noNew')}</div>`;
+  const body=pageRows.length?taskTable(pageRows):`<div class="empty">${t('noAccepted')}</div>`;
   return `<div class="phead"><div class="eyebrow">${t('opsEye')}</div><h1>${t('manageH1')}</h1><p>${t('manageP')}</p></div>
   <div class="section-head"><span class="sec-dot inbox"></span> ${t('incoming')} <span class="count-chip" style="margin-inline-start:8px">${pending.length} ${t('waiting')}</span></div>
   ${inc}
@@ -580,7 +623,7 @@ function viewOpen(){
   const total=Math.max(1,Math.ceil(rows.length/PAGE_SIZE));
   if(pageNum.open>total)pageNum.open=total;
   const pageRows=rows.slice((pageNum.open-1)*PAGE_SIZE,(pageNum.open-1)*PAGE_SIZE+PAGE_SIZE);
-  const body=pageRows.length?`<div class="cards">`+pageRows.map(r=>taskCard(r)).join('')+`</div>`:`<div class="empty">${t('noMatch')}</div>`;
+  const body=pageRows.length?taskTable(pageRows):`<div class="empty">${t('noMatch')}</div>`;
   return `<div class="phead"><div class="eyebrow">${t('openEye')}</div><h1>${t('openH1')}</h1><p>${t('openP')}</p></div>
   <div class="qcount"><div class="qchip"><span class="dot" style="background:var(--green)"></span> ${rows.length} ${t('kOpen')}</div><div class="qchip"><span class="dot" style="background:var(--red)"></span> ${overdue} ${t('kOver')}</div><div class="qchip"><span class="dot" style="background:var(--amber)"></span> ${onhold} On Hold</div></div>
   ${filtBar()}${body}${pager('open',total)}`;
@@ -594,31 +637,33 @@ function viewArchive(){
   const total=Math.max(1,Math.ceil(rows.length/PAGE_SIZE));
   if(pageNum.archive>total)pageNum.archive=total;
   const pageRows=rows.slice((pageNum.archive-1)*PAGE_SIZE,(pageNum.archive-1)*PAGE_SIZE+PAGE_SIZE);
-  const body=pageRows.length?`<div class="cards">`+pageRows.map(r=>{
+  const body=pageRows.length?`<div class="tbl-wrap"><table class="tbl"><thead><tr><th>${t('mTaskId')}</th><th>${t('reqLabel')}</th><th>${t('mReqBy')}</th><th>${t('mProj')}</th><th>${t('mCat')}</th><th>${t('priority')}</th><th>${t('mAssign')}</th><th>${t('mRecv')}</th><th>${t('mStart')}</th><th>${t('mDur')}</th><th>${t('mDue')}</th><th>${t('mStatus')}</th><th></th></tr></thead><tbody>`+pageRows.map(r=>{
     const tag=r.archived?t('deleted'):t('declined');
     const tagColor=r.archived?'var(--steel)':'var(--red)';
-    return `<div class="tcard" style="border-inline-start-color:${tagColor}"><div class="tcard-head"><span class="id">${fmtID(r.id)}</span><span class="st" style="background:${tagColor}">${tag}</span></div><div class="tcard-body"><div class="req-q">${esc(r.title)}</div><div class="meta"><div><span class="ml">${t('mReqBy')}</span><span class="mv">${esc(r.requestedBy||'—')}</span></div><div><span class="ml">${t('mProj')}</span><span class="mv">${esc(r.project)}</span></div><div><span class="ml">${t('mCat')}</span><span class="mv">${esc(r.category)}</span></div><div><span class="ml">${t('mRecv')}</span><span class="mv">${esc(r.received)}</span></div></div></div><div class="tcard-foot"><button class="btn sm" onclick="restoreTask(${r.id})">↩ ${t('restore')}</button></div></div>`;
-  }).join('')+`</div>`:`<div class="empty">${t('noMatch')}</div>`;
+    const imgIcon=(()=>{let a=[];try{a=JSON.parse(r.images||'[]');}catch(e){}return a.length?`<button class="lk" onclick="openLightbox('${esc(a[0])}')" title="${t('viewImages')}">🖼 ${a.length}</button>`:'';})();
+    return `<tr><td class="c-id">${fmtID(r.id)}</td><td class="c-title"><div class="ttl">${esc(r.title)}</div>${r.notes?`<div class="nt">📝 ${esc(r.notes)}</div>`:''}${imgIcon}</td><td>${esc(r.requestedBy||'—')}</td><td>${esc(r.project)}</td><td>${esc(r.category)}</td><td><span class="prio ${r.priority}">${esc(r.priority)}</span></td><td>${esc(r.assignedTo||'—')}</td><td>${esc(r.received||'—')}</td><td>${esc(r.start||'—')}</td><td>${esc(r.duration||'—')}</td><td>${esc(r.due||'—')}</td><td><span class="st" style="background:${tagColor}">${tag}</span></td><td class="c-act"><button class="ico" title="${t('restore')}" onclick="restoreTask(${r.id})">↩</button></td></tr>`;
+  }).join('')+`</tbody></table></div>`:`<div class="empty">${t('noMatch')}</div>`;
   return `<div class="phead"><div class="eyebrow">${t('archEye')}</div><h1>${t('archH1')}</h1><p>${t('archP')}</p></div>
   <div class="filterbar"><input placeholder="${t('search')}" value="${esc(filters.q)}" oninput="filters.q=this.value;rerenderSoft()"/><div class="spacer"></div><span class="count-chip">${rows.length}</span></div>
   ${body}${pager('archive',total)}`;
 }
 
-/* ===== actions ===== */
+/* ===== actions (instant UI, background save) ===== */
+function saveBg(id,r){sbUpdate(id,r).catch(e=>{toast(t('connErr'));});}
 function acceptReq(id){modal={type:'accept',id};renderModal();}
-async function declineReq(id){const r=state.requests.find(x=>x.id===id);if(!r)return;r.status='Cancelled';r.accepted=false;r.archived=false;try{await sbUpdate(id,r);}catch(e){}render();toast(fmtID(id)+' '+t('declinedToast'));}
-async function upd(id,f,v){const r=state.requests.find(x=>x.id===id);if(!r)return;r[f]=v;try{await sbUpdate(id,r);}catch(e){}render();}
-async function closeTask(id){const r=state.requests.find(x=>x.id===id);if(!r)return;r.status='Complete';r.closed=today();try{await sbUpdate(id,r);}catch(e){}render();toast(fmtID(id)+' '+t('closedToast'));}
-async function restoreTask(id){const r=state.requests.find(x=>x.id===id);if(!r)return;r.archived=false;r.accepted=false;r.status='Not Started';r.closed='';try{await sbUpdate(id,r);}catch(e){}render();toast(fmtID(id)+' '+t('restoredToast'));}
+function declineReq(id){const r=state.requests.find(x=>x.id===id);if(!r)return;r.status='Cancelled';r.accepted=false;r.archived=false;r.closed='';render();toast(fmtID(id)+' '+t('declinedToast'));saveBg(id,r);}
+function upd(id,f,v){const r=state.requests.find(x=>x.id===id);if(!r)return;r[f]=v;render();saveBg(id,r);}
+function closeTask(id){const r=state.requests.find(x=>x.id===id);if(!r)return;r.status='Complete';r.closed=today();render();toast(fmtID(id)+' '+t('closedToast'));saveBg(id,r);}
+function restoreTask(id){const r=state.requests.find(x=>x.id===id);if(!r)return;r.archived=false;r.accepted=false;r.status='Not Started';r.closed='';r.assignedTo='';r.start='';r.duration='';render();toast(fmtID(id)+' '+t('restoredToast'));saveBg(id,r);}
 function askDelete(id){modal={type:'del',id};renderModal();}
-async function doDelete(id){const r=state.requests.find(x=>x.id===id);if(r){r.archived=true;try{await sbUpdate(id,r);}catch(e){}}modal=null;render();toast(fmtID(id)+' '+t('deletedToast'));}
+function doDelete(id){const r=state.requests.find(x=>x.id===id);if(r){r.archived=true;modal=null;render();toast(fmtID(id)+' '+t('deletedToast'));saveBg(id,r);}else{modal=null;render();}}
 
 /* ===== task form (accept / edit / add) + close/reopen + lightbox ===== */
 function openAddTask(){modal={type:'add'};renderModal();}
 function openEdit(id){modal={type:'edit',id};renderModal();}
 function askClose(id){modal={type:'close',id};renderModal();}
-async function doClose(id){const r=state.requests.find(x=>x.id===id);if(!r)return;r.status='Complete';r.closed=today();try{await sbUpdate(id,r);}catch(e){}modal=null;render();toast(fmtID(id)+' '+t('closedToast'));}
-async function reopenTask(id){const r=state.requests.find(x=>x.id===id);if(!r)return;r.status='In Progress';r.closed='';if(!r.start)r.start=today();try{await sbUpdate(id,r);}catch(e){}render();toast(fmtID(id));}
+function doClose(id){const r=state.requests.find(x=>x.id===id);if(!r)return;r.status='Complete';r.closed=today();modal=null;render();toast(fmtID(id)+' '+t('closedToast'));saveBg(id,r);}
+function reopenTask(id){const r=state.requests.find(x=>x.id===id);if(!r)return;r.status='In Progress';r.closed='';r.archived=false;if(!r.start)r.start=today();render();toast(fmtID(id));saveBg(id,r);}
 function openLightbox(url){modal={type:'img',url};renderModal();}
 
 // Save handler for accept / edit / add forms
@@ -626,26 +671,24 @@ async function saveTaskForm(mode,id){
   const g=i=>document.getElementById(i);
   const assign=g('tf_assign').value, dur=g('tf_dur').value, note=g('tf_notes').value.trim();
   if(mode==='accept'){
-    // mandatory: assignee + duration (notes optional)
     if(!assign||!dur){toast(t('fillReq'));return;}
     const r=state.requests.find(x=>x.id===id);if(!r)return;
     r.accepted=true;r.archived=false;r.assignedTo=assign;r.duration=dur;r.notes=note;
-    if(!r.start)r.start=today();
-    r.status='In Progress';
-    try{await sbUpdate(id,r);}catch(e){}modal=null;render();toast(fmtID(id)+' — '+t('acceptedToast'));return;
+    r.start=today();
+    r.status='In Progress';r.closed='';
+    modal=null;render();toast(fmtID(id)+' — '+t('acceptedToast'));saveBg(id,r);return;
   }
   if(mode==='edit'){
     const proj=g('tf_proj').value,cat=g('tf_cat').value,pri=g('tf_pri').value,start=g('tf_start').value,status=g('tf_status').value;
     if(!proj||!cat||!pri||!assign||!dur||!start||!status){toast(t('fillReq'));return;}
     const r=state.requests.find(x=>x.id===id);if(!r)return;
     r.project=proj;r.category=cat;r.priority=pri;r.assignedTo=assign;r.duration=dur;r.start=start;r.notes=note;
-    // status side-effects (choice B: no Overdue in list)
     r.status=status;
-    if(status==='Complete'){if(!r.closed)r.closed=today();r.archived=false;}
-    else if(status==='Cancelled'){r.archived=true;r.closed='';}
+    if(status==='Complete'){if(!r.closed)r.closed=today();r.archived=false;r.accepted=true;}
+    else if(status==='Cancelled'){r.archived=false;r.closed='';r.accepted=false;}
     else if(status==='Not Started'){r.accepted=false;r.archived=false;r.closed='';}
-    else{r.closed='';r.archived=false;if(!r.accepted)r.accepted=true;}
-    try{await sbUpdate(id,r);}catch(e){}modal=null;render();toast(fmtID(id));return;
+    else{r.closed='';r.archived=false;r.accepted=true;}
+    modal=null;render();toast(fmtID(id));saveBg(id,r);return;
   }
   if(mode==='add'){
     const req=g('tf_req').value.trim(),proj=g('tf_proj').value,cat=g('tf_cat').value,pri=g('tf_pri').value;
@@ -724,7 +767,7 @@ function viewDashboard(){
   const rows=state.requests.map(calc);const W=state.widgets;
   const active=rows.filter(r=>!r.archived);
   const total=active.length;
-  const pending=active.filter(r=>!r.accepted&&r.status!=='Cancelled').length;
+  const pending=active.filter(isIncoming).length;
   const open=active.filter(isOpen).length;
   const done=active.filter(r=>r.effStatus==='Complete').length;
   const overdue=active.filter(r=>r.effStatus==='Overdue').length;
@@ -786,7 +829,7 @@ function exportExcel(){
 }
 
 /* ===== boot ===== */
-(async function(){await load();const p=(location.pathname||'').toLowerCase();if(p.indexOf('/admin')>=0){if(!L)L='en';openAdmin();}else renderGate();})();
+(async function(){await load();const p=(location.pathname||'').toLowerCase();if(p.indexOf('/admin')>=0){if(!L)L='en';let authed=false;try{const a=await LS.get('advacon_admin');authed=!!(a&&a.value==='1');}catch(e){}if(authed)enterAdminDirect();else openAdmin();}else renderGate();})();
 
 </script>
 </body>
