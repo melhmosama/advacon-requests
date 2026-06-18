@@ -561,6 +561,12 @@ async function sbFetchStaff(){try{const res=await fetch(SB_URL+'/rest/v1/staff?s
 async function sbInsertStaff(o){const res=await fetch(SB_URL+'/rest/v1/staff',{method:'POST',headers:{...SB_HEAD,'Prefer':'return=representation'},body:JSON.stringify(o)});if(!res.ok)throw new Error('insert');return (await res.json())[0];}
 async function sbUpdateStaff(id,o){const res=await fetch(SB_URL+'/rest/v1/staff?id=eq.'+id,{method:'PATCH',headers:{...SB_HEAD,'Prefer':'return=representation'},body:JSON.stringify(o)});if(!res.ok)throw new Error('update');return (await res.json())[0];}
 async function sbDeleteStaff(id){const res=await fetch(SB_URL+'/rest/v1/staff?id=eq.'+id,{method:'DELETE',headers:SB_HEAD});if(!res.ok)throw new Error('delete');}
+// ===== APP SETTINGS (lists + widgets) shared via Supabase =====
+async function sbFetchSettings(){try{const res=await fetch(SB_URL+'/rest/v1/app_settings?id=eq.main&select=*',{headers:SB_HEAD});if(!res.ok)throw 0;const a=await res.json();return a.length?a[0]:null;}catch(e){return null;}}
+async function sbSaveSettings(){
+  const body={id:'main',lists:state.lists,widgets:state.widgets,updated_at:nowTs()};
+  try{const res=await fetch(SB_URL+'/rest/v1/app_settings',{method:'POST',headers:{...SB_HEAD,'Prefer':'resolution=merge-duplicates'},body:JSON.stringify(body)});return res.ok;}catch(e){return false;}
+}
 const SB_BUCKET='request-images';
 async function sbUploadImage(file){
   const ext=(file.name.split('.').pop()||'jpg').toLowerCase();
@@ -696,9 +702,12 @@ let staffModal=null;      // staff task detail modal
 async function load(){
   const sb=await sbFetchAll(); if(sb!==null)state.requests=sb;
   const st=await sbFetchStaff(); if(st!==null)state.staff=st;
-  try{const r=await LS.get('advacon_lists');if(r&&r.value)state.lists=JSON.parse(r.value);}catch(e){}
+  const cfg=await sbFetchSettings();
+  if(cfg){
+    if(cfg.lists)state.lists=cfg.lists;
+    if(cfg.widgets)state.widgets=Object.assign(JSON.parse(JSON.stringify(DEFAULT_WIDGETS)),cfg.widgets);
+  }
   try{const r=await LS.get('advacon_lang');if(r&&r.value)L=r.value;}catch(e){}
-  try{const r=await LS.get('advacon_widgets');if(r&&r.value)state.widgets=Object.assign(JSON.parse(JSON.stringify(DEFAULT_WIDGETS)),JSON.parse(r.value));}catch(e){}
   // migrate lists to bilingual {en,ar} objects (categories & priorities) — keeps old data, never loses it
   const AR_CAT={"Maint 🔧":"أعمال الصيانة","Movement 🔄":"النقل والتنقّل","Procurement 🛒":"المشتريات","Fuel Supply ⛽":"تزويد الوقود","Material Transport 🚛":"نقل المواد","Others 🧩":"أخرى","Maintenance":"أعمال الصيانة","Movement":"النقل والتنقّل","Procurement":"المشتريات","Fuel Supply":"تزويد الوقود","Material Transport":"نقل المواد","Others":"أخرى","Administrative":"شؤون إدارية"};
   const EN_CAT={"Maint 🔧":"Maintenance","Movement 🔄":"Movement","Procurement 🛒":"Procurement","Fuel Supply ⛽":"Fuel Supply","Material Transport 🚛":"Material Transport","Others 🧩":"Others"};
@@ -722,11 +731,11 @@ async function load(){
     }
     state.lists.priorities=out;
   }
-  if(changed){try{await LS.set('advacon_lists',JSON.stringify(state.lists));}catch(e){}}
+  if(changed&&cfg){try{await sbSaveSettings();}catch(e){}}
 }
-async function saveLists(){try{await LS.set('advacon_lists',JSON.stringify(state.lists));}catch(e){}}
+async function saveLists(){try{await sbSaveSettings();}catch(e){}}
 async function saveLang(){try{await LS.set('advacon_lang',L);}catch(e){}}
-async function saveWidgets(){try{await LS.set('advacon_widgets',JSON.stringify(state.widgets));}catch(e){}}
+async function saveWidgets(){try{await sbSaveSettings();}catch(e){}}
 
 function toast(m){const el=document.getElementById('toast');el.textContent=m;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2600);}
 function today(){return new Date().toISOString().slice(0,10);}
