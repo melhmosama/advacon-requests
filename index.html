@@ -50,7 +50,7 @@ html,body{overflow-x:hidden}
 .side-foot button{flex:1;background:var(--white);border:1.5px solid var(--grid);color:var(--med);font-weight:700;padding:8px;border-radius:8px;cursor:pointer;font-family:inherit;font-size:12.5px}
 .side-foot button:hover{background:var(--pale)}
 .content{flex:1;min-width:0;display:flex;flex-direction:column}
-.wrap{max-width:1100px;margin:0 auto;padding:24px 22px;width:100%;flex:1}
+.wrap{max-width:1500px;margin:0 auto;padding:24px 26px;width:100%;flex:1}
 /* employee top (no sidebar) */
 .empbar{background:var(--white);border-bottom:3px solid var(--navy);box-shadow:var(--shadow);position:sticky;top:0;z-index:50}
 .empbar-inner{max-width:760px;margin:0 auto;padding:12px 18px;display:flex;align-items:center;gap:14px}
@@ -228,22 +228,23 @@ textarea{resize:vertical;min-height:80px}
 .tbl-wrap::-webkit-scrollbar-track{background:var(--lgray);border-radius:0 0 12px 12px}
 .tbl-wrap::-webkit-scrollbar-thumb{background:#c3ccd6;border-radius:6px}
 .tbl-wrap::-webkit-scrollbar-thumb:hover{background:#a7b3c0}
-.tbl{width:100%;border-collapse:collapse;font-size:13px;min-width:760px}
-.tbl thead th{background:var(--head);color:var(--navy);font-weight:700;font-size:11px;letter-spacing:.03em;text-transform:uppercase;text-align:start;padding:11px 12px;border-bottom:2px solid var(--grid);white-space:nowrap}
-.tbl tbody td{padding:11px 12px;border-bottom:1px solid var(--grid);vertical-align:middle;color:var(--txt)}
+.tbl{width:100%;border-collapse:collapse;font-size:12px;min-width:680px}
+.tbl thead th{background:var(--head);color:var(--navy);font-weight:700;font-size:10px;letter-spacing:.02em;text-transform:uppercase;text-align:start;padding:8px 9px;border-bottom:2px solid var(--grid);white-space:nowrap}
+.tbl tbody td{padding:8px 9px;border-bottom:1px solid var(--grid);vertical-align:middle;color:var(--txt)}
 .tbl tbody tr:last-child td{border-bottom:none}
 .tbl tbody tr:hover{background:var(--lgray)}
 .tbl tbody tr.ov{background:#FBF0EF}
 .tbl tbody tr.ov:hover{background:#F7E6E4}
 .tbl tbody tr.warn{background:#FBF6EC}
-.tbl .c-id{font-weight:700;color:var(--med);white-space:nowrap;font-size:12px}
-.tbl .c-title{min-width:200px;max-width:340px}
-.tbl .c-title .ttl{font-weight:600;line-height:1.4}
-.tbl .c-title .nt{font-size:11.5px;color:var(--amber);margin-top:3px;line-height:1.4}
+.tbl .c-id{font-weight:700;color:var(--med);white-space:nowrap;font-size:11px}
+.tbl .c-title{min-width:160px;max-width:280px}
+.tbl .c-title .ttl{font-weight:600;line-height:1.35;font-size:12.5px}
+.tbl .c-title .nt{font-size:11px;color:var(--amber);margin-top:2px;line-height:1.35;max-width:280px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.pdf-lk{display:inline-block;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle}
 .tbl .st{display:inline-block;font-size:11px;font-weight:700;color:#fff;padding:3px 9px;border-radius:14px;white-space:nowrap}
 .tbl .dl{font-weight:700;white-space:nowrap}
 .tbl .c-act{white-space:nowrap;text-align:end}
-.tbl .ico{width:30px;height:30px;border:1px solid var(--grid);background:var(--white);border-radius:7px;cursor:pointer;font-size:14px;margin-inline-start:4px;transition:.15s;line-height:1}
+.tbl .ico{width:26px;height:26px;border:1px solid var(--grid);background:var(--white);border-radius:6px;cursor:pointer;font-size:12.5px;margin-inline-start:3px;transition:.15s;line-height:1}
 .tbl .ico:hover{background:var(--pale);border-color:var(--accent)}
 .tbl .ico.ok{color:var(--green);border-color:#BFD9CB}
 .tbl .ico.ok:hover{background:#EAF3EE}
@@ -431,7 +432,10 @@ tr.pendrow{background:rgba(251,239,214,.32)}
 .mc-title{font-size:14px;font-weight:600;color:var(--txt);line-height:1.4;margin-bottom:9px}
 .mc-meta{display:flex;flex-wrap:wrap;gap:5px 12px;font-size:12px;color:var(--steel);margin-bottom:9px}
 .mc-meta span{white-space:nowrap}
-.mc-note{background:#FFF8E8;border:1px solid #F0E3C0;border-radius:8px;padding:7px 10px;font-size:12px;color:var(--med);margin-bottom:9px;line-height:1.4}
+.mc-note{background:#FFF8E8;border:1px solid #F0E3C0;border-radius:8px;padding:7px 10px;font-size:12px;color:var(--med);margin-bottom:9px;line-height:1.4;overflow-wrap:anywhere;word-break:break-word;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.mc-title{overflow-wrap:anywhere;word-break:break-word}
+.mc-att{overflow:hidden}
+.mc-att .pdf-lk{max-width:140px}
 .mc-att{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:9px}
 .mc-acts{display:flex;flex-wrap:wrap;gap:7px}
 .mc-acts .btn.sm{flex:1;min-width:60px;justify-content:center;padding:8px 10px}
@@ -440,6 +444,11 @@ tr.pendrow{background:rgba(251,239,214,.32)}
   .manage-cols{grid-template-columns:1fr;gap:20px}
   .mcol-body{max-height:none}
 }
+/* ===== MANAGE VIEW TOGGLE ===== */
+.phead-row{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.view-toggle{display:inline-flex;background:var(--lgray);border:1px solid var(--grid);border-radius:10px;padding:3px;gap:2px}
+.view-toggle button{background:none;border:none;padding:8px 16px;font-family:inherit;font-size:13px;font-weight:700;color:var(--steel);cursor:pointer;border-radius:8px;transition:.15s;white-space:nowrap}
+.view-toggle button.on{background:var(--white);color:var(--navy);box-shadow:0 1px 4px rgba(20,49,76,.12)}
 </style></head>
 <body><div id="gate"></div><div class="app" id="app" style="display:none"></div><div class="toast" id="toast"></div>
 <script>
@@ -498,7 +507,7 @@ const T={
   requestedBy:"Requested by",namePh:"Your full name",projLoc:"Project / Location",svcType:"Service type",needs:"What do you need?",needsPh:"Describe the service you are requesting",
   priority:"Priority",dateReq:"Date requested",autoToday:"Set automatically to today",submit:"Submit request",select:"— select —",
   manageH1:"Manage Requests",manageP:"Accept incoming requests to start work, then assign and schedule.",opsEye:"Operations",
-  incoming:"Incoming requests",waiting:"waiting",accepted:"Accepted tasks",secIncoming:"Incoming requests",secAssigned:"Assigned to staff",secPending:"Pending your confirmation",noPending:"Nothing awaiting confirmation.",mPhone:"Mobile",allEye:"Reference",allH1:"All Requests",allP:"Complete reference of every request, all statuses.",total:"total",exportXl:"Export to Excel",allStatuses:"All statuses",allProjects:"All projects",allEmployees:"All team",search:"Search…",addTask:"Add task",
+  incoming:"Incoming requests",waiting:"waiting",accepted:"Accepted tasks",secIncoming:"Incoming requests",secAssigned:"Assigned to staff",secPending:"Pending your confirmation",noPending:"Nothing awaiting confirmation.",viewCards:"Board",viewOpen:"Open tasks",mPhone:"Mobile",allEye:"Reference",allH1:"All Requests",allP:"Complete reference of every request, all statuses.",total:"total",exportXl:"Export to Excel",allStatuses:"All statuses",allProjects:"All projects",allEmployees:"All team",search:"Search…",addTask:"Add task",
   accept:"Accept",decline:"Decline",noNew:"No new requests waiting.",noAccepted:"No accepted tasks yet.",noMatch:"Nothing here.",
   reqLabel:"Request",noteLabel:"Manager note",notesPh:"Note / instructions for the team member",
   mTaskId:"Task ID",mProj:"Project",mCat:"Category",mReqBy:"Requested by",mRecv:"Received",mAssign:"Assigned to",mStart:"Start",mDur:"Duration (days)",mStatus:"Status",mDue:"Due",mClosed:"Closed",mLeft:"Time left",
@@ -528,7 +537,7 @@ const T={
   requestedBy:"مقدّم الطلب",namePh:"الاسم الكامل",projLoc:"المشروع / الموقع",svcType:"نوع الخدمة",needs:"تفاصيل الطلب",needsPh:"يُرجى وصف الخدمة المطلوبة بوضوح",
   priority:"الأولوية",dateReq:"تاريخ الطلب",autoToday:"يُحدّد تلقائياً بتاريخ اليوم",submit:"إرسال الطلب",select:"— اختر —",
   manageH1:"إدارة الطلبات",manageP:"راجع الطلبات الواردة واقبلها لبدء العمل، ثم وزّعها وجدوِلها.",opsEye:"العمليات",
-  incoming:"الطلبات الواردة",waiting:"بالانتظار",accepted:"المهام المقبولة",secIncoming:"الطلبات الواردة",secAssigned:"الطلبات الموجّهة للفنيين",secPending:"بانتظار تأكيدك",noPending:"لا يوجد ما ينتظر التأكيد.",mPhone:"الجوال",allEye:"مرجع",allH1:"جميع الطلبات",allP:"سجلّ شامل بكل الطلبات بجميع الحالات.",total:"الإجمالي",exportXl:"تصدير لإكسل",allStatuses:"كل الحالات",allProjects:"كل المشاريع",allEmployees:"كل الفريق",search:"بحث…",addTask:"إضافة مهمة",
+  incoming:"الطلبات الواردة",waiting:"بالانتظار",accepted:"المهام المقبولة",secIncoming:"الطلبات الواردة",secAssigned:"الطلبات الموجّهة للفنيين",secPending:"بانتظار تأكيدك",noPending:"لا يوجد ما ينتظر التأكيد.",viewCards:"الأعمدة",viewOpen:"المهام المفتوحة",mPhone:"الجوال",allEye:"مرجع",allH1:"جميع الطلبات",allP:"سجلّ شامل بكل الطلبات بجميع الحالات.",total:"الإجمالي",exportXl:"تصدير لإكسل",allStatuses:"كل الحالات",allProjects:"كل المشاريع",allEmployees:"كل الفريق",search:"بحث…",addTask:"إضافة مهمة",
   accept:"قبول",decline:"رفض",noNew:"لا توجد طلبات جديدة قيد الانتظار.",noAccepted:"لا توجد مهام مقبولة حتى الآن.",noMatch:"لا توجد عناصر للعرض.",
   reqLabel:"الطلب",noteLabel:"ملاحظة المسؤول",notesPh:"ملاحظات أو تعليمات موجَّهة لعضو الفريق المكلَّف",
   mTaskId:"رقم المهمة",mProj:"المشروع",mCat:"الفئة",mReqBy:"مقدّم الطلب",mRecv:"تاريخ الطلب",mAssign:"المسؤول",mStart:"البدء",mDur:"المدة (أيام)",mStatus:"الحالة",mDue:"الاستحقاق",mClosed:"الإقفال",mLeft:"المتبقّي",
@@ -564,6 +573,7 @@ function F(){const r=state.route;if(!allFilters[r])allFilters[r]={status:'',proj
 let pageNum={manage:1,open:1,archive:1,all:1};
 let thanksInfo=null,modal=null,sideOpen=false;
 let trackQ='';            // track page search
+let manageView='cards';   // manage page view mode: 'cards' or 'open'
 let staffName='';         // selected staff member name
 let staffModal=null;      // staff task detail modal
 
@@ -729,7 +739,7 @@ function render(){
     return;
   }
   // admin: sidebar shell
-  const navk=["dashboard","manage","all","open","archive","settings"];
+  const navk=["dashboard","manage","all","archive","settings"];
   const rows=state.requests.map(calc);
   const pendingCount=rows.filter(isIncoming).length;
   let nav=navk.map(k=>{
@@ -969,7 +979,12 @@ function viewManage(){
   const col1=pending.length?pending.map(incCard).join(''):`<div class="mc-empty">${t('noNew')}</div>`;
   const col2=assigned.length?assigned.map(workCard).join(''):`<div class="mc-empty">${t('noAccepted')}</div>`;
   const col3=pendConfirm.length?pendConfirm.map(pendCard).join(''):`<div class="mc-empty">${t('noPending')}</div>`;
-  return `<div class="phead"><div class="eyebrow">${t('opsEye')}</div><h1>${t('manageH1')}</h1><p>${t('manageP')}</p></div>
+  const toggle=`<div class="view-toggle"><button class="${manageView==='cards'?'on':''}" onclick="manageView='cards';render()">▦ ${t('viewCards')}</button><button class="${manageView==='open'?'on':''}" onclick="manageView='open';render()">☰ ${t('viewOpen')}</button></div>`;
+  const head=`<div class="phead phead-row"><div><div class="eyebrow">${t('opsEye')}</div><h1>${t('manageH1')}</h1></div>${toggle}</div>`;
+  if(manageView==='open'){
+    return head+openTasksBlock();
+  }
+  return head+`
   <div class="manage-cols">
     <div class="mcol">
       <div class="mcol-head"><span class="sec-dot inbox"></span> ${t('secIncoming')} <span class="count-chip">${pending.length}</span></div>
@@ -1004,6 +1019,18 @@ function viewAll(){
 }
 
 /* ===== OPEN ===== */
+function openTasksBlock(){
+  let all=state.requests.map(calc);
+  let rows=byNumberDesc(applyFilters(all.filter(isOpen)));
+  const overdue=rows.filter(r=>r.effStatus==='Overdue').length;
+  const onhold=rows.filter(r=>r.effStatus==='On Hold').length;
+  const total=Math.max(1,Math.ceil(rows.length/PAGE_SIZE));
+  if(pageNum.open>total)pageNum.open=total;
+  const pageRows=rows.slice((pageNum.open-1)*PAGE_SIZE,(pageNum.open-1)*PAGE_SIZE+PAGE_SIZE);
+  const body=pageRows.length?taskTable(pageRows):`<div class="empty">${t('noMatch')}</div>`;
+  return `<div class="qcount"><div class="qchip"><span class="dot" style="background:var(--green)"></span> ${rows.length} ${t('kOpen')}</div><div class="qchip"><span class="dot" style="background:var(--red)"></span> ${overdue} ${t('kOver')}</div><div class="qchip"><span class="dot" style="background:var(--amber)"></span> ${onhold} On Hold</div></div>
+  ${filtBar('open')}${body}${pager('open',total)}`;
+}
 function viewOpen(){
   let all=state.requests.map(calc);
   let rows=byNumberDesc(applyFilters(all.filter(isOpen)));
