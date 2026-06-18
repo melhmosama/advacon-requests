@@ -35,7 +35,7 @@ html,body{overflow-x:hidden}
 /* ===== LAYOUT: sidebar + content ===== */
 .shell{display:flex;min-height:100vh}
 .sidebar{width:var(--sidew);background:var(--white);border-inline-end:1px solid var(--grid);box-shadow:var(--shadow);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;flex-shrink:0;z-index:40}
-.side-brand{padding:18px 16px;border-bottom:1px solid var(--grid);text-align:center}
+.side-brand{padding:18px 16px;border-bottom:1px solid var(--grid);text-align:left;direction:ltr}
 .side-brand img{height:38px;margin-bottom:6px}
 .side-brand .co{font-size:8px;letter-spacing:.05em;color:var(--grey);font-weight:700;line-height:1.3;display:block}
 .side-brand .sys{font-size:12.5px;font-weight:700;color:var(--navy);margin-top:3px;display:block}
@@ -223,8 +223,12 @@ textarea{resize:vertical;min-height:80px}
 .note-box{background:#FBF8F2;border:1px solid #E8D6BC;border-radius:8px;padding:9px 11px;font-size:13px;color:var(--txt);margin:8px 0;line-height:1.5}
 .note-box .ml{display:block;font-size:10px;letter-spacing:.03em;text-transform:uppercase;color:var(--amber);font-weight:700;margin-bottom:3px}
 /* ===== CLEAN TABLES ===== */
-.tbl-wrap{background:var(--white);border:1px solid var(--grid);border-radius:12px;box-shadow:var(--shadow);overflow:hidden;margin-bottom:6px}
-.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl-wrap{background:var(--white);border:1px solid var(--grid);border-radius:12px;box-shadow:var(--shadow);overflow-x:auto;overflow-y:hidden;margin-bottom:6px;-webkit-overflow-scrolling:touch}
+.tbl-wrap::-webkit-scrollbar{height:9px}
+.tbl-wrap::-webkit-scrollbar-track{background:var(--lgray);border-radius:0 0 12px 12px}
+.tbl-wrap::-webkit-scrollbar-thumb{background:#c3ccd6;border-radius:6px}
+.tbl-wrap::-webkit-scrollbar-thumb:hover{background:#a7b3c0}
+.tbl{width:100%;border-collapse:collapse;font-size:13px;min-width:760px}
 .tbl thead th{background:var(--head);color:var(--navy);font-weight:700;font-size:11px;letter-spacing:.03em;text-transform:uppercase;text-align:start;padding:11px 12px;border-bottom:2px solid var(--grid);white-space:nowrap}
 .tbl tbody td{padding:11px 12px;border-bottom:1px solid var(--grid);vertical-align:middle;color:var(--txt)}
 .tbl tbody tr:last-child td{border-bottom:none}
@@ -248,7 +252,6 @@ textarea{resize:vertical;min-height:80px}
 .tbl .lk{background:var(--lblue);color:var(--navy);border:none;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;cursor:pointer;margin-top:4px}
 .tbl .lk:hover{background:#CDDcEC}
 @media(max-width:860px){
-  .tbl-wrap{overflow-x:auto}
   .tbl{min-width:640px}
 }
 /* archive row details */
@@ -330,7 +333,7 @@ body[dir="rtl"] .gal-nav.next{transform:translateY(-50%) scaleX(-1)}
 .lang-float:hover{background:var(--lblue);color:var(--navy)}
 .emp-stage .emp-wrap{max-width:680px;width:100%;margin:0 auto;padding:0}
 .emp-card{padding:38px 38px 34px;border-radius:18px;box-shadow:0 24px 60px rgba(0,0,0,.35);border:none}
-.emp-logo{display:flex;justify-content:flex-start;margin-bottom:8px}
+.emp-logo{display:flex;justify-content:flex-start;margin-bottom:8px;direction:ltr}
 .emp-logo img{height:54px;width:auto;max-width:230px;object-fit:contain}
 .emp-card .req-head{text-align:center;margin-bottom:22px;padding-bottom:18px;border-bottom:1px solid var(--grid)}
 .emp-card .req-head h1{font-size:27px;color:var(--navy);margin-top:2px}
@@ -637,12 +640,12 @@ async function checkAdminFlag(){
 }
 async function tryAdmin(){const v=document.getElementById('pin').value.trim();if(v==='Ahmad1001'){setAdminFlag();state.role='admin';state.route='dashboard';if(!L)L='en';await saveLang();document.getElementById('gate').innerHTML='';document.getElementById('app').style.display='flex';applyDir();render();startRealtime();}else{const p=document.getElementById('pin');p.value='';p.placeholder=(L==='ar'?'رمز غير صحيح':'Incorrect code');p.style.borderColor='var(--red)';}}
 async function enterAdminDirect(){state.role='admin';state.route='dashboard';if(!L)L='en';document.getElementById('gate').innerHTML='';document.getElementById('app').style.display='flex';applyDir();render();startRealtime();}
-function enterPublic(role){state.role=role;if(!L)L='ar';document.getElementById('gate').innerHTML='';document.getElementById('app').style.display='block';applyDir();render();startPublicPolling();}
+function enterPublic(role){state.role=role;if(role==='staff')L='ar';else if(!L)L='ar';document.getElementById('gate').innerHTML='';document.getElementById('app').style.display='block';applyDir();render();startPublicPolling();}
 let _pubPoll=null;
 function startPublicPolling(){if(_pubPoll)return;_pubPoll=setInterval(async()=>{if(staffModal||staffModal2)return;if(document.activeElement&&['INPUT','SELECT','TEXTAREA'].includes(document.activeElement.tagName))return;const sb=await sbFetchAll();if(sb!==null){const sig=JSON.stringify(sb.map(r=>[r.id,r.status,r.accepted,r.archived,r.pendingConfirm,r.confirmedAt].join('|')));if(sig!==_pubSig){_pubSig=sig;state.requests=sb;render();}else if(state.role==='track'&&!trackQ){render();}}},20000);}
 let _pubSig='';
 function applyDir(){document.body.setAttribute('dir',L==='ar'?'rtl':'ltr');document.documentElement.lang=L;}
-async function toggleLang(){L=(L==='en'?'ar':'en');await saveLang();applyDir();render();}
+async function toggleLang(){L=(L==='en'?'ar':'en');if(state.role!=='staff')await saveLang();applyDir();render();}
 function exitToGate(){state.role='employee';clearAdminFlag();renderGate();document.getElementById('app').style.display='none';}
 function go(r){state.route=r;sideOpen=false;render();}
 function toggleSide(){sideOpen=!sideOpen;render();}
@@ -910,7 +913,7 @@ function viewManage(){
   let all=state.requests.map(calc);
   const pending=byNumberDesc(all.filter(isIncoming));
   // assigned to staff = accepted, active, NOT pending-confirm
-  const assigned=byNumberDesc(applyFilters(all.filter(r=>isAccepted(r) && !r.pendingConfirm)));
+  const assigned=byNumberDesc(applyFilters(all.filter(r=>isAccepted(r) && !r.pendingConfirm && r.effStatus!=='Complete' && r.effStatus!=='Cancelled' && r.status!=='Cancelled')));
   // pending confirmation = staff marked done, awaiting manager
   const pendConfirm=byNumberDesc(all.filter(r=>r.pendingConfirm && !r.archived));
   const total=Math.max(1,Math.ceil(assigned.length/PAGE_SIZE));
