@@ -527,6 +527,21 @@ tr.pendrow{background:rgba(251,239,214,.32)}
 .staff-add-block{border-top:1px dashed var(--grid);padding-top:16px;margin-top:6px}
 .staff-add-title{font-size:13px;font-weight:700;color:var(--navy);margin-bottom:10px}
 .staff-add input#add_staff_phone{flex:0 0 130px}
+/* ===== DASHBOARD: collapsible cards + donut ===== */
+.chart-card h3{cursor:pointer;user-select:none;display:flex;align-items:center;gap:8px;transition:.15s}
+.chart-card h3:hover{color:var(--accent)}
+.cc-caret{font-size:11px;color:var(--grey);transition:.2s}
+.chart-card.closed .cc-body{display:none}
+.cc-body{margin-top:4px}
+.donut-wrap{display:flex;align-items:center;gap:18px;flex-wrap:wrap;padding:6px 0}
+.donut{width:140px;height:140px;flex-shrink:0}
+.donut-tot{font-size:26px;font-weight:800;fill:var(--navy)}
+.donut-lab{font-size:10px;fill:var(--grey);text-transform:uppercase;letter-spacing:.05em;font-weight:700}
+.dlegend{flex:1;min-width:140px;display:flex;flex-direction:column;gap:7px}
+.dleg{display:flex;align-items:center;gap:8px;font-size:12.5px}
+.ddot{width:11px;height:11px;border-radius:3px;flex-shrink:0}
+.dlk{flex:1;color:var(--txt);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dlv{font-weight:800;color:var(--navy)}
 </style></head>
 <body><div id="gate"></div><div class="app" id="app" style="display:none"></div><div class="toast" id="toast"></div>
 <script>
@@ -1389,6 +1404,13 @@ function viewDashboard(){
   const tm={};active.forEach(r=>{if(r.received){const mo=r.received.slice(0,7);tm[mo]=(tm[mo]||0)+1;}});const tR=Object.entries(tm).sort((a,b)=>a[0]<b[0]?-1:1);
   const al=active.filter(r=>isOpen(r)&&typeof r.daysleft==='number'&&r.daysleft<=7).sort((a,b)=>a.daysleft-b.daysleft).slice(0,12);
   function bars(arr,cf,lf){const mx=Math.max(1,...arr.map(x=>x[1]));return arr.map(([k,v])=>`<div class="bar-row"><div class="blab">${esc(lf?lf(k):k)}</div><div class="bar-track"><div class="bar-fill" style="width:${v/mx*100}%;background:${cf?cf(k):'var(--accent)'}">${v}</div></div></div>`).join('');}
+  function donut(arr,cf,lf){
+    const tot=arr.reduce((a,[,v])=>a+v,0)||1;const R=54,C=2*Math.PI*R;let off=0;
+    const segs=arr.map(([k,v])=>{const frac=v/tot;const len=frac*C;const col=cf?cf(k):'var(--accent)';const s=`<circle r="${R}" cx="70" cy="70" fill="none" stroke="${col}" stroke-width="22" stroke-dasharray="${len} ${C-len}" stroke-dashoffset="${-off}" transform="rotate(-90 70 70)"></circle>`;off+=len;return s;}).join('');
+    const legend=arr.map(([k,v])=>`<div class="dleg"><span class="ddot" style="background:${cf?cf(k):'var(--accent)'}"></span><span class="dlk">${esc(lf?lf(k):k)}</span><span class="dlv">${v}</span></div>`).join('');
+    return `<div class="donut-wrap"><svg viewBox="0 0 140 140" class="donut">${segs}<text x="70" y="64" text-anchor="middle" class="donut-tot">${tot}</text><text x="70" y="84" text-anchor="middle" class="donut-lab">${esc(t('total'))}</text></svg><div class="dlegend">${legend}</div></div>`;
+  }
+  function chartCard(key,title,inner){const closed=W.closed&&W.closed[key];return `<div class="chart-card ${closed?'closed':''}"><h3 onclick="toggleChart('${key}')"><span class="cc-caret">${closed?'▸':'▾'}</span> ${title}</h3><div class="cc-body">${inner}</div></div>`;}
   let h=`<div class="phead"><div class="eyebrow">${t('dashEye')}</div><h1>${t('dashH1')}</h1><p>${t('dashP')}</p></div>`;
   if(W.kpis)h+=`<div class="kpis">
     <div class="kpi"><div class="bar"></div><div class="lab">${t('kTotal')}</div><div class="val">${total}</div></div>
@@ -1401,16 +1423,17 @@ function viewDashboard(){
     <div class="kpi"><div class="bar" style="background:var(--steel)"></div><div class="lab">${t('kAvgDays')}</div><div class="val">${avg}</div></div></div>`;
   if(W.alerts){const aH=al.length?al.map(r=>{const ov=r.daysleft<0;return `<div class="alert-row ${ov?'ov':''}"><span class="id" style="font-weight:700;color:var(--med);font-size:12px">${fmtID(r.id)}</span><span class="alert-title">${esc(r.title)}</span><span class="alert-meta">${esc(r.assignedTo||'—')}</span><span class="alert-days">${ov?(Math.abs(r.daysleft)+'d '+t('overdueBy')):(t('dueIn')+' '+r.daysleft+'d')}</span></div>`;}).join(''):`<div class="empty" style="padding:18px">${t('noAlerts')}</div>`;h+=`<div class="panel" style="margin-bottom:20px"><div class="alert-head"><span class="sec-dot inbox"></span> ${t('alerts')}</div>${aH}</div>`;}
   let c='';
-  if(W.byCat)c+=`<div class="chart-card"><h3>${t('byCat')}</h3>${cats.length?bars(cats,null,dispCat):`<div class="empty" style="padding:18px">${t('noData')}</div>`}</div>`;
-  if(W.bySt)c+=`<div class="chart-card"><h3>${t('bySt')}</h3>${sts.length?bars(sts,k=>STATUS_COLORS[k]):`<div class="empty" style="padding:18px">${t('noData')}</div>`}</div>`;
-  if(W.byPri)c+=`<div class="chart-card"><h3>${t('byPri')}</h3>${pris.length?bars(pris,k=>PR_COLOR[k]||'var(--accent)',dispPri):`<div class="empty" style="padding:18px">${t('noData')}</div>`}</div>`;
-  if(W.byProj)c+=`<div class="chart-card"><h3>${t('byProj')}</h3>${projR.length?bars(projR):`<div class="empty" style="padding:18px">${t('noData')}</div>`}</div>`;
-  if(W.wlTeam)c+=`<div class="chart-card"><h3>${t('wlTeam')}</h3>${wlR.length?bars(wlR,()=>'var(--med)'):`<div class="empty" style="padding:18px">${t('noData')}</div>`}</div>`;
-  if(W.overTime)c+=`<div class="chart-card"><h3>${t('overTime')}</h3>${tR.length?bars(tR,()=>'var(--steel)'):`<div class="empty" style="padding:18px">${t('noData')}</div>`}</div>`;
-  if(W.topReq)c+=`<div class="chart-card"><h3>${t('topReq')}</h3>${reqR.length?bars(reqR,()=>'var(--purple)'):`<div class="empty" style="padding:18px">${t('noData')}</div>`}</div>`;
+  if(W.byCat)c+=chartCard('byCat',t('byCat'),cats.length?bars(cats,null,dispCat):`<div class="empty" style="padding:18px">${t('noData')}</div>`);
+  if(W.bySt)c+=chartCard('bySt',t('bySt'),sts.length?donut(sts,k=>STATUS_COLORS[k]):`<div class="empty" style="padding:18px">${t('noData')}</div>`);
+  if(W.byPri)c+=chartCard('byPri',t('byPri'),pris.length?donut(pris,k=>PR_COLOR[k]||'var(--accent)',dispPri):`<div class="empty" style="padding:18px">${t('noData')}</div>`);
+  if(W.byProj)c+=chartCard('byProj',t('byProj'),projR.length?bars(projR):`<div class="empty" style="padding:18px">${t('noData')}</div>`);
+  if(W.wlTeam)c+=chartCard('wlTeam',t('wlTeam'),wlR.length?bars(wlR,()=>'var(--med)',null,true):`<div class="empty" style="padding:18px">${t('noData')}</div>`);
+  if(W.overTime)c+=chartCard('overTime',t('overTime'),tR.length?bars(tR,()=>'var(--steel)'):`<div class="empty" style="padding:18px">${t('noData')}</div>`);
+  if(W.topReq)c+=chartCard('topReq',t('topReq'),reqR.length?bars(reqR,()=>'var(--purple)'):`<div class="empty" style="padding:18px">${t('noData')}</div>`);
   if(c)h+=`<div class="charts">${c}</div>`;
   return h;
 }
+function toggleChart(key){if(!state.widgets.closed)state.widgets.closed={};state.widgets.closed[key]=!state.widgets.closed[key];saveWidgets&&saveWidgets();render();}
 
 /* ===== SETTINGS ===== */
 function viewSettings(){
