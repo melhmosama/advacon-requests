@@ -415,6 +415,31 @@ tr.pendrow{background:rgba(251,239,214,.32)}
 .stf-files{display:flex;flex-direction:column;gap:8px;margin-bottom:18px}
 .stf-file{display:flex;align-items:center;gap:8px;background:#FCF0EF;border:1px solid #ECD3D1;border-radius:10px;padding:12px 14px;color:#B0504A;font-weight:700;text-decoration:none;font-size:14px}
 .stf-file:hover{background:#F8E5E3}
+/* ===== MANAGE — 3 COLUMNS SIDE BY SIDE ===== */
+.manage-cols{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;align-items:start}
+.mcol{background:var(--lgray);border:1px solid var(--grid);border-radius:14px;padding:0;display:flex;flex-direction:column;min-width:0;overflow:hidden}
+.mcol-head{display:flex;align-items:center;gap:8px;padding:14px 16px;font-weight:800;color:var(--navy);font-size:14px;background:var(--white);border-bottom:2px solid var(--grid);position:sticky;top:0;z-index:2}
+.mcol-head .count-chip{margin-inline-start:auto}
+.mcol-body{padding:12px;display:flex;flex-direction:column;gap:10px;max-height:calc(100vh - 230px);overflow-y:auto}
+.mcol-body::-webkit-scrollbar{width:7px}
+.mcol-body::-webkit-scrollbar-thumb{background:#c3ccd6;border-radius:6px}
+.mcard{background:var(--white);border:1px solid var(--grid);border-radius:12px;padding:13px 14px;box-shadow:0 1px 4px rgba(20,49,76,.05)}
+.mcard.ov{border-color:#E8C9C7;background:#FFFBFB}
+.mcard.pendrow{background:#FFFCF5;border-color:#EDD9B0}
+.mc-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.mc-id{font-weight:800;color:var(--accent);font-size:13px;letter-spacing:.03em}
+.mc-title{font-size:14px;font-weight:600;color:var(--txt);line-height:1.4;margin-bottom:9px}
+.mc-meta{display:flex;flex-wrap:wrap;gap:5px 12px;font-size:12px;color:var(--steel);margin-bottom:9px}
+.mc-meta span{white-space:nowrap}
+.mc-note{background:#FFF8E8;border:1px solid #F0E3C0;border-radius:8px;padding:7px 10px;font-size:12px;color:var(--med);margin-bottom:9px;line-height:1.4}
+.mc-att{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:9px}
+.mc-acts{display:flex;flex-wrap:wrap;gap:7px}
+.mc-acts .btn.sm{flex:1;min-width:60px;justify-content:center;padding:8px 10px}
+.mc-empty{text-align:center;color:var(--grey);font-size:13px;padding:30px 10px}
+@media(max-width:980px){
+  .manage-cols{grid-template-columns:1fr;gap:20px}
+  .mcol-body{max-height:none}
+}
 </style></head>
 <body><div id="gate"></div><div class="app" id="app" style="display:none"></div><div class="toast" id="toast"></div>
 <script>
@@ -913,24 +938,52 @@ function viewManage(){
   let all=state.requests.map(calc);
   const pending=byNumberDesc(all.filter(isIncoming));
   // assigned to staff = accepted, active, NOT pending-confirm
-  const assigned=byNumberDesc(applyFilters(all.filter(r=>isAccepted(r) && !r.pendingConfirm && r.effStatus!=='Complete' && r.effStatus!=='Cancelled' && r.status!=='Cancelled')));
+  const assigned=byNumberDesc(all.filter(r=>isAccepted(r) && !r.pendingConfirm && r.effStatus!=='Complete' && r.effStatus!=='Cancelled' && r.status!=='Cancelled'));
   // pending confirmation = staff marked done, awaiting manager
   const pendConfirm=byNumberDesc(all.filter(r=>r.pendingConfirm && !r.archived));
-  const total=Math.max(1,Math.ceil(assigned.length/PAGE_SIZE));
-  if(pageNum.manage>total)pageNum.manage=total;
-  const pageRows=assigned.slice((pageNum.manage-1)*PAGE_SIZE,(pageNum.manage-1)*PAGE_SIZE+PAGE_SIZE);
-  // section 1: incoming requests
-  const inc=pending.length?`<div class="tbl-wrap"><table class="tbl in-tbl"><thead><tr><th>${t('mTaskId')}</th><th>${t('reqLabel')}</th><th>${t('mReqBy')}</th><th>${t('mPhone')}</th><th>${t('mProj')}</th><th>${t('mCat')}</th><th>${t('priority')}</th><th>${t('mRecv')}</th><th></th></tr></thead><tbody>`+pending.map(r=>{const imgIcon=(()=>{let a=[];try{a=JSON.parse(r.images||'[]');}catch(e){}return a.length?` <button class="lk" onclick="openGallery(${r.id})" title="${t('viewImages')}">🖼 ${a.length}</button>`:'';})();return `<tr><td class="c-id">${fmtID(r.id)}</td><td class="c-title"><div class="ttl">${esc(r.title)}</div>${imgIcon}${fileLinks(r)}</td><td>${esc(r.requestedBy)}</td><td dir="ltr">${esc(r.phone||'—')}</td><td>${esc(r.project)}</td><td>${esc(dispCat(r.category))}</td><td><span class="prio ${r.priority}">${esc(dispPri(r.priority))}</span></td><td>${esc(r.received)}</td><td class="c-act"><button class="ico ok" title="${t('accept')}" onclick="acceptReq(${r.id})">✓</button><button class="ico del" title="${t('decline')}" onclick="declineReq(${r.id})">✕</button></td></tr>`;}).join('')+`</tbody></table></div>`:`<div class="empty">${t('noNew')}</div>`;
-  // section 3: pending confirmation table
-  const pc=pendConfirm.length?`<div class="tbl-wrap"><table class="tbl"><thead><tr><th>${t('mTaskId')}</th><th>${t('reqLabel')}</th><th>${t('mAssign')}</th><th>${t('mProj')}</th><th>${t('priority')}</th><th></th></tr></thead><tbody>`+pendConfirm.map(r=>{const imgIcon=(()=>{let a=[];try{a=JSON.parse(r.images||'[]');}catch(e){}return a.length?` <button class="lk" onclick="openGallery(${r.id})" title="${t('viewImages')}">🖼 ${a.length}</button>`:'';})();return `<tr class="pendrow"><td class="c-id">${fmtID(r.id)}</td><td class="c-title"><div class="ttl">${esc(r.title)}</div>${r.notes?`<div class="nt">📝 ${esc(r.notes)}</div>`:''}${imgIcon}${fileLinks(r)}</td><td>${esc(r.assignedTo||'—')}</td><td>${esc(r.project)}</td><td><span class="prio ${r.priority}">${esc(dispPri(r.priority))}</span></td><td class="c-act"><button class="ico ok wide" title="${t('confirmDone')}" onclick="confirmStaffDone(${r.id})">✓ ${t('confirmDone')}</button><button class="ico wide" title="${t('returnTask')}" onclick="returnStaffTask(${r.id})">↩ ${t('returnTask')}</button></td></tr>`;}).join('')+`</tbody></table></div>`:`<div class="empty">${t('noPending')}</div>`;
-  const body=pageRows.length?taskTable(pageRows):`<div class="empty">${t('noAccepted')}</div>`;
+  // --- card builders (clean & readable in a narrow column) ---
+  const att=(r)=>{let img=0;try{img=JSON.parse(r.images||'[]').length;}catch(e){}const pdf=fileCount(r);let s='';if(img)s+=`<button class="lk" onclick="openGallery(${r.id})" title="${t('viewImages')}">🖼 ${img}</button>`;if(pdf)s+=fileLinks(r);return s?`<div class="mc-att">${s}</div>`:'';};
+  const incCard=(r)=>`<div class="mcard">
+    <div class="mc-top"><span class="mc-id">${fmtID(r.id)}</span><span class="prio ${r.priority}">${esc(dispPri(r.priority))}</span></div>
+    <div class="mc-title">${esc(r.title)}</div>
+    <div class="mc-meta"><span>👤 ${esc(r.requestedBy||'—')}</span><span dir="ltr">📱 ${esc(r.phone||'—')}</span><span>🏗 ${esc(r.project)}</span><span>🛠 ${esc(dispCat(r.category))}</span><span>📅 ${esc(r.received||'—')}</span></div>
+    ${att(r)}
+    <div class="mc-acts"><button class="btn sm green" onclick="acceptReq(${r.id})">✓ ${t('accept')}</button><button class="btn sm danger" onclick="declineReq(${r.id})">✕ ${t('decline')}</button></div>
+  </div>`;
+  const workCard=(r)=>{const stColor=STATUS_COLORS[r.effStatus]||'#6E7A87';const dl=dueCell(r);return `<div class="mcard ${r.effStatus==='Overdue'?'ov':''}">
+    <div class="mc-top"><span class="mc-id">${fmtID(r.id)}</span><span class="st" style="background:${stColor}">${esc(r.effStatus)}</span></div>
+    <div class="mc-title">${esc(r.title)}</div>
+    <div class="mc-meta"><span>🧑‍🔧 ${esc(r.assignedTo||'—')}</span><span>🏗 ${esc(r.project)}</span><span class="prio ${r.priority}">${esc(dispPri(r.priority))}</span><span>📆 ${esc(r.due||'—')}</span>${dl.txt?`<span style="color:${dl.col}">${dl.txt}</span>`:''}</span></div>
+    ${r.notes?`<div class="mc-note">📝 ${esc(r.notes)}</div>`:''}
+    ${att(r)}
+    <div class="mc-acts"><button class="btn sm sec" onclick="openEdit(${r.id})">✎ ${t('edit')}</button><button class="btn sm green" onclick="askClose(${r.id})">✓ ${t('closeTask')}</button><button class="btn sm danger" onclick="askDelete(${r.id})">🗑</button></div>
+  </div>`;};
+  const pendCard=(r)=>`<div class="mcard pendrow">
+    <div class="mc-top"><span class="mc-id">${fmtID(r.id)}</span><span class="pend-badge">⏳ ${t('pendBadge')}</span></div>
+    <div class="mc-title">${esc(r.title)}</div>
+    <div class="mc-meta"><span>🧑‍🔧 ${esc(r.assignedTo||'—')}</span><span>🏗 ${esc(r.project)}</span><span class="prio ${r.priority}">${esc(dispPri(r.priority))}</span></div>
+    ${r.notes?`<div class="mc-note">📝 ${esc(r.notes)}</div>`:''}
+    ${att(r)}
+    <div class="mc-acts"><button class="btn sm green" onclick="confirmStaffDone(${r.id})">✓ ${t('confirmDone')}</button><button class="btn sm sec" onclick="returnStaffTask(${r.id})">↩ ${t('returnTask')}</button></div>
+  </div>`;
+  const col1=pending.length?pending.map(incCard).join(''):`<div class="mc-empty">${t('noNew')}</div>`;
+  const col2=assigned.length?assigned.map(workCard).join(''):`<div class="mc-empty">${t('noAccepted')}</div>`;
+  const col3=pendConfirm.length?pendConfirm.map(pendCard).join(''):`<div class="mc-empty">${t('noPending')}</div>`;
   return `<div class="phead"><div class="eyebrow">${t('opsEye')}</div><h1>${t('manageH1')}</h1><p>${t('manageP')}</p></div>
-  <div class="section-head"><span class="sec-dot inbox"></span> ${t('secIncoming')} <span class="count-chip" style="margin-inline-start:8px">${pending.length}</span></div>
-  ${inc}
-  <div class="section-head" style="margin-top:24px"><span class="sec-dot work"></span> ${t('secAssigned')} <span class="count-chip" style="margin-inline-start:8px">${assigned.length}</span></div>
-  ${filtBar()}${body}${pager('manage',total)}
-  <div class="section-head" style="margin-top:24px"><span class="sec-dot pend"></span> ${t('secPending')} <span class="count-chip" style="margin-inline-start:8px">${pendConfirm.length}</span></div>
-  ${pc}`;
+  <div class="manage-cols">
+    <div class="mcol">
+      <div class="mcol-head"><span class="sec-dot inbox"></span> ${t('secIncoming')} <span class="count-chip">${pending.length}</span></div>
+      <div class="mcol-body">${col1}</div>
+    </div>
+    <div class="mcol">
+      <div class="mcol-head"><span class="sec-dot work"></span> ${t('secAssigned')} <span class="count-chip">${assigned.length}</span></div>
+      <div class="mcol-body">${col2}</div>
+    </div>
+    <div class="mcol">
+      <div class="mcol-head"><span class="sec-dot pend"></span> ${t('secPending')} <span class="count-chip">${pendConfirm.length}</span></div>
+      <div class="mcol-body">${col3}</div>
+    </div>
+  </div>`;
 }
 
 /* ===== ALL REQUESTS (manager reference, all statuses) ===== */
