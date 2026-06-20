@@ -624,6 +624,11 @@ tr.pendrow{background:rgba(251,239,214,.32)}
 .na-title{flex:1;color:var(--txt);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
 .na-assignee{color:var(--grey);flex-shrink:0}
 .na-reason{font-weight:800;flex-shrink:0;font-size:11.5px}
+/* mini inline download button + dashboard header row */
+.dd-headrow{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.dd-headl{display:flex;align-items:center;gap:8px}
+.btn-mini{display:inline-flex;align-items:center;gap:5px;background:var(--navy);color:#fff;border:none;border-radius:8px;padding:6px 12px;font-family:inherit;font-size:11.5px;font-weight:700;cursor:pointer;transition:.15s;white-space:nowrap}
+.btn-mini:hover{background:var(--accent);transform:translateY(-1px);box-shadow:0 3px 10px rgba(20,49,76,.18)}
 </style></head>
 <body><div id="gate"></div><div class="app" id="app" style="display:none"></div><div class="toast" id="toast"></div>
 <script>
@@ -1432,7 +1437,7 @@ function dailyDashboard(){
   const sets={
     requested:all.filter(r=>inRange(r.receivedAt||r.received,d,d)),
     pending:all.filter(r=>isIncoming(r)&&inRange(r.receivedAt||r.received,d,d)),
-    inprogress:all.filter(r=>r.effStatus==='In Progress'&&inRange(r.startedAt,d,d)),
+    inprogress:all.filter(r=>r.effStatus==='In Progress'&&inRange(r.startedAt||r.start,d,d)),
     closed:all.filter(r=>inRange(r.confirmedAt,d,d)),
     rejected:all.filter(r=>(r.effStatus==='Cancelled'||r.archived)&&inRange(r.rejectedAt,d,d))
   };
@@ -1459,7 +1464,7 @@ function dailyDashboard(){
       <th>${t('colReceived')}</th><th>${t('colAccepted')}</th><th>${t('colClosed')}</th><th>${t('colDuration')}</th><th></th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
   }
   return `<div class="panel panel-pad daily-dash">
-    <div class="reports-head"><span class="rep-ic">📊</span> <b>${t('ddTitle')}</b> <span class="dd-date">${d}</span> <span class="dd-live">● ${t('ddLive')}</span></div>
+    <div class="reports-head dd-headrow"><div class="dd-headl"><span class="rep-ic">📊</span> <b>${t('ddTitle')}</b> <span class="dd-date">${d}</span> <span class="dd-live">● ${t('ddLive')}</span></div><button class="btn-mini" onclick="generateReport('today')">⬇ ${t('repDaily')}</button></div>
     <div class="dd-grid">
       ${card('requested',sets.requested.length,t('ddRequested'),'var(--navy)')}
       ${card('pending',sets.pending.length,t('ddPending'),'var(--amber)')}
@@ -1532,7 +1537,7 @@ function viewReports(){
   const ddData=[
     {k:t('ddRequested'),v:A.filter(r=>inRange(r.receivedAt||r.received,d,d)).length,c:'var(--navy)'},
     {k:t('ddPending'),v:A.filter(r=>isIncoming(r)&&inRange(r.receivedAt||r.received,d,d)).length,c:'var(--amber)'},
-    {k:t('ddInProgress'),v:A.filter(r=>r.effStatus==='In Progress'&&inRange(r.startedAt,d,d)).length,c:'var(--med)'},
+    {k:t('ddInProgress'),v:A.filter(r=>r.effStatus==='In Progress'&&inRange(r.startedAt||r.start,d,d)).length,c:'var(--med)'},
     {k:t('ddClosed'),v:A.filter(r=>inRange(r.confirmedAt,d,d)).length,c:'var(--green)'},
     {k:t('ddRejected'),v:A.filter(r=>(r.effStatus==='Cancelled'||r.archived)&&inRange(r.rejectedAt,d,d)).length,c:'var(--red)'}
   ];
@@ -1565,7 +1570,7 @@ function reportDataDaily(from,to){
   const all=state.requests.map(calc);
   const requested=all.filter(r=>inRange(r.receivedAt||r.received,from,to));
   const pending=all.filter(r=>isIncoming(r)&&inRange(r.receivedAt||r.received,from,to));
-  const inprogress=all.filter(r=>r.effStatus==='In Progress'&&inRange(r.startedAt,from,to));
+  const inprogress=all.filter(r=>r.effStatus==='In Progress'&&inRange(r.startedAt||r.start,from,to));
   const closed=all.filter(r=>inRange(r.confirmedAt,from,to));
   const rejected=all.filter(r=>(r.effStatus==='Cancelled'||r.archived)&&inRange(r.rejectedAt,from,to));
   return {requested,pending,inprogress,closed,rejected};
