@@ -1481,6 +1481,37 @@ function dailyDashboard(){
   </div>`;
 }
 // clean SVG bar chart (labels + bars), brand colors
+function svgLine(data,opts){
+  opts=opts||{};const w=opts.w||680,h=opts.h||260,padL=40,padR=16,padT=20,padB=34;
+  if(!data.length)return `<div class="empty" style="padding:24px">${t('noData')}</div>`;
+  const max=Math.max(1,...data.map(d=>d.v));
+  const innerW=w-padL-padR, innerH=h-padT-padB;
+  const n=data.length;
+  const xFor=(i)=>padL+(n===1?innerW/2:innerW*i/(n-1));
+  const yFor=(v)=>padT+innerH-(innerH*v/max);
+  // grid + y labels (4 lines)
+  let grid='';
+  for(let i=0;i<=4;i++){const gy=padT+innerH-(innerH*i/4);grid+=`<line x1="${padL}" y1="${gy}" x2="${w-padR}" y2="${gy}" stroke="var(--grid)" stroke-width="1"/>`;grid+=`<text x="${padL-7}" y="${gy+3}" text-anchor="end" font-size="9" fill="var(--grey)">${Math.round(max*i/4)}</text>`;}
+  // area + line path
+  let linePts=data.map((d,i)=>`${xFor(i).toFixed(1)},${yFor(d.v).toFixed(1)}`).join(' ');
+  let areaPath=`M${xFor(0).toFixed(1)},${(padT+innerH).toFixed(1)} `+data.map((d,i)=>`L${xFor(i).toFixed(1)},${yFor(d.v).toFixed(1)}`).join(' ')+` L${xFor(n-1).toFixed(1)},${(padT+innerH).toFixed(1)} Z`;
+  // peak
+  const mx=Math.max(...data.map(d=>d.v));
+  let dots='',labels='';
+  data.forEach((d,i)=>{
+    const x=xFor(i),y=yFor(d.v);const peak=d.v===mx;
+    dots+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${peak?5:3.5}" fill="${peak?'var(--med)':'var(--accent)'}" stroke="#fff" stroke-width="1.5"><title>${esc(d.k)}: ${d.v}</title></circle>`;
+    dots+=`<text x="${x.toFixed(1)}" y="${(y-9).toFixed(1)}" text-anchor="middle" font-size="9.5" font-weight="700" fill="${peak?'var(--med)':'var(--navy)'}">${d.v}</text>`;
+    labels+=`<text x="${x.toFixed(1)}" y="${h-padB+16}" text-anchor="middle" font-size="9" fill="var(--steel)">${esc(d.k)}</text>`;
+  });
+  return `<svg viewBox="0 0 ${w} ${h}" class="rep-svg" preserveAspectRatio="xMidYMid meet">
+    <defs><linearGradient id="lgArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--accent)" stop-opacity="0.18"/><stop offset="100%" stop-color="var(--accent)" stop-opacity="0"/></linearGradient></defs>
+    ${grid}
+    <path d="${areaPath}" fill="url(#lgArea)"/>
+    <polyline points="${linePts}" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    ${dots}${labels}
+  </svg>`;
+}
 function svgBars(data,opts){
   opts=opts||{};const w=opts.w||640,h=opts.h||220,pad=34,bw=Math.max(1,data.length);
   if(!data.length)return `<div class="empty" style="padding:24px">${t('noData')}</div>`;
@@ -1503,10 +1534,8 @@ function monthlyTrend(){
   const byMonth={};
   all.forEach(r=>{const ts=r.receivedAt;let m;if(ts){try{m=new Date(new Date(ts).getTime()+3*3600000).toISOString().slice(0,7);}catch(e){}}if(!m)m=(r.received||'').slice(0,7);if(!m)return;byMonth[m]=(byMonth[m]||0)+1;});
   const months=Object.keys(byMonth).sort();
-  const data=months.map(m=>({k:m,v:byMonth[m],c:'var(--accent)'}));
-  // highlight peak month
-  if(data.length){const mx=Math.max(...data.map(d=>d.v));data.forEach(d=>{if(d.v===mx)d.c='var(--med)';});}
-  return svgBars(data,{w:680,h:240});
+  const data=months.map(m=>({k:m,v:byMonth[m]}));
+  return svgLine(data,{w:680,h:260});
 }
 function viewReports(){
   const all=byNumberDesc(state.requests.map(calc));
