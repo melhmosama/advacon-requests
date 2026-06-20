@@ -1539,8 +1539,20 @@ function monthlyTrend(){
   const all=state.requests.map(calc);
   const byMonth={};
   all.forEach(r=>{const ts=r.receivedAt;let m;if(ts){try{m=new Date(new Date(ts).getTime()+3*3600000).toISOString().slice(0,7);}catch(e){}}if(!m)m=(r.received||'').slice(0,7);if(!m)return;byMonth[m]=(byMonth[m]||0)+1;});
-  const months=Object.keys(byMonth).sort();
-  const data=months.map(m=>({k:String(Number(m.slice(5,7))),year:m.slice(0,4),v:byMonth[m]}));
+  const keys=Object.keys(byMonth).sort();
+  if(!keys.length)return svgLine([],{w:680,h:260,showYear:true});
+  // build a continuous month sequence from first month with data → current month
+  const start=keys[0];
+  const todayM=new Date(new Date(Date.now()+3*3600000)).toISOString().slice(0,7);
+  const end=todayM>keys[keys.length-1]?todayM:keys[keys.length-1];
+  let y=Number(start.slice(0,4)),mo=Number(start.slice(5,7));
+  const ey=Number(end.slice(0,4)),em=Number(end.slice(5,7));
+  const data=[];let guard=0;
+  while((y<ey||(y===ey&&mo<=em))&&guard<240){
+    const key=y+'-'+String(mo).padStart(2,'0');
+    data.push({k:String(mo),year:String(y),v:byMonth[key]||0});
+    mo++;if(mo>12){mo=1;y++;}guard++;
+  }
   return svgLine(data,{w:680,h:260,showYear:true});
 }
 function viewReports(){
