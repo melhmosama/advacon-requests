@@ -588,6 +588,16 @@ tr.pendrow{background:rgba(251,239,214,.32)}
 .dd-total{margin-top:14px}
 .dd-total .dd-card{background:var(--lblue);border-color:var(--accent)}
 .dd-total .dd-n{font-size:34px}
+/* reports redesigned blocks */
+.rep-block{margin-bottom:20px}
+.rep-bar{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding-bottom:14px;border-bottom:1px solid var(--grid)}
+.rep-bar-l{display:flex;align-items:center;gap:8px;font-size:15px;color:var(--navy)}
+.rep-bar-l .rep-ic{font-size:19px}
+.rep-bar-r{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.rep-bar-r input[type=date]{border:1px solid var(--grid);border-radius:8px;padding:7px 10px;font-family:inherit;font-size:13px;color:var(--txt)}
+.rep-chart{margin-top:16px;width:100%}
+.rep-svg{width:100%;height:auto;display:block}
+.rep-chart-title{margin-top:14px;font-size:12.5px;font-weight:700;color:var(--steel)}
 </style></head>
 <body><div id="gate"></div><div class="app" id="app" style="display:none"></div><div class="toast" id="toast"></div>
 <script>
@@ -688,7 +698,7 @@ const T={
   byCat:"Requests by Category",bySt:"Requests by Status",byPri:"Requests by Priority",byProj:"Requests by Project",wlTeam:"Workload by Team",overTime:"Requests Over Time",topReq:"Top Requesters",alerts:"Needs Attention",dueIn:"due in",overdueBy:"overdue",noAlerts:"Nothing overdue or due soon.",noData:"No data yet",
   setEye:"Configuration",setH1:"Settings",setP:"Manage dropdown lists and dashboard widgets. Changes apply everywhere.",
   chartsCfg:"Dashboard widgets",chartsCfgHint:"Choose what appears on the dashboard.",
-  sProjects:"Projects",sCats:"Service Types",sEmps:"Team Members",sStaff:"Staff Directory",stfCodeLab:"Code",stfLoginH1:"Request Execution & Tracking Portal – Team Members",stfLoginP:"Enter your 3-digit code to view your tasks.",stfLoginBtn:"Enter",stfBadCode:"Invalid code. Try again.",stfLogout:"Log out",stfWelcome:"Welcome,",staffNeedName:"Enter a name",codeExists:"Code already used",delStaffQ:"Delete this staff member?",editStaffTitle:"Edit staff member",confirmDeclineQ:"Decline this request?",confirmDoneQ:"Confirm this task as completed?",confirmReturnQ:"Return this task to the technician?",closeoutPhoto:"Close-out photo (optional)",closeoutHint:"Optionally attach a photo of the completed work.",recentDone:"Recently Completed",recentDoneHint:"stays here 8h then archived",returnAccept:"Return to Acceptance",confirmReturnAcceptQ:"Return this task to the acceptance list?",returnToTech:"Return to Technician",confirmReturnTechQ:"Return this task to the assigned technician?",completedAt:"Completed at",repTitle:"Reports",repDaily:"Daily Report",repDay:"Day",repEye:"Operations",ddTitle:"Today's Live Dashboard",ddLive:"Live",ddRequested:"Requested",ddAccepted:"Accepted",ddClosed:"Closed",ddRejected:"Rejected / Deleted",ddPending:"Pending Acceptance",ddHint:"Each count reflects an event that happened today (by its own time). Requested = submitted today, Pending = submitted today & still incoming.",repPageP:"Detailed task log and downloadable daily / period reports.",repDailyTitle:"Daily Report",repDailyHint:"Pick a day and download its PDF (summary) + Excel (full data). Counts events by their timestamp that day.",repPeriodTitle:"Period Report",repPeriodHint:"Requests received in the period, classified by current status (Completed / Rejected / In Progress / Other). Source: All Requests.",repTableTitle:"Detailed Task Log",colReceived:"Received",colAccepted:"Accepted",colClosed:"Closed",colDuration:"Completion",noDate:"No date",repFrom:"From",repTo:"To",repGen:"Generate Report",repHint:"Generates a PDF (summary) and Excel (full data) for the selected period — files download to your device.",repGenerating:"Generating report…",repPickDates:"Please select both dates",repExcelErr:"Excel export failed (check connection)",repPopup:"Please allow pop-ups to view the PDF",staffDirEye:"Team",staffDirH1:"Staff Directory",staffDirP:"Manage employees, login codes, and phone numbers shown on tracking.",staffAddNew:"Add new staff member",sPris:"Priorities",addNew:"Add new…",add:"Add",addNameAr:"Arabic name",addNameEn:"English name",
+  sProjects:"Projects",sCats:"Service Types",sEmps:"Team Members",sStaff:"Staff Directory",stfCodeLab:"Code",stfLoginH1:"Request Execution & Tracking Portal – Team Members",stfLoginP:"Enter your 3-digit code to view your tasks.",stfLoginBtn:"Enter",stfBadCode:"Invalid code. Try again.",stfLogout:"Log out",stfWelcome:"Welcome,",staffNeedName:"Enter a name",codeExists:"Code already used",delStaffQ:"Delete this staff member?",editStaffTitle:"Edit staff member",confirmDeclineQ:"Decline this request?",confirmDoneQ:"Confirm this task as completed?",confirmReturnQ:"Return this task to the technician?",closeoutPhoto:"Close-out photo (optional)",closeoutHint:"Optionally attach a photo of the completed work.",recentDone:"Recently Completed",recentDoneHint:"stays here 8h then archived",returnAccept:"Return to Acceptance",confirmReturnAcceptQ:"Return this task to the acceptance list?",returnToTech:"Return to Technician",confirmReturnTechQ:"Return this task to the assigned technician?",completedAt:"Completed at",repTitle:"Reports",repDaily:"Daily Report",repDay:"Day",repEye:"Operations",ddTitle:"Today's Live Dashboard",ddLive:"Live",ddRequested:"Requested",ddAccepted:"Accepted",ddClosed:"Closed",ddRejected:"Rejected / Deleted",ddPending:"Pending Acceptance",ddHint:"Each count reflects an event that happened today (by its own time). Requested = submitted today, Pending = submitted today & still incoming.",repPageP:"Detailed task log and downloadable daily / period reports.",repDailyTitle:"Daily Report",repDailyHint:"Pick a day and download its PDF (summary) + Excel (full data). Counts events by their timestamp that day.",repPeriodTitle:"Period Report",repPeriodHint:"Requests received in the period, classified by current status (Completed / Rejected / In Progress / Other). Source: All Requests.",repTableTitle:"Detailed Task Log",colReceived:"Received",colAccepted:"Accepted",colClosed:"Closed",colDuration:"Completion",noDate:"No date",repMonthly:"Requests per month — since project start (live)",repFrom:"From",repTo:"To",repGen:"Generate Report",repHint:"Generates a PDF (summary) and Excel (full data) for the selected period — files download to your device.",repGenerating:"Generating report…",repPickDates:"Please select both dates",repExcelErr:"Excel export failed (check connection)",repPopup:"Please allow pop-ups to view the PDF",staffDirEye:"Team",staffDirH1:"Staff Directory",staffDirP:"Manage employees, login codes, and phone numbers shown on tracking.",staffAddNew:"Add new staff member",sPris:"Priorities",addNew:"Add new…",add:"Add",addNameAr:"Arabic name",addNameEn:"English name",
   deptName:"Maintenance, Operation & Technical Support Department",thanksH:"Thank you",thanksMsg:"Your request has been received and will be followed up.",thanksContact:"For follow-up, contact the Maintenance, Operation & Technical Support Manager",thanksName:"Eng. Ahmad Masoud",thanksNew:"Submit another request",
   fillReq:"Please fill in the required fields",submitted:"Request submitted",acceptedToast:"start date set to today",declinedToast:"declined",exported:"requests exported",added:"Added",exists:"Already in the list",connErr:"Connection error",closedToast:"closed",deletedToast:"archived",restoredToast:"restored",
   exitAdmin:"Exit",enter:"Enter",page:"Page",of:"of",
@@ -718,7 +728,7 @@ const T={
   byCat:"الطلبات حسب الفئة",bySt:"الطلبات حسب الحالة",byPri:"الطلبات حسب الأولوية",byProj:"الطلبات حسب المشروع",wlTeam:"توزيع العمل على الفريق",overTime:"الطلبات عبر الزمن",topReq:"الأكثر طلباً",alerts:"يحتاج انتباه",dueIn:"تستحق خلال",overdueBy:"متأخرة",noAlerts:"لا شيء متأخر أو قريب الاستحقاق.",noData:"لا توجد بيانات بعد",
   setEye:"الإعدادات",setH1:"الإعدادات",setP:"إدارة القوائم وعناصر لوحة المعلومات. تُطبَّق التغييرات مباشرةً في جميع أنحاء النظام.",
   chartsCfg:"عناصر لوحة المعلومات",chartsCfgHint:"حدِّد العناصر التي تظهر على لوحة المعلومات.",
-  sProjects:"المشاريع",sCats:"أنواع الخدمات",sEmps:"أعضاء الفريق",sStaff:"دليل الموظفين",stfCodeLab:"الرمز",stfLoginH1:"بوابة تنفيذ ومتابعة الطلبات – أعضاء الفريق",stfLoginP:"أدخل رمزك المكوّن من 3 أرقام لعرض مهامك.",stfLoginBtn:"دخول",stfBadCode:"رمز غير صحيح. حاول مرة أخرى.",stfLogout:"تسجيل خروج",stfWelcome:"أهلاً وسهلاً،",staffNeedName:"أدخل الاسم",codeExists:"الرمز مستخدم مسبقاً",delStaffQ:"حذف هذا الموظف؟",editStaffTitle:"تعديل بيانات الموظف",confirmDeclineQ:"رفض هذا الطلب؟",confirmDoneQ:"تأكيد إنجاز هذه المهمة؟",confirmReturnQ:"إرجاع المهمة إلى الفني؟",closeoutPhoto:"صورة الإنجاز (اختياري)",closeoutHint:"يمكنك إرفاق صورة للعمل بعد إنجازه.",recentDone:"المهام المكتملة حديثاً",recentDoneHint:"تبقى هنا 8 ساعات ثم تُؤرشف",returnAccept:"إرجاع إلى قائمة القبول",confirmReturnAcceptQ:"إرجاع المهمة إلى قائمة القبول؟",returnToTech:"إرجاع للفني",confirmReturnTechQ:"إرجاع المهمة إلى الفني المسؤول؟",completedAt:"وقت الإنجاز",repTitle:"التقارير",repDaily:"تقرير يومي",repDay:"اليوم",repEye:"العمليات",ddTitle:"لوحة اليوم المباشرة",ddLive:"مباشر",ddRequested:"طُلبت",ddAccepted:"قُبلت",ddClosed:"أُغلقت",ddRejected:"رُفضت / حُذفت",ddPending:"بانتظار القبول",ddHint:"كل رقم يعكس حدثاً صار اليوم (بوقته). طُلبت = قُدّمت اليوم، بانتظار القبول = قُدّمت اليوم ولسا واردة.",repPageP:"سجل المهام التفصيلي وتقارير يومية/فترة قابلة للتحميل.",repDailyTitle:"التقرير اليومي",repDailyHint:"اختر يوماً ونزّل ملف PDF (ملخّص) + Excel (تفصيلي). يحسب الأحداث حسب توقيتها في ذلك اليوم.",repPeriodTitle:"تقرير الفترة",repPeriodHint:"الطلبات المستقبَلة خلال الفترة، مصنّفة حسب حالتها الحالية (مكتمل / مرفوض / تحت المعالجة / أخرى). المصدر: جميع الطلبات.",repTableTitle:"سجل المهام التفصيلي",colReceived:"الاستقبال",colAccepted:"القبول",colClosed:"الإغلاق",colDuration:"مدة الإنجاز",noDate:"بدون تاريخ",repFrom:"من",repTo:"إلى",repGen:"إنشاء التقرير",repHint:"يُنشئ ملف PDF (ملخّص) وملف Excel (بيانات كاملة) للفترة المختارة — تُحمّل الملفات على جهازك.",repGenerating:"جارٍ إنشاء التقرير…",repPickDates:"يُرجى اختيار التاريخين",repExcelErr:"فشل تصدير Excel (تحقق من الاتصال)",repPopup:"يُرجى السماح بالنوافذ المنبثقة لعرض الـPDF",staffDirEye:"الفريق",staffDirH1:"دليل الموظفين",staffDirP:"إدارة الموظفين ورموز الدخول وأرقام الجوال الظاهرة في صفحة التتبّع.",staffAddNew:"إضافة موظف جديد",sPris:"الأولويات",addNew:"إضافة جديد…",add:"إضافة",addNameAr:"الاسم بالعربي",addNameEn:"الاسم بالإنجليزي",
+  sProjects:"المشاريع",sCats:"أنواع الخدمات",sEmps:"أعضاء الفريق",sStaff:"دليل الموظفين",stfCodeLab:"الرمز",stfLoginH1:"بوابة تنفيذ ومتابعة الطلبات – أعضاء الفريق",stfLoginP:"أدخل رمزك المكوّن من 3 أرقام لعرض مهامك.",stfLoginBtn:"دخول",stfBadCode:"رمز غير صحيح. حاول مرة أخرى.",stfLogout:"تسجيل خروج",stfWelcome:"أهلاً وسهلاً،",staffNeedName:"أدخل الاسم",codeExists:"الرمز مستخدم مسبقاً",delStaffQ:"حذف هذا الموظف؟",editStaffTitle:"تعديل بيانات الموظف",confirmDeclineQ:"رفض هذا الطلب؟",confirmDoneQ:"تأكيد إنجاز هذه المهمة؟",confirmReturnQ:"إرجاع المهمة إلى الفني؟",closeoutPhoto:"صورة الإنجاز (اختياري)",closeoutHint:"يمكنك إرفاق صورة للعمل بعد إنجازه.",recentDone:"المهام المكتملة حديثاً",recentDoneHint:"تبقى هنا 8 ساعات ثم تُؤرشف",returnAccept:"إرجاع إلى قائمة القبول",confirmReturnAcceptQ:"إرجاع المهمة إلى قائمة القبول؟",returnToTech:"إرجاع للفني",confirmReturnTechQ:"إرجاع المهمة إلى الفني المسؤول؟",completedAt:"وقت الإنجاز",repTitle:"التقارير",repDaily:"تقرير يومي",repDay:"اليوم",repEye:"العمليات",ddTitle:"لوحة اليوم المباشرة",ddLive:"مباشر",ddRequested:"طُلبت",ddAccepted:"قُبلت",ddClosed:"أُغلقت",ddRejected:"رُفضت / حُذفت",ddPending:"بانتظار القبول",ddHint:"كل رقم يعكس حدثاً صار اليوم (بوقته). طُلبت = قُدّمت اليوم، بانتظار القبول = قُدّمت اليوم ولسا واردة.",repPageP:"سجل المهام التفصيلي وتقارير يومية/فترة قابلة للتحميل.",repDailyTitle:"التقرير اليومي",repDailyHint:"اختر يوماً ونزّل ملف PDF (ملخّص) + Excel (تفصيلي). يحسب الأحداث حسب توقيتها في ذلك اليوم.",repPeriodTitle:"تقرير الفترة",repPeriodHint:"الطلبات المستقبَلة خلال الفترة، مصنّفة حسب حالتها الحالية (مكتمل / مرفوض / تحت المعالجة / أخرى). المصدر: جميع الطلبات.",repTableTitle:"سجل المهام التفصيلي",colReceived:"الاستقبال",colAccepted:"القبول",colClosed:"الإغلاق",colDuration:"مدة الإنجاز",noDate:"بدون تاريخ",repMonthly:"عدد الطلبات شهرياً — منذ بداية المشروع (مباشر)",repFrom:"من",repTo:"إلى",repGen:"إنشاء التقرير",repHint:"يُنشئ ملف PDF (ملخّص) وملف Excel (بيانات كاملة) للفترة المختارة — تُحمّل الملفات على جهازك.",repGenerating:"جارٍ إنشاء التقرير…",repPickDates:"يُرجى اختيار التاريخين",repExcelErr:"فشل تصدير Excel (تحقق من الاتصال)",repPopup:"يُرجى السماح بالنوافذ المنبثقة لعرض الـPDF",staffDirEye:"الفريق",staffDirH1:"دليل الموظفين",staffDirP:"إدارة الموظفين ورموز الدخول وأرقام الجوال الظاهرة في صفحة التتبّع.",staffAddNew:"إضافة موظف جديد",sPris:"الأولويات",addNew:"إضافة جديد…",add:"إضافة",addNameAr:"الاسم بالعربي",addNameEn:"الاسم بالإنجليزي",
   deptName:"قسم الصيانة والتشغيل والدعم الفني",thanksH:"شكراً جزيلاً",thanksMsg:"تم استلام طلبكم بنجاح، وستتم متابعته من قِبل القسم المختص.",thanksContact:"للاستفسار أو المتابعة، يُرجى التواصل مع مدير قسم الصيانة والتشغيل والدعم الفني",thanksName:"م. أحمد مسعود",thanksNew:"تقديم طلب آخر",
   fillReq:"الرجاء تعبئة الحقول المطلوبة",submitted:"تم إرسال الطلب",acceptedToast:"تم القبول، وحُدِّد تاريخ البدء بتاريخ اليوم",declinedToast:"تم الرفض",exported:"طلب تم تصديره",added:"تمت الإضافة بنجاح",exists:"العنصر موجود بالفعل في القائمة",connErr:"تعذَّر الاتصال بالخادم",closedToast:"تم الإقفال",deletedToast:"تمت الأرشفة",restoredToast:"تم الإرجاع",
   exitAdmin:"خروج",enter:"دخول",page:"صفحة",of:"من",
@@ -846,7 +856,7 @@ async function checkAdminFlag(){
   return false;
 }
 async function tryAdmin(){const v=document.getElementById('pin').value.trim();if(v==='Ahmad1001'){setAdminFlag();state.role='admin';state.route='dashboard';if(!L)L='en';await saveLang();document.getElementById('gate').innerHTML='';document.getElementById('app').style.display='flex';applyDir();render();startRealtime();}else{const p=document.getElementById('pin');p.value='';p.placeholder=(L==='ar'?'رمز غير صحيح':'Incorrect code');p.style.borderColor='var(--red)';}}
-async function enterAdminDirect(){state.role='admin';state.route='dashboard';if(!L)L='en';document.getElementById('gate').innerHTML='';document.getElementById('app').style.display='flex';applyDir();render();startRealtime();}
+async function enterAdminDirect(){state.role='admin';const h=(location.hash||'').replace('#','');const valid=['dashboard','manage','reports','archive','staffdir','settings','all'];state.route=valid.includes(h)?h:'dashboard';if(!L)L='en';document.getElementById('gate').innerHTML='';document.getElementById('app').style.display='flex';applyDir();render();startRealtime();}
 function enterPublic(role){state.role=role;if(role==='staff')L='ar';else if(!L)L='ar';document.getElementById('gate').innerHTML='';document.getElementById('app').style.display='block';applyDir();render();startPublicPolling();}
 let _pubPoll=null;
 function startPublicPolling(){if(_pubPoll)return;_pubPoll=setInterval(async()=>{if(staffModal||staffModal2)return;if(document.activeElement&&['INPUT','SELECT','TEXTAREA'].includes(document.activeElement.tagName))return;const sb=await sbFetchAll();if(sb!==null){const sig=JSON.stringify(sb.map(r=>[r.id,r.status,r.accepted,r.archived,r.pendingConfirm,r.confirmedAt].join('|')));if(sig!==_pubSig){_pubSig=sig;state.requests=sb;render();}else if(state.role==='track'&&!trackQ){render();}}},20000);}
@@ -854,7 +864,7 @@ let _pubSig='';
 function applyDir(){document.body.setAttribute('dir',L==='ar'?'rtl':'ltr');document.documentElement.lang=L;}
 async function toggleLang(){L=(L==='en'?'ar':'en');if(state.role!=='staff')await saveLang();applyDir();render();}
 function exitToGate(){state.role='employee';clearAdminFlag();renderGate();document.getElementById('app').style.display='none';}
-function go(r){state.route=r;sideOpen=false;render();}
+function go(r){state.route=r;sideOpen=false;try{location.hash=r;}catch(e){}render();}
 function toggleSide(){sideOpen=!sideOpen;render();}
 
 /* realtime */
@@ -928,7 +938,7 @@ function render(){
     return;
   }
   // admin: sidebar shell
-  const navk=["dashboard","manage","all","reports","staffdir","archive","settings"];
+  const navk=["dashboard","manage","reports","archive","staffdir","settings","all"];
   const rows=state.requests.map(calc);
   const pendingCount=rows.filter(isIncoming).length;
   let nav=navk.map(k=>{
@@ -1385,10 +1395,37 @@ function dailyDashboard(){
     <p class="hint" style="margin-top:10px">${t('ddHint')}</p>
   </div>`;
 }
+// clean SVG bar chart (labels + bars), brand colors
+function svgBars(data,opts){
+  opts=opts||{};const w=opts.w||640,h=opts.h||220,pad=34,bw=Math.max(1,data.length);
+  if(!data.length)return `<div class="empty" style="padding:24px">${t('noData')}</div>`;
+  const max=Math.max(1,...data.map(d=>d.v));
+  const innerW=w-pad*2, innerH=h-pad*2, gap=innerW/data.length*0.25, barW=(innerW/data.length)-gap;
+  let bars='',labels='',grid='';
+  for(let i=0;i<4;i++){const gy=pad+innerH-(innerH*i/3);grid+=`<line x1="${pad}" y1="${gy}" x2="${w-pad}" y2="${gy}" stroke="var(--grid)" stroke-width="1"/>`;grid+=`<text x="${pad-6}" y="${gy+3}" text-anchor="end" font-size="9" fill="var(--grey)">${Math.round(max*i/3)}</text>`;}
+  data.forEach((d,i)=>{
+    const x=pad+i*(barW+gap)+gap/2;
+    const bh=innerH*(d.v/max);const y=pad+innerH-bh;
+    const col=d.c||'var(--accent)';
+    bars+=`<rect x="${x}" y="${y}" width="${barW}" height="${bh}" rx="4" fill="${col}"><title>${esc(d.k)}: ${d.v}</title></rect>`;
+    if(d.v>0)bars+=`<text x="${x+barW/2}" y="${y-5}" text-anchor="middle" font-size="10" font-weight="700" fill="var(--navy)">${d.v}</text>`;
+    labels+=`<text x="${x+barW/2}" y="${h-pad+15}" text-anchor="middle" font-size="9.5" fill="var(--steel)">${esc(d.k)}</text>`;
+  });
+  return `<svg viewBox="0 0 ${w} ${h}" class="rep-svg" preserveAspectRatio="xMidYMid meet">${grid}${bars}${labels}</svg>`;
+}
+function monthlyTrend(){
+  const all=state.requests.map(calc);
+  const byMonth={};
+  all.forEach(r=>{const ts=r.receivedAt;let m;if(ts){try{m=new Date(new Date(ts).getTime()+3*3600000).toISOString().slice(0,7);}catch(e){}}if(!m)m=(r.received||'').slice(0,7);if(!m)return;byMonth[m]=(byMonth[m]||0)+1;});
+  const months=Object.keys(byMonth).sort();
+  const data=months.map(m=>({k:m,v:byMonth[m],c:'var(--accent)'}));
+  // highlight peak month
+  if(data.length){const mx=Math.max(...data.map(d=>d.v));data.forEach(d=>{if(d.v===mx)d.c='var(--med)';});}
+  return svgBars(data,{w:680,h:240});
+}
 function viewReports(){
   const all=byNumberDesc(state.requests.map(calc));
   const dayOf=(r)=>{const ts=r.receivedAt;if(ts){try{return new Date(new Date(ts).getTime()+3*3600000).toISOString().slice(0,10);}catch(e){}}return r.received||'—';};
-  // group by day
   const groups={};const order=[];
   all.forEach(r=>{const d=dayOf(r);if(!groups[d]){groups[d]=[];order.push(d);}groups[d].push(r);});
   order.sort((a,b)=>{if(a==='—')return 1;if(b==='—')return -1;return b.localeCompare(a);});
@@ -1414,25 +1451,32 @@ function viewReports(){
     <th>${t('colReceived')}</th><th>${t('colAccepted')}</th><th>${t('colClosed')}</th><th>${t('colDuration')}</th>
   </tr></thead><tbody>${dayBlocks}</tbody></table></div>`:`<div class="empty">${t('noMatch')}</div>`;
 
+  // daily mini chart (today's 5 metrics)
+  const d=today();const A=state.requests.map(calc);
+  const ddData=[
+    {k:t('ddRequested'),v:A.filter(r=>inRange(r.receivedAt,d,d)).length,c:'var(--navy)'},
+    {k:t('ddPending'),v:A.filter(r=>isIncoming(r)&&inRange(r.receivedAt,d,d)).length,c:'var(--amber)'},
+    {k:t('ddAccepted'),v:A.filter(r=>inRange(r.startedAt,d,d)).length,c:'var(--med)'},
+    {k:t('ddClosed'),v:A.filter(r=>inRange(r.confirmedAt,d,d)).length,c:'var(--green)'},
+    {k:t('ddRejected'),v:A.filter(r=>(r.effStatus==='Cancelled'||r.archived)&&inRange(r.rejectedAt,d,d)).length,c:'var(--red)'}
+  ];
+
   return `<div class="phead"><div class="eyebrow">${t('repEye')}</div><h1>${t('repTitle')}</h1><p>${t('repPageP')}</p></div>
   ${dailyDashboard()}
-  <div class="panel panel-pad reports-card" style="margin-bottom:20px">
-    <div class="reports-head"><span class="rep-ic">📅</span> <b>${t('repDailyTitle')}</b></div>
-    <div class="reports-row">
-      <div class="rep-day"><span class="rep-lab">${t('repDay')}</span><input type="date" id="rep_day" value="${today()}"/><button class="btn rep-daily" onclick="generateReport('day')">⬇ ${t('repDaily')}</button></div>
+  <div class="panel panel-pad rep-block">
+    <div class="rep-bar">
+      <div class="rep-bar-l"><span class="rep-ic">📅</span> <b>${t('repDailyTitle')}</b></div>
+      <div class="rep-bar-r"><span class="rep-lab">${t('repDay')}</span><input type="date" id="rep_day" value="${today()}"/><button class="btn rep-daily" onclick="generateReport('day')">⬇ ${t('repDaily')}</button></div>
     </div>
-    <p class="hint" style="margin-top:10px">${t('repDailyHint')}</p>
+    <div class="rep-chart">${svgBars(ddData,{w:680,h:220})}</div>
   </div>
-  <div class="panel panel-pad reports-card" style="margin-bottom:20px">
-    <div class="reports-head"><span class="rep-ic">📈</span> <b>${t('repPeriodTitle')}</b></div>
-    <div class="reports-row">
-      <div class="rep-range">
-        <span class="rep-lab">${t('repFrom')}</span><input type="date" id="rep_from" value="${today()}"/>
-        <span class="rep-lab">${t('repTo')}</span><input type="date" id="rep_to" value="${today()}"/>
-        <button class="btn sec" onclick="generateReport('range')">⬇ ${t('repGen')}</button>
-      </div>
+  <div class="panel panel-pad rep-block">
+    <div class="rep-bar">
+      <div class="rep-bar-l"><span class="rep-ic">📈</span> <b>${t('repPeriodTitle')}</b></div>
+      <div class="rep-bar-r"><span class="rep-lab">${t('repFrom')}</span><input type="date" id="rep_from" value="${today()}"/><span class="rep-lab">${t('repTo')}</span><input type="date" id="rep_to" value="${today()}"/><button class="btn sec" onclick="generateReport('range')">⬇ ${t('repGen')}</button></div>
     </div>
-    <p class="hint" style="margin-top:10px">${t('repPeriodHint')}</p>
+    <div class="rep-chart-title">${t('repMonthly')}</div>
+    <div class="rep-chart">${monthlyTrend()}</div>
   </div>
   <div class="panel panel-pad">
     <div class="reports-head"><span class="rep-ic">📋</span> <b>${t('repTableTitle')}</b> <span class="count-chip" style="margin-inline-start:8px">${all.length}</span></div>
@@ -1444,10 +1488,11 @@ function viewReports(){
 function reportDataDaily(from,to){
   const all=state.requests.map(calc);
   const requested=all.filter(r=>inRange(r.receivedAt,from,to));
+  const pending=all.filter(r=>isIncoming(r)&&inRange(r.receivedAt,from,to));
   const accepted=all.filter(r=>inRange(r.startedAt,from,to));
   const closed=all.filter(r=>inRange(r.confirmedAt,from,to));
   const rejected=all.filter(r=>(r.effStatus==='Cancelled'||r.archived)&&inRange(r.rejectedAt,from,to));
-  return {requested,accepted,closed,rejected};
+  return {requested,pending,accepted,closed,rejected};
 }
 // Period report = requests RECEIVED in the period, classified by CURRENT status
 function reportDataPeriod(from,to){
@@ -1465,6 +1510,8 @@ async function generateReport(kind){
   else if(kind==='day'){const d=document.getElementById('rep_day').value;if(!d){toast(t('repPickDates'));return;}from=to=d;label=d;}
   else{from=document.getElementById('rep_from').value;to=document.getElementById('rep_to').value;if(!from||!to){toast(t('repPickDates'));return;}if(from>to){const x=from;from=to;to=x;}label=from===to?from:(from+' \u2192 '+to);}
   toast(t('repGenerating'));
+  // pull the latest data from the database so the report is fully up to date
+  try{const sb=await sbFetchAll();if(sb!==null){state.requests=sb;render();}}catch(e){}
   if(kind==='range'){
     const data=reportDataPeriod(from,to);
     buildPeriodPDF(data,label);
@@ -1485,9 +1532,10 @@ function reportRows(arr){
 }
 async function buildDailyExcel(data,label){
   const XLSX=await loadSheetJS();const wb=XLSX.utils.book_new();
-  const summary=[{'Metric':'Report Day','Value':label},{'Metric':'Requested','Value':data.requested.length},{'Metric':'Accepted','Value':data.accepted.length},{'Metric':'Closed','Value':data.closed.length},{'Metric':'Rejected/Deleted','Value':data.rejected.length}];
+  const summary=[{'Metric':'Report Day','Value':label},{'Metric':'Requested','Value':data.requested.length},{'Metric':'Pending Acceptance','Value':data.pending.length},{'Metric':'Accepted','Value':data.accepted.length},{'Metric':'Closed','Value':data.closed.length},{'Metric':'Rejected/Deleted','Value':data.rejected.length}];
   XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(summary),'Summary');
   XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(reportRows(data.requested).length?reportRows(data.requested):[{}]),'Requested');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(reportRows(data.pending).length?reportRows(data.pending):[{}]),'Pending');
   XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(reportRows(data.accepted).length?reportRows(data.accepted):[{}]),'Accepted');
   XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(reportRows(data.closed).length?reportRows(data.closed):[{}]),'Closed');
   XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(reportRows(data.rejected).length?reportRows(data.rejected):[{}]),'Rejected-Deleted');
@@ -1537,8 +1585,8 @@ function repShell(titleTxt,label,kpisHtml,bodyHtml){
 function openReportWindow(html){const w=window.open('','_blank');if(!w){toast(t('repPopup'));return;}w.document.write(html);w.document.close();}
 function kpi(n,l){return `<div class="rkpi"><div class="n">${n}</div><div class="l">${l}</div></div>`;}
 function buildDailyPDF(data,label){
-  const kpis=kpi(data.requested.length,'Requested')+kpi(data.accepted.length,'Accepted')+kpi(data.closed.length,'Closed')+kpi(data.rejected.length,'Rejected / Deleted');
-  const body=`<h2>Requested (${data.requested.length})</h2>${repTable(data.requested)}<h2>Accepted (${data.accepted.length})</h2>${repTable(data.accepted)}<h2>Closed (${data.closed.length})</h2>${repTable(data.closed)}<h2>Rejected / Deleted (${data.rejected.length})</h2>${repTable(data.rejected)}`;
+  const kpis=kpi(data.requested.length,'Requested')+kpi(data.pending.length,'Pending Acceptance')+kpi(data.accepted.length,'Accepted')+kpi(data.closed.length,'Closed')+kpi(data.rejected.length,'Rejected / Deleted');
+  const body=`<h2>Requested (${data.requested.length})</h2>${repTable(data.requested)}<h2>Pending Acceptance (${data.pending.length})</h2>${repTable(data.pending)}<h2>Accepted (${data.accepted.length})</h2>${repTable(data.accepted)}<h2>Closed (${data.closed.length})</h2>${repTable(data.closed)}<h2>Rejected / Deleted (${data.rejected.length})</h2>${repTable(data.rejected)}`;
   openReportWindow(repShell('Daily Operations Report',label,kpis,body));
 }
 function buildPeriodPDF(data,label){
