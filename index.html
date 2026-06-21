@@ -693,15 +693,19 @@ tr.pendrow{background:rgba(251,239,214,.32)}
 /* period categories */
 /* period categories — refined, breathable layout */
 .period-bar-info{justify-content:flex-start;background:linear-gradient(180deg,var(--lblue),#fff);border-color:var(--accent);padding:13px 18px;margin-bottom:22px}
-.pt-cats{display:flex;flex-direction:column;gap:22px;margin-bottom:30px}
-.pt-cat{border:1px solid var(--grid);border-radius:16px;overflow:hidden;background:#fff;box-shadow:0 2px 10px rgba(20,49,76,.05);transition:box-shadow .18s}
-.pt-cat:hover{box-shadow:0 4px 18px rgba(20,49,76,.09)}
-.pt-cat-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;background:#fff;border-bottom:1px solid var(--grid)}
-.pt-cat-head.closed{border-bottom:none}
-.pt-cat-left{display:flex;align-items:center;gap:11px;cursor:pointer;color:var(--navy);font-size:15.5px;font-weight:800;flex:1;letter-spacing:-.01em}
-.pt-cat-left b{font-weight:800}
-.pt-cat-caret{color:var(--accent);font-size:11px;width:16px;display:inline-flex;justify-content:center;transition:transform .15s}
-.pt-cat-head .count-chip{background:var(--lblue);color:var(--accent);font-weight:700}
+/* grid of categories: 4 across, expanded one spans the full row */
+.pt-cats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:30px;align-items:start}
+.pt-cat{border:1px solid var(--grid);border-radius:14px;overflow:hidden;background:#fff;box-shadow:0 2px 8px rgba(20,49,76,.05);transition:box-shadow .18s,transform .12s}
+.pt-cat:hover{box-shadow:0 5px 18px rgba(20,49,76,.10);transform:translateY(-1px)}
+.pt-cat-open{grid-column:1/-1}
+.pt-cat-open:hover{transform:none}
+.pt-cat-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px;background:linear-gradient(135deg,var(--navy),var(--accent));border-bottom:none}
+.pt-cat-left{display:flex;align-items:center;gap:9px;cursor:pointer;color:#fff;font-size:14px;font-weight:800;flex:1;letter-spacing:-.01em;min-width:0}
+.pt-cat-left b{font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pt-cat-caret{color:rgba(255,255,255,.85);font-size:10px;width:14px;display:inline-flex;justify-content:center;flex-shrink:0}
+.pt-cat-head .count-chip{background:rgba(255,255,255,.22);color:#fff;font-weight:700;flex-shrink:0}
+.pt-cat-head .btn-mini{background:rgba(255,255,255,.16);color:#fff;border:1px solid rgba(255,255,255,.3)}
+.pt-cat-head .btn-mini:hover{background:rgba(255,255,255,.28)}
 .pt-cat .tbl-wrap{padding:6px 8px 10px}
 .pt-cat .pt-tbl{border:none}
 .pt-cat .pt-tbl thead th{background:transparent;color:var(--grey);border-bottom:1.5px solid var(--grid)}
@@ -714,6 +718,10 @@ tr.pendrow{background:rgba(251,239,214,.32)}
 .pt-master-head:hover{background:var(--lgray)}
 .pt-master-head .count-chip{background:var(--grid);color:var(--steel)}
 .pt-master .tbl-wrap{padding:0 10px 12px}
+
+@media(max-width:1100px){.pt-cats{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:820px){.pt-cats{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:520px){.pt-cats{grid-template-columns:1fr}}
 </style></head>
 <body><div id="gate"></div><div class="app" id="app" style="display:none"></div><div class="toast" id="toast"></div>
 <script>
@@ -880,6 +888,7 @@ let periodForm=null;
 let pendingGenPlan=null;
 let ptOpen=null;
 let ptCatClosed={};
+let ptOpenCat=null;
 let ptMasterOpen=false;
 let formDirty=false;
 function markDirty(){formDirty=true;}
@@ -1412,22 +1421,23 @@ function viewPeriodTasks(){
     return main+(open?linkedRowsFor(tpl):'');
   };
 
-  // ===== category sections (collapsible) =====
+  // ===== category sections: compact grid by default; click opens full-width =====
   const sections=order.map(cat=>{
-    const collapsed=ptCatClosed[cat]===true;
+    const expanded=ptOpenCat===cat;
     const tpls=groups[cat];
     const catTotal=tpls.length;
-    const head=`<div class="pt-cat-head ${collapsed?'closed':''}">
-      <div class="pt-cat-left" onclick="ptCatToggle('${esc(cat).replace(/'/g,"\\'")}')"><span class="pt-cat-caret">${collapsed?'▸':'▾'}</span> <b>${esc(cat)}</b> <span class="count-chip">${catTotal}</span></div>
-      <button class="btn-mini" onclick="openPeriodForm(null,'${esc(cat).replace(/'/g,"\\'")}')">+ ${t('addPeriod')}</button>
+    const safeCat=esc(cat).replace(/'/g,"\\'");
+    const head=`<div class="pt-cat-head ${expanded?'open':''}">
+      <div class="pt-cat-left" onclick="ptCatOpen('${safeCat}')"><span class="pt-cat-caret">${expanded?'▾':'▸'}</span> <b>${esc(cat)}</b> <span class="count-chip">${catTotal}</span></div>
+      <button class="btn-mini" onclick="event.stopPropagation();openPeriodForm(null,'${safeCat}')">+ ${t('addPeriod')}</button>
     </div>`;
-    if(collapsed)return `<div class="pt-cat">${head}</div>`;
-    if(!tpls.length){return `<div class="pt-cat">${head}<div class="pt-cat-empty">${t('catEmpty')}</div></div>`;}
+    if(!expanded)return `<div class="pt-cat">${head}</div>`;
+    if(!tpls.length){return `<div class="pt-cat pt-cat-open">${head}<div class="pt-cat-empty">${t('catEmpty')}</div></div>`;}
     const body=`<div class="tbl-wrap"><table class="tbl pt-tbl"><thead><tr>
       <th></th><th>${t('ptTask')}</th><th>${t('ptEvery')}</th><th>${t('fStaff')}</th><th>${t('mProj')}</th>
       <th>${t('genCount')}</th><th>${t('lastGen')}</th><th>${t('mStatus')}</th><th></th>
     </tr></thead><tbody>${tpls.map(tplRow).join('')}</tbody></table></div>`;
-    return `<div class="pt-cat">${head}${body}</div>`;
+    return `<div class="pt-cat pt-cat-open">${head}${body}</div>`;
   }).join('');
 
   // ===== full master table (all templates, with Category column) =====
@@ -1456,7 +1466,7 @@ function viewPeriodTasks(){
   ${master}`;
 }
 function ptToggle(id){ptOpen=ptOpen===String(id)?null:String(id);render();}
-function ptCatToggle(cat){ptCatClosed[cat]=!ptCatClosed[cat];render();}
+function ptCatOpen(cat){ptOpenCat=ptOpenCat===cat?null:cat;ptOpen=null;render();}
 function openPeriodForm(id,presetCat){
   const tpl=id?(state.recurring||[]).find(x=>String(x.id)===String(id)):null;
   periodForm=tpl?Object.assign({},tpl):{title:'',project:'',category:(presetCat&&presetCat!==t('noCategory'))?presetCat:'',priority:'Medium',assignedTo:'',notes:'',everyN:1,everyUnit:'day',startAt:new Date().toISOString().slice(0,16),active:true,includeFriday:true};
