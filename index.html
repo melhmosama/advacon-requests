@@ -1261,18 +1261,29 @@ function addInterval(date,n,unit){
 async function runRecurringGenerator(){
   if(!state.recurring||!state.recurring.length)return;
   const now=Date.now();
-  // compute what WOULD be generated (no writes yet)
+  const all=state.requests.map(calc);
+  // helper: key a date by recurrence granularity (hour/day/week/month)
+  const keyOf=(iso,unit)=>{const dt=new Date(new Date(iso).getTime()+3*3600000);const s=dt.toISOString();
+    if(unit==='hour')return s.slice(0,13);          // YYYY-MM-DDTHH
+    if(unit==='month')return s.slice(0,7);          // YYYY-MM
+    return s.slice(0,10);                            // YYYY-MM-DD (day & week)
+  };
   const plan=[];
   for(const tpl of state.recurring){
     if(!tpl.active||!tpl.startAt)continue;
-    let next=tpl.lastRunAt?addInterval(tpl.lastRunAt,tpl.everyN,tpl.everyUnit):new Date(tpl.startAt);
-    let guard=0;const occs=[];
-    while(next.getTime()<=now&&guard<500){occs.push(next.toISOString());next=addInterval(next,tpl.everyN,tpl.everyUnit);guard++;}
+    // set of occurrence-keys that ALREADY have a generated task for this template
+    const existing=new Set(all.filter(r=>String(r.recurringId)===String(tpl.id)&&r.receivedAt).map(r=>keyOf(r.receivedAt,tpl.everyUnit)));
+    // walk every expected occurrence from startAt → now, collect the GAPS
+    let next=new Date(tpl.startAt);let guard=0;const occs=[];
+    while(next.getTime()<=now&&guard<1000){
+      const k=keyOf(next.toISOString(),tpl.everyUnit);
+      if(!existing.has(k)){existing.add(k);occs.push(next.toISOString());}
+      next=addInterval(next,tpl.everyN,tpl.everyUnit);guard++;
+    }
     if(occs.length)plan.push({tplId:tpl.id,title:tpl.title,occs});
   }
   const total=plan.reduce((a,p)=>a+p.occs.length,0);
   if(!total)return;
-  // ask for confirmation, always
   pendingGenPlan=plan;
   const lines=plan.map(p=>`• ${esc(p.title)} — ${p.occs.length}`).join('<br>');
   modal={type:'genconfirm',total,lines};renderModal();
@@ -1293,9 +1304,9 @@ async function confirmRunGenerator(){
         images:'',files:'',pendingConfirm:false,confirmedAt:'',
         receivedAt:occIso,startedAt:occIso,closeoutImages:'',rejectedAt:'',recurringId:tpl.id
       };
-      try{const saved=await sbInsert(task);state.requests.push(saved);anyGen=true;genCount++;lastGen=occIso;}catch(e){break;}
+      try{const saved=await sbInsert(task);state.requests.push(saved);anyGen=true;genCount++;if(!lastGen||occIso>lastGen)lastGen=occIso;}catch(e){break;}
     }
-    if(lastGen!==tpl.lastRunAt){tpl.lastRunAt=lastGen;tpl.genCount=genCount;try{await sbPatchRecurring(tpl.id,{last_run_at:lastGen,gen_count:genCount});}catch(e){}}
+    if(genCount!==(tpl.genCount||0)){tpl.lastRunAt=lastGen;tpl.genCount=genCount;try{await sbPatchRecurring(tpl.id,{last_run_at:lastGen,gen_count:genCount});}catch(e){}}
   }
   if(anyGen){toast(t('genDone'));render();}
 }
