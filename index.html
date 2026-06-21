@@ -1263,23 +1263,21 @@ function addInterval(date,n,unit){
 }
 async function runRecurringGenerator(){
   if(!state.recurring||!state.recurring.length)return;
+  // refresh latest tasks from the server FIRST so we never duplicate what another device already generated
+  try{const fresh=await sbFetchAll();if(fresh!==null)state.requests=fresh;}catch(e){}
   const now=Date.now();
   const all=state.requests.map(calc);
-  // helper: key a date by recurrence granularity (hour/day/week/month)
   const keyOf=(iso,unit)=>{const dt=new Date(new Date(iso).getTime()+3*3600000);const s=dt.toISOString();
-    if(unit==='hour')return s.slice(0,13);          // YYYY-MM-DDTHH
-    if(unit==='month')return s.slice(0,7);          // YYYY-MM
-    return s.slice(0,10);                            // YYYY-MM-DD (day & week)
+    if(unit==='hour')return s.slice(0,13);
+    if(unit==='month')return s.slice(0,7);
+    return s.slice(0,10);
   };
-  const plan=[];
+  let anyGen=false;
   for(const tpl of state.recurring){
     if(!tpl.active||!tpl.startAt)continue;
-    // set of occurrence-keys that ALREADY have a generated task for this template
     const existing=new Set(all.filter(r=>String(r.recurringId)===String(tpl.id)&&r.receivedAt).map(r=>keyOf(r.receivedAt,tpl.everyUnit)));
-    // walk every expected occurrence from startAt → now, collect the GAPS
     let next=new Date(tpl.startAt);let guard=0;const occs=[];
     while(next.getTime()<=now&&guard<1000){
-      // Saudi weekday: Friday = 5
       const saudi=new Date(next.getTime()+3*3600000);const isFriday=saudi.getUTCDay()===5;
       if(tpl.includeFriday!==false||!isFriday){
         const k=keyOf(next.toISOString(),tpl.everyUnit);
@@ -1287,24 +1285,11 @@ async function runRecurringGenerator(){
       }
       next=addInterval(next,tpl.everyN,tpl.everyUnit);guard++;
     }
-    if(occs.length)plan.push({tplId:tpl.id,title:tpl.title,occs});
-  }
-  const total=plan.reduce((a,p)=>a+p.occs.length,0);
-  if(!total)return;
-  pendingGenPlan=plan;
-  const lines=plan.map(p=>`• ${esc(p.title)} — ${p.occs.length}`).join('<br>');
-  modal={type:'genconfirm',total,lines};renderModal();
-}
-async function confirmRunGenerator(){
-  const plan=pendingGenPlan;pendingGenPlan=null;modal=null;renderModal();
-  if(!plan)return;
-  let anyGen=false;
-  for(const p of plan){
-    const tpl=state.recurring.find(x=>String(x.id)===String(p.tplId));if(!tpl)continue;
+    if(!occs.length)continue;
     let genCount=tpl.genCount||0,lastGen=tpl.lastRunAt;
-    for(const occIso of p.occs){
+    for(const occIso of occs){
       const task={
-        requestedBy:(L==='ar'?'مهمة دورية':'Recurring'),
+        requestedBy:(L==='ar'?'\u0645\u0647\u0645\u0629 \u062f\u0648\u0631\u064a\u0629':'Recurring'),
         phone:'',project:tpl.project||'',category:tpl.category||'',priority:tpl.priority||'Medium',
         title:tpl.title,assignedTo:tpl.assignedTo||'',start:occIso.slice(0,10),duration:'',
         status:'In Progress',accepted:true,notes:tpl.notes||'',closed:'',archived:false,
@@ -1317,7 +1302,6 @@ async function confirmRunGenerator(){
   }
   if(anyGen){toast(t('genDone'));render();}
 }
-function cancelRunGenerator(){pendingGenPlan=null;modal=null;renderModal();}
 // ===== PERIOD TASKS UI =====
 function unitLabel(n,unit){
   const u=t('unit_'+unit)||unit;
@@ -1392,20 +1376,26 @@ function periodFormHTML(){
 }
 async function savePeriodForm(){
   const g=(id)=>{const e=document.getElementById(id);return e?e.value:'';};
+  const id=periodForm._id;
+  // preserve original startAt unless the user actually changed the field
+  const startField=g('pf_start');
+  const origStartLocal=(periodForm.startAt||'').slice(0,16);
+  let startAt;
+  if(id&&startField===origStartLocal){startAt=periodForm.startAt;}      // unchanged → keep exact original
+  else if(startField){startAt=new Date(startField).toISOString();}      // changed → convert
+  else{startAt=periodForm.startAt||new Date().toISOString();}
   const o={
     title:g('pf_title').trim(),everyN:Math.max(1,Number(g('pf_n'))||1),everyUnit:g('pf_unit'),
-    startAt:g('pf_start')?new Date(g('pf_start')).toISOString():new Date().toISOString(),
+    startAt:startAt,
     assignedTo:g('pf_staff'),project:g('pf_proj'),category:g('pf_cat'),priority:g('pf_pri'),notes:g('pf_notes').trim(),
     active:periodForm.active!==false,
     includeFriday:(document.getElementById('pf_friday')?document.getElementById('pf_friday').checked:true)
   };
   if(!o.title){toast(t('fTitleReq'));return;}
-  clearDirty();const id=periodForm._id;modal=null;
+  clearDirty();modal=null;
   try{
-    if(id){o.genCount=periodForm.genCount||0;o.lastRunAt=periodForm.lastRunAt||'';const up=await sbUpdateRecurring(id,o);const i=state.recurring.findIndex(x=>String(x.id)===String(id));if(i>=0)state.recurring[i]=up;}
-    else{const ins=await sbInsertRecurring(o);state.recurring.push(ins);}
-    toast(t('saved'));render();
-    try{await runRecurringGenerator();}catch(e){}
+    if(id){o.genCount=periodForm.genCount||0;o.lastRunAt=periodForm.lastRunAt||'';const up=await sbUpdateRecurring(id,o);const i=state.recurring.findIndex(x=>String(x.id)===String(id));if(i>=0)state.recurring[i]=up;toast(t('saved'));render();/* editing must NOT auto-generate */}
+    else{const ins=await sbInsertRecurring(o);state.recurring.push(ins);toast(t('saved'));render();try{await runRecurringGenerator();}catch(e){}}
   }catch(e){toast(t('errSave'));render();}
 }
 async function togglePeriod(id){
@@ -2005,13 +1995,6 @@ function renderModal(){
       <div class="field" style="margin-bottom:12px"><label>${t('stfCodeLab')}</label><input id="se_code" value="${esc(modal.code)}" maxlength="3" inputmode="numeric" dir="ltr" oninput="this.value=this.value.replace(/[^0-9]/g,'')"/></div>
       <div class="field" style="margin-bottom:16px"><label>${t('mPhone')}</label><input id="se_phone" value="${esc(modal.phone||'')}" inputmode="tel" dir="ltr" placeholder="05XXXXXXXX"/></div>
       <div class="btnrow" style="justify-content:flex-end"><button class="btn sec" onclick="guardCloseModal()">${t('cancel')}</button><button class="btn" onclick="saveStaffEdit()">${t('save')}</button></div></div></div>`;return;
-  }
-  if(modal.type==='genconfirm'){
-    const close3=`onclick="if(event.target===this){cancelRunGenerator();}"`;
-    el.innerHTML=`<div class="modal-bg" ${close3}><div class="modal" style="max-width:460px"><h3>${t('genTitle')}</h3>
-      <p>${t('genMsg').replace('{n}',modal.total)}</p>
-      <div class="gen-list">${modal.lines}</div>
-      <div class="btnrow" style="justify-content:flex-end"><button class="btn sec" onclick="cancelRunGenerator()">${t('cancel')}</button><button class="btn" onclick="confirmRunGenerator()">${t('genYes')}</button></div></div></div>`;return;
   }
   if(modal.type==='period'){
     el.innerHTML=`<div class="modal-bg" onclick="if(event.target===this){guardCloseModal();}"><div oninput="markDirty()" onchange="markDirty()">${periodFormHTML()}</div></div>`;return;
