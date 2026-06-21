@@ -657,6 +657,7 @@ tr.pendrow{background:rgba(251,239,214,.32)}
 .period-modal .field{margin-bottom:12px}
 .period-modal label{display:block;font-size:12px;font-weight:700;color:var(--steel);margin-bottom:5px}
 .period-modal input,.period-modal select,.period-modal textarea{width:100%;border:1px solid var(--grid);border-radius:9px;padding:9px 11px;font-family:inherit;font-size:13.5px;color:var(--txt);box-sizing:border-box}
+.gen-list{background:var(--lgray);border:1px solid var(--grid);border-radius:9px;padding:12px 14px;margin:12px 0;font-size:13px;color:var(--txt);line-height:1.9;max-height:200px;overflow-y:auto}
 </style></head>
 <body><div id="gate"></div><div class="app" id="app" style="display:none"></div><div class="toast" id="toast"></div>
 <script>
@@ -752,7 +753,7 @@ const T={
   requestedBy:"Requested by",namePh:"Your name",projLoc:"Project / Location",svcType:"Service type",needs:"What do you need?",needsPh:"Describe the service you are requesting",
   priority:"Priority",dateReq:"Date requested",autoToday:"Set automatically to today",submit:"Submit request",select:"— select —",
   manageH1:"Manage Requests",manageP:"Accept incoming requests to start work, then assign and schedule.",opsEye:"Operations",
-  incoming:"Incoming requests",waiting:"waiting",accepted:"Accepted tasks",secIncoming:"Incoming requests",secAssigned:"Assigned to staff",secPending:"Pending your confirmation",noPending:"Nothing awaiting confirmation.",viewCards:"Board",viewPeriod:"Period Tasks",addPeriod:"Add Period Task",editPeriod:"Edit Period Task",periodIntro:"Recurring tasks auto-generate and go straight to the assigned technician (In Progress).",noPeriod:"No period tasks yet. Add one to automate recurring work.",noneYet:"none yet",genCount:"Generated",lastGen:"Last",linkedTasks:"Linked tasks",paused:"Paused",pause:"Pause",resume:"Resume",fTitle:"Task title",fEvery:"Every",fUnit:"Unit",fStartAt:"Start at",fStaff:"Assign to technician",fProj:"Project",fCat:"Category",fPriority:"Priority",fNotes:"Notes",fTitleReq:"Please enter a title",selectStaff:"Select technician",unit_hour:"Hour(s)",unit_day:"Day(s)",unit_week:"Week(s)",unit_month:"Month(s)",delPeriodQ:"Delete this period task?",delPeriodMsg:"The template will stop generating. Already-generated tasks stay.",deletedToast2:"Period task deleted",errSave:"Save failed",saved:"Saved",viewOpen:"Open tasks",mPhone:"Mobile",allEye:"Reference",allH1:"All Requests",allP:"Complete reference of every request, all statuses.",total:"total",exportXl:"Export to Excel",allStatuses:"All statuses",allProjects:"All projects",allEmployees:"All team",search:"Search…",addTask:"Add task",
+  incoming:"Incoming requests",waiting:"waiting",accepted:"Accepted tasks",secIncoming:"Incoming requests",secAssigned:"Assigned to staff",secPending:"Pending your confirmation",noPending:"Nothing awaiting confirmation.",viewCards:"Board",viewPeriod:"Period Tasks",addPeriod:"Add Period Task",editPeriod:"Edit Period Task",periodIntro:"Recurring tasks auto-generate and go straight to the assigned technician (In Progress).",noPeriod:"No period tasks yet. Add one to automate recurring work.",noneYet:"none yet",genCount:"Generated",lastGen:"Last",linkedTasks:"Linked tasks",paused:"Paused",pause:"Pause",resume:"Resume",fTitle:"Task title",fEvery:"Every",fUnit:"Unit",fStartAt:"Start at",fStaff:"Assign to Employee",fProj:"Project",fCat:"Category",fPriority:"Priority",fNotes:"Notes",fTitleReq:"Please enter a title",selectStaff:"Select employee",unit_hour:"Hour(s)",unit_day:"Day(s)",unit_week:"Week(s)",unit_month:"Month(s)",delPeriodQ:"Delete this period task?",delPeriodMsg:"The template will stop generating. Already-generated tasks stay.",deletedToast2:"Period task deleted",errSave:"Save failed",saved:"Saved",genTitle:"Confirm task generation",genMsg:"{n} recurring task(s) are due and will be created:",genYes:"Generate",genDone:"Tasks generated",viewOpen:"Open tasks",mPhone:"Mobile",allEye:"Reference",allH1:"All Requests",allP:"Complete reference of every request, all statuses.",total:"total",exportXl:"Export to Excel",allStatuses:"All statuses",allProjects:"All projects",allEmployees:"All team",search:"Search…",addTask:"Add task",
   accept:"Accept",decline:"Decline",noNew:"No new requests waiting.",noAccepted:"No accepted tasks yet.",noMatch:"Nothing here.",
   reqLabel:"Request",noteLabel:"Manager note",notesPh:"Note / instructions for the team member",
   mTaskId:"Task ID",mProj:"Project",mCat:"Category",mReqBy:"Requested by",mRecv:"Received",mAssign:"Assigned to",mStart:"Start",mDur:"Duration (days)",mStatus:"Status",mDue:"Due",mClosed:"Closed",mLeft:"Time left",daysUnit:"days",
@@ -782,7 +783,7 @@ const T={
   requestedBy:"مقدّم الطلب",namePh:"الاسم",projLoc:"المشروع / الموقع",svcType:"نوع الخدمة",needs:"تفاصيل الطلب",needsPh:"يُرجى وصف الخدمة المطلوبة بوضوح",
   priority:"الأولوية",dateReq:"تاريخ الطلب",autoToday:"يُحدّد تلقائياً بتاريخ اليوم",submit:"إرسال الطلب",select:"— اختر —",
   manageH1:"إدارة الطلبات",manageP:"راجع الطلبات الواردة واقبلها لبدء العمل، ثم وزّعها وجدوِلها.",opsEye:"العمليات",
-  incoming:"الطلبات الواردة",waiting:"بالانتظار",accepted:"المهام المقبولة",secIncoming:"الطلبات الواردة",secAssigned:"الطلبات الموجّهة للفنيين",secPending:"بانتظار تأكيدك",noPending:"لا يوجد ما ينتظر التأكيد.",viewCards:"الأعمدة",viewPeriod:"المهام الدورية",addPeriod:"إضافة مهمة دورية",editPeriod:"تعديل المهمة الدورية",periodIntro:"المهام الدورية تتولّد تلقائياً وتذهب مباشرة للفني المسؤول (تحت العمل).",noPeriod:"لا توجد مهام دورية بعد. أضف واحدة لأتمتة الأعمال المتكررة.",noneYet:"لا شيء بعد",genCount:"تولّدت",lastGen:"آخر توليد",linkedTasks:"المهام المرتبطة",paused:"موقوفة",pause:"إيقاف",resume:"تشغيل",fTitle:"عنوان المهمة",fEvery:"كل",fUnit:"الوحدة",fStartAt:"تبدأ في",fStaff:"توجيه للفني",fProj:"المشروع",fCat:"الفئة",fPriority:"الأولوية",fNotes:"ملاحظات",fTitleReq:"الرجاء إدخال عنوان",selectStaff:"اختر الفني",unit_hour:"ساعة",unit_day:"يوم",unit_week:"أسبوع",unit_month:"شهر",delPeriodQ:"حذف هذه المهمة الدورية؟",delPeriodMsg:"سيتوقف القالب عن التوليد. المهام المتولّدة تبقى.",deletedToast2:"حُذفت المهمة الدورية",errSave:"فشل الحفظ",saved:"تم الحفظ",viewOpen:"المهام المفتوحة",mPhone:"الجوال",allEye:"مرجع",allH1:"جميع الطلبات",allP:"سجلّ شامل بكل الطلبات بجميع الحالات.",total:"الإجمالي",exportXl:"تصدير لإكسل",allStatuses:"كل الحالات",allProjects:"كل المشاريع",allEmployees:"كل الفريق",search:"بحث…",addTask:"إضافة مهمة",
+  incoming:"الطلبات الواردة",waiting:"بالانتظار",accepted:"المهام المقبولة",secIncoming:"الطلبات الواردة",secAssigned:"الطلبات الموجّهة للفنيين",secPending:"بانتظار تأكيدك",noPending:"لا يوجد ما ينتظر التأكيد.",viewCards:"الأعمدة",viewPeriod:"المهام الدورية",addPeriod:"إضافة مهمة دورية",editPeriod:"تعديل المهمة الدورية",periodIntro:"المهام الدورية تتولّد تلقائياً وتذهب مباشرة للفني المسؤول (تحت العمل).",noPeriod:"لا توجد مهام دورية بعد. أضف واحدة لأتمتة الأعمال المتكررة.",noneYet:"لا شيء بعد",genCount:"تولّدت",lastGen:"آخر توليد",linkedTasks:"المهام المرتبطة",paused:"موقوفة",pause:"إيقاف",resume:"تشغيل",fTitle:"عنوان المهمة",fEvery:"كل",fUnit:"الوحدة",fStartAt:"تبدأ في",fStaff:"توجيه لموظف",fProj:"المشروع",fCat:"الفئة",fPriority:"الأولوية",fNotes:"ملاحظات",fTitleReq:"الرجاء إدخال عنوان",selectStaff:"اختر الموظف",unit_hour:"ساعة",unit_day:"يوم",unit_week:"أسبوع",unit_month:"شهر",delPeriodQ:"حذف هذه المهمة الدورية؟",delPeriodMsg:"سيتوقف القالب عن التوليد. المهام المتولّدة تبقى.",deletedToast2:"حُذفت المهمة الدورية",errSave:"فشل الحفظ",saved:"تم الحفظ",genTitle:"تأكيد توليد المهام",genMsg:"يوجد {n} مهمة دورية مستحقة سيتم إنشاؤها:",genYes:"توليد",genDone:"تم توليد المهام",viewOpen:"المهام المفتوحة",mPhone:"الجوال",allEye:"مرجع",allH1:"جميع الطلبات",allP:"سجلّ شامل بكل الطلبات بجميع الحالات.",total:"الإجمالي",exportXl:"تصدير لإكسل",allStatuses:"كل الحالات",allProjects:"كل المشاريع",allEmployees:"كل الفريق",search:"بحث…",addTask:"إضافة مهمة",
   accept:"قبول",decline:"رفض",noNew:"لا توجد طلبات جديدة قيد الانتظار.",noAccepted:"لا توجد مهام مقبولة حتى الآن.",noMatch:"لا توجد عناصر للعرض.",
   reqLabel:"الطلب",noteLabel:"ملاحظة المسؤول",notesPh:"ملاحظات أو تعليمات موجَّهة لعضو الفريق المكلَّف",
   mTaskId:"رقم المهمة",mProj:"المشروع",mCat:"الفئة",mReqBy:"مقدّم الطلب",mRecv:"تاريخ الطلب",mAssign:"المسؤول",mStart:"البدء",mDur:"المدة (أيام)",mStatus:"الحالة",mDue:"الاستحقاق",mClosed:"الإقفال",mLeft:"المتبقّي",daysUnit:"يوم",
@@ -820,6 +821,17 @@ let thanksInfo=null,modal=null,sideOpen=false;
 let trackQ='';            // track page search
 let manageView='cards';   // manage page view mode: 'cards' or 'open'
 let periodForm=null;
+let pendingGenPlan=null;
+let formDirty=false;
+function markDirty(){formDirty=true;}
+function clearDirty(){formDirty=false;}
+// guard: if a form has unsaved input, confirm before discarding
+function guardCloseModal(){
+  if(formDirty){
+    if(!confirm(L==='ar'?'هل تريد الخروج وخسارة البيانات التي أدخلتها؟':'Discard your changes and close?'))return;
+  }
+  formDirty=false;modal=null;renderModal();
+}
 let staffName='';         // selected staff member name
 let staffModal=null;      // staff task detail modal
 
@@ -1248,19 +1260,33 @@ function addInterval(date,n,unit){
 }
 async function runRecurringGenerator(){
   if(!state.recurring||!state.recurring.length)return;
-  const now=Date.now();let anyGen=false;
+  const now=Date.now();
+  // compute what WOULD be generated (no writes yet)
+  const plan=[];
   for(const tpl of state.recurring){
     if(!tpl.active||!tpl.startAt)continue;
-    // next occurrence = lastRunAt+interval, or startAt if never run
     let next=tpl.lastRunAt?addInterval(tpl.lastRunAt,tpl.everyN,tpl.everyUnit):new Date(tpl.startAt);
-    let guard=0,lastGen=tpl.lastRunAt;
-    let genCount=tpl.genCount||0;
-    while(next.getTime()<=now&&guard<500){
-      // create a real task for this occurrence
-      const nowIso=new Date().toISOString();
-      const occIso=next.toISOString();
+    let guard=0;const occs=[];
+    while(next.getTime()<=now&&guard<500){occs.push(next.toISOString());next=addInterval(next,tpl.everyN,tpl.everyUnit);guard++;}
+    if(occs.length)plan.push({tplId:tpl.id,title:tpl.title,occs});
+  }
+  const total=plan.reduce((a,p)=>a+p.occs.length,0);
+  if(!total)return;
+  // ask for confirmation, always
+  pendingGenPlan=plan;
+  const lines=plan.map(p=>`• ${esc(p.title)} — ${p.occs.length}`).join('<br>');
+  modal={type:'genconfirm',total,lines};renderModal();
+}
+async function confirmRunGenerator(){
+  const plan=pendingGenPlan;pendingGenPlan=null;modal=null;renderModal();
+  if(!plan)return;
+  let anyGen=false;
+  for(const p of plan){
+    const tpl=state.recurring.find(x=>String(x.id)===String(p.tplId));if(!tpl)continue;
+    let genCount=tpl.genCount||0,lastGen=tpl.lastRunAt;
+    for(const occIso of p.occs){
       const task={
-        requestedBy:tpl.title?('Auto • '+(L==='ar'?'مهمة دورية':'Recurring')):'Auto',
+        requestedBy:(L==='ar'?'مهمة دورية':'Recurring'),
         phone:'',project:tpl.project||'',category:tpl.category||'',priority:tpl.priority||'Medium',
         title:tpl.title,assignedTo:tpl.assignedTo||'',start:occIso.slice(0,10),duration:'',
         status:'In Progress',accepted:true,notes:tpl.notes||'',closed:'',archived:false,
@@ -1268,15 +1294,12 @@ async function runRecurringGenerator(){
         receivedAt:occIso,startedAt:occIso,closeoutImages:'',rejectedAt:'',recurringId:tpl.id
       };
       try{const saved=await sbInsert(task);state.requests.push(saved);anyGen=true;genCount++;lastGen=occIso;}catch(e){break;}
-      next=addInterval(next,tpl.everyN,tpl.everyUnit);guard++;
     }
-    if(lastGen!==tpl.lastRunAt){
-      tpl.lastRunAt=lastGen;tpl.genCount=genCount;
-      try{await sbPatchRecurring(tpl.id,{last_run_at:lastGen,gen_count:genCount});}catch(e){}
-    }
+    if(lastGen!==tpl.lastRunAt){tpl.lastRunAt=lastGen;tpl.genCount=genCount;try{await sbPatchRecurring(tpl.id,{last_run_at:lastGen,gen_count:genCount});}catch(e){}}
   }
-  if(anyGen)render();
+  if(anyGen){toast(t('genDone'));render();}
 }
+function cancelRunGenerator(){pendingGenPlan=null;modal=null;renderModal();}
 // ===== PERIOD TASKS UI =====
 function unitLabel(n,unit){
   const u=t('unit_'+unit)||unit;
@@ -1319,7 +1342,7 @@ function openPeriodForm(id){
   const tpl=id?(state.recurring||[]).find(x=>String(x.id)===String(id)):null;
   periodForm=tpl?Object.assign({},tpl):{title:'',project:'',category:'',priority:'Medium',assignedTo:'',notes:'',everyN:1,everyUnit:'day',startAt:new Date().toISOString().slice(0,16),active:true};
   periodForm._id=id||null;
-  modal={type:'period'};renderModal();
+  clearDirty();modal={type:'period'};renderModal();
 }
 function periodFormHTML(){
   const f=periodForm;const projs=state.lists.projects||[];const cats=state.lists.categories||[];const pris=state.lists.priorities||[];
@@ -1344,7 +1367,7 @@ function periodFormHTML(){
     </div>
     <div class="field"><label>${t('fPriority')}</label><select id="pf_pri">${priOpts}</select></div>
     <div class="field"><label>${t('fNotes')}</label><textarea id="pf_notes" rows="2">${esc(f.notes||'')}</textarea></div>
-    <div class="btnrow" style="justify-content:flex-end"><button class="btn sec" onclick="modal=null;renderModal()">${t('cancel')}</button><button class="btn" onclick="savePeriodForm()">${t('save')}</button></div>
+    <div class="btnrow" style="justify-content:flex-end"><button class="btn sec" onclick="guardCloseModal()">${t('cancel')}</button><button class="btn" onclick="savePeriodForm()">${t('save')}</button></div>
   </div>`;
 }
 async function savePeriodForm(){
@@ -1356,7 +1379,7 @@ async function savePeriodForm(){
     active:periodForm.active!==false
   };
   if(!o.title){toast(t('fTitleReq'));return;}
-  const id=periodForm._id;modal=null;
+  clearDirty();const id=periodForm._id;modal=null;
   try{
     if(id){o.genCount=periodForm.genCount||0;o.lastRunAt=periodForm.lastRunAt||'';const up=await sbUpdateRecurring(id,o);const i=state.recurring.findIndex(x=>String(x.id)===String(id));if(i>=0)state.recurring[i]=up;}
     else{const ins=await sbInsertRecurring(o);state.recurring.push(ins);}
@@ -1589,7 +1612,7 @@ function doDelete(id){const r=state.requests.find(x=>x.id===id);if(r){r.archived
 
 /* ===== task form (accept / edit / add) + close/reopen + lightbox ===== */
 function openAddTask(){modal={type:'add'};renderModal();}
-function openEdit(id){modal={type:'edit',id};renderModal();}
+function openEdit(id){clearDirty();modal={type:'edit',id};renderModal();}
 function askClose(id){modal={type:'close',id};renderModal();}
 function doClose(id){const r=state.requests.find(x=>x.id===id);if(!r)return;r.status='Complete';r.closed=today();r.confirmedAt=nowTs();modal=null;render();toast(fmtID(id)+' '+t('closedToast'));saveBg(id,r);}
 function reopenTask(id){const r=state.requests.find(x=>x.id===id);if(!r)return;r.status='In Progress';r.closed='';r.archived=false;if(!r.start)r.start=today();render();toast(fmtID(id));saveBg(id,r);}
@@ -1914,6 +1937,7 @@ function galGo(i){if(!modal||modal.type!=='img')return;modal.idx=i;renderModal()
 
 // Save handler for accept / edit / add forms
 async function saveTaskForm(mode,id){
+  clearDirty();
   const g=i=>document.getElementById(i);
   const assign=g('tf_assign').value, dur=g('tf_dur').value, note=g('tf_notes').value.trim();
   if(mode==='accept'){
@@ -1954,16 +1978,22 @@ function renderModal(){
   if(!modal){el.innerHTML='';return;}
   const close=`onclick="if(event.target===this){modal=null;renderModal();}"`;
   if(modal.type==='staffedit'){
-    el.innerHTML=`<div class="modal-bg" ${close}><div class="modal" style="max-width:440px"><h3>${t('editStaffTitle')}</h3>
+    el.innerHTML=`<div class="modal-bg" onclick="if(event.target===this){guardCloseModal();}"><div class="modal" oninput="markDirty()" onchange="markDirty()" style="max-width:440px"><h3>${t('editStaffTitle')}</h3>
       <div class="field" style="margin-bottom:12px"><label>${t('addNameAr')}</label><input id="se_ar" value="${esc(modal.ar)}"/></div>
       <div class="field" style="margin-bottom:12px"><label>${t('addNameEn')}</label><input id="se_en" value="${esc(modal.en)}"/></div>
       <div class="field" style="margin-bottom:12px"><label>${t('stfCodeLab')}</label><input id="se_code" value="${esc(modal.code)}" maxlength="3" inputmode="numeric" dir="ltr" oninput="this.value=this.value.replace(/[^0-9]/g,'')"/></div>
       <div class="field" style="margin-bottom:16px"><label>${t('mPhone')}</label><input id="se_phone" value="${esc(modal.phone||'')}" inputmode="tel" dir="ltr" placeholder="05XXXXXXXX"/></div>
-      <div class="btnrow" style="justify-content:flex-end"><button class="btn sec" onclick="modal=null;renderModal()">${t('cancel')}</button><button class="btn" onclick="saveStaffEdit()">${t('save')}</button></div></div></div>`;return;
+      <div class="btnrow" style="justify-content:flex-end"><button class="btn sec" onclick="guardCloseModal()">${t('cancel')}</button><button class="btn" onclick="saveStaffEdit()">${t('save')}</button></div></div></div>`;return;
+  }
+  if(modal.type==='genconfirm'){
+    const close3=`onclick="if(event.target===this){cancelRunGenerator();}"`;
+    el.innerHTML=`<div class="modal-bg" ${close3}><div class="modal" style="max-width:460px"><h3>${t('genTitle')}</h3>
+      <p>${t('genMsg').replace('{n}',modal.total)}</p>
+      <div class="gen-list">${modal.lines}</div>
+      <div class="btnrow" style="justify-content:flex-end"><button class="btn sec" onclick="cancelRunGenerator()">${t('cancel')}</button><button class="btn" onclick="confirmRunGenerator()">${t('genYes')}</button></div></div></div>`;return;
   }
   if(modal.type==='period'){
-    const close2=`onclick="if(event.target===this){modal=null;renderModal();}"`;
-    el.innerHTML=`<div class="modal-bg" ${close2}>${periodFormHTML()}</div>`;return;
+    el.innerHTML=`<div class="modal-bg" onclick="if(event.target===this){guardCloseModal();}"><div oninput="markDirty()" onchange="markDirty()">${periodFormHTML()}</div></div>`;return;
   }
   if(modal.type==='confirm'){
     el.innerHTML=`<div class="modal-bg" ${close}><div class="modal" style="max-width:420px"><h3>${esc(modal.title)}</h3>${modal.msg?`<p><b>${modal.msg}</b></p>`:''}<div class="btnrow" style="justify-content:flex-end"><button class="btn sec" onclick="modal=null;renderModal()">${t('cancel')}</button><button class="btn ${modal.okClass||''}" onclick="${modal.onok}">${modal.okLabel||t('confirmDelYes')}</button></div></div></div>`;return;
@@ -2003,7 +2033,7 @@ function renderModal(){
   }
   if(modal.type==='edit'){
     const r=state.requests.find(x=>x.id===modal.id);if(!r){modal=null;return;}
-    el.innerHTML=`<div class="modal-bg" ${close}><div class="modal"><h3>${t('editTitle')} — ${fmtID(r.id)}</h3>
+    el.innerHTML=`<div class="modal-bg" onclick="if(event.target===this){guardCloseModal();}"><div class="modal" oninput="markDirty()" onchange="markDirty()"><h3>${t('editTitle')} — ${fmtID(r.id)}</h3>
       <p style="margin-bottom:12px">${esc(r.title)}</p>
       <div class="form-grid">
         ${fieldSelect('tf_proj',state.lists.projects,r.project,t('mProj'),true)}
@@ -2015,7 +2045,7 @@ function renderModal(){
         <div class="field"><label>${t('mStatus')} <span class="req">*</span></label><select id="tf_status">${EDIT_STATUSES.map(s=>`<option ${r.status===s?'selected':''}>${esc(s)}</option>`).join('')}</select></div>
         <div class="field full"><label>${t('noteLabel')}</label><textarea id="tf_notes">${esc(r.notes||'')}</textarea></div>
       </div>
-      <div class="btnrow" style="justify-content:flex-end;margin-top:14px"><button class="btn sec" onclick="modal=null;renderModal()">${t('cancel')}</button><button class="btn" onclick="saveTaskForm('edit',${r.id})">${t('save')}</button></div>
+      <div class="btnrow" style="justify-content:flex-end;margin-top:14px"><button class="btn sec" onclick="guardCloseModal()">${t('cancel')}</button><button class="btn" onclick="saveTaskForm('edit',${r.id})">${t('save')}</button></div>
     </div></div>`;return;
   }
   if(modal.type==='add'){
@@ -2147,7 +2177,7 @@ async function updStaffCode(id,val){
   try{await sbUpdateStaff(id,{code:code||null});toast(t('saved'));}catch(e){s.code=old;toast(t('connErr'));render();}
 }
 function openStaffEdit(id){const s=staffList().find(x=>x.id===id);if(!s)return;modal={type:'staffedit',id,en:s.en,ar:s.ar||'',code:s.code||'',phone:s.phone||''};renderModal();}
-async function saveStaffEdit(){
+async function saveStaffEdit(){clearDirty();
   const id=modal.id;const en=(document.getElementById('se_en').value||'').trim();const ar=(document.getElementById('se_ar').value||'').trim();const code=(document.getElementById('se_code').value||'').trim();const phone=(document.getElementById('se_phone').value||'').trim();
   if(!en&&!ar){toast(t('staffNeedName'));return;}
   if(code&&staffList().some(s=>s.id!==id&&String(s.code)===code)){toast(t('codeExists'));return;}
