@@ -633,6 +633,30 @@ tr.pendrow{background:rgba(251,239,214,.32)}
 .rep-chart-title{display:flex;align-items:center;gap:4px;margin-bottom:6px}
 .dd-headr{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .dd-headr input[type=date]{border:1px solid var(--grid);border-radius:8px;padding:6px 9px;font-family:inherit;font-size:12px;color:var(--txt)}
+/* period (recurring) tasks */
+.period-bar{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin:14px 0 18px;padding:14px 16px;background:var(--lblue);border:1px solid var(--accent);border-radius:12px}
+.pt-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px}
+.pt-card{background:#fff;border:1px solid var(--grid);border-radius:14px;padding:16px;box-shadow:var(--shadow);transition:.15s}
+.pt-card.off{opacity:.62;background:var(--lgray)}
+.pt-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px}
+.pt-title{font-weight:800;color:var(--navy);font-size:15px;line-height:1.35}
+.pt-acts{display:flex;gap:4px;flex-shrink:0}
+.pt-meta{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.pt-pill{font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;background:var(--lgray);color:var(--steel);border:1px solid var(--grid)}
+.pt-pill.pt-staff{background:var(--lblue);color:var(--accent);border-color:var(--accent)}
+.pt-pill.pt-paused{background:#FBF0EF;color:var(--red);border-color:#E8C4C0}
+.pt-stats{display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:var(--grey);margin-bottom:10px;padding-bottom:10px;border-bottom:1px dashed var(--grid)}
+.pt-count b{color:var(--med);font-size:14px}
+.pt-links{font-size:12px;color:var(--grey)}
+.pt-links-lab{font-weight:700}
+.pt-chip{display:inline-block;font-size:11px;font-weight:700;color:var(--accent);background:var(--lblue);border:1px solid var(--accent);border-radius:6px;padding:2px 7px;margin:3px 3px 0 0;cursor:pointer;transition:.12s}
+.pt-chip:hover{background:var(--accent);color:#fff}
+.pt-none{font-style:italic;color:var(--grey)}
+.period-modal .pf-row{display:flex;gap:12px}
+.period-modal .pf-row>.field{flex:1}
+.period-modal .field{margin-bottom:12px}
+.period-modal label{display:block;font-size:12px;font-weight:700;color:var(--steel);margin-bottom:5px}
+.period-modal input,.period-modal select,.period-modal textarea{width:100%;border:1px solid var(--grid);border-radius:9px;padding:9px 11px;font-family:inherit;font-size:13.5px;color:var(--txt);box-sizing:border-box}
 </style></head>
 <body><div id="gate"></div><div class="app" id="app" style="display:none"></div><div class="toast" id="toast"></div>
 <script>
@@ -642,11 +666,19 @@ const LOGO_B64="iVBORw0KGgoAAAANSUhEUgAAAXoAAAB4CAYAAAD8HzkvAAABCGlDQ1BJQ0MgUHJv
 const SB_URL="https://abnfwabpqnwnscwyfqbm.supabase.co";
 const SB_KEY="sb_publishable_yeLa2U3cUo9MSn2H0pOlXQ_roSY8_Zx";
 const SB_HEAD={'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'};
-function fromRow(r){return {id:r.id,requestedBy:r.requested_by||'',phone:r.phone||'',project:r.project||'',category:r.category||'',priority:r.priority||'Medium',title:r.title||'',received:r.received||'',assignedTo:r.assigned_to||'',start:r.start_date||'',duration:r.duration||'',status:r.status||'Not Started',accepted:!!r.accepted,notes:r.notes||'',closed:r.closed_date||'',archived:!!r.archived,images:r.images||'',files:r.files||'',pendingConfirm:!!r.pending_confirm,confirmedAt:r.confirmed_at||'',receivedAt:r.received_at||'',startedAt:r.started_at||'',closeoutImages:r.closeout_images||'',rejectedAt:r.rejected_at||''};}
-function toRow(o){return {requested_by:o.requestedBy,phone:o.phone||null,project:o.project,category:o.category,priority:o.priority,title:o.title,received:o.received||null,assigned_to:o.assignedTo||null,start_date:o.start||null,duration:o.duration?Number(o.duration):null,status:o.status,accepted:!!o.accepted,notes:o.notes||null,closed_date:o.closed||null,archived:!!o.archived,images:o.images||null,files:o.files||null,pending_confirm:!!o.pendingConfirm,confirmed_at:o.confirmedAt||null,received_at:o.receivedAt||null,started_at:o.startedAt||null,closeout_images:o.closeoutImages||null,rejected_at:o.rejectedAt||null};}
+function fromRow(r){return {id:r.id,requestedBy:r.requested_by||'',phone:r.phone||'',project:r.project||'',category:r.category||'',priority:r.priority||'Medium',title:r.title||'',received:r.received||'',assignedTo:r.assigned_to||'',start:r.start_date||'',duration:r.duration||'',status:r.status||'Not Started',accepted:!!r.accepted,notes:r.notes||'',closed:r.closed_date||'',archived:!!r.archived,images:r.images||'',files:r.files||'',pendingConfirm:!!r.pending_confirm,confirmedAt:r.confirmed_at||'',receivedAt:r.received_at||'',startedAt:r.started_at||'',closeoutImages:r.closeout_images||'',rejectedAt:r.rejected_at||'',recurringId:r.recurring_id||''};}
+function toRow(o){return {requested_by:o.requestedBy,phone:o.phone||null,project:o.project,category:o.category,priority:o.priority,title:o.title,received:o.received||null,assigned_to:o.assignedTo||null,start_date:o.start||null,duration:o.duration?Number(o.duration):null,status:o.status,accepted:!!o.accepted,notes:o.notes||null,closed_date:o.closed||null,archived:!!o.archived,images:o.images||null,files:o.files||null,pending_confirm:!!o.pendingConfirm,confirmed_at:o.confirmedAt||null,received_at:o.receivedAt||null,started_at:o.startedAt||null,closeout_images:o.closeoutImages||null,rejected_at:o.rejectedAt||null,recurring_id:o.recurringId||null};}
 async function sbFetchAll(){try{const res=await fetch(SB_URL+'/rest/v1/requests?select=*&order=id.asc',{headers:SB_HEAD});if(!res.ok)throw 0;return (await res.json()).map(fromRow);}catch(e){return null;}}
 async function sbInsert(o){const res=await fetch(SB_URL+'/rest/v1/requests',{method:'POST',headers:{...SB_HEAD,'Prefer':'return=representation'},body:JSON.stringify(toRow(o))});if(!res.ok)throw new Error();return fromRow((await res.json())[0]);}
 async function sbUpdate(id,o){const res=await fetch(SB_URL+'/rest/v1/requests?id=eq.'+id,{method:'PATCH',headers:SB_HEAD,body:JSON.stringify(toRow(o))});if(!res.ok)throw new Error();}
+// ===== RECURRING (period) task templates =====
+function recFromRow(r){return {id:r.id,title:r.title||'',project:r.project||'',category:r.category||'',priority:r.priority||'Medium',assignedTo:r.assigned_to||'',notes:r.notes||'',everyN:r.every_n||1,everyUnit:r.every_unit||'day',startAt:r.start_at||'',lastRunAt:r.last_run_at||'',genCount:r.gen_count||0,active:r.active!==false,createdAt:r.created_at||''};}
+function recToRow(o){return {title:o.title,project:o.project||null,category:o.category||null,priority:o.priority||'Medium',assigned_to:o.assignedTo||null,notes:o.notes||null,every_n:Number(o.everyN)||1,every_unit:o.everyUnit||'day',start_at:o.startAt||new Date().toISOString(),last_run_at:o.lastRunAt||null,gen_count:Number(o.genCount)||0,active:o.active!==false};}
+async function sbFetchRecurring(){try{const res=await fetch(SB_URL+'/rest/v1/recurring_tasks?select=*&order=id.asc',{headers:SB_HEAD});if(!res.ok)throw 0;return (await res.json()).map(recFromRow);}catch(e){return null;}}
+async function sbInsertRecurring(o){const res=await fetch(SB_URL+'/rest/v1/recurring_tasks',{method:'POST',headers:{...SB_HEAD,'Prefer':'return=representation'},body:JSON.stringify(recToRow(o))});if(!res.ok)throw new Error('rec insert');return recFromRow((await res.json())[0]);}
+async function sbUpdateRecurring(id,o){const res=await fetch(SB_URL+'/rest/v1/recurring_tasks?id=eq.'+id,{method:'PATCH',headers:{...SB_HEAD,'Prefer':'return=representation'},body:JSON.stringify(recToRow(o))});if(!res.ok)throw new Error('rec update');return recFromRow((await res.json())[0]);}
+async function sbPatchRecurring(id,patch){const res=await fetch(SB_URL+'/rest/v1/recurring_tasks?id=eq.'+id,{method:'PATCH',headers:SB_HEAD,body:JSON.stringify(patch)});if(!res.ok)throw new Error('rec patch');}
+async function sbDeleteRecurring(id){const res=await fetch(SB_URL+'/rest/v1/recurring_tasks?id=eq.'+id,{method:'DELETE',headers:SB_HEAD});if(!res.ok)throw new Error('rec delete');}
 // ===== STAFF directory (en/ar/code) =====
 async function sbFetchStaff(){try{const res=await fetch(SB_URL+'/rest/v1/staff?select=*&order=sort_order.asc',{headers:SB_HEAD});if(!res.ok)throw 0;return await res.json();}catch(e){return null;}}
 async function sbInsertStaff(o){const res=await fetch(SB_URL+'/rest/v1/staff',{method:'POST',headers:{...SB_HEAD,'Prefer':'return=representation'},body:JSON.stringify(o)});if(!res.ok)throw new Error('insert');return (await res.json())[0];}
@@ -720,7 +752,7 @@ const T={
   requestedBy:"Requested by",namePh:"Your name",projLoc:"Project / Location",svcType:"Service type",needs:"What do you need?",needsPh:"Describe the service you are requesting",
   priority:"Priority",dateReq:"Date requested",autoToday:"Set automatically to today",submit:"Submit request",select:"— select —",
   manageH1:"Manage Requests",manageP:"Accept incoming requests to start work, then assign and schedule.",opsEye:"Operations",
-  incoming:"Incoming requests",waiting:"waiting",accepted:"Accepted tasks",secIncoming:"Incoming requests",secAssigned:"Assigned to staff",secPending:"Pending your confirmation",noPending:"Nothing awaiting confirmation.",viewCards:"Board",viewOpen:"Open tasks",mPhone:"Mobile",allEye:"Reference",allH1:"All Requests",allP:"Complete reference of every request, all statuses.",total:"total",exportXl:"Export to Excel",allStatuses:"All statuses",allProjects:"All projects",allEmployees:"All team",search:"Search…",addTask:"Add task",
+  incoming:"Incoming requests",waiting:"waiting",accepted:"Accepted tasks",secIncoming:"Incoming requests",secAssigned:"Assigned to staff",secPending:"Pending your confirmation",noPending:"Nothing awaiting confirmation.",viewCards:"Board",viewPeriod:"Period Tasks",addPeriod:"Add Period Task",editPeriod:"Edit Period Task",periodIntro:"Recurring tasks auto-generate and go straight to the assigned technician (In Progress).",noPeriod:"No period tasks yet. Add one to automate recurring work.",noneYet:"none yet",genCount:"Generated",lastGen:"Last",linkedTasks:"Linked tasks",paused:"Paused",pause:"Pause",resume:"Resume",fTitle:"Task title",fEvery:"Every",fUnit:"Unit",fStartAt:"Start at",fStaff:"Assign to technician",fProj:"Project",fCat:"Category",fPriority:"Priority",fNotes:"Notes",fTitleReq:"Please enter a title",selectStaff:"Select technician",unit_hour:"Hour(s)",unit_day:"Day(s)",unit_week:"Week(s)",unit_month:"Month(s)",delPeriodQ:"Delete this period task?",delPeriodMsg:"The template will stop generating. Already-generated tasks stay.",deletedToast2:"Period task deleted",errSave:"Save failed",saved:"Saved",viewOpen:"Open tasks",mPhone:"Mobile",allEye:"Reference",allH1:"All Requests",allP:"Complete reference of every request, all statuses.",total:"total",exportXl:"Export to Excel",allStatuses:"All statuses",allProjects:"All projects",allEmployees:"All team",search:"Search…",addTask:"Add task",
   accept:"Accept",decline:"Decline",noNew:"No new requests waiting.",noAccepted:"No accepted tasks yet.",noMatch:"Nothing here.",
   reqLabel:"Request",noteLabel:"Manager note",notesPh:"Note / instructions for the team member",
   mTaskId:"Task ID",mProj:"Project",mCat:"Category",mReqBy:"Requested by",mRecv:"Received",mAssign:"Assigned to",mStart:"Start",mDur:"Duration (days)",mStatus:"Status",mDue:"Due",mClosed:"Closed",mLeft:"Time left",daysUnit:"days",
@@ -750,7 +782,7 @@ const T={
   requestedBy:"مقدّم الطلب",namePh:"الاسم",projLoc:"المشروع / الموقع",svcType:"نوع الخدمة",needs:"تفاصيل الطلب",needsPh:"يُرجى وصف الخدمة المطلوبة بوضوح",
   priority:"الأولوية",dateReq:"تاريخ الطلب",autoToday:"يُحدّد تلقائياً بتاريخ اليوم",submit:"إرسال الطلب",select:"— اختر —",
   manageH1:"إدارة الطلبات",manageP:"راجع الطلبات الواردة واقبلها لبدء العمل، ثم وزّعها وجدوِلها.",opsEye:"العمليات",
-  incoming:"الطلبات الواردة",waiting:"بالانتظار",accepted:"المهام المقبولة",secIncoming:"الطلبات الواردة",secAssigned:"الطلبات الموجّهة للفنيين",secPending:"بانتظار تأكيدك",noPending:"لا يوجد ما ينتظر التأكيد.",viewCards:"الأعمدة",viewOpen:"المهام المفتوحة",mPhone:"الجوال",allEye:"مرجع",allH1:"جميع الطلبات",allP:"سجلّ شامل بكل الطلبات بجميع الحالات.",total:"الإجمالي",exportXl:"تصدير لإكسل",allStatuses:"كل الحالات",allProjects:"كل المشاريع",allEmployees:"كل الفريق",search:"بحث…",addTask:"إضافة مهمة",
+  incoming:"الطلبات الواردة",waiting:"بالانتظار",accepted:"المهام المقبولة",secIncoming:"الطلبات الواردة",secAssigned:"الطلبات الموجّهة للفنيين",secPending:"بانتظار تأكيدك",noPending:"لا يوجد ما ينتظر التأكيد.",viewCards:"الأعمدة",viewPeriod:"المهام الدورية",addPeriod:"إضافة مهمة دورية",editPeriod:"تعديل المهمة الدورية",periodIntro:"المهام الدورية تتولّد تلقائياً وتذهب مباشرة للفني المسؤول (تحت العمل).",noPeriod:"لا توجد مهام دورية بعد. أضف واحدة لأتمتة الأعمال المتكررة.",noneYet:"لا شيء بعد",genCount:"تولّدت",lastGen:"آخر توليد",linkedTasks:"المهام المرتبطة",paused:"موقوفة",pause:"إيقاف",resume:"تشغيل",fTitle:"عنوان المهمة",fEvery:"كل",fUnit:"الوحدة",fStartAt:"تبدأ في",fStaff:"توجيه للفني",fProj:"المشروع",fCat:"الفئة",fPriority:"الأولوية",fNotes:"ملاحظات",fTitleReq:"الرجاء إدخال عنوان",selectStaff:"اختر الفني",unit_hour:"ساعة",unit_day:"يوم",unit_week:"أسبوع",unit_month:"شهر",delPeriodQ:"حذف هذه المهمة الدورية؟",delPeriodMsg:"سيتوقف القالب عن التوليد. المهام المتولّدة تبقى.",deletedToast2:"حُذفت المهمة الدورية",errSave:"فشل الحفظ",saved:"تم الحفظ",viewOpen:"المهام المفتوحة",mPhone:"الجوال",allEye:"مرجع",allH1:"جميع الطلبات",allP:"سجلّ شامل بكل الطلبات بجميع الحالات.",total:"الإجمالي",exportXl:"تصدير لإكسل",allStatuses:"كل الحالات",allProjects:"كل المشاريع",allEmployees:"كل الفريق",search:"بحث…",addTask:"إضافة مهمة",
   accept:"قبول",decline:"رفض",noNew:"لا توجد طلبات جديدة قيد الانتظار.",noAccepted:"لا توجد مهام مقبولة حتى الآن.",noMatch:"لا توجد عناصر للعرض.",
   reqLabel:"الطلب",noteLabel:"ملاحظة المسؤول",notesPh:"ملاحظات أو تعليمات موجَّهة لعضو الفريق المكلَّف",
   mTaskId:"رقم المهمة",mProj:"المشروع",mCat:"الفئة",mReqBy:"مقدّم الطلب",mRecv:"تاريخ الطلب",mAssign:"المسؤول",mStart:"البدء",mDur:"المدة (أيام)",mStatus:"الحالة",mDue:"الاستحقاق",mClosed:"الإقفال",mLeft:"المتبقّي",daysUnit:"يوم",
@@ -780,19 +812,21 @@ function t(k){return T[L][k];}
 const ALL_WIDGETS=[["kpis","KPI cards","بطاقات المؤشرات"],["alerts","Needs Attention","يحتاج انتباه"],["byCat","By Category","حسب الفئة"],["bySt","By Status","حسب الحالة"],["byPri","By Priority","حسب الأولوية"],["byProj","By Project","حسب المشروع"],["wlTeam","Workload by Team","توزيع العمل"],["overTime","Over Time","عبر الزمن"],["topReq","Top Requesters","الأكثر طلباً"]];
 const DEFAULT_WIDGETS={kpis:true,alerts:true,byCat:true,bySt:true,byPri:true,byProj:true,wlTeam:true,overTime:true,topReq:false};
 
-let state={lists:JSON.parse(JSON.stringify(SEED)),requests:[],staff:[],route:"dashboard",role:"employee",widgets:JSON.parse(JSON.stringify(DEFAULT_WIDGETS))};
+let state={lists:JSON.parse(JSON.stringify(SEED)),requests:[],staff:[],recurring:[],route:"dashboard",role:"employee",widgets:JSON.parse(JSON.stringify(DEFAULT_WIDGETS))};
 let allFilters={manage:{status:'',project:'',assignee:'',q:''},open:{status:'',project:'',assignee:'',q:''},archive:{status:'',project:'',assignee:'',q:''}};
 function F(){const r=state.route;if(!allFilters[r])allFilters[r]={status:'',project:'',assignee:'',q:''};return allFilters[r];}
 let pageNum={manage:1,open:1,archive:1,all:1};
 let thanksInfo=null,modal=null,sideOpen=false;
 let trackQ='';            // track page search
 let manageView='cards';   // manage page view mode: 'cards' or 'open'
+let periodForm=null;
 let staffName='';         // selected staff member name
 let staffModal=null;      // staff task detail modal
 
 async function load(){
   const sb=await sbFetchAll(); if(sb!==null)state.requests=sb;
   const st=await sbFetchStaff(); if(st!==null)state.staff=st;
+  const rec=await sbFetchRecurring(); if(rec!==null)state.recurring=rec;
   const cfg=await sbFetchSettings();
   if(cfg){
     if(cfg.lists)state.lists=cfg.lists;
@@ -823,6 +857,7 @@ async function load(){
     state.lists.priorities=out;
   }
   if(changed&&cfg){try{await sbSaveSettings();}catch(e){}}
+  try{await runRecurringGenerator();}catch(e){}
 }
 async function saveLists(){try{await sbSaveSettings();}catch(e){}}
 async function saveLang(){try{await LS.set('advacon_lang',L);}catch(e){}}
@@ -1202,6 +1237,146 @@ function taskTable(rows){
 }
 
 /* ===== MANAGE ===== */
+// ===== RECURRING TASK GENERATOR =====
+function addInterval(date,n,unit){
+  const d=new Date(date);
+  if(unit==='hour')d.setTime(d.getTime()+n*3600000);
+  else if(unit==='day')d.setTime(d.getTime()+n*86400000);
+  else if(unit==='week')d.setTime(d.getTime()+n*7*86400000);
+  else if(unit==='month')d.setMonth(d.getMonth()+n);
+  return d;
+}
+async function runRecurringGenerator(){
+  if(!state.recurring||!state.recurring.length)return;
+  const now=Date.now();let anyGen=false;
+  for(const tpl of state.recurring){
+    if(!tpl.active||!tpl.startAt)continue;
+    // next occurrence = lastRunAt+interval, or startAt if never run
+    let next=tpl.lastRunAt?addInterval(tpl.lastRunAt,tpl.everyN,tpl.everyUnit):new Date(tpl.startAt);
+    let guard=0,lastGen=tpl.lastRunAt;
+    let genCount=tpl.genCount||0;
+    while(next.getTime()<=now&&guard<500){
+      // create a real task for this occurrence
+      const nowIso=new Date().toISOString();
+      const occIso=next.toISOString();
+      const task={
+        requestedBy:tpl.title?('Auto • '+(L==='ar'?'مهمة دورية':'Recurring')):'Auto',
+        phone:'',project:tpl.project||'',category:tpl.category||'',priority:tpl.priority||'Medium',
+        title:tpl.title,assignedTo:tpl.assignedTo||'',start:occIso.slice(0,10),duration:'',
+        status:'In Progress',accepted:true,notes:tpl.notes||'',closed:'',archived:false,
+        images:'',files:'',pendingConfirm:false,confirmedAt:'',
+        receivedAt:occIso,startedAt:occIso,closeoutImages:'',rejectedAt:'',recurringId:tpl.id
+      };
+      try{const saved=await sbInsert(task);state.requests.push(saved);anyGen=true;genCount++;lastGen=occIso;}catch(e){break;}
+      next=addInterval(next,tpl.everyN,tpl.everyUnit);guard++;
+    }
+    if(lastGen!==tpl.lastRunAt){
+      tpl.lastRunAt=lastGen;tpl.genCount=genCount;
+      try{await sbPatchRecurring(tpl.id,{last_run_at:lastGen,gen_count:genCount});}catch(e){}
+    }
+  }
+  if(anyGen)render();
+}
+// ===== PERIOD TASKS UI =====
+function unitLabel(n,unit){
+  const u=t('unit_'+unit)||unit;
+  return (L==='ar'?('كل '+(n>1?n+' ':'')+u):('every '+(n>1?n+' ':'')+u));
+}
+function viewPeriodTasks(){
+  const list=state.recurring||[];
+  const addBtn=`<button class="btn" onclick="openPeriodForm()">+ ${t('addPeriod')}</button>`;
+  if(!list.length){
+    return `<div class="period-bar"><p class="hint" style="margin:0">${t('periodIntro')}</p>${addBtn}</div><div class="empty" style="margin-top:20px">${t('noPeriod')}</div>`;
+  }
+  const cards=list.map(tpl=>{
+    const linked=byNumberDesc(state.requests.map(calc).filter(r=>String(r.recurringId)===String(tpl.id)));
+    const chips=linked.length?linked.map(r=>`<span class="pt-chip" onclick="openEdit(${r.id})" title="${esc(r.title)}">${fmtID(r.id)}</span>`).join(''):`<span class="pt-none">${t('noneYet')}</span>`;
+    return `<div class="pt-card ${tpl.active?'':'off'}">
+      <div class="pt-top">
+        <div class="pt-title">${esc(tpl.title)}</div>
+        <div class="pt-acts">
+          <button class="ico" title="${t('edit')}" onclick="openPeriodForm(${tpl.id})">✎</button>
+          <button class="ico" title="${tpl.active?t('pause'):t('resume')}" onclick="togglePeriod(${tpl.id})">${tpl.active?'⏸':'▶'}</button>
+          <button class="ico del" title="${t('del')}" onclick="deletePeriod(${tpl.id})">🗑</button>
+        </div>
+      </div>
+      <div class="pt-meta">
+        <span class="pt-pill">${unitLabel(tpl.everyN,tpl.everyUnit)}</span>
+        ${tpl.assignedTo?`<span class="pt-pill pt-staff">→ ${esc(tpl.assignedTo)}</span>`:''}
+        ${tpl.project?`<span class="pt-pill">${esc(tpl.project)}</span>`:''}
+        ${tpl.active?'':`<span class="pt-pill pt-paused">${t('paused')}</span>`}
+      </div>
+      <div class="pt-stats">
+        <span class="pt-count">${t('genCount')}: <b>${tpl.genCount||0}</b></span>
+        ${tpl.lastRunAt?`<span class="pt-last">${t('lastGen')}: ${fmtTime(tpl.lastRunAt)}</span>`:''}
+      </div>
+      <div class="pt-links"><span class="pt-links-lab">${t('linkedTasks')}:</span> ${chips}</div>
+    </div>`;
+  }).join('');
+  return `<div class="period-bar"><p class="hint" style="margin:0">${t('periodIntro')}</p>${addBtn}</div><div class="pt-grid">${cards}</div>`;
+}
+function openPeriodForm(id){
+  const tpl=id?(state.recurring||[]).find(x=>String(x.id)===String(id)):null;
+  periodForm=tpl?Object.assign({},tpl):{title:'',project:'',category:'',priority:'Medium',assignedTo:'',notes:'',everyN:1,everyUnit:'day',startAt:new Date().toISOString().slice(0,16),active:true};
+  periodForm._id=id||null;
+  modal={type:'period'};renderModal();
+}
+function periodFormHTML(){
+  const f=periodForm;const projs=state.lists.projects||[];const cats=state.lists.categories||[];const pris=state.lists.priorities||[];
+  const staff=state.staff||[];
+  const projOpts=projs.map(p=>`<option ${f.project===p?'selected':''}>${esc(p)}</option>`).join('');
+  const catOpts=cats.map(c=>{const v=typeof c==='object'?(c.en||c.ar):c;return `<option ${f.category===v?'selected':''}>${esc(v)}</option>`;}).join('');
+  const priOpts=pris.map(p=>{const v=typeof p==='object'?(p.en||p.ar):p;return `<option ${f.priority===v?'selected':''}>${esc(v)}</option>`;}).join('');
+  const staffOpts=`<option value="">${t('selectStaff')}</option>`+staff.map(s=>{const nm=L==='ar'?(s.ar||s.en):(s.en||s.ar);return `<option value="${esc(nm)}" ${f.assignedTo===nm?'selected':''}>${esc(nm)}</option>`;}).join('');
+  const units=['hour','day','week','month'].map(u=>`<option value="${u}" ${f.everyUnit===u?'selected':''}>${t('unit_'+u)}</option>`).join('');
+  return `<div class="modal period-modal" style="max-width:520px">
+    <h3>${f._id?t('editPeriod'):t('addPeriod')}</h3>
+    <div class="field"><label>${t('fTitle')}</label><input id="pf_title" value="${esc(f.title)}" placeholder="${t('fTitle')}"/></div>
+    <div class="pf-row">
+      <div class="field"><label>${t('fEvery')}</label><input id="pf_n" type="number" min="1" value="${f.everyN}"/></div>
+      <div class="field"><label>${t('fUnit')}</label><select id="pf_unit">${units}</select></div>
+    </div>
+    <div class="field"><label>${t('fStartAt')}</label><input id="pf_start" type="datetime-local" value="${(f.startAt||'').slice(0,16)}"/></div>
+    <div class="field"><label>${t('fStaff')}</label><select id="pf_staff">${staffOpts}</select></div>
+    <div class="pf-row">
+      <div class="field"><label>${t('fProj')}</label><select id="pf_proj"><option value="">—</option>${projOpts}</select></div>
+      <div class="field"><label>${t('fCat')}</label><select id="pf_cat"><option value="">—</option>${catOpts}</select></div>
+    </div>
+    <div class="field"><label>${t('fPriority')}</label><select id="pf_pri">${priOpts}</select></div>
+    <div class="field"><label>${t('fNotes')}</label><textarea id="pf_notes" rows="2">${esc(f.notes||'')}</textarea></div>
+    <div class="btnrow" style="justify-content:flex-end"><button class="btn sec" onclick="modal=null;renderModal()">${t('cancel')}</button><button class="btn" onclick="savePeriodForm()">${t('save')}</button></div>
+  </div>`;
+}
+async function savePeriodForm(){
+  const g=(id)=>{const e=document.getElementById(id);return e?e.value:'';};
+  const o={
+    title:g('pf_title').trim(),everyN:Math.max(1,Number(g('pf_n'))||1),everyUnit:g('pf_unit'),
+    startAt:g('pf_start')?new Date(g('pf_start')).toISOString():new Date().toISOString(),
+    assignedTo:g('pf_staff'),project:g('pf_proj'),category:g('pf_cat'),priority:g('pf_pri'),notes:g('pf_notes').trim(),
+    active:periodForm.active!==false
+  };
+  if(!o.title){toast(t('fTitleReq'));return;}
+  const id=periodForm._id;modal=null;
+  try{
+    if(id){o.genCount=periodForm.genCount||0;o.lastRunAt=periodForm.lastRunAt||'';const up=await sbUpdateRecurring(id,o);const i=state.recurring.findIndex(x=>String(x.id)===String(id));if(i>=0)state.recurring[i]=up;}
+    else{const ins=await sbInsertRecurring(o);state.recurring.push(ins);}
+    toast(t('saved'));render();
+    try{await runRecurringGenerator();}catch(e){}
+  }catch(e){toast(t('errSave'));render();}
+}
+async function togglePeriod(id){
+  const tpl=state.recurring.find(x=>String(x.id)===String(id));if(!tpl)return;
+  tpl.active=!tpl.active;render();
+  try{await sbPatchRecurring(id,{active:tpl.active});if(tpl.active)await runRecurringGenerator();}catch(e){}
+}
+function deletePeriod(id){
+  modal={type:'confirm',title:t('delPeriodQ'),msg:t('delPeriodMsg'),okLabel:t('del'),okClass:'danger',onok:'doDeletePeriod('+id+')'};renderModal();
+}
+async function doDeletePeriod(id){
+  modal=null;state.recurring=state.recurring.filter(x=>String(x.id)!==String(id));render();
+  try{await sbDeleteRecurring(id);}catch(e){}
+  toast(t('deletedToast2'));
+}
 function needsAttention(){
   const all=state.requests.map(calc);
   const now=Date.now();
@@ -1281,8 +1456,11 @@ function viewManage(){
   const col1=pending.length?pending.map(incCard).join(''):`<div class="mc-empty">${t('noNew')}</div>`;
   const col2=assigned.length?assigned.map(workCard).join(''):`<div class="mc-empty">${t('noAccepted')}</div>`;
   const col3=pendConfirm.length?pendConfirm.map(pendCard).join(''):`<div class="mc-empty">${t('noPending')}</div>`;
-  const toggle=`<div class="view-toggle"><button class="${manageView==='cards'?'on':''}" onclick="manageView='cards';render()">▦ ${t('viewCards')}</button><button class="${manageView==='open'?'on':''}" onclick="manageView='open';render()">☰ ${t('viewOpen')}</button></div>`;
-  const head=`<div class="phead phead-row"><div><div class="eyebrow">${t('opsEye')}</div><h1>${t('manageH1')}</h1></div>${toggle}</div>`+needsAttention();
+  const toggle=`<div class="view-toggle"><button class="${manageView==='cards'?'on':''}" onclick="manageView='cards';render()">▦ ${t('viewCards')}</button><button class="${manageView==='open'?'on':''}" onclick="manageView='open';render()">☰ ${t('viewOpen')}</button><button class="${manageView==='period'?'on':''}" onclick="manageView='period';render()">🔁 ${t('viewPeriod')}</button></div>`;
+  const head=`<div class="phead phead-row"><div><div class="eyebrow">${t('opsEye')}</div><h1>${t('manageH1')}</h1></div>${toggle}</div>`+(manageView==='period'?'':needsAttention());
+  if(manageView==='period'){
+    return head+viewPeriodTasks();
+  }
   if(manageView==='open'){
     return head+openTasksBlock();
   }
@@ -1782,6 +1960,10 @@ function renderModal(){
       <div class="field" style="margin-bottom:12px"><label>${t('stfCodeLab')}</label><input id="se_code" value="${esc(modal.code)}" maxlength="3" inputmode="numeric" dir="ltr" oninput="this.value=this.value.replace(/[^0-9]/g,'')"/></div>
       <div class="field" style="margin-bottom:16px"><label>${t('mPhone')}</label><input id="se_phone" value="${esc(modal.phone||'')}" inputmode="tel" dir="ltr" placeholder="05XXXXXXXX"/></div>
       <div class="btnrow" style="justify-content:flex-end"><button class="btn sec" onclick="modal=null;renderModal()">${t('cancel')}</button><button class="btn" onclick="saveStaffEdit()">${t('save')}</button></div></div></div>`;return;
+  }
+  if(modal.type==='period'){
+    const close2=`onclick="if(event.target===this){modal=null;renderModal();}"`;
+    el.innerHTML=`<div class="modal-bg" ${close2}>${periodFormHTML()}</div>`;return;
   }
   if(modal.type==='confirm'){
     el.innerHTML=`<div class="modal-bg" ${close}><div class="modal" style="max-width:420px"><h3>${esc(modal.title)}</h3>${modal.msg?`<p><b>${modal.msg}</b></p>`:''}<div class="btnrow" style="justify-content:flex-end"><button class="btn sec" onclick="modal=null;renderModal()">${t('cancel')}</button><button class="btn ${modal.okClass||''}" onclick="${modal.onok}">${modal.okLabel||t('confirmDelYes')}</button></div></div></div>`;return;
