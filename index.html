@@ -700,6 +700,8 @@ tr.pendrow{background:rgba(251,239,214,.32)}
 .pt-cat .pt-tbl{border:none}
 .pt-master{margin-top:8px;border:1px solid var(--grid);border-radius:14px;overflow:hidden;background:#fff;box-shadow:var(--shadow)}
 .pt-master-head{display:flex;align-items:center;gap:9px;padding:13px 16px;background:var(--lgray);cursor:pointer;color:var(--navy);font-size:14px}
+.pt-cat-empty{padding:18px;text-align:center;color:var(--grey);font-style:italic;font-size:13px;background:#fff}
+.period-bar-info{justify-content:flex-start;background:var(--lblue);border-color:var(--accent)}
 </style></head>
 <body><div id="gate"></div><div class="app" id="app" style="display:none"></div><div class="toast" id="toast"></div>
 <script>
@@ -795,7 +797,7 @@ const T={
   requestedBy:"Requested by",namePh:"Your name",projLoc:"Project / Location",svcType:"Service type",needs:"What do you need?",needsPh:"Describe the service you are requesting",
   priority:"Priority",dateReq:"Date requested",autoToday:"Set automatically to today",submit:"Submit request",select:"— select —",
   manageH1:"Manage Requests",manageP:"Accept incoming requests to start work, then assign and schedule.",opsEye:"Operations",
-  incoming:"Incoming requests",waiting:"waiting",accepted:"Accepted tasks",secIncoming:"Incoming requests",secAssigned:"Assigned to staff",secPending:"Pending your confirmation",noPending:"Nothing awaiting confirmation.",viewCards:"Board",viewPeriod:"Period Tasks",backBoard:"Back to Board",ptActive:"Active",ptTask:"Recurring task",ptEvery:"Frequency",noCategory:"Uncategorized",mCat:"Category",ptAllTable:"All recurring tasks (full table)",addPeriod:"Add Period Task",editPeriod:"Edit Period Task",periodIntro:"Recurring tasks auto-generate and go straight to the assigned technician (In Progress).",noPeriod:"No period tasks yet. Add one to automate recurring work.",noneYet:"none yet",genCount:"Generated",lastGen:"Last",linkedTasks:"Linked tasks",paused:"Paused",pause:"Pause",resume:"Resume",fTitle:"Task title",fEvery:"Every",fUnit:"Unit",fStartAt:"Start at",fIncludeFriday:"Include Friday (uncheck to skip Fridays)",noFri:"No Friday",fStaff:"Assign to Employee",fProj:"Project",fCat:"Category",fPriority:"Priority",fNotes:"Notes",fTitleReq:"Please enter a title",selectStaff:"Select employee",unit_hour:"Hour(s)",unit_day:"Day(s)",unit_week:"Week(s)",unit_month:"Month(s)",delPeriodQ:"Delete this period task?",delPeriodMsg:"The template will stop generating. Already-generated tasks stay.",deletedToast2:"Period task deleted",errSave:"Save failed",saved:"Saved",genTitle:"Confirm task generation",genMsg:"{n} recurring task(s) are due and will be created:",genYes:"Generate",genDone:"Tasks generated",viewOpen:"Open tasks",mPhone:"Mobile",allEye:"Reference",allH1:"All Requests",allP:"Complete reference of every request, all statuses.",total:"total",exportXl:"Export to Excel",allStatuses:"All statuses",allProjects:"All projects",allEmployees:"All team",search:"Search…",addTask:"Add task",
+  incoming:"Incoming requests",waiting:"waiting",accepted:"Accepted tasks",secIncoming:"Incoming requests",secAssigned:"Assigned to staff",secPending:"Pending your confirmation",noPending:"Nothing awaiting confirmation.",viewCards:"Board",viewPeriod:"Period Tasks",backBoard:"Back to Board",ptActive:"Active",ptTask:"Recurring task",ptEvery:"Frequency",noCategory:"Uncategorized",mCat:"Category",ptAllTable:"All recurring tasks (full table)",catEmpty:"No recurring tasks yet in this category.",addPeriod:"Add Period Task",editPeriod:"Edit Period Task",periodIntro:"Recurring tasks auto-generate and go straight to the assigned technician (In Progress).",noPeriod:"No period tasks yet. Add one to automate recurring work.",noneYet:"none yet",genCount:"Generated",lastGen:"Last",linkedTasks:"Linked tasks",paused:"Paused",pause:"Pause",resume:"Resume",fTitle:"Task title",fEvery:"Every",fUnit:"Unit",fStartAt:"Start at",fIncludeFriday:"Include Friday (uncheck to skip Fridays)",noFri:"No Friday",fStaff:"Assign to Employee",fProj:"Project",fCat:"Category",fPriority:"Priority",fNotes:"Notes",fTitleReq:"Please enter a title",selectStaff:"Select employee",unit_hour:"Hour(s)",unit_day:"Day(s)",unit_week:"Week(s)",unit_month:"Month(s)",delPeriodQ:"Delete this period task?",delPeriodMsg:"The template will stop generating. Already-generated tasks stay.",deletedToast2:"Period task deleted",errSave:"Save failed",saved:"Saved",genTitle:"Confirm task generation",genMsg:"{n} recurring task(s) are due and will be created:",genYes:"Generate",genDone:"Tasks generated",viewOpen:"Open tasks",mPhone:"Mobile",allEye:"Reference",allH1:"All Requests",allP:"Complete reference of every request, all statuses.",total:"total",exportXl:"Export to Excel",allStatuses:"All statuses",allProjects:"All projects",allEmployees:"All team",search:"Search…",addTask:"Add task",
   accept:"Accept",decline:"Decline",noNew:"No new requests waiting.",noAccepted:"No accepted tasks yet.",noMatch:"Nothing here.",
   reqLabel:"Request",noteLabel:"Manager note",notesPh:"Note / instructions for the team member",
   mTaskId:"Task ID",mProj:"Project",mCat:"Category",mReqBy:"Requested by",mRecv:"Received",mAssign:"Assigned to",mStart:"Start",mDur:"Duration (days)",mStatus:"Status",mDue:"Due",mClosed:"Closed",mLeft:"Time left",daysUnit:"days",
@@ -825,7 +827,7 @@ const T={
   requestedBy:"مقدّم الطلب",namePh:"الاسم",projLoc:"المشروع / الموقع",svcType:"نوع الخدمة",needs:"تفاصيل الطلب",needsPh:"يُرجى وصف الخدمة المطلوبة بوضوح",
   priority:"الأولوية",dateReq:"تاريخ الطلب",autoToday:"يُحدّد تلقائياً بتاريخ اليوم",submit:"إرسال الطلب",select:"— اختر —",
   manageH1:"إدارة الطلبات",manageP:"راجع الطلبات الواردة واقبلها لبدء العمل، ثم وزّعها وجدوِلها.",opsEye:"العمليات",
-  incoming:"الطلبات الواردة",waiting:"بالانتظار",accepted:"المهام المقبولة",secIncoming:"الطلبات الواردة",secAssigned:"الطلبات الموجّهة للفنيين",secPending:"بانتظار تأكيدك",noPending:"لا يوجد ما ينتظر التأكيد.",viewCards:"الأعمدة",viewPeriod:"المهام الدورية",backBoard:"رجوع للبورد",ptActive:"فعّال",ptTask:"المهمة الدورية",ptEvery:"التكرار",noCategory:"بدون فئة",mCat:"الفئة",ptAllTable:"كل المهام الدورية (الجدول الشامل)",addPeriod:"إضافة مهمة دورية",editPeriod:"تعديل المهمة الدورية",periodIntro:"المهام الدورية تتولّد تلقائياً وتذهب مباشرة للفني المسؤول (تحت العمل).",noPeriod:"لا توجد مهام دورية بعد. أضف واحدة لأتمتة الأعمال المتكررة.",noneYet:"لا شيء بعد",genCount:"تولّدت",lastGen:"آخر توليد",linkedTasks:"المهام المرتبطة",paused:"موقوفة",pause:"إيقاف",resume:"تشغيل",fTitle:"عنوان المهمة",fEvery:"كل",fUnit:"الوحدة",fStartAt:"تبدأ في",fIncludeFriday:"تضمين الجمعة (ألغِ التحديد لتخطّي الجُمع)",noFri:"بدون جمعة",fStaff:"توجيه لموظف",fProj:"المشروع",fCat:"الفئة",fPriority:"الأولوية",fNotes:"ملاحظات",fTitleReq:"الرجاء إدخال عنوان",selectStaff:"اختر الموظف",unit_hour:"ساعة",unit_day:"يوم",unit_week:"أسبوع",unit_month:"شهر",delPeriodQ:"حذف هذه المهمة الدورية؟",delPeriodMsg:"سيتوقف القالب عن التوليد. المهام المتولّدة تبقى.",deletedToast2:"حُذفت المهمة الدورية",errSave:"فشل الحفظ",saved:"تم الحفظ",genTitle:"تأكيد توليد المهام",genMsg:"يوجد {n} مهمة دورية مستحقة سيتم إنشاؤها:",genYes:"توليد",genDone:"تم توليد المهام",viewOpen:"المهام المفتوحة",mPhone:"الجوال",allEye:"مرجع",allH1:"جميع الطلبات",allP:"سجلّ شامل بكل الطلبات بجميع الحالات.",total:"الإجمالي",exportXl:"تصدير لإكسل",allStatuses:"كل الحالات",allProjects:"كل المشاريع",allEmployees:"كل الفريق",search:"بحث…",addTask:"إضافة مهمة",
+  incoming:"الطلبات الواردة",waiting:"بالانتظار",accepted:"المهام المقبولة",secIncoming:"الطلبات الواردة",secAssigned:"الطلبات الموجّهة للفنيين",secPending:"بانتظار تأكيدك",noPending:"لا يوجد ما ينتظر التأكيد.",viewCards:"الأعمدة",viewPeriod:"المهام الدورية",backBoard:"رجوع للبورد",ptActive:"فعّال",ptTask:"المهمة الدورية",ptEvery:"التكرار",noCategory:"بدون فئة",mCat:"الفئة",ptAllTable:"كل المهام الدورية (الجدول الشامل)",catEmpty:"لا توجد مهام دورية في هذه الفئة بعد.",addPeriod:"إضافة مهمة دورية",editPeriod:"تعديل المهمة الدورية",periodIntro:"المهام الدورية تتولّد تلقائياً وتذهب مباشرة للفني المسؤول (تحت العمل).",noPeriod:"لا توجد مهام دورية بعد. أضف واحدة لأتمتة الأعمال المتكررة.",noneYet:"لا شيء بعد",genCount:"تولّدت",lastGen:"آخر توليد",linkedTasks:"المهام المرتبطة",paused:"موقوفة",pause:"إيقاف",resume:"تشغيل",fTitle:"عنوان المهمة",fEvery:"كل",fUnit:"الوحدة",fStartAt:"تبدأ في",fIncludeFriday:"تضمين الجمعة (ألغِ التحديد لتخطّي الجُمع)",noFri:"بدون جمعة",fStaff:"توجيه لموظف",fProj:"المشروع",fCat:"الفئة",fPriority:"الأولوية",fNotes:"ملاحظات",fTitleReq:"الرجاء إدخال عنوان",selectStaff:"اختر الموظف",unit_hour:"ساعة",unit_day:"يوم",unit_week:"أسبوع",unit_month:"شهر",delPeriodQ:"حذف هذه المهمة الدورية؟",delPeriodMsg:"سيتوقف القالب عن التوليد. المهام المتولّدة تبقى.",deletedToast2:"حُذفت المهمة الدورية",errSave:"فشل الحفظ",saved:"تم الحفظ",genTitle:"تأكيد توليد المهام",genMsg:"يوجد {n} مهمة دورية مستحقة سيتم إنشاؤها:",genYes:"توليد",genDone:"تم توليد المهام",viewOpen:"المهام المفتوحة",mPhone:"الجوال",allEye:"مرجع",allH1:"جميع الطلبات",allP:"سجلّ شامل بكل الطلبات بجميع الحالات.",total:"الإجمالي",exportXl:"تصدير لإكسل",allStatuses:"كل الحالات",allProjects:"كل المشاريع",allEmployees:"كل الفريق",search:"بحث…",addTask:"إضافة مهمة",
   accept:"قبول",decline:"رفض",noNew:"لا توجد طلبات جديدة قيد الانتظار.",noAccepted:"لا توجد مهام مقبولة حتى الآن.",noMatch:"لا توجد عناصر للعرض.",
   reqLabel:"الطلب",noteLabel:"ملاحظة المسؤول",notesPh:"ملاحظات أو تعليمات موجَّهة لعضو الفريق المكلَّف",
   mTaskId:"رقم المهمة",mProj:"المشروع",mCat:"الفئة",mReqBy:"مقدّم الطلب",mRecv:"تاريخ الطلب",mAssign:"المسؤول",mStart:"البدء",mDur:"المدة (أيام)",mStatus:"الحالة",mDue:"الاستحقاق",mClosed:"الإقفال",mLeft:"المتبقّي",daysUnit:"يوم",
@@ -1351,15 +1353,14 @@ function unitLabel(n,unit){
 }
 function viewPeriodTasks(){
   const list=state.recurring||[];
-  const addBtn=`<button class="btn" onclick="openPeriodForm()">+ ${t('addPeriod')}</button>`;
-  if(!list.length){
-    return `<div class="period-bar"><p class="hint" style="margin:0">${t('periodIntro')}</p>${addBtn}</div><div class="empty" style="margin-top:20px">${t('noPeriod')}</div>`;
-  }
   const allCalc=state.requests.map(calc);
-  // group templates by category
+  // build category order from SYSTEM categories (show all, even empty), then any extra cats used by templates
+  const sysCats=(state.lists.categories||[]).map(c=>typeof c==='object'?(L==='ar'?(c.ar||c.en):(c.en||c.ar)):c);
   const groups={};const order=[];
+  sysCats.forEach(cat=>{if(!groups[cat]){groups[cat]=[];order.push(cat);}});
   list.forEach(tpl=>{const cat=(tpl.category&&tpl.category.trim())?tpl.category:t('noCategory');if(!groups[cat]){groups[cat]=[];order.push(cat);}groups[cat].push(tpl);});
-  order.sort((a,b)=>{if(a===t('noCategory'))return 1;if(b===t('noCategory'))return -1;return a.localeCompare(b);});
+  // ensure "no category" bucket exists last if any uncategorized templates
+  if(groups[t('noCategory')]&&!order.includes(t('noCategory')))order.push(t('noCategory'));
 
   const linkedRowsFor=(tpl)=>{
     const linked=byNumberDesc(allCalc.filter(r=>String(r.recurringId)===String(tpl.id)));
@@ -1407,6 +1408,7 @@ function viewPeriodTasks(){
       <button class="btn-mini" onclick="openPeriodForm(null,'${esc(cat).replace(/'/g,"\\'")}')">+ ${t('addPeriod')}</button>
     </div>`;
     if(collapsed)return `<div class="pt-cat">${head}</div>`;
+    if(!tpls.length){return `<div class="pt-cat">${head}<div class="pt-cat-empty">${t('catEmpty')}</div></div>`;}
     const body=`<div class="tbl-wrap"><table class="tbl pt-tbl"><thead><tr>
       <th></th><th>${t('ptTask')}</th><th>${t('ptEvery')}</th><th>${t('fStaff')}</th><th>${t('mProj')}</th>
       <th>${t('genCount')}</th><th>${t('lastGen')}</th><th>${t('mStatus')}</th><th></th>
@@ -1435,7 +1437,7 @@ function viewPeriodTasks(){
     <th>${t('ptTask')}</th><th>${t('mCat')}</th><th>${t('ptEvery')}</th><th>${t('fStaff')}</th><th>${t('mProj')}</th><th>${t('genCount')}</th><th>${t('mStatus')}</th><th></th>
   </tr></thead><tbody>${masterRows}</tbody></table></div>`:''}</div>`;
 
-  return `<div class="period-bar"><p class="hint" style="margin:0">${t('periodIntro')}</p>${addBtn}</div>
+  return `<div class="period-bar period-bar-info"><p class="hint" style="margin:0">${t('periodIntro')}</p></div>
   <div class="pt-cats">${sections}</div>
   ${master}`;
 }
