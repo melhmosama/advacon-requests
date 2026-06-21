@@ -693,23 +693,28 @@ tr.pendrow{background:rgba(251,239,214,.32)}
 /* period categories */
 /* period categories — refined, breathable layout */
 .period-bar-info{justify-content:flex-start;background:linear-gradient(180deg,var(--lblue),#fff);border-color:var(--accent);padding:13px 18px;margin-bottom:22px}
-/* grid of categories: 4 across, expanded one spans the full row */
-.pt-cats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:30px;align-items:start}
-.pt-cat{border:1px solid var(--grid);border-radius:14px;overflow:hidden;background:#fff;box-shadow:0 2px 8px rgba(20,49,76,.05);transition:box-shadow .18s,transform .12s}
-.pt-cat:hover{box-shadow:0 5px 18px rgba(20,49,76,.10);transform:translateY(-1px)}
-.pt-cat-open{grid-column:1/-1}
-.pt-cat-open:hover{transform:none}
-.pt-cat-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px;background:linear-gradient(135deg,var(--navy),var(--accent));border-bottom:none}
-.pt-cat-left{display:flex;align-items:center;gap:9px;cursor:pointer;color:#fff;font-size:14px;font-weight:800;flex:1;letter-spacing:-.01em;min-width:0}
-.pt-cat-left b{font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pt-cat-caret{color:rgba(255,255,255,.85);font-size:10px;width:14px;display:inline-flex;justify-content:center;flex-shrink:0}
-.pt-cat-head .count-chip{background:rgba(255,255,255,.22);color:#fff;font-weight:700;flex-shrink:0}
-.pt-cat-head .btn-mini{background:rgba(255,255,255,.16);color:#fff;border:1px solid rgba(255,255,255,.3)}
-.pt-cat-head .btn-mini:hover{background:rgba(255,255,255,.28)}
-.pt-cat .tbl-wrap{padding:6px 8px 10px}
-.pt-cat .pt-tbl{border:none}
-.pt-cat .pt-tbl thead th{background:transparent;color:var(--grey);border-bottom:1.5px solid var(--grid)}
-.pt-cat .pt-tbl tbody td{border-bottom:1px solid var(--lgray)}
+/* ===== professional category tiles + panel ===== */
+.pt-tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+.pt-tile{display:flex;flex-direction:column;justify-content:space-between;gap:12px;min-height:78px;background:#fff;border:1px solid var(--grid);border-radius:12px;padding:13px 14px;cursor:pointer;transition:border-color .15s,box-shadow .15s,background .15s}
+.pt-tile:hover{border-color:var(--steel);box-shadow:0 2px 10px rgba(21,64,110,.07)}
+.pt-tile.active{background:var(--pale);border-color:var(--med);box-shadow:0 2px 12px rgba(21,64,110,.10)}
+.pt-tile-main{display:flex;align-items:center;gap:9px;min-width:0}
+.pt-tile-main b{font-weight:700;font-size:13.5px;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-.01em}
+.pt-tile-bar{width:3px;height:16px;border-radius:3px;background:var(--med);flex-shrink:0}
+.pt-tile-foot{display:flex;align-items:center;justify-content:space-between}
+.pt-tile-foot .count-chip{background:var(--lgray);color:var(--steel);border:1px solid var(--grid)}
+.pt-tile.active .count-chip{background:var(--med);color:#fff;border-color:var(--med)}
+.pt-tile-add{width:26px;height:26px;border-radius:7px;border:1px solid var(--grid);background:#fff;color:var(--med);font-size:16px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s}
+.pt-tile-add:hover{background:var(--med);color:#fff;border-color:var(--med)}
+/* open category panel (full width, below the tiles) */
+.pt-panel{background:#fff;border:1px solid var(--grid);border-radius:14px;overflow:hidden;box-shadow:0 2px 14px rgba(21,64,110,.07);margin-bottom:28px;animation:ptIn .18s ease}
+@keyframes ptIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.pt-panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 18px;background:var(--pale);border-bottom:1px solid var(--grid);border-inline-start:3px solid var(--med)}
+.pt-panel-title{display:flex;align-items:center;gap:10px;font-size:15px;color:var(--navy)}
+.pt-panel-title b{font-weight:800;letter-spacing:-.01em}
+.pt-panel-title .count-chip{background:#fff;color:var(--med);border:1px solid var(--grid)}
+.pt-panel .tbl-wrap{padding:6px 10px 12px;overflow-x:auto}
+.pt-panel .pt-tbl{border:none}
 .pt-cat-empty{padding:30px 18px;text-align:center;color:var(--grey);font-style:italic;font-size:13.5px;background:#fff}
 .btn-mini{flex-shrink:0}
 /* master full table */
@@ -719,9 +724,23 @@ tr.pendrow{background:rgba(251,239,214,.32)}
 .pt-master-head .count-chip{background:var(--grid);color:var(--steel)}
 .pt-master .tbl-wrap{padding:0 10px 12px}
 
-@media(max-width:1100px){.pt-cats{grid-template-columns:repeat(3,1fr)}}
-@media(max-width:820px){.pt-cats{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:520px){.pt-cats{grid-template-columns:1fr}}
+@media(max-width:1100px){.pt-tiles{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:820px){.pt-tiles{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:520px){.pt-tiles{grid-template-columns:1fr}}
+/* technician closeout: photo + file boxes inside opened task */
+.stf-closeout{display:flex;flex-direction:column;gap:12px;margin-top:8px}
+.co-block{display:flex;flex-direction:column;gap:9px}
+.co-btn{display:inline-flex;align-items:center;gap:8px;justify-content:center;background:var(--lblue);color:var(--accent);border:1.5px dashed var(--accent);border-radius:11px;padding:12px 14px;font-weight:700;font-size:14px;cursor:pointer;transition:.15s}
+.co-btn:hover{background:var(--accent);color:#fff}
+.co-btn.file-btn{background:#F4F6F9;color:var(--steel);border-color:var(--steel)}
+.co-btn.file-btn:hover{background:var(--steel);color:#fff}
+.co-filelist{display:flex;flex-direction:column;gap:6px}
+.co-fileitem{display:flex;align-items:center;justify-content:space-between;gap:8px;background:#fff;border:1px solid var(--grid);border-radius:8px;padding:8px 11px;font-size:12.5px;color:var(--txt);text-decoration:none}
+.co-fileitem .upl{color:var(--grey);font-style:italic}
+.co-fileitem button{background:none;border:none;color:var(--red);font-size:18px;cursor:pointer;line-height:1;padding:0 2px}
+.co-files-grid{display:flex;flex-wrap:wrap;gap:7px}
+.co-files-grid .co-fileitem{flex:0 0 auto}
+.co-summary{font-size:12.5px;color:var(--steel);font-weight:600;margin:4px 0 0}
 </style></head>
 <body><div id="gate"></div><div class="app" id="app" style="display:none"></div><div class="toast" id="toast"></div>
 <script>
@@ -731,8 +750,8 @@ const LOGO_B64="iVBORw0KGgoAAAANSUhEUgAAAXoAAAB4CAYAAAD8HzkvAAABCGlDQ1BJQ0MgUHJv
 const SB_URL="https://abnfwabpqnwnscwyfqbm.supabase.co";
 const SB_KEY="sb_publishable_yeLa2U3cUo9MSn2H0pOlXQ_roSY8_Zx";
 const SB_HEAD={'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'};
-function fromRow(r){return {id:r.id,requestedBy:r.requested_by||'',phone:r.phone||'',project:r.project||'',category:r.category||'',priority:r.priority||'Medium',title:r.title||'',received:r.received||'',assignedTo:r.assigned_to||'',start:r.start_date||'',duration:r.duration||'',status:r.status||'Not Started',accepted:!!r.accepted,notes:r.notes||'',closed:r.closed_date||'',archived:!!r.archived,images:r.images||'',files:r.files||'',pendingConfirm:!!r.pending_confirm,confirmedAt:r.confirmed_at||'',receivedAt:r.received_at||'',startedAt:r.started_at||'',closeoutImages:r.closeout_images||'',rejectedAt:r.rejected_at||'',recurringId:r.recurring_id||''};}
-function toRow(o){return {requested_by:o.requestedBy,phone:o.phone||null,project:o.project,category:o.category,priority:o.priority,title:o.title,received:o.received||null,assigned_to:o.assignedTo||null,start_date:o.start||null,duration:o.duration?Number(o.duration):null,status:o.status,accepted:!!o.accepted,notes:o.notes||null,closed_date:o.closed||null,archived:!!o.archived,images:o.images||null,files:o.files||null,pending_confirm:!!o.pendingConfirm,confirmed_at:o.confirmedAt||null,received_at:o.receivedAt||null,started_at:o.startedAt||null,closeout_images:o.closeoutImages||null,rejected_at:o.rejectedAt||null,recurring_id:o.recurringId||null};}
+function fromRow(r){return {id:r.id,requestedBy:r.requested_by||'',phone:r.phone||'',project:r.project||'',category:r.category||'',priority:r.priority||'Medium',title:r.title||'',received:r.received||'',assignedTo:r.assigned_to||'',start:r.start_date||'',duration:r.duration||'',status:r.status||'Not Started',accepted:!!r.accepted,notes:r.notes||'',closed:r.closed_date||'',archived:!!r.archived,images:r.images||'',files:r.files||'',pendingConfirm:!!r.pending_confirm,confirmedAt:r.confirmed_at||'',receivedAt:r.received_at||'',startedAt:r.started_at||'',closeoutImages:r.closeout_images||'',closeoutFiles:r.closeout_files||'',rejectedAt:r.rejected_at||'',recurringId:r.recurring_id||''};}
+function toRow(o){return {requested_by:o.requestedBy,phone:o.phone||null,project:o.project,category:o.category,priority:o.priority,title:o.title,received:o.received||null,assigned_to:o.assignedTo||null,start_date:o.start||null,duration:o.duration?Number(o.duration):null,status:o.status,accepted:!!o.accepted,notes:o.notes||null,closed_date:o.closed||null,archived:!!o.archived,images:o.images||null,files:o.files||null,pending_confirm:!!o.pendingConfirm,confirmed_at:o.confirmedAt||null,received_at:o.receivedAt||null,started_at:o.startedAt||null,closeout_images:o.closeoutImages||null,closeout_files:o.closeoutFiles||null,rejected_at:o.rejectedAt||null,recurring_id:o.recurringId||null};}
 async function sbFetchAll(){try{const res=await fetch(SB_URL+'/rest/v1/requests?select=*&order=id.asc',{headers:SB_HEAD});if(!res.ok)throw 0;return (await res.json()).map(fromRow);}catch(e){return null;}}
 async function sbInsert(o){const res=await fetch(SB_URL+'/rest/v1/requests',{method:'POST',headers:{...SB_HEAD,'Prefer':'return=representation'},body:JSON.stringify(toRow(o))});if(!res.ok)throw new Error();return fromRow((await res.json())[0]);}
 async function sbUpdate(id,o){const res=await fetch(SB_URL+'/rest/v1/requests?id=eq.'+id,{method:'PATCH',headers:SB_HEAD,body:JSON.stringify(toRow(o))});if(!res.ok)throw new Error();}
@@ -760,6 +779,13 @@ async function sbUploadImage(file){
   const ext=(file.name.split('.').pop()||'jpg').toLowerCase();
   const name=Date.now()+'_'+Math.random().toString(36).slice(2,8)+'.'+ext;
   const res=await fetch(SB_URL+'/storage/v1/object/'+SB_BUCKET+'/'+name,{method:'POST',headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':file.type||'image/jpeg'},body:file});
+  if(!res.ok)throw new Error('upload '+res.status);
+  return SB_URL+'/storage/v1/object/public/'+SB_BUCKET+'/'+name;
+}
+async function sbUploadFile(file){
+  const ext=(file.name.split('.').pop()||'bin').toLowerCase();
+  const name=Date.now()+'_'+Math.random().toString(36).slice(2,8)+'.'+ext;
+  const res=await fetch(SB_URL+'/storage/v1/object/'+SB_BUCKET+'/'+name,{method:'POST',headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':file.type||'application/octet-stream'},body:file});
   if(!res.ok)throw new Error('upload '+res.status);
   return SB_URL+'/storage/v1/object/public/'+SB_BUCKET+'/'+name;
 }
@@ -830,7 +856,7 @@ const T={
   byCat:"Requests by Category",bySt:"Requests by Status",byPri:"Requests by Priority",byProj:"Requests by Project",wlTeam:"Workload by Team",overTime:"Requests Over Time",topReq:"Top Requesters",alerts:"Needs Attention",dueIn:"due in",overdueBy:"overdue",noAlerts:"Nothing overdue or due soon.",noData:"No data yet",
   setEye:"Configuration",setH1:"Settings",setP:"Manage dropdown lists and dashboard widgets. Changes apply everywhere.",
   chartsCfg:"Dashboard widgets",chartsCfgHint:"Choose what appears on the dashboard.",
-  sProjects:"Projects",sCats:"Service Types",sEmps:"Team Members",sStaff:"Staff Directory",stfCodeLab:"Code",stfLoginH1:"Request Execution & Tracking Portal – Team Members",stfLoginP:"Enter your 3-digit code to view your tasks.",stfLoginBtn:"Enter",stfBadCode:"Invalid code. Try again.",stfLogout:"Log out",stfWelcome:"Welcome,",staffNeedName:"Enter a name",codeExists:"Code already used",delStaffQ:"Delete this staff member?",editStaffTitle:"Edit staff member",confirmDeclineQ:"Decline this request?",confirmDoneQ:"Confirm this task as completed?",confirmReturnQ:"Return this task to the technician?",closeoutPhoto:"Close-out photo (optional)",closeoutHint:"Optionally attach a photo of the completed work.",recentDone:"Recently Completed",recentDoneHint:"stays here 8h then archived",returnAccept:"Return to Acceptance",confirmReturnAcceptQ:"Return this task to the acceptance list?",returnToTech:"Return to Technician",confirmReturnTechQ:"Return this task to the assigned technician?",completedAt:"Completed at",repTitle:"Reports",repDaily:"Daily Report",repDay:"Day",repEye:"Operations",ddTitle:"Today's Live Dashboard",ddLive:"Live",ddRequested:"Requested",ddAccepted:"Accepted",ddInProgress:"In Progress",ddDaily:"Daily Tasks",ddOngoing:"Ongoing Tasks",ddClosed:"Closed",ddRejected:"Rejected / Deleted",ddPending:"Pending Acceptance",dd_requested:"Requested Today",dd_pending:"Pending Acceptance Today",dd_accepted:"Accepted Today",dd_inprogress:"In Progress (accepted today)",dd_daily:"Daily Tasks (started today)",dd_ongoing:"Ongoing Tasks (from earlier days)",dd_closed:"Closed Today",dd_rejected:"Rejected / Deleted Today",ddHint:"Each count reflects an event that happened today (by its own time). Requested = submitted today, Pending = submitted today & still incoming.",repPageP:"Detailed task log and downloadable daily / period reports.",repDailyTitle:"Daily Report",repDailyHint:"Pick a day and download its PDF (summary) + Excel (full data). Counts events by their timestamp that day.",repPeriodTitle:"Period Report",repPeriodHint:"Requests received in the period, classified by current status (Completed / Rejected / In Progress / Other). Source: All Requests.",repTableTitle:"Detailed Task Log",colReceived:"Received",colAccepted:"Accepted",colClosed:"Closed",colDuration:"Completion",noDate:"No date",repMonthly:"Requests per month — since project start (live)",repDailyChart:"Today's activity breakdown",statsTitle:"Project Statistics — All Time",naTitle:"Needs Attention",naOverdue:"Overdue",naStalePending:"Pending >24h",naLongRunning:"Running >7 days",repFrom:"From",repTo:"To",repGen:"Generate Report",repHint:"Generates a PDF (summary) and Excel (full data) for the selected period — files download to your device.",repGenerating:"Generating report…",repPickDates:"Please select both dates",repExcelErr:"Excel export failed (check connection)",repPopup:"Please allow pop-ups to view the PDF",staffDirEye:"Team",staffDirH1:"Staff Directory",staffDirP:"Manage employees, login codes, and phone numbers shown on tracking.",staffAddNew:"Add new staff member",sPris:"Priorities",addNew:"Add new…",add:"Add",addNameAr:"Arabic name",addNameEn:"English name",
+  sProjects:"Projects",sCats:"Service Types",sEmps:"Team Members",sStaff:"Staff Directory",stfCodeLab:"Code",stfLoginH1:"Request Execution & Tracking Portal – Team Members",stfLoginP:"Enter your 3-digit code to view your tasks.",stfLoginBtn:"Enter",stfBadCode:"Invalid code. Try again.",stfLogout:"Log out",stfWelcome:"Welcome,",staffNeedName:"Enter a name",codeExists:"Code already used",delStaffQ:"Delete this staff member?",editStaffTitle:"Edit staff member",confirmDeclineQ:"Decline this request?",confirmDoneQ:"Confirm this task as completed?",confirmReturnQ:"Return this task to the technician?",closeoutFiles:"Attach files (optional)",closeoutOptional:"Photos & files are optional.",badFileType:"Only PDF, Excel, Word allowed",closeoutPhoto:"Close-out photo (optional)",closeoutHint:"Optionally attach a photo of the completed work.",recentDone:"Recently Completed",recentDoneHint:"stays here 8h then archived",returnAccept:"Return to Acceptance",confirmReturnAcceptQ:"Return this task to the acceptance list?",returnToTech:"Return to Technician",confirmReturnTechQ:"Return this task to the assigned technician?",completedAt:"Completed at",repTitle:"Reports",repDaily:"Daily Report",repDay:"Day",repEye:"Operations",ddTitle:"Today's Live Dashboard",ddLive:"Live",ddRequested:"Requested",ddAccepted:"Accepted",ddInProgress:"In Progress",ddDaily:"Daily Tasks",ddOngoing:"Ongoing Tasks",ddClosed:"Closed",ddRejected:"Rejected / Deleted",ddPending:"Pending Acceptance",dd_requested:"Requested Today",dd_pending:"Pending Acceptance Today",dd_accepted:"Accepted Today",dd_inprogress:"In Progress (accepted today)",dd_daily:"Daily Tasks (started today)",dd_ongoing:"Ongoing Tasks (from earlier days)",dd_closed:"Closed Today",dd_rejected:"Rejected / Deleted Today",ddHint:"Each count reflects an event that happened today (by its own time). Requested = submitted today, Pending = submitted today & still incoming.",repPageP:"Detailed task log and downloadable daily / period reports.",repDailyTitle:"Daily Report",repDailyHint:"Pick a day and download its PDF (summary) + Excel (full data). Counts events by their timestamp that day.",repPeriodTitle:"Period Report",repPeriodHint:"Requests received in the period, classified by current status (Completed / Rejected / In Progress / Other). Source: All Requests.",repTableTitle:"Detailed Task Log",colReceived:"Received",colAccepted:"Accepted",colClosed:"Closed",colDuration:"Completion",noDate:"No date",repMonthly:"Requests per month — since project start (live)",repDailyChart:"Today's activity breakdown",statsTitle:"Project Statistics — All Time",naTitle:"Needs Attention",naOverdue:"Overdue",naStalePending:"Pending >24h",naLongRunning:"Running >7 days",repFrom:"From",repTo:"To",repGen:"Generate Report",repHint:"Generates a PDF (summary) and Excel (full data) for the selected period — files download to your device.",repGenerating:"Generating report…",repPickDates:"Please select both dates",repExcelErr:"Excel export failed (check connection)",repPopup:"Please allow pop-ups to view the PDF",staffDirEye:"Team",staffDirH1:"Staff Directory",staffDirP:"Manage employees, login codes, and phone numbers shown on tracking.",staffAddNew:"Add new staff member",sPris:"Priorities",addNew:"Add new…",add:"Add",addNameAr:"Arabic name",addNameEn:"English name",
   deptName:"Maintenance, Operation & Technical Support Department",thanksH:"Thank you",thanksMsg:"Your request has been received and will be followed up.",thanksContact:"For follow-up, contact the Maintenance, Operation & Technical Support Manager",thanksName:"Eng. Ahmad Masoud",thanksNew:"Submit another request",
   fillReq:"Please fill in the required fields",submitted:"Request submitted",acceptedToast:"start date set to today",declinedToast:"declined",exported:"requests exported",added:"Added",exists:"Already in the list",connErr:"Connection error",closedToast:"closed",deletedToast:"archived",restoredToast:"restored",
   exitAdmin:"Exit",enter:"Enter",page:"Page",of:"of",
@@ -860,7 +886,7 @@ const T={
   byCat:"الطلبات حسب الفئة",bySt:"الطلبات حسب الحالة",byPri:"الطلبات حسب الأولوية",byProj:"الطلبات حسب المشروع",wlTeam:"توزيع العمل على الفريق",overTime:"الطلبات عبر الزمن",topReq:"الأكثر طلباً",alerts:"يحتاج انتباه",dueIn:"تستحق خلال",overdueBy:"متأخرة",noAlerts:"لا شيء متأخر أو قريب الاستحقاق.",noData:"لا توجد بيانات بعد",
   setEye:"الإعدادات",setH1:"الإعدادات",setP:"إدارة القوائم وعناصر لوحة المعلومات. تُطبَّق التغييرات مباشرةً في جميع أنحاء النظام.",
   chartsCfg:"عناصر لوحة المعلومات",chartsCfgHint:"حدِّد العناصر التي تظهر على لوحة المعلومات.",
-  sProjects:"المشاريع",sCats:"أنواع الخدمات",sEmps:"أعضاء الفريق",sStaff:"دليل الموظفين",stfCodeLab:"الرمز",stfLoginH1:"بوابة تنفيذ ومتابعة الطلبات – أعضاء الفريق",stfLoginP:"أدخل رمزك المكوّن من 3 أرقام لعرض مهامك.",stfLoginBtn:"دخول",stfBadCode:"رمز غير صحيح. حاول مرة أخرى.",stfLogout:"تسجيل خروج",stfWelcome:"أهلاً وسهلاً،",staffNeedName:"أدخل الاسم",codeExists:"الرمز مستخدم مسبقاً",delStaffQ:"حذف هذا الموظف؟",editStaffTitle:"تعديل بيانات الموظف",confirmDeclineQ:"رفض هذا الطلب؟",confirmDoneQ:"تأكيد إنجاز هذه المهمة؟",confirmReturnQ:"إرجاع المهمة إلى الفني؟",closeoutPhoto:"صورة الإنجاز (اختياري)",closeoutHint:"يمكنك إرفاق صورة للعمل بعد إنجازه.",recentDone:"المهام المكتملة حديثاً",recentDoneHint:"تبقى هنا 8 ساعات ثم تُؤرشف",returnAccept:"إرجاع إلى قائمة القبول",confirmReturnAcceptQ:"إرجاع المهمة إلى قائمة القبول؟",returnToTech:"إرجاع للفني",confirmReturnTechQ:"إرجاع المهمة إلى الفني المسؤول؟",completedAt:"وقت الإنجاز",repTitle:"التقارير",repDaily:"تقرير يومي",repDay:"اليوم",repEye:"العمليات",ddTitle:"لوحة اليوم المباشرة",ddLive:"مباشر",ddRequested:"طُلبت",ddAccepted:"قُبلت",ddInProgress:"تحت العمل",ddDaily:"مهام اليوم",ddOngoing:"مهام مستمرة",ddClosed:"أُغلقت",ddRejected:"رُفضت / حُذفت",ddPending:"بانتظار القبول",dd_requested:"طُلبت اليوم",dd_pending:"بانتظار القبول اليوم",dd_accepted:"قُبلت اليوم",dd_inprogress:"تحت العمل (قُبلت اليوم)",dd_daily:"مهام اليوم (بدأت اليوم)",dd_ongoing:"مهام مستمرة (من أيام سابقة)",dd_closed:"أُغلقت اليوم",dd_rejected:"رُفضت / حُذفت اليوم",ddHint:"كل رقم يعكس حدثاً صار اليوم (بوقته). طُلبت = قُدّمت اليوم، بانتظار القبول = قُدّمت اليوم ولسا واردة.",repPageP:"سجل المهام التفصيلي وتقارير يومية/فترة قابلة للتحميل.",repDailyTitle:"التقرير اليومي",repDailyHint:"اختر يوماً ونزّل ملف PDF (ملخّص) + Excel (تفصيلي). يحسب الأحداث حسب توقيتها في ذلك اليوم.",repPeriodTitle:"تقرير الفترة",repPeriodHint:"الطلبات المستقبَلة خلال الفترة، مصنّفة حسب حالتها الحالية (مكتمل / مرفوض / تحت المعالجة / أخرى). المصدر: جميع الطلبات.",repTableTitle:"سجل المهام التفصيلي",colReceived:"الاستقبال",colAccepted:"القبول",colClosed:"الإغلاق",colDuration:"مدة الإنجاز",noDate:"بدون تاريخ",repMonthly:"عدد الطلبات شهرياً — منذ بداية المشروع (مباشر)",repDailyChart:"توزيع نشاط اليوم",statsTitle:"إحصائيات المشروع — منذ البداية",naTitle:"تحتاج انتباه",naOverdue:"متأخرة",naStalePending:"معلّقة >24 ساعة",naLongRunning:"شغّالة >7 أيام",repFrom:"من",repTo:"إلى",repGen:"إنشاء التقرير",repHint:"يُنشئ ملف PDF (ملخّص) وملف Excel (بيانات كاملة) للفترة المختارة — تُحمّل الملفات على جهازك.",repGenerating:"جارٍ إنشاء التقرير…",repPickDates:"يُرجى اختيار التاريخين",repExcelErr:"فشل تصدير Excel (تحقق من الاتصال)",repPopup:"يُرجى السماح بالنوافذ المنبثقة لعرض الـPDF",staffDirEye:"الفريق",staffDirH1:"دليل الموظفين",staffDirP:"إدارة الموظفين ورموز الدخول وأرقام الجوال الظاهرة في صفحة التتبّع.",staffAddNew:"إضافة موظف جديد",sPris:"الأولويات",addNew:"إضافة جديد…",add:"إضافة",addNameAr:"الاسم بالعربي",addNameEn:"الاسم بالإنجليزي",
+  sProjects:"المشاريع",sCats:"أنواع الخدمات",sEmps:"أعضاء الفريق",sStaff:"دليل الموظفين",stfCodeLab:"الرمز",stfLoginH1:"بوابة تنفيذ ومتابعة الطلبات – أعضاء الفريق",stfLoginP:"أدخل رمزك المكوّن من 3 أرقام لعرض مهامك.",stfLoginBtn:"دخول",stfBadCode:"رمز غير صحيح. حاول مرة أخرى.",stfLogout:"تسجيل خروج",stfWelcome:"أهلاً وسهلاً،",staffNeedName:"أدخل الاسم",codeExists:"الرمز مستخدم مسبقاً",delStaffQ:"حذف هذا الموظف؟",editStaffTitle:"تعديل بيانات الموظف",confirmDeclineQ:"رفض هذا الطلب؟",confirmDoneQ:"تأكيد إنجاز هذه المهمة؟",confirmReturnQ:"إرجاع المهمة إلى الفني؟",closeoutFiles:"إرفاق ملفات (اختياري)",closeoutOptional:"الصور والملفات اختيارية.",badFileType:"يُسمح بـ PDF و Excel و Word فقط",closeoutPhoto:"صورة الإنجاز (اختياري)",closeoutHint:"يمكنك إرفاق صورة للعمل بعد إنجازه.",recentDone:"المهام المكتملة حديثاً",recentDoneHint:"تبقى هنا 8 ساعات ثم تُؤرشف",returnAccept:"إرجاع إلى قائمة القبول",confirmReturnAcceptQ:"إرجاع المهمة إلى قائمة القبول؟",returnToTech:"إرجاع للفني",confirmReturnTechQ:"إرجاع المهمة إلى الفني المسؤول؟",completedAt:"وقت الإنجاز",repTitle:"التقارير",repDaily:"تقرير يومي",repDay:"اليوم",repEye:"العمليات",ddTitle:"لوحة اليوم المباشرة",ddLive:"مباشر",ddRequested:"طُلبت",ddAccepted:"قُبلت",ddInProgress:"تحت العمل",ddDaily:"مهام اليوم",ddOngoing:"مهام مستمرة",ddClosed:"أُغلقت",ddRejected:"رُفضت / حُذفت",ddPending:"بانتظار القبول",dd_requested:"طُلبت اليوم",dd_pending:"بانتظار القبول اليوم",dd_accepted:"قُبلت اليوم",dd_inprogress:"تحت العمل (قُبلت اليوم)",dd_daily:"مهام اليوم (بدأت اليوم)",dd_ongoing:"مهام مستمرة (من أيام سابقة)",dd_closed:"أُغلقت اليوم",dd_rejected:"رُفضت / حُذفت اليوم",ddHint:"كل رقم يعكس حدثاً صار اليوم (بوقته). طُلبت = قُدّمت اليوم، بانتظار القبول = قُدّمت اليوم ولسا واردة.",repPageP:"سجل المهام التفصيلي وتقارير يومية/فترة قابلة للتحميل.",repDailyTitle:"التقرير اليومي",repDailyHint:"اختر يوماً ونزّل ملف PDF (ملخّص) + Excel (تفصيلي). يحسب الأحداث حسب توقيتها في ذلك اليوم.",repPeriodTitle:"تقرير الفترة",repPeriodHint:"الطلبات المستقبَلة خلال الفترة، مصنّفة حسب حالتها الحالية (مكتمل / مرفوض / تحت المعالجة / أخرى). المصدر: جميع الطلبات.",repTableTitle:"سجل المهام التفصيلي",colReceived:"الاستقبال",colAccepted:"القبول",colClosed:"الإغلاق",colDuration:"مدة الإنجاز",noDate:"بدون تاريخ",repMonthly:"عدد الطلبات شهرياً — منذ بداية المشروع (مباشر)",repDailyChart:"توزيع نشاط اليوم",statsTitle:"إحصائيات المشروع — منذ البداية",naTitle:"تحتاج انتباه",naOverdue:"متأخرة",naStalePending:"معلّقة >24 ساعة",naLongRunning:"شغّالة >7 أيام",repFrom:"من",repTo:"إلى",repGen:"إنشاء التقرير",repHint:"يُنشئ ملف PDF (ملخّص) وملف Excel (بيانات كاملة) للفترة المختارة — تُحمّل الملفات على جهازك.",repGenerating:"جارٍ إنشاء التقرير…",repPickDates:"يُرجى اختيار التاريخين",repExcelErr:"فشل تصدير Excel (تحقق من الاتصال)",repPopup:"يُرجى السماح بالنوافذ المنبثقة لعرض الـPDF",staffDirEye:"الفريق",staffDirH1:"دليل الموظفين",staffDirP:"إدارة الموظفين ورموز الدخول وأرقام الجوال الظاهرة في صفحة التتبّع.",staffAddNew:"إضافة موظف جديد",sPris:"الأولويات",addNew:"إضافة جديد…",add:"إضافة",addNameAr:"الاسم بالعربي",addNameEn:"الاسم بالإنجليزي",
   deptName:"قسم الصيانة والتشغيل والدعم الفني",thanksH:"شكراً جزيلاً",thanksMsg:"تم استلام طلبكم بنجاح، وستتم متابعته من قِبل القسم المختص.",thanksContact:"للاستفسار أو المتابعة، يُرجى التواصل مع مدير قسم الصيانة والتشغيل والدعم الفني",thanksName:"م. أحمد مسعود",thanksNew:"تقديم طلب آخر",
   fillReq:"الرجاء تعبئة الحقول المطلوبة",submitted:"تم إرسال الطلب",acceptedToast:"تم القبول، وحُدِّد تاريخ البدء بتاريخ اليوم",declinedToast:"تم الرفض",exported:"طلب تم تصديره",added:"تمت الإضافة بنجاح",exists:"العنصر موجود بالفعل في القائمة",connErr:"تعذَّر الاتصال بالخادم",closedToast:"تم الإقفال",deletedToast:"تمت الأرشفة",restoredToast:"تم الإرجاع",
   exitAdmin:"خروج",enter:"دخول",page:"صفحة",of:"من",
@@ -1421,24 +1447,29 @@ function viewPeriodTasks(){
     return main+(open?linkedRowsFor(tpl):'');
   };
 
-  // ===== category sections: compact grid by default; click opens full-width =====
-  const sections=order.map(cat=>{
-    const expanded=ptOpenCat===cat;
+  // ===== compact category tiles (grid). Selected one shows its table in a panel BELOW the grid =====
+  const tiles=order.map(cat=>{
+    const active=ptOpenCat===cat;
     const tpls=groups[cat];
-    const catTotal=tpls.length;
     const safeCat=esc(cat).replace(/'/g,"\\'");
-    const head=`<div class="pt-cat-head ${expanded?'open':''}">
-      <div class="pt-cat-left" onclick="ptCatOpen('${safeCat}')"><span class="pt-cat-caret">${expanded?'▾':'▸'}</span> <b>${esc(cat)}</b> <span class="count-chip">${catTotal}</span></div>
-      <button class="btn-mini" onclick="event.stopPropagation();openPeriodForm(null,'${safeCat}')">+ ${t('addPeriod')}</button>
+    return `<div class="pt-tile ${active?'active':''}" onclick="ptCatOpen('${safeCat}')">
+      <div class="pt-tile-main"><span class="pt-tile-bar"></span><b>${esc(cat)}</b></div>
+      <div class="pt-tile-foot"><span class="count-chip">${tpls.length}</span>
+      <button class="pt-tile-add" title="${t('addPeriod')}" onclick="event.stopPropagation();openPeriodForm(null,'${safeCat}')">+</button></div>
     </div>`;
-    if(!expanded)return `<div class="pt-cat">${head}</div>`;
-    if(!tpls.length){return `<div class="pt-cat pt-cat-open">${head}<div class="pt-cat-empty">${t('catEmpty')}</div></div>`;}
-    const body=`<div class="tbl-wrap"><table class="tbl pt-tbl"><thead><tr>
+  }).join('');
+  // panel for the open category
+  let panel='';
+  if(ptOpenCat){
+    const cat=ptOpenCat;const tpls=groups[cat]||[];const safeCat=esc(cat).replace(/'/g,"\\'");
+    const inner=tpls.length?`<div class="tbl-wrap"><table class="tbl pt-tbl"><thead><tr>
       <th></th><th>${t('ptTask')}</th><th>${t('ptEvery')}</th><th>${t('fStaff')}</th><th>${t('mProj')}</th>
       <th>${t('genCount')}</th><th>${t('lastGen')}</th><th>${t('mStatus')}</th><th></th>
-    </tr></thead><tbody>${tpls.map(tplRow).join('')}</tbody></table></div>`;
-    return `<div class="pt-cat pt-cat-open">${head}${body}</div>`;
-  }).join('');
+    </tr></thead><tbody>${tpls.map(tplRow).join('')}</tbody></table></div>`:`<div class="pt-cat-empty">${t('catEmpty')}</div>`;
+    panel=`<div class="pt-panel"><div class="pt-panel-head"><div class="pt-panel-title"><span class="pt-tile-bar"></span> <b>${esc(cat)}</b> <span class="count-chip">${tpls.length}</span></div>
+      <button class="btn-mini" onclick="openPeriodForm(null,'${safeCat}')">+ ${t('addPeriod')}</button></div>${inner}</div>`;
+  }
+  const sections=`<div class="pt-tiles">${tiles}</div>${panel}`;
 
   // ===== full master table (all templates, with Category column) =====
   const masterRows=list.map(tpl=>{
@@ -1537,6 +1568,11 @@ async function doDeletePeriod(id){
   try{await sbDeleteRecurring(id);}catch(e){}
   toast(t('deletedToast2'));
 }
+function coFilesHtml(r){
+  let cf=[];try{cf=JSON.parse(r.closeoutFiles||'[]');}catch(e){}
+  if(!cf.length)return '';
+  return `<div class="co-shots"><div class="co-shots-lab">📎 ${t('closeoutFiles')}</div><div class="co-files-grid">${cf.map(f=>{const u=typeof f==='string'?f:f.url;const nm=typeof f==='string'?'file':(f.name||'file');return `<a class="co-fileitem" href="${esc(u)}" target="_blank" rel="noopener">📄 ${esc(nm)}</a>`;}).join('')}</div></div>`;
+}
 function needsAttention(){
   const all=state.requests.map(calc);
   const now=Date.now();
@@ -1609,7 +1645,7 @@ function viewManage(){
       ${drow(t('mDue'),esc(r.due||'—'))}
     </div>
     ${r.notes?`<div class="mc-note"><span class="mc-note-lab">📝 ${t('noteLabel')}</span>${esc(r.notes)}</div>`:''}
-    ${(()=>{let co=[];try{co=JSON.parse(r.closeoutImages||'[]');}catch(e){}return co.length?`<div class="co-shots"><div class="co-shots-lab">📸 ${t('closeoutPhoto')}</div><div class="co-shots-grid">${co.map((u,i)=>`<img src="${esc(u)}" onclick="openCloseoutGallery(${r.id},${i})"/>`).join('')}</div></div>`:'';})()}
+    ${(()=>{let co=[];try{co=JSON.parse(r.closeoutImages||'[]');}catch(e){}return co.length?`<div class="co-shots"><div class="co-shots-lab">📸 ${t('closeoutPhoto')}</div><div class="co-shots-grid">${co.map((u,i)=>`<img src="${esc(u)}" onclick="openCloseoutGallery(${r.id},${i})"/>`).join('')}</div></div>`:'';})()}${coFilesHtml(r)}
     ${att(r)}
     <div class="mc-acts"><button class="btn sm green" onclick="confirmStaffDone(${r.id})">✓ ${t('confirmDone')}</button><button class="btn sm sec" onclick="returnStaffTask(${r.id})">↩ ${t('returnTask')}</button></div>
   </div>`;
@@ -1630,7 +1666,7 @@ function viewManage(){
       ${drow(t('mProj'),esc(r.project))}
       ${drow(t('completedAt'),fmtTime(r.confirmedAt))}
     </div>
-    ${co.length?`<div class="co-shots"><div class="co-shots-lab">📸 ${t('closeoutPhoto')}</div><div class="co-shots-grid">${co.map((u,i)=>`<img src="${esc(u)}" onclick="openCloseoutGallery(${r.id},${i})"/>`).join('')}</div></div>`:''}
+    ${co.length?`<div class="co-shots"><div class="co-shots-lab">📸 ${t('closeoutPhoto')}</div><div class="co-shots-grid">${co.map((u,i)=>`<img src="${esc(u)}" onclick="openCloseoutGallery(${r.id},${i})"/>`).join('')}</div></div>`:''}${coFilesHtml(r)}
     <div class="mc-acts"><button class="btn sm green" onclick="returnToTech(${r.id})">↩ ${t('returnToTech')}</button><button class="btn sm sec" onclick="returnToAcceptance(${r.id})">↩ ${t('returnAccept')}</button></div>
   </div>`;};
   const doneSection=recentDone.length?`<div class="done-section"><div class="section-head" style="margin-top:26px"><span class="sec-dot done-dot"></span> ${t('recentDone')} <span class="count-chip" style="margin-inline-start:8px">${recentDone.length}</span> <span class="done-hint">${t('recentDoneHint')}</span></div><div class="done-grid">${recentDone.map(doneCard).join('')}</div></div>`:'';
@@ -2433,7 +2469,7 @@ function viewStaff(){
 let staffCodeInput='';let staffLoginErr=false;
 let _stfCodeT=null;function softStaffCode(){staffLoginErr=false;clearTimeout(_stfCodeT);_stfCodeT=setTimeout(()=>{const v=document.getElementById('stfCode');const pos=v?v.selectionStart:null;render();const n=document.getElementById('stfCode');if(n){n.focus();if(pos!=null)try{n.setSelectionRange(pos,pos);}catch(e){}}},200);}
 function doStaffLogin(){const code=(staffCodeInput||'').trim();const s=staffByCode(code);if(s){staffName=s.en;staffLoginErr=false;staffModal=null;render();}else{staffLoginErr=true;render();}}
-function openStaffTask(id){staffModal=id;render();}
+function openStaffTask(id){staffModal=id;closeoutPhotos=[];closeoutFiles=[];coUploading=0;render();}
 function pickStaff(i){const names=staffNames();if(names[i]!=null){staffName=names[i];staffModal=null;render();}}
 function staffDetail(id){
   const r=state.requests.map(calc).find(x=>x.id===id);
@@ -2458,7 +2494,18 @@ function staffDetail(id){
       ${gal}
       ${pdfList}
       ${pend?`<div class="stf-pend-msg">⏳ ${t('stfPendMsg')}</div>`
-            :`<button class="btn btn-lg stf-done" onclick="staffMarkDone(${r.id})">✅ ${t('stfDone')}</button>`}
+            :`<div class="stf-closeout">
+                <div class="co-block">
+                  <label class="img-btn co-btn">📷 ${t('closeoutPhoto')}<input type="file" accept="image/*" multiple capture="environment" style="display:none" onchange="handleCloseout(this)"/></label>
+                  <div class="img-previews" id="co-previews">${closeoutPhotos.map((u,i)=>`<div class="img-prev"><img src="${esc(u)}"/><button type="button" onclick="removeCloseout('${esc(u)}','')">×</button></div>`).join('')}</div>
+                </div>
+                <div class="co-block">
+                  <label class="img-btn co-btn file-btn">📎 ${t('closeoutFiles')}<input type="file" accept=".pdf,.xls,.xlsx,.doc,.docx,application/pdf,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" multiple style="display:none" onchange="handleCloseoutFiles(this)"/></label>
+                  <div class="co-filelist" id="co-filelist">${closeoutFiles.map((f,i)=>`<div class="co-fileitem"><span>📄 ${esc(f.name||'file')}</span><button type="button" onclick="removeCloseoutFile(${i})">×</button></div>`).join('')}</div>
+                </div>
+                <span class="hint">${t('closeoutOptional')}</span>
+                <button class="btn btn-lg stf-done" onclick="staffMarkDone(${r.id})">✅ ${t('stfDone')}</button>
+             </div>`}
     </div>
   </div>`;
 }
@@ -2474,13 +2521,32 @@ function openLightboxArr(id,i){const r=state.requests.find(x=>x.id===id);if(!r)r
 function galStaffNav(d){if(!modal||modal.type!=='img')return;const n=modal.imgs.length;modal.idx=(modal.idx+d+n)%n;const img=document.getElementById('staffGalImg');if(img)img.src=modal.imgs[modal.idx];const c=document.querySelector('#staff-modal-host .gal-count');if(c)c.textContent=(modal.idx+1)+' / '+n;}
 function closeStaffGal(){const h=document.getElementById('staff-modal-host');if(h)h.innerHTML='';modal=null;}
 function staffMarkDone(id){
-  staffModal2={id};closeoutPhotos=[];
+  if(coUploading>0){toast(t('uploading'));return;}
+  staffModal2={id};
   let host=document.getElementById('staff-modal-host');if(!host){host=document.createElement('div');host.id='staff-modal-host';document.body.appendChild(host);}
-  host.innerHTML=`<div class="modal-bg" onclick="closeStaffConfirm()"><div class="modal" style="max-width:420px" onclick="event.stopPropagation()"><h3>${t('stfConfirmTitle')}</h3><p>${t('stfConfirmMsg')}<br><b>${fmtID(id)}</b></p>
-    <div class="co-photo"><label class="img-btn">📷 ${t('closeoutPhoto')}<input type="file" accept="image/*" multiple capture="environment" style="display:none" onchange="handleCloseout(this)"/></label><span class="hint">${t('closeoutHint')}</span><div class="img-previews" id="co-previews"></div></div>
+  const nPhoto=closeoutPhotos.length, nFile=closeoutFiles.length;
+  const attachLine=(nPhoto||nFile)?`<p class="co-summary">${nPhoto?('📷 '+nPhoto):''}${nPhoto&&nFile?' · ':''}${nFile?('📎 '+nFile):''}</p>`:'';
+  host.innerHTML=`<div class="modal-bg" onclick="closeStaffConfirm()"><div class="modal" style="max-width:420px" onclick="event.stopPropagation()"><h3>${t('stfConfirmTitle')}</h3><p>${t('stfConfirmMsg')}<br><b>${fmtID(id)}</b></p>${attachLine}
     <div class="btnrow" style="justify-content:flex-end"><button class="btn sec" onclick="closeStaffConfirm()">${t('cancel')}</button><button class="btn green" id="coDoneBtn" onclick="doStaffDone(${id})">${t('stfDoneYes')}</button></div></div></div>`;
 }
-let staffModal2=null;let closeoutPhotos=[];let coUploading=0;
+let staffModal2=null;let closeoutPhotos=[];let coUploading=0;let closeoutFiles=[];
+async function handleCloseoutFiles(input){
+  const files=Array.from(input.files||[]);if(!files.length)return;
+  const wrap=document.getElementById('co-filelist');const btn=document.getElementById('coDoneBtn');
+  const okExt=/\.(pdf|xls|xlsx|doc|docx)$/i;
+  for(const f of files){
+    if(!okExt.test(f.name)){toast(t('badFileType'));continue;}
+    const tmpId='cf'+Math.random().toString(36).slice(2,8);
+    if(wrap){const d=document.createElement('div');d.className='co-fileitem';d.id=tmpId;d.innerHTML='<span class="upl">'+t('uploading')+'</span>';wrap.appendChild(d);}
+    coUploading++;
+    try{const url=await sbUploadFile(f);closeoutFiles.push({url,name:f.name});const el=document.getElementById(tmpId);if(el)el.innerHTML='<span>📄 '+esc(f.name)+'</span><button type="button" onclick="removeCloseoutFileByUrl(\''+url+'\',\''+tmpId+'\')">×</button>';}
+    catch(e){const el=document.getElementById(tmpId);if(el)el.remove();toast(t('connErr'));}
+    finally{coUploading--;}
+  }
+  input.value='';
+}
+function removeCloseoutFile(i){closeoutFiles.splice(i,1);render();}
+function removeCloseoutFileByUrl(url,tmpId){closeoutFiles=closeoutFiles.filter(f=>f.url!==url);const el=document.getElementById(tmpId);if(el)el.remove();}
 async function handleCloseout(input){
   const files=Array.from(input.files||[]);if(!files.length)return;
   const wrap=document.getElementById('co-previews');const btn=document.getElementById('coDoneBtn');
@@ -2496,12 +2562,14 @@ async function handleCloseout(input){
   input.value='';
 }
 function removeCloseout(url,tmpId){closeoutPhotos=closeoutPhotos.filter(u=>u!==url);const el=document.getElementById(tmpId);if(el)el.remove();}
-function closeStaffConfirm(){const h=document.getElementById('staff-modal-host');if(h)h.innerHTML='';closeoutPhotos=[];coUploading=0;}
+function closeStaffConfirm(){const h=document.getElementById('staff-modal-host');if(h)h.innerHTML='';}
 function doStaffDone(id){
+  if(coUploading>0){toast(t('uploading'));return;}
   const r=state.requests.find(x=>x.id===id);if(!r){closeStaffConfirm();return;}
   r.pendingConfirm=true;
   if(closeoutPhotos.length)r.closeoutImages=JSON.stringify(closeoutPhotos);
-  closeStaffConfirm();staffModal=null;render();toast(t('stfDoneToast'));
+  if(closeoutFiles.length)r.closeoutFiles=JSON.stringify(closeoutFiles);
+  closeStaffConfirm();staffModal=null;closeoutPhotos=[];closeoutFiles=[];render();toast(t('stfDoneToast'));
   saveBg(id,r);
 }
 
