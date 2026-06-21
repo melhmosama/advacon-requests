@@ -658,6 +658,9 @@ tr.pendrow{background:rgba(251,239,214,.32)}
 .period-modal label{display:block;font-size:12px;font-weight:700;color:var(--steel);margin-bottom:5px}
 .period-modal input,.period-modal select,.period-modal textarea{width:100%;border:1px solid var(--grid);border-radius:9px;padding:9px 11px;font-family:inherit;font-size:13.5px;color:var(--txt);box-sizing:border-box}
 .gen-list{background:var(--lgray);border:1px solid var(--grid);border-radius:9px;padding:12px 14px;margin:12px 0;font-size:13px;color:var(--txt);line-height:1.9;max-height:200px;overflow-y:auto}
+.pf-checkrow{display:flex;align-items:center;gap:9px;cursor:pointer;font-weight:600!important;color:var(--txt)!important}
+.pf-checkrow input{width:auto!important}
+.pt-pill.pt-nofri{background:#FBF6EC;color:color:#8A6D1E;border-color:#E8D9B0}
 </style></head>
 <body><div id="gate"></div><div class="app" id="app" style="display:none"></div><div class="toast" id="toast"></div>
 <script>
@@ -673,8 +676,8 @@ async function sbFetchAll(){try{const res=await fetch(SB_URL+'/rest/v1/requests?
 async function sbInsert(o){const res=await fetch(SB_URL+'/rest/v1/requests',{method:'POST',headers:{...SB_HEAD,'Prefer':'return=representation'},body:JSON.stringify(toRow(o))});if(!res.ok)throw new Error();return fromRow((await res.json())[0]);}
 async function sbUpdate(id,o){const res=await fetch(SB_URL+'/rest/v1/requests?id=eq.'+id,{method:'PATCH',headers:SB_HEAD,body:JSON.stringify(toRow(o))});if(!res.ok)throw new Error();}
 // ===== RECURRING (period) task templates =====
-function recFromRow(r){return {id:r.id,title:r.title||'',project:r.project||'',category:r.category||'',priority:r.priority||'Medium',assignedTo:r.assigned_to||'',notes:r.notes||'',everyN:r.every_n||1,everyUnit:r.every_unit||'day',startAt:r.start_at||'',lastRunAt:r.last_run_at||'',genCount:r.gen_count||0,active:r.active!==false,createdAt:r.created_at||''};}
-function recToRow(o){return {title:o.title,project:o.project||null,category:o.category||null,priority:o.priority||'Medium',assigned_to:o.assignedTo||null,notes:o.notes||null,every_n:Number(o.everyN)||1,every_unit:o.everyUnit||'day',start_at:o.startAt||new Date().toISOString(),last_run_at:o.lastRunAt||null,gen_count:Number(o.genCount)||0,active:o.active!==false};}
+function recFromRow(r){return {id:r.id,title:r.title||'',project:r.project||'',category:r.category||'',priority:r.priority||'Medium',assignedTo:r.assigned_to||'',notes:r.notes||'',everyN:r.every_n||1,everyUnit:r.every_unit||'day',startAt:r.start_at||'',lastRunAt:r.last_run_at||'',genCount:r.gen_count||0,active:r.active!==false,includeFriday:r.include_friday!==false,createdAt:r.created_at||''};}
+function recToRow(o){return {title:o.title,project:o.project||null,category:o.category||null,priority:o.priority||'Medium',assigned_to:o.assignedTo||null,notes:o.notes||null,every_n:Number(o.everyN)||1,every_unit:o.everyUnit||'day',start_at:o.startAt||new Date().toISOString(),last_run_at:o.lastRunAt||null,gen_count:Number(o.genCount)||0,active:o.active!==false,include_friday:o.includeFriday!==false};}
 async function sbFetchRecurring(){try{const res=await fetch(SB_URL+'/rest/v1/recurring_tasks?select=*&order=id.asc',{headers:SB_HEAD});if(!res.ok)throw 0;return (await res.json()).map(recFromRow);}catch(e){return null;}}
 async function sbInsertRecurring(o){const res=await fetch(SB_URL+'/rest/v1/recurring_tasks',{method:'POST',headers:{...SB_HEAD,'Prefer':'return=representation'},body:JSON.stringify(recToRow(o))});if(!res.ok)throw new Error('rec insert');return recFromRow((await res.json())[0]);}
 async function sbUpdateRecurring(id,o){const res=await fetch(SB_URL+'/rest/v1/recurring_tasks?id=eq.'+id,{method:'PATCH',headers:{...SB_HEAD,'Prefer':'return=representation'},body:JSON.stringify(recToRow(o))});if(!res.ok)throw new Error('rec update');return recFromRow((await res.json())[0]);}
@@ -753,7 +756,7 @@ const T={
   requestedBy:"Requested by",namePh:"Your name",projLoc:"Project / Location",svcType:"Service type",needs:"What do you need?",needsPh:"Describe the service you are requesting",
   priority:"Priority",dateReq:"Date requested",autoToday:"Set automatically to today",submit:"Submit request",select:"— select —",
   manageH1:"Manage Requests",manageP:"Accept incoming requests to start work, then assign and schedule.",opsEye:"Operations",
-  incoming:"Incoming requests",waiting:"waiting",accepted:"Accepted tasks",secIncoming:"Incoming requests",secAssigned:"Assigned to staff",secPending:"Pending your confirmation",noPending:"Nothing awaiting confirmation.",viewCards:"Board",viewPeriod:"Period Tasks",addPeriod:"Add Period Task",editPeriod:"Edit Period Task",periodIntro:"Recurring tasks auto-generate and go straight to the assigned technician (In Progress).",noPeriod:"No period tasks yet. Add one to automate recurring work.",noneYet:"none yet",genCount:"Generated",lastGen:"Last",linkedTasks:"Linked tasks",paused:"Paused",pause:"Pause",resume:"Resume",fTitle:"Task title",fEvery:"Every",fUnit:"Unit",fStartAt:"Start at",fStaff:"Assign to Employee",fProj:"Project",fCat:"Category",fPriority:"Priority",fNotes:"Notes",fTitleReq:"Please enter a title",selectStaff:"Select employee",unit_hour:"Hour(s)",unit_day:"Day(s)",unit_week:"Week(s)",unit_month:"Month(s)",delPeriodQ:"Delete this period task?",delPeriodMsg:"The template will stop generating. Already-generated tasks stay.",deletedToast2:"Period task deleted",errSave:"Save failed",saved:"Saved",genTitle:"Confirm task generation",genMsg:"{n} recurring task(s) are due and will be created:",genYes:"Generate",genDone:"Tasks generated",viewOpen:"Open tasks",mPhone:"Mobile",allEye:"Reference",allH1:"All Requests",allP:"Complete reference of every request, all statuses.",total:"total",exportXl:"Export to Excel",allStatuses:"All statuses",allProjects:"All projects",allEmployees:"All team",search:"Search…",addTask:"Add task",
+  incoming:"Incoming requests",waiting:"waiting",accepted:"Accepted tasks",secIncoming:"Incoming requests",secAssigned:"Assigned to staff",secPending:"Pending your confirmation",noPending:"Nothing awaiting confirmation.",viewCards:"Board",viewPeriod:"Period Tasks",addPeriod:"Add Period Task",editPeriod:"Edit Period Task",periodIntro:"Recurring tasks auto-generate and go straight to the assigned technician (In Progress).",noPeriod:"No period tasks yet. Add one to automate recurring work.",noneYet:"none yet",genCount:"Generated",lastGen:"Last",linkedTasks:"Linked tasks",paused:"Paused",pause:"Pause",resume:"Resume",fTitle:"Task title",fEvery:"Every",fUnit:"Unit",fStartAt:"Start at",fIncludeFriday:"Include Friday (uncheck to skip Fridays)",noFri:"No Friday",fStaff:"Assign to Employee",fProj:"Project",fCat:"Category",fPriority:"Priority",fNotes:"Notes",fTitleReq:"Please enter a title",selectStaff:"Select employee",unit_hour:"Hour(s)",unit_day:"Day(s)",unit_week:"Week(s)",unit_month:"Month(s)",delPeriodQ:"Delete this period task?",delPeriodMsg:"The template will stop generating. Already-generated tasks stay.",deletedToast2:"Period task deleted",errSave:"Save failed",saved:"Saved",genTitle:"Confirm task generation",genMsg:"{n} recurring task(s) are due and will be created:",genYes:"Generate",genDone:"Tasks generated",viewOpen:"Open tasks",mPhone:"Mobile",allEye:"Reference",allH1:"All Requests",allP:"Complete reference of every request, all statuses.",total:"total",exportXl:"Export to Excel",allStatuses:"All statuses",allProjects:"All projects",allEmployees:"All team",search:"Search…",addTask:"Add task",
   accept:"Accept",decline:"Decline",noNew:"No new requests waiting.",noAccepted:"No accepted tasks yet.",noMatch:"Nothing here.",
   reqLabel:"Request",noteLabel:"Manager note",notesPh:"Note / instructions for the team member",
   mTaskId:"Task ID",mProj:"Project",mCat:"Category",mReqBy:"Requested by",mRecv:"Received",mAssign:"Assigned to",mStart:"Start",mDur:"Duration (days)",mStatus:"Status",mDue:"Due",mClosed:"Closed",mLeft:"Time left",daysUnit:"days",
@@ -783,7 +786,7 @@ const T={
   requestedBy:"مقدّم الطلب",namePh:"الاسم",projLoc:"المشروع / الموقع",svcType:"نوع الخدمة",needs:"تفاصيل الطلب",needsPh:"يُرجى وصف الخدمة المطلوبة بوضوح",
   priority:"الأولوية",dateReq:"تاريخ الطلب",autoToday:"يُحدّد تلقائياً بتاريخ اليوم",submit:"إرسال الطلب",select:"— اختر —",
   manageH1:"إدارة الطلبات",manageP:"راجع الطلبات الواردة واقبلها لبدء العمل، ثم وزّعها وجدوِلها.",opsEye:"العمليات",
-  incoming:"الطلبات الواردة",waiting:"بالانتظار",accepted:"المهام المقبولة",secIncoming:"الطلبات الواردة",secAssigned:"الطلبات الموجّهة للفنيين",secPending:"بانتظار تأكيدك",noPending:"لا يوجد ما ينتظر التأكيد.",viewCards:"الأعمدة",viewPeriod:"المهام الدورية",addPeriod:"إضافة مهمة دورية",editPeriod:"تعديل المهمة الدورية",periodIntro:"المهام الدورية تتولّد تلقائياً وتذهب مباشرة للفني المسؤول (تحت العمل).",noPeriod:"لا توجد مهام دورية بعد. أضف واحدة لأتمتة الأعمال المتكررة.",noneYet:"لا شيء بعد",genCount:"تولّدت",lastGen:"آخر توليد",linkedTasks:"المهام المرتبطة",paused:"موقوفة",pause:"إيقاف",resume:"تشغيل",fTitle:"عنوان المهمة",fEvery:"كل",fUnit:"الوحدة",fStartAt:"تبدأ في",fStaff:"توجيه لموظف",fProj:"المشروع",fCat:"الفئة",fPriority:"الأولوية",fNotes:"ملاحظات",fTitleReq:"الرجاء إدخال عنوان",selectStaff:"اختر الموظف",unit_hour:"ساعة",unit_day:"يوم",unit_week:"أسبوع",unit_month:"شهر",delPeriodQ:"حذف هذه المهمة الدورية؟",delPeriodMsg:"سيتوقف القالب عن التوليد. المهام المتولّدة تبقى.",deletedToast2:"حُذفت المهمة الدورية",errSave:"فشل الحفظ",saved:"تم الحفظ",genTitle:"تأكيد توليد المهام",genMsg:"يوجد {n} مهمة دورية مستحقة سيتم إنشاؤها:",genYes:"توليد",genDone:"تم توليد المهام",viewOpen:"المهام المفتوحة",mPhone:"الجوال",allEye:"مرجع",allH1:"جميع الطلبات",allP:"سجلّ شامل بكل الطلبات بجميع الحالات.",total:"الإجمالي",exportXl:"تصدير لإكسل",allStatuses:"كل الحالات",allProjects:"كل المشاريع",allEmployees:"كل الفريق",search:"بحث…",addTask:"إضافة مهمة",
+  incoming:"الطلبات الواردة",waiting:"بالانتظار",accepted:"المهام المقبولة",secIncoming:"الطلبات الواردة",secAssigned:"الطلبات الموجّهة للفنيين",secPending:"بانتظار تأكيدك",noPending:"لا يوجد ما ينتظر التأكيد.",viewCards:"الأعمدة",viewPeriod:"المهام الدورية",addPeriod:"إضافة مهمة دورية",editPeriod:"تعديل المهمة الدورية",periodIntro:"المهام الدورية تتولّد تلقائياً وتذهب مباشرة للفني المسؤول (تحت العمل).",noPeriod:"لا توجد مهام دورية بعد. أضف واحدة لأتمتة الأعمال المتكررة.",noneYet:"لا شيء بعد",genCount:"تولّدت",lastGen:"آخر توليد",linkedTasks:"المهام المرتبطة",paused:"موقوفة",pause:"إيقاف",resume:"تشغيل",fTitle:"عنوان المهمة",fEvery:"كل",fUnit:"الوحدة",fStartAt:"تبدأ في",fIncludeFriday:"تضمين الجمعة (ألغِ التحديد لتخطّي الجُمع)",noFri:"بدون جمعة",fStaff:"توجيه لموظف",fProj:"المشروع",fCat:"الفئة",fPriority:"الأولوية",fNotes:"ملاحظات",fTitleReq:"الرجاء إدخال عنوان",selectStaff:"اختر الموظف",unit_hour:"ساعة",unit_day:"يوم",unit_week:"أسبوع",unit_month:"شهر",delPeriodQ:"حذف هذه المهمة الدورية؟",delPeriodMsg:"سيتوقف القالب عن التوليد. المهام المتولّدة تبقى.",deletedToast2:"حُذفت المهمة الدورية",errSave:"فشل الحفظ",saved:"تم الحفظ",genTitle:"تأكيد توليد المهام",genMsg:"يوجد {n} مهمة دورية مستحقة سيتم إنشاؤها:",genYes:"توليد",genDone:"تم توليد المهام",viewOpen:"المهام المفتوحة",mPhone:"الجوال",allEye:"مرجع",allH1:"جميع الطلبات",allP:"سجلّ شامل بكل الطلبات بجميع الحالات.",total:"الإجمالي",exportXl:"تصدير لإكسل",allStatuses:"كل الحالات",allProjects:"كل المشاريع",allEmployees:"كل الفريق",search:"بحث…",addTask:"إضافة مهمة",
   accept:"قبول",decline:"رفض",noNew:"لا توجد طلبات جديدة قيد الانتظار.",noAccepted:"لا توجد مهام مقبولة حتى الآن.",noMatch:"لا توجد عناصر للعرض.",
   reqLabel:"الطلب",noteLabel:"ملاحظة المسؤول",notesPh:"ملاحظات أو تعليمات موجَّهة لعضو الفريق المكلَّف",
   mTaskId:"رقم المهمة",mProj:"المشروع",mCat:"الفئة",mReqBy:"مقدّم الطلب",mRecv:"تاريخ الطلب",mAssign:"المسؤول",mStart:"البدء",mDur:"المدة (أيام)",mStatus:"الحالة",mDue:"الاستحقاق",mClosed:"الإقفال",mLeft:"المتبقّي",daysUnit:"يوم",
@@ -1276,8 +1279,12 @@ async function runRecurringGenerator(){
     // walk every expected occurrence from startAt → now, collect the GAPS
     let next=new Date(tpl.startAt);let guard=0;const occs=[];
     while(next.getTime()<=now&&guard<1000){
-      const k=keyOf(next.toISOString(),tpl.everyUnit);
-      if(!existing.has(k)){existing.add(k);occs.push(next.toISOString());}
+      // Saudi weekday: Friday = 5
+      const saudi=new Date(next.getTime()+3*3600000);const isFriday=saudi.getUTCDay()===5;
+      if(tpl.includeFriday!==false||!isFriday){
+        const k=keyOf(next.toISOString(),tpl.everyUnit);
+        if(!existing.has(k)){existing.add(k);occs.push(next.toISOString());}
+      }
       next=addInterval(next,tpl.everyN,tpl.everyUnit);guard++;
     }
     if(occs.length)plan.push({tplId:tpl.id,title:tpl.title,occs});
@@ -1338,6 +1345,7 @@ function viewPeriodTasks(){
         <span class="pt-pill">${unitLabel(tpl.everyN,tpl.everyUnit)}</span>
         ${tpl.assignedTo?`<span class="pt-pill pt-staff">→ ${esc(tpl.assignedTo)}</span>`:''}
         ${tpl.project?`<span class="pt-pill">${esc(tpl.project)}</span>`:''}
+        ${tpl.includeFriday===false?`<span class="pt-pill pt-nofri">${t('noFri')}</span>`:''}
         ${tpl.active?'':`<span class="pt-pill pt-paused">${t('paused')}</span>`}
       </div>
       <div class="pt-stats">
@@ -1351,7 +1359,7 @@ function viewPeriodTasks(){
 }
 function openPeriodForm(id){
   const tpl=id?(state.recurring||[]).find(x=>String(x.id)===String(id)):null;
-  periodForm=tpl?Object.assign({},tpl):{title:'',project:'',category:'',priority:'Medium',assignedTo:'',notes:'',everyN:1,everyUnit:'day',startAt:new Date().toISOString().slice(0,16),active:true};
+  periodForm=tpl?Object.assign({},tpl):{title:'',project:'',category:'',priority:'Medium',assignedTo:'',notes:'',everyN:1,everyUnit:'day',startAt:new Date().toISOString().slice(0,16),active:true,includeFriday:true};
   periodForm._id=id||null;
   clearDirty();modal={type:'period'};renderModal();
 }
@@ -1371,6 +1379,7 @@ function periodFormHTML(){
       <div class="field"><label>${t('fUnit')}</label><select id="pf_unit">${units}</select></div>
     </div>
     <div class="field"><label>${t('fStartAt')}</label><input id="pf_start" type="datetime-local" value="${(f.startAt||'').slice(0,16)}"/></div>
+    <div class="field pf-check"><label class="pf-checkrow"><input id="pf_friday" type="checkbox" ${f.includeFriday!==false?'checked':''}/> <span>${t('fIncludeFriday')}</span></label></div>
     <div class="field"><label>${t('fStaff')}</label><select id="pf_staff">${staffOpts}</select></div>
     <div class="pf-row">
       <div class="field"><label>${t('fProj')}</label><select id="pf_proj"><option value="">—</option>${projOpts}</select></div>
@@ -1387,7 +1396,8 @@ async function savePeriodForm(){
     title:g('pf_title').trim(),everyN:Math.max(1,Number(g('pf_n'))||1),everyUnit:g('pf_unit'),
     startAt:g('pf_start')?new Date(g('pf_start')).toISOString():new Date().toISOString(),
     assignedTo:g('pf_staff'),project:g('pf_proj'),category:g('pf_cat'),priority:g('pf_pri'),notes:g('pf_notes').trim(),
-    active:periodForm.active!==false
+    active:periodForm.active!==false,
+    includeFriday:(document.getElementById('pf_friday')?document.getElementById('pf_friday').checked:true)
   };
   if(!o.title){toast(t('fTitleReq'));return;}
   clearDirty();const id=periodForm._id;modal=null;
