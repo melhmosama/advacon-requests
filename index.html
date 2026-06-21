@@ -1441,8 +1441,8 @@ function dailyDashboard(){
   const sets={
     requested:all.filter(r=>inRange(r.receivedAt||r.received,d,d)),
     pending:all.filter(r=>isIncoming(r)&&inRange(r.receivedAt||r.received,d,d)),
-    daily:all.filter(r=>r.effStatus==='In Progress'&&inRange(r.startedAt||r.start,d,d)),
-    ongoing:all.filter(r=>r.effStatus==='In Progress'&&!inRange(r.startedAt||r.start,d,d)),
+    daily:all.filter(r=>isAccepted(r)&&!r.pendingConfirm&&r.effStatus!=='Complete'&&r.effStatus!=='Cancelled'&&r.status!=='Cancelled'&&inRange(r.startedAt||r.start,d,d)),
+    ongoing:all.filter(r=>isAccepted(r)&&!r.pendingConfirm&&r.effStatus!=='Complete'&&r.effStatus!=='Cancelled'&&r.status!=='Cancelled'&&!inRange(r.startedAt||r.start,d,d)),
     closed:all.filter(r=>inRange(r.confirmedAt,d,d)),
     rejected:all.filter(r=>(r.effStatus==='Cancelled'||r.archived)&&inRange(r.rejectedAt,d,d))
   };
@@ -1591,8 +1591,8 @@ function viewReports(){
   const ddData=[
     {k:t('ddRequested'),v:A.filter(r=>inRange(r.receivedAt||r.received,d,d)).length,c:'var(--navy)'},
     {k:t('ddPending'),v:A.filter(r=>isIncoming(r)&&inRange(r.receivedAt||r.received,d,d)).length,c:'var(--amber)'},
-    {k:t('ddDaily'),v:A.filter(r=>r.effStatus==='In Progress'&&inRange(r.startedAt||r.start,d,d)).length,c:'var(--med)'},
-    {k:t('ddOngoing'),v:A.filter(r=>r.effStatus==='In Progress'&&!inRange(r.startedAt||r.start,d,d)).length,c:'var(--steel)'},
+    {k:t('ddDaily'),v:A.filter(r=>isAccepted(r)&&!r.pendingConfirm&&r.effStatus!=='Complete'&&r.effStatus!=='Cancelled'&&r.status!=='Cancelled'&&inRange(r.startedAt||r.start,d,d)).length,c:'var(--med)'},
+    {k:t('ddOngoing'),v:A.filter(r=>isAccepted(r)&&!r.pendingConfirm&&r.effStatus!=='Complete'&&r.effStatus!=='Cancelled'&&r.status!=='Cancelled'&&!inRange(r.startedAt||r.start,d,d)).length,c:'var(--steel)'},
     {k:t('ddClosed'),v:A.filter(r=>inRange(r.confirmedAt,d,d)).length,c:'var(--green)'},
     {k:t('ddRejected'),v:A.filter(r=>(r.effStatus==='Cancelled'||r.archived)&&inRange(r.rejectedAt,d,d)).length,c:'var(--red)'}
   ];
@@ -1621,8 +1621,8 @@ function reportDataDaily(from,to){
   const all=state.requests.map(calc);
   const requested=all.filter(r=>inRange(r.receivedAt||r.received,from,to));
   const pending=all.filter(r=>isIncoming(r)&&inRange(r.receivedAt||r.received,from,to));
-  const daily=all.filter(r=>r.effStatus==='In Progress'&&inRange(r.startedAt||r.start,from,to));
-  const ongoing=all.filter(r=>r.effStatus==='In Progress'&&!inRange(r.startedAt||r.start,from,to));
+  const daily=all.filter(r=>isAccepted(r)&&!r.pendingConfirm&&r.effStatus!=='Complete'&&r.effStatus!=='Cancelled'&&r.status!=='Cancelled'&&inRange(r.startedAt||r.start,from,to));
+  const ongoing=all.filter(r=>isAccepted(r)&&!r.pendingConfirm&&r.effStatus!=='Complete'&&r.effStatus!=='Cancelled'&&r.status!=='Cancelled'&&!inRange(r.startedAt||r.start,from,to));
   const closed=all.filter(r=>inRange(r.confirmedAt,from,to));
   const rejected=all.filter(r=>(r.effStatus==='Cancelled'||r.archived)&&inRange(r.rejectedAt,from,to));
   return {requested,pending,daily,ongoing,closed,rejected};
