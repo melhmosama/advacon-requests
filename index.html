@@ -691,17 +691,29 @@ tr.pendrow{background:rgba(251,239,214,.32)}
 .pt-inner-tbl thead th{background:var(--lgray);font-size:10.5px}
 .pt-empty-inner{padding:16px;text-align:center;color:var(--grey);font-style:italic;background:#fff;border:1px solid var(--grid);border-radius:8px}
 /* period categories */
-.pt-cats{display:flex;flex-direction:column;gap:18px;margin-bottom:24px}
-.pt-cat{border:1px solid var(--grid);border-radius:14px;overflow:hidden;background:#fff;box-shadow:var(--shadow)}
-.pt-cat-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 16px;background:var(--lblue);border-bottom:1px solid var(--grid)}
+/* period categories — refined, breathable layout */
+.period-bar-info{justify-content:flex-start;background:linear-gradient(180deg,var(--lblue),#fff);border-color:var(--accent);padding:13px 18px;margin-bottom:22px}
+.pt-cats{display:flex;flex-direction:column;gap:22px;margin-bottom:30px}
+.pt-cat{border:1px solid var(--grid);border-radius:16px;overflow:hidden;background:#fff;box-shadow:0 2px 10px rgba(20,49,76,.05);transition:box-shadow .18s}
+.pt-cat:hover{box-shadow:0 4px 18px rgba(20,49,76,.09)}
+.pt-cat-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;background:#fff;border-bottom:1px solid var(--grid)}
 .pt-cat-head.closed{border-bottom:none}
-.pt-cat-left{display:flex;align-items:center;gap:9px;cursor:pointer;color:var(--navy);font-size:14.5px;flex:1}
-.pt-cat-caret{color:var(--accent);font-size:12px}
+.pt-cat-left{display:flex;align-items:center;gap:11px;cursor:pointer;color:var(--navy);font-size:15.5px;font-weight:800;flex:1;letter-spacing:-.01em}
+.pt-cat-left b{font-weight:800}
+.pt-cat-caret{color:var(--accent);font-size:11px;width:16px;display:inline-flex;justify-content:center;transition:transform .15s}
+.pt-cat-head .count-chip{background:var(--lblue);color:var(--accent);font-weight:700}
+.pt-cat .tbl-wrap{padding:6px 8px 10px}
 .pt-cat .pt-tbl{border:none}
-.pt-master{margin-top:8px;border:1px solid var(--grid);border-radius:14px;overflow:hidden;background:#fff;box-shadow:var(--shadow)}
-.pt-master-head{display:flex;align-items:center;gap:9px;padding:13px 16px;background:var(--lgray);cursor:pointer;color:var(--navy);font-size:14px}
-.pt-cat-empty{padding:18px;text-align:center;color:var(--grey);font-style:italic;font-size:13px;background:#fff}
-.period-bar-info{justify-content:flex-start;background:var(--lblue);border-color:var(--accent)}
+.pt-cat .pt-tbl thead th{background:transparent;color:var(--grey);border-bottom:1.5px solid var(--grid)}
+.pt-cat .pt-tbl tbody td{border-bottom:1px solid var(--lgray)}
+.pt-cat-empty{padding:30px 18px;text-align:center;color:var(--grey);font-style:italic;font-size:13.5px;background:#fff}
+.btn-mini{flex-shrink:0}
+/* master full table */
+.pt-master{margin-top:4px;border:1px dashed var(--grid);border-radius:16px;overflow:hidden;background:#FbFcFd}
+.pt-master-head{display:flex;align-items:center;gap:11px;padding:15px 20px;cursor:pointer;color:var(--steel);font-size:14px;font-weight:700;transition:background .15s}
+.pt-master-head:hover{background:var(--lgray)}
+.pt-master-head .count-chip{background:var(--grid);color:var(--steel)}
+.pt-master .tbl-wrap{padding:0 10px 12px}
 </style></head>
 <body><div id="gate"></div><div class="app" id="app" style="display:none"></div><div class="toast" id="toast"></div>
 <script>
