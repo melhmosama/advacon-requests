@@ -883,10 +883,11 @@ let staffName='';         // selected staff member name
 let staffModal=null;      // staff task detail modal
 
 async function load(){
-  const sb=await sbFetchAll(); if(sb!==null)state.requests=sb;
-  const st=await sbFetchStaff(); if(st!==null)state.staff=st;
-  const rec=await sbFetchRecurring(); if(rec!==null)state.recurring=rec;
-  const cfg=await sbFetchSettings();
+  // fetch everything in parallel instead of one-after-another (faster open)
+  const [sb,st,rec,cfg]=await Promise.all([sbFetchAll(),sbFetchStaff(),sbFetchRecurring(),sbFetchSettings()]);
+  if(sb!==null)state.requests=sb;
+  if(st!==null)state.staff=st;
+  if(rec!==null)state.recurring=rec;
   if(cfg){
     if(cfg.lists)state.lists=cfg.lists;
     if(cfg.widgets)state.widgets=Object.assign(JSON.parse(JSON.stringify(DEFAULT_WIDGETS)),cfg.widgets);
@@ -916,7 +917,7 @@ async function load(){
     state.lists.priorities=out;
   }
   if(changed&&cfg){try{await sbSaveSettings();}catch(e){}}
-  try{await runRecurringGenerator();}catch(e){}
+  try{await runRecurringGenerator(true);}catch(e){}
 }
 async function saveLists(){try{await sbSaveSettings();}catch(e){}}
 async function saveLang(){try{await LS.set('advacon_lang',L);}catch(e){}}
@@ -1012,8 +1013,8 @@ async function refreshNow(){if(state.role!=='admin')return;
 }
 let _lastSig='';
 function startRealtime(){
-  // reliable auto-refresh: poll every 6s so new requests appear without manual refresh
-  if(!_poll)_poll=setInterval(refreshNow,6000);
+  // websocket gives near-instant updates; keep a slower 20s poll only as a fallback
+  if(!_poll)_poll=setInterval(refreshNow,20000);
   // also attempt websocket realtime for near-instant updates
   try{if(_rt)return;const ws=SB_URL.replace('https://','wss://')+'/realtime/v1/websocket?apikey='+encodeURIComponent(SB_KEY)+'&vsn=1.0.0';_rt=new WebSocket(ws);_rt.onopen=()=>{_rt.send(JSON.stringify({topic:'realtime:public:requests',event:'phx_join',payload:{config:{postgres_changes:[{event:'*',schema:'public',table:'requests'}]}},ref:String(_rtRef++)}));_rtHb=setInterval(()=>{if(_rt&&_rt.readyState===1)_rt.send(JSON.stringify({topic:'phoenix',event:'heartbeat',payload:{},ref:String(_rtRef++)}));},25000);};_rt.onmessage=(m)=>{try{const d=JSON.parse(m.data);if(d.event==='postgres_changes'||(d.payload&&d.payload.data))refreshNow();}catch(e){}};_rt.onclose=()=>{_rt=null;if(_rtHb){clearInterval(_rtHb);_rtHb=null;}setTimeout(()=>{if(state.role==='admin')startRealtime();},3000);};_rt.onerror=()=>{try{_rt.close();}catch(e){}};}catch(e){}}
 
@@ -1305,10 +1306,11 @@ function addInterval(date,n,unit){
   else if(unit==='month')d.setMonth(d.getMonth()+n);
   return d;
 }
-async function runRecurringGenerator(){
+async function runRecurringGenerator(skipRefresh){
   if(!state.recurring||!state.recurring.length)return;
   // refresh latest tasks from the server FIRST so we never duplicate what another device already generated
-  try{const fresh=await sbFetchAll();if(fresh!==null)state.requests=fresh;}catch(e){}
+  // (skipped when called right after load(), where data is already fresh — avoids a slow double-fetch on open)
+  if(!skipRefresh){try{const fresh=await sbFetchAll();if(fresh!==null)state.requests=fresh;}catch(e){}}
   const now=Date.now();
   const all=state.requests.map(calc);
   const keyOf=(iso,unit)=>{const dt=new Date(new Date(iso).getTime()+3*3600000);const s=dt.toISOString();
