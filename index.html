@@ -2190,6 +2190,7 @@ function renderModal(){
       <p style="margin-bottom:12px">${esc(r.title)}</p>
       <div class="form-grid">
         ${empSelect('tf_assign','',true)}
+        <div class="field"><label>${t('mDur')} <span class="req">*</span></label><input type="number" min="1" id="tf_dur" placeholder="${t('mDur')}"/></div>
         <div class="field full"><label>${t('noteLabel')}</label><textarea id="tf_notes" placeholder="${t('notesPh')}"></textarea></div>
       </div>
       <div class="btnrow" style="justify-content:flex-end;margin-top:14px"><button class="btn sec" onclick="modal=null;renderModal()">${t('cancel')}</button><button class="btn green" onclick="saveTaskForm('accept',${r.id})">✓ ${t('accept')}</button></div>
@@ -2205,6 +2206,7 @@ function renderModal(){
         ${fieldSelect('tf_pri',state.lists.priorities,r.priority,t('priority'),true)}
         ${empSelect('tf_assign',r.assignedTo,true)}
         <div class="field"><label>${t('mStart')} <span class="req">*</span></label><input type="date" id="tf_start" value="${r.start||today()}"/></div>
+        <div class="field"><label>${t('mDur')} <span class="req">*</span></label><input type="number" min="1" id="tf_dur" value="${r.duration||''}"/></div>
         <div class="field"><label>${t('mStatus')} <span class="req">*</span></label><select id="tf_status">${EDIT_STATUSES.map(s=>`<option ${r.status===s?'selected':''}>${esc(s)}</option>`).join('')}</select></div>
         <div class="field full"><label>${t('noteLabel')}</label><textarea id="tf_notes">${esc(r.notes||'')}</textarea></div>
       </div>
@@ -2219,6 +2221,7 @@ function renderModal(){
         ${fieldSelect('tf_cat',state.lists.categories,'',t('mCat'),true)}
         ${fieldSelect('tf_pri',state.lists.priorities,'Medium',t('priority'),true)}
         ${empSelect('tf_assign','',true)}
+        <div class="field"><label>${t('mDur')} <span class="req">*</span></label><input type="number" min="1" id="tf_dur" placeholder="${t('mDur')}"/></div>
         <div class="field full"><label>${t('needs')} <span class="req">*</span></label><textarea id="tf_title" placeholder="${t('needsPh')}"></textarea></div>
         <div class="field full"><label>${t('noteLabel')}</label><input id="tf_notes" placeholder="${t('notesPh')}"/></div>
       </div>
