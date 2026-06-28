@@ -1363,32 +1363,31 @@ async function runRecurringGenerator(skipRefresh){
   // refresh latest tasks from the server FIRST so we never duplicate what another device already generated
   if(!skipRefresh){try{const fresh=await sbFetchAll();if(fresh!==null)state.requests=fresh;}catch(e){}}
   const now=Date.now();
-  const keyOf=(iso,unit)=>{const dt=new Date(new Date(iso).getTime()+3*3600000);const s=dt.toISOString();
-    if(unit==='hour')return s.slice(0,13);
-    if(unit==='month')return s.slice(0,7);
-    if(unit==='year')return s.slice(0,4);
-    return s.slice(0,10);
-  };
+  // match occurrences by their EXACT scheduled minute (not just the day),
+  // so a 4:50pm round is never confused with an 8am one on the same date,
+  // and a task is only created once its real scheduled moment has passed.
+  const keyOf=(iso)=>{const d=new Date(iso);return Math.round(d.getTime()/60000);}; // minute-precision key
   let anyGen=false;
   for(const tpl of state.recurring){
     if(!tpl.active||!tpl.startAt)continue;
-    // recompute existing keys live before EACH template (state.requests grows as we insert)
-    const existing=new Set(state.requests.map(calc).filter(r=>String(r.recurringId)===String(tpl.id)&&r.receivedAt).map(r=>keyOf(r.receivedAt,tpl.everyUnit)));
+    // existing occurrence-moments already generated for this template
+    const existing=new Set(state.requests.map(calc).filter(r=>String(r.recurringId)===String(tpl.id)&&r.receivedAt).map(r=>keyOf(r.receivedAt)));
     let next=new Date(tpl.startAt);let guard=0;const occs=[];
-    while(next.getTime()<=now&&guard<1000){
+    while(next.getTime()<=now&&guard<2000){
       const saudi=new Date(next.getTime()+3*3600000);const isFriday=saudi.getUTCDay()===5;
       if(tpl.includeFriday!==false||!isFriday){
-        const k=keyOf(next.toISOString(),tpl.everyUnit);
-        if(!existing.has(k)){existing.add(k);occs.push(next.toISOString());}
+        const k=keyOf(next.toISOString());
+        // only schedule occurrences whose moment has actually arrived (<= now), never future
+        if(next.getTime()<=now && !existing.has(k)){existing.add(k);occs.push(next.toISOString());}
       }
       next=addInterval(next,tpl.everyN,tpl.everyUnit);guard++;
     }
     if(!occs.length)continue;
     let genCount=tpl.genCount||0,lastGen=tpl.lastRunAt;
     for(const occIso of occs){
-      // FINAL guard: re-check this exact occurrence isn't already in state before inserting
-      const k=keyOf(occIso,tpl.everyUnit);
-      const dup=state.requests.some(r=>String(r.recurringId)===String(tpl.id)&&r.receivedAt&&keyOf(r.receivedAt,tpl.everyUnit)===k);
+      // FINAL guard: re-check this exact moment isn't already in state before inserting
+      const k=keyOf(occIso);
+      const dup=state.requests.some(r=>String(r.recurringId)===String(tpl.id)&&r.receivedAt&&keyOf(r.receivedAt)===k);
       if(dup)continue;
       const task={
         requestedBy:(L==='ar'?'\u0645\u0647\u0645\u0629 \u062f\u0648\u0631\u064a\u0629':'Recurring'),
