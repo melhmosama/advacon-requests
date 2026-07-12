@@ -859,6 +859,59 @@ async function admSignOut(){
   }
   admClearSession();
 }
+// A6: admin RPC feature flag — route Accept/Confirm/Reject through admin_* RPCs (JWT)
+// instead of direct PATCH. Flip to false to roll back to the old direct writes.
+const USE_ADMIN_OPS = true;
+// call an admin_* RPC with the admin's access token. Ensures the session is valid/fresh first.
+async function admRpc(fn,args){
+  const okSess=await admEnsureSession();
+  if(!okSess)return {ok:false,error:'session'};
+  const sess=admGetSession();
+  try{
+    const res=await fetch(SB_URL+'/rest/v1/rpc/'+fn,{method:'POST',
+      headers:{'apikey':SB_KEY,'Authorization':'Bearer '+sess.access_token,'Content-Type':'application/json'},
+      body:JSON.stringify(args||{})});
+    if(!res.ok){
+      if(res.status===401||res.status===403)return {ok:false,error:'session'};
+      return {ok:false,error:'http_'+res.status};
+    }
+    return await res.json();
+  }catch(e){return {ok:false,error:'network'};}
+}
+// map admin RPC error codes → friendly messages
+function admOpError(res){
+  const e=(res&&res.error)||'';
+  const ar=(L==='ar');
+  const M={
+    session: ar?'انتهت جلستك — سجّل الدخول من جديد':'Session expired — sign in again',
+    not_authorized: ar?'غير مخوّل':'Not authorized',
+    assignee_required: ar?'اختر الفني':'Select a technician',
+    invalid_duration: ar?'المدة يجب أن تكون رقماً موجباً':'Duration must be a positive number',
+    staff_not_found: ar?'الفني غير موجود':'Technician not found',
+    task_not_found: ar?'المهمة غير موجودة':'Task not found',
+    task_archived_or_cancelled: ar?'المهمة مؤرشفة أو ملغاة':'Task is archived or cancelled',
+    already_accepted: ar?'المهمة مقبولة مسبقاً':'Task already accepted',
+    not_pending: ar?'المهمة ليست بانتظار التأكيد':'Task is not pending confirmation',
+    not_accepted: ar?'المهمة غير مقبولة':'Task is not accepted',
+    conflict: ar?'تعذّر التنفيذ — حاول مجدداً':'Conflict — please retry',
+    network: ar?'مشكلة بالاتصال':'Connection problem'
+  };
+  return M[e]||(ar?'تعذّر التنفيذ':'Action failed');
+}
+// after a successful admin op, resync all requests from the server so the UI matches DB
+async function admReloadRequests(){
+  try{const sb=await sbFetchAll();if(sb!==null){state.requests=sb;render();}}catch(e){}
+}
+// A6: guard against double-clicks on admin actions (Confirm/Confirm/Confirm etc.)
+let adminActionBusy=false;
+// A6: full cleanup when the admin session dies mid-operation → close modals + return to login
+function admSessionGone(){
+  modal=null;
+  if(typeof closeStaffConfirm==='function')closeStaffConfirm();
+  clearAdminFlag();
+  exitToGate();   // clears session + shows the login gate
+}
+
 // verify an access token really belongs to an admin (server-side, not just localStorage)
 async function admVerifyIsAdmin(accessToken){
   try{
@@ -1572,9 +1625,35 @@ function taskRow(r){
   </tr>`;
 }
 function confirmStaffDone(id){modal={type:'confirm',title:t('confirmDoneQ'),msg:fmtID(id),okLabel:t('confirmDone'),okClass:'',onok:'doConfirmStaffDone('+id+')'};renderModal();}
-function doConfirmStaffDone(id){modal=null;const r=state.requests.find(x=>x.id===id);if(!r)return;r.pendingConfirm=false;r.status='Complete';r.closed=today();r.confirmedAt=nowTs();render();toast(fmtID(id)+' '+t('closedToast'));saveBg(id,r);}
+async function doConfirmStaffDone(id){
+  modal=null;
+  if(USE_ADMIN_OPS){
+    if(adminActionBusy)return;
+    adminActionBusy=true;
+    try{
+      const res=await admRpc('admin_confirm_task',{p_task_id:id});
+      if(res&&res.ok===true){toast(fmtID(id)+' '+t('closedToast'));await admReloadRequests();}
+      else{toast(admOpError(res));if(res&&res.error==='session'){admSessionGone();}}
+    }finally{adminActionBusy=false;}
+    return;
+  }
+  const r=state.requests.find(x=>x.id===id);if(!r)return;r.pendingConfirm=false;r.status='Complete';r.closed=today();r.confirmedAt=nowTs();render();toast(fmtID(id)+' '+t('closedToast'));saveBg(id,r);
+}
 function returnStaffTask(id){modal={type:'confirm',title:t('confirmReturnQ'),msg:fmtID(id),okLabel:t('returnTask'),okClass:'',onok:'doReturnStaffTask('+id+')'};renderModal();}
-function doReturnStaffTask(id){modal=null;const r=state.requests.find(x=>x.id===id);if(!r)return;r.pendingConfirm=false;r.status='In Progress';r.closed='';render();toast(fmtID(id)+' '+t('returnedToast'));saveBg(id,r);}
+async function doReturnStaffTask(id){
+  modal=null;
+  if(USE_ADMIN_OPS){
+    if(adminActionBusy)return;
+    adminActionBusy=true;
+    try{
+      const res=await admRpc('admin_reject_task',{p_task_id:id,p_reason:null});
+      if(res&&res.ok===true){toast(fmtID(id)+' '+t('returnedToast'));await admReloadRequests();}
+      else{toast(admOpError(res));if(res&&res.error==='session'){admSessionGone();}}
+    }finally{adminActionBusy=false;}
+    return;
+  }
+  const r=state.requests.find(x=>x.id===id);if(!r)return;r.pendingConfirm=false;r.status='In Progress';r.closed='';render();toast(fmtID(id)+' '+t('returnedToast'));saveBg(id,r);
+}
 function taskTable(rows){
   return `<div class="tbl-wrap"><table class="tbl">
     <thead><tr>
@@ -2395,21 +2474,31 @@ async function saveTaskForm(mode,id){
     if(!/^\d+$/.test(String(dur))||Number(dur)<1){toast(t('badDur'));return;}
     const r=state.requests.find(x=>x.id===id);if(!r)return;
     const startAtRaw=g('tf_startat')?g('tf_startat').value:'';
-    r.accepted=true;r.archived=false;r.assignedTo=assign;r.duration=dur;r.notes=note;r.closed='';
+    let schedIso=null;
     if(startAtRaw){
       const startMs=new Date(startAtRaw).getTime();
       if(isNaN(startMs)){toast(t('badDate'));return;}
-      r.schedStart=new Date(startMs).toISOString();          // scheduled start moment (timestamptz)
-      r.start=saudiDateOf(startMs);                          // date shown = Riyadh date, not UTC
-      if(startMs>Date.now()){
-        // future task: Not Started until the moment arrives (then becomes Ready to Start)
-        r.status='Not Started';r.startedAt='';
-      }else{
-        // moment already passed → Ready to Start (technician presses Start to begin timing)
-        r.status='Not Started';r.startedAt='';
-      }
+      schedIso=new Date(startMs).toISOString();
+    }
+    if(USE_ADMIN_OPS){
+      // A6: accept + assign via server RPC (verifies admin, staff, state; always → Not Started)
+      if(adminActionBusy)return;
+      adminActionBusy=true;
+      try{
+        const res=await admRpc('admin_accept_assign_task',{p_task_id:id,p_assigned_to:assign,p_duration:Number(dur),p_sched_start:schedIso,p_note:note||null});
+        if(res&&res.ok===true){modal=null;toast(fmtID(id)+' — '+t('acceptedToast'));await admReloadRequests();}
+        else{toast(admOpError(res));if(res&&res.error==='session'){admSessionGone();}}
+      }finally{adminActionBusy=false;}
+      return;
+    }
+    // legacy direct write (rollback)
+    r.accepted=true;r.archived=false;r.assignedTo=assign;r.duration=dur;r.notes=note;r.closed='';
+    if(startAtRaw){
+      const startMs=new Date(startAtRaw).getTime();
+      r.schedStart=new Date(startMs).toISOString();
+      r.start=saudiDateOf(startMs);
+      r.status='Not Started';r.startedAt='';
     }else{
-      // no explicit start → begins now (previous behaviour)
       r.schedStart='';r.start=today();if(!r.startedAt)r.startedAt=nowTs();r.status='In Progress';
     }
     modal=null;render();toast(fmtID(id)+' — '+t('acceptedToast'));saveBg(id,r);return;
