@@ -2514,7 +2514,8 @@ function galGo(i){if(!modal||modal.type!=='img')return;modal.idx=i;renderModal()
 async function saveTaskForm(mode,id){
   clearDirty();
   const g=i=>document.getElementById(i);
-  const assign=g('tf_assign').value, dur=(g('tf_dur')?g('tf_dur').value:''), note=g('tf_notes').value.trim();
+  const gv=i=>{const e=g(i);return e?e.value:'';};
+  const assign=gv('tf_assign'), dur=gv('tf_dur'), note=(gv('tf_notes')||'').trim();
   if(mode==='accept'){
     if(!assign||!dur){toast(t('fillReq'));return;}
     if(!/^\d+$/.test(String(dur))||Number(dur)<1){toast(t('badDur'));return;}
