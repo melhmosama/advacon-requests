@@ -750,8 +750,8 @@ const LOGO_B64="iVBORw0KGgoAAAANSUhEUgAAAXoAAAB4CAYAAAD8HzkvAAABCGlDQ1BJQ0MgUHJv
 const SB_URL="https://abnfwabpqnwnscwyfqbm.supabase.co";
 const SB_KEY="sb_publishable_yeLa2U3cUo9MSn2H0pOlXQ_roSY8_Zx";
 const SB_HEAD={'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'};
-function fromRow(r){return {id:r.id,requestedBy:r.requested_by||'',phone:r.phone||'',project:r.project||'',category:r.category||'',priority:r.priority||'Medium',title:r.title||'',received:r.received||'',assignedTo:r.assigned_to||'',start:r.start_date||'',duration:r.duration||'',status:r.status||'Not Started',accepted:!!r.accepted,notes:r.notes||'',closed:r.closed_date||'',archived:!!r.archived,images:r.images||'',files:r.files||'',pendingConfirm:!!r.pending_confirm,confirmedAt:r.confirmed_at||'',receivedAt:r.received_at||'',startedAt:r.started_at||'',closeoutImages:r.closeout_images||'',closeoutFiles:r.closeout_files||'',rejectedAt:r.rejected_at||'',recurringId:r.recurring_id||''};}
-function toRow(o){return {requested_by:o.requestedBy,phone:o.phone||null,project:o.project,category:o.category,priority:o.priority,title:o.title,received:o.received||null,assigned_to:o.assignedTo||null,start_date:o.start||null,duration:o.duration?Number(o.duration):null,status:o.status,accepted:!!o.accepted,notes:o.notes||null,closed_date:o.closed||null,archived:!!o.archived,images:o.images||null,files:o.files||null,pending_confirm:!!o.pendingConfirm,confirmed_at:o.confirmedAt||null,received_at:o.receivedAt||null,started_at:o.startedAt||null,closeout_images:o.closeoutImages||null,closeout_files:o.closeoutFiles||null,rejected_at:o.rejectedAt||null,recurring_id:o.recurringId||null};}
+function fromRow(r){return {id:r.id,requestedBy:r.requested_by||'',phone:r.phone||'',project:r.project||'',category:r.category||'',priority:r.priority||'Medium',title:r.title||'',received:r.received||'',assignedTo:r.assigned_to||'',start:r.start_date||'',duration:r.duration||'',status:r.status||'Not Started',accepted:!!r.accepted,notes:r.notes||'',closed:r.closed_date||'',archived:!!r.archived,images:r.images||'',files:r.files||'',pendingConfirm:!!r.pending_confirm,confirmedAt:r.confirmed_at||'',receivedAt:r.received_at||'',startedAt:r.started_at||'',closeoutImages:r.closeout_images||'',closeoutFiles:r.closeout_files||'',rejectedAt:r.rejected_at||'',cycleKey:r.cycle_key||'',recurringId:r.recurring_id||''};}
+function toRow(o){return {requested_by:o.requestedBy,phone:o.phone||null,project:o.project,category:o.category,priority:o.priority,title:o.title,received:o.received||null,assigned_to:o.assignedTo||null,start_date:o.start||null,duration:o.duration?Number(o.duration):null,status:o.status,accepted:!!o.accepted,notes:o.notes||null,closed_date:o.closed||null,archived:!!o.archived,images:o.images||null,files:o.files||null,pending_confirm:!!o.pendingConfirm,confirmed_at:o.confirmedAt||null,received_at:o.receivedAt||null,started_at:o.startedAt||null,closeout_images:o.closeoutImages||null,closeout_files:o.closeoutFiles||null,rejected_at:o.rejectedAt||null,cycle_key:o.cycleKey||null,recurring_id:o.recurringId||null};}
 async function sbFetchAll(){try{const res=await fetch(SB_URL+'/rest/v1/requests?select=*&order=id.asc',{headers:SB_HEAD});if(!res.ok)throw 0;return (await res.json()).map(fromRow);}catch(e){return null;}}
 async function sbInsert(o){const res=await fetch(SB_URL+'/rest/v1/requests',{method:'POST',headers:{...SB_HEAD,'Prefer':'return=representation'},body:JSON.stringify(toRow(o))});if(!res.ok)throw new Error();return fromRow((await res.json())[0]);}
 async function sbUpdate(id,o){const res=await fetch(SB_URL+'/rest/v1/requests?id=eq.'+id,{method:'PATCH',headers:SB_HEAD,body:JSON.stringify(toRow(o))});if(!res.ok)throw new Error();}
@@ -1363,43 +1363,53 @@ async function runRecurringGenerator(skipRefresh){
   // refresh latest tasks from the server FIRST so we never duplicate what another device already generated
   if(!skipRefresh){try{const fresh=await sbFetchAll();if(fresh!==null)state.requests=fresh;}catch(e){}}
   const now=Date.now();
-  // match occurrences by their EXACT scheduled minute (not just the day),
-  // so a 4:50pm round is never confused with an 8am one on the same date,
-  // and a task is only created once its real scheduled moment has passed.
-  const keyOf=(iso)=>{const d=new Date(iso);return Math.round(d.getTime()/60000);}; // minute-precision key
+  const nowD=new Date();
+  // A recurring task is created with TODAY's date but the template's scheduled TIME-OF-DAY.
+  // We generate at most ONE task per due cycle (no retroactive pile-up), keyed by the cycle
+  // moment so re-running never duplicates, and a floor so deleted past tasks never come back.
+  const cycleKey=(ms)=>Math.round(ms/60000);
   let anyGen=false;
   for(const tpl of state.recurring){
     if(!tpl.active||!tpl.startAt)continue;
-    // existing occurrence-moments already generated for this template
-    const existing=new Set(state.requests.map(calc).filter(r=>String(r.recurringId)===String(tpl.id)&&r.receivedAt).map(r=>keyOf(r.receivedAt)));
-    let next=new Date(tpl.startAt);let guard=0;const occs=[];
-    while(next.getTime()<=now&&guard<2000){
-      const saudi=new Date(next.getTime()+3*3600000);const isFriday=saudi.getUTCDay()===5;
-      if(tpl.includeFriday!==false||!isFriday){
-        const k=keyOf(next.toISOString());
-        // only schedule occurrences whose moment has actually arrived (<= now), never future
-        if(next.getTime()<=now && !existing.has(k)){existing.add(k);occs.push(next.toISOString());}
-      }
-      next=addInterval(next,tpl.everyN,tpl.everyUnit);guard++;
+    const startMs=new Date(tpl.startAt).getTime();
+    if(startMs>now)continue;
+    // latest cycle whose scheduled moment has already arrived
+    let cur=new Date(tpl.startAt);let last=null;let guard=0;
+    while(cur.getTime()<=now&&guard<5000){last=new Date(cur.getTime());cur=addInterval(cur,tpl.everyN,tpl.everyUnit);guard++;}
+    if(!last)continue;
+    const cyc=cycleKey(last.getTime());
+    const floorCyc=tpl.lastRunAt?cycleKey(new Date(tpl.lastRunAt).getTime()):-Infinity;
+    if(cyc<=floorCyc)continue; // already handled this cycle (survives deletes)
+    // already a task for this cycle in the data?
+    const have=state.requests.map(calc).some(r=>String(r.recurringId)===String(tpl.id)&&r.cycleKey&&Number(r.cycleKey)===cyc);
+    if(have)continue;
+    // Friday skip applies to the DUE cycle's weekday
+    const saudiCyc=new Date(last.getTime()+3*3600000);
+    if(tpl.includeFriday===false&&saudiCyc.getUTCDay()===5){
+      // mark this cycle as handled so we don't keep re-checking it, then move on
+      try{await sbPatchRecurring(tpl.id,{last_run_at:last.toISOString()});}catch(e){}
+      tpl.lastRunAt=last.toISOString();continue;
     }
-    if(!occs.length)continue;
-    let genCount=tpl.genCount||0,lastGen=tpl.lastRunAt;
-    for(const occIso of occs){
-      // FINAL guard: re-check this exact moment isn't already in state before inserting
-      const k=keyOf(occIso);
-      const dup=state.requests.some(r=>String(r.recurringId)===String(tpl.id)&&r.receivedAt&&keyOf(r.receivedAt)===k);
-      if(dup)continue;
-      const task={
-        requestedBy:(L==='ar'?'\u0645\u0647\u0645\u0629 \u062f\u0648\u0631\u064a\u0629':'Recurring'),
-        phone:'',project:tpl.project||'',category:tpl.category||'',priority:tpl.priority||'Medium',
-        title:tpl.title,assignedTo:tpl.assignedTo||'',start:occIso.slice(0,10),duration:'',
-        status:'In Progress',accepted:true,notes:tpl.notes||'',closed:'',archived:false,
-        images:'',files:'',pendingConfirm:false,confirmedAt:'',
-        receivedAt:occIso,startedAt:occIso,closeoutImages:'',rejectedAt:'',recurringId:tpl.id
-      };
-      try{const saved=await sbInsert(task);state.requests.push(saved);anyGen=true;genCount++;if(!lastGen||occIso>lastGen)lastGen=occIso;}catch(e){break;}
-    }
-    if(genCount!==(tpl.genCount||0)){tpl.lastRunAt=lastGen;tpl.genCount=genCount;try{await sbPatchRecurring(tpl.id,{last_run_at:lastGen,gen_count:genCount});}catch(e){}}
+    // stamp = TODAY (Saudi) date + template's scheduled time-of-day
+    const hh=saudiCyc.getUTCHours(), mm=saudiCyc.getUTCMinutes();
+    const todaySaudi=new Date(nowD.getTime()+3*3600000);
+    const stampMs=Date.UTC(todaySaudi.getUTCFullYear(),todaySaudi.getUTCMonth(),todaySaudi.getUTCDate(),hh,mm,0)-3*3600000;
+    const stampIso=new Date(stampMs).toISOString();
+    // FINAL dup guard
+    const dup=state.requests.some(r=>String(r.recurringId)===String(tpl.id)&&r.cycleKey&&Number(r.cycleKey)===cyc);
+    if(dup)continue;
+    const task={
+      requestedBy:(L==='ar'?'\u0645\u0647\u0645\u0629 \u062f\u0648\u0631\u064a\u0629':'Recurring'),
+      phone:'',project:tpl.project||'',category:tpl.category||'',priority:tpl.priority||'Medium',
+      title:tpl.title,assignedTo:tpl.assignedTo||'',start:stampIso.slice(0,10),duration:'',
+      status:'In Progress',accepted:true,notes:tpl.notes||'',closed:'',archived:false,
+      images:'',files:'',pendingConfirm:false,confirmedAt:'',
+      receivedAt:stampIso,startedAt:stampIso,closeoutImages:'',rejectedAt:'',recurringId:tpl.id,cycleKey:cyc
+    };
+    let genCount=tpl.genCount||0;
+    try{const saved=await sbInsert(task);state.requests.push(saved);anyGen=true;genCount++;}catch(e){continue;}
+    tpl.lastRunAt=last.toISOString();tpl.genCount=genCount;
+    try{await sbPatchRecurring(tpl.id,{last_run_at:last.toISOString(),gen_count:genCount});}catch(e){}
   }
   if(anyGen){toast(t('genDone'));render();}
   }finally{_genRunning=false;}
