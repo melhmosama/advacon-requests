@@ -747,6 +747,7 @@ tr.pendrow{background:rgba(251,239,214,.32)}
 .stf-mgr-note span,.stf-reject-note span{display:block;font-size:11px;font-weight:700;color:#92400E;margin-bottom:2px}
 .stf-mgr-note p,.stf-reject-note p{margin:0;font-size:14px;color:#1C1917;line-height:1.5}
 .stf-reject-note span{color:#B91C1C}
+.prev-st{font-size:11px;color:#9CA3AF;margin-top:2px;font-style:italic}
 .co-block{display:flex;flex-direction:column;gap:9px}
 .co-btn{display:inline-flex;align-items:center;gap:8px;justify-content:center;background:var(--lblue);color:var(--accent);border:1.5px dashed var(--accent);border-radius:11px;padding:12px 14px;font-weight:700;font-size:14px;cursor:pointer;transition:.15s}
 .co-btn:hover{background:var(--accent);color:#fff}
@@ -1010,7 +1011,7 @@ const SEED={
 const MANUAL_STATUSES=["In Progress","On Hold","Needs Review","Needs Update"];
 // Edit form: full programmed list EXCEPT Overdue (auto-calculated, choice B)
 const EDIT_STATUSES=["Not Started","In Progress","Complete","On Hold","Needs Review","Needs Update","Cancelled"];
-const STATUS_COLORS={"Not Started":"#6E7A87","In Progress":"#3E6E9E","Complete":"#3C7D5A","On Hold":"#C08A3E","Overdue":"#B0504A","Needs Review":"#6E5C8A","Needs Update":"#B5973C","Cancelled":"#4A4F55"};
+const STATUS_COLORS={"Not Started":"#6E7A87","In Progress":"#3E6E9E","Complete":"#3C7D5A","On Hold":"#C08A3E","Overdue":"#B0504A","Needs Review":"#6E5C8A","Needs Update":"#B5973C","Cancelled":"#4A4F55","Deleted":"#8B3A3A"};
 // soft elegant badge palette: {bg, fg}
 const STATUS_SOFT={
  "Not Started":{bg:"#EDF0F3",fg:"#5A6675"},
@@ -1020,9 +1021,18 @@ const STATUS_SOFT={
  "Overdue":{bg:"#F8E4E2",fg:"#9E3F38"},
  "Needs Review":{bg:"#ECE8F4",fg:"#5E4E84"},
  "Needs Update":{bg:"#F6EFD8",fg:"#8A6E1E"},
- "Cancelled":{bg:"#E9EAEC",fg:"#5A5F66"}
+ "Cancelled":{bg:"#E9EAEC",fg:"#5A5F66"},
+ "Deleted":{bg:"#F3E8E8",fg:"#8B3A3A"}
 };
 function stBadge(status){const s=STATUS_SOFT[status]||{bg:"#EDF0F3",fg:"#5A6675"};return `<span class="st" style="background:${s.bg};color:${s.fg}">${esc(status)}</span>`;}
+// A6.1: archived-aware badge for list views. Archived/cancelled records show WHY they're
+// archived as the main badge (Cancelled / Deleted), not their old operational status.
+function effBadge(r){
+  if(r.status==='Cancelled')return `<span class="st" style="background:#FEE2E2;color:#B91C1C">${esc(t('cancelledBadge'))}</span>`;
+  if(r.status==='Deleted'||r.archived)return `<span class="st" style="background:#E5E7EB;color:#4B5563">${esc(t('deleted'))}</span>`;
+  return stBadge(r.effStatus);
+}
+// (previous-status line intentionally omitted — deletion overwrites status by design)
 const PR_COLOR={High:'#B0504A',Medium:'#C08A3E',Med:'#C08A3E',Low:'#5B7A99'};
 // Arabic display names for the /staff page only (DB value stays English). Editable later via settings.
 let STAFF_AR={
@@ -1059,7 +1069,7 @@ const T={
   openEye:"Active work",openH1:"Open Tasks",openP:"Everything that still needs action. Close a task and it moves out of here.",
   closeTask:"Close task",delTask:"Delete",restore:"Restore",
   archEye:"Archive",archH1:"Archived / Declined",archP:"Declined or deleted tasks. Numbers are preserved — restore any task and it returns to incoming.",
-  declined:"Declined",deleted:"Deleted",saved:"Saved",del:"Delete",
+  declined:"Declined",deleted:"Deleted",cancelledBadge:"Cancelled",prevStatus:"Archived — was",saved:"Saved",del:"Delete",
   dashEye:"Executive overview",dashH1:"Dashboard",dashP:"Live snapshot of all service requests.",
   kTotal:"Total Requests",kPending:"Pending Acceptance",kOpen:"Open",kDueWk:"Due This Week",kOver:"Overdue",kDone:"Completed",kRate:"Completion Rate",kAvgDays:"Avg. Completion (days)",
   byCat:"Requests by Category",bySt:"Requests by Status",byPri:"Requests by Priority",byProj:"Requests by Project",wlTeam:"Workload by Team",overTime:"Requests Over Time",topReq:"Top Requesters",alerts:"Needs Attention",dueIn:"due in",overdueBy:"overdue",noAlerts:"Nothing overdue or due soon.",noData:"No data yet",
@@ -1089,7 +1099,7 @@ const T={
   openEye:"العمل النشط",openH1:"المهام المفتوحة",openP:"جميع المهام التي ما زالت قيد التنفيذ. عند إقفال أي مهمة تخرج من هذه القائمة.",
   closeTask:"إقفال المهمة",delTask:"حذف",restore:"إرجاع",
   archEye:"الأرشيف",archH1:"الملغية / المحذوفة",archP:"المهام المرفوضة أو المحذوفة، مع الاحتفاظ بأرقامها. يمكن إرجاع أي مهمة لتعود إلى قائمة الطلبات الواردة.",
-  declined:"مرفوضة",deleted:"محذوفة",saved:"تم الحفظ",del:"حذف",
+  declined:"مرفوضة",deleted:"محذوفة",cancelledBadge:"ملغاة",prevStatus:"مؤرشفة — كانت",saved:"تم الحفظ",del:"حذف",
   dashEye:"نظرة تنفيذية",dashH1:"لوحة المعلومات",dashP:"نظرة عامة محدَّثة على جميع طلبات الخدمة.",
   kTotal:"إجمالي الطلبات",kPending:"بانتظار القبول",kOpen:"مفتوحة",kDueWk:"تستحق هذا الأسبوع",kOver:"متأخرة",kDone:"مكتملة",kRate:"نسبة الإنجاز",kAvgDays:"متوسط الإنجاز (أيام)",
   byCat:"الطلبات حسب الفئة",bySt:"الطلبات حسب الحالة",byPri:"الطلبات حسب الأولوية",byProj:"الطلبات حسب المشروع",wlTeam:"توزيع العمل على الفريق",overTime:"الطلبات عبر الزمن",topReq:"الأكثر طلباً",alerts:"يحتاج انتباه",dueIn:"تستحق خلال",overdueBy:"متأخرة",noAlerts:"لا شيء متأخر أو قريب الاستحقاق.",noData:"لا توجد بيانات بعد",
@@ -1223,7 +1233,7 @@ function calc(r){
   return o;
 }
 function isOpen(r){return r.accepted && !r.archived && r.effStatus!=='Complete' && r.effStatus!=='Cancelled' && r.status!=='Cancelled';}
-function isArchived(r){return r.archived || r.status==='Cancelled';}
+function isArchived(r){return r.archived || r.status==='Cancelled' || r.status==='Deleted';}
 function isIncoming(r){return !isArchived(r) && !r.accepted;}
 function isAccepted(r){return !isArchived(r) && r.accepted;}
 
@@ -1923,12 +1933,12 @@ function coFilesHtml(r){
 function needsAttention(){
   const all=state.requests.map(calc);
   const now=Date.now();
-  // overdue: open tasks past due
-  const overdue=all.filter(r=>r.effStatus==='Overdue');
+  // overdue: open tasks past due (never archived)
+  const overdue=all.filter(r=>r.effStatus==='Overdue'&&!r.archived);
   // stale pending: incoming requests waiting more than 24h since received
   const stalePending=all.filter(r=>isIncoming(r)&&r.receivedAt&&(now-new Date(r.receivedAt).getTime())>24*3600000);
-  // long in-progress: in progress more than 7 days since started
-  const longRunning=all.filter(r=>r.effStatus==='In Progress'&&r.startedAt&&(now-new Date(r.startedAt).getTime())>7*24*3600000);
+  // long in-progress: in progress more than 7 days since started (never archived)
+  const longRunning=all.filter(r=>r.effStatus==='In Progress'&&!r.archived&&r.startedAt&&(now-new Date(r.startedAt).getTime())>7*24*3600000);
   const total=overdue.length+stalePending.length+longRunning.length;
   if(!total)return '';
   const item=(r,reason,col)=>`<div class="na-row" onclick="openEdit(${r.id})"><span class="na-id">${fmtID(r.id)}</span><span class="na-title">${esc(r.title)}</span><span class="na-assignee">${esc(r.assignedTo||r.requestedBy||'—')}</span><span class="na-reason" style="color:${col}">${reason}</span></div>`;
@@ -2063,7 +2073,7 @@ function viewAll(){
       else{b+=`<button class="ico ok" title="${t('restore')}" onclick="restoreTask(${r.id})">♻</button>`;}
       return b;
     })();
-    return `<tr><td class="c-id">${fmtID(r.id)}</td><td class="c-title"><div class="ttl">${esc(r.title)}${pend}</div>${r.notes?`<div class="nt">📝 ${esc(r.notes)}</div>`:''}${imgIcon}${fileLinks(r)}</td><td>${esc(r.requestedBy||'—')}</td><td>${esc(r.project)}</td><td>${esc(dispCat(r.category))}</td><td><span class="prio ${r.priority}">${esc(dispPri(r.priority))}</span></td><td>${esc(r.assignedTo||'—')}</td><td>${stBadge(r.effStatus)}</td><td>${esc(r.due||'—')}</td><td class="c-act">${acts}</td></tr>`;
+    return `<tr><td class="c-id">${fmtID(r.id)}</td><td class="c-title"><div class="ttl">${esc(r.title)}${pend}</div>${r.notes?`<div class="nt">📝 ${esc(r.notes)}</div>`:''}${imgIcon}${fileLinks(r)}</td><td>${esc(r.requestedBy||'—')}</td><td>${esc(r.project)}</td><td>${esc(dispCat(r.category))}</td><td><span class="prio ${r.priority}">${esc(dispPri(r.priority))}</span></td><td>${esc(r.assignedTo||'—')}</td><td>${effBadge(r)}</td><td>${esc(r.due||'—')}</td><td class="c-act">${acts}</td></tr>`;
   }).join('')+`</tbody></table></div>`:`<div class="empty">${t('noMatch')}</div>`;
   return `<div class="phead"><div class="eyebrow">${t('allEye')}</div><h1>${t('allH1')}</h1><p>${t('allP')}</p></div>
   <div class="panel panel-pad stats-panel">${viewDashboard()}</div>
@@ -2132,12 +2142,12 @@ function viewArchive(){
 function saveBg(id,r){sbUpdate(id,r).catch(e=>{toast(t('connErr'));});}
 function acceptReq(id){modal={type:'accept',id};renderModal();}
 function declineReq(id){modal={type:'confirm',title:t('confirmDeclineQ'),msg:fmtID(id),okLabel:t('decline'),okClass:'danger',onok:'doDecline('+id+')'};renderModal();}
-function doDecline(id){modal=null;const r=state.requests.find(x=>x.id===id);if(!r)return;r.status='Cancelled';r.accepted=false;r.archived=false;r.closed='';r.rejectedAt=nowTs();render();toast(fmtID(id)+' '+t('declinedToast'));saveBg(id,r);}
+function doDecline(id){modal=null;const r=state.requests.find(x=>x.id===id);if(!r)return;r.status='Cancelled';r.accepted=false;r.archived=true;r.pendingConfirm=false;r.closed='';r.rejectedAt=nowTs();render();toast(fmtID(id)+' '+t('declinedToast'));saveBg(id,r);}
 function upd(id,f,v){const r=state.requests.find(x=>x.id===id);if(!r)return;r[f]=v;render();saveBg(id,r);}
 function closeTask(id){const r=state.requests.find(x=>x.id===id);if(!r)return;r.status='Complete';r.closed=today();r.confirmedAt=nowTs();render();toast(fmtID(id)+' '+t('closedToast'));saveBg(id,r);}
-function restoreTask(id){const r=state.requests.find(x=>x.id===id);if(!r)return;r.archived=false;r.accepted=false;r.status='Not Started';r.closed='';r.assignedTo='';r.start='';r.duration='';render();toast(fmtID(id)+' '+t('restoredToast'));saveBg(id,r);}
+function restoreTask(id){const r=state.requests.find(x=>x.id===id);if(!r)return;r.archived=false;r.accepted=false;r.status='Not Started';r.pendingConfirm=false;r.closed='';r.assignedTo='';r.start='';r.duration='';r.rejectedAt='';render();toast(fmtID(id)+' '+t('restoredToast'));saveBg(id,r);}
 function askDelete(id){modal={type:'del',id};renderModal();}
-function doDelete(id){const r=state.requests.find(x=>x.id===id);if(r){r.archived=true;if(!r.rejectedAt)r.rejectedAt=nowTs();modal=null;render();toast(fmtID(id)+' '+t('deletedToast'));saveBg(id,r);}else{modal=null;render();}}
+function doDelete(id){const r=state.requests.find(x=>x.id===id);if(r){r.status='Deleted';r.archived=true;r.pendingConfirm=false;r.accepted=false;if(!r.rejectedAt)r.rejectedAt=nowTs();modal=null;render();toast(fmtID(id)+' '+t('deletedToast'));saveBg(id,r);}else{modal=null;render();}}
 
 /* ===== task form (accept / edit / add) + close/reopen + lightbox ===== */
 function openAddTask(){modal={type:'add'};renderModal();}
@@ -2910,7 +2920,16 @@ async function loadStaffTasks(){
     }
   }catch(e){ if(typeof toast==='function'){toast(L==='ar'?'تعذّر تحديث المهام':'Could not refresh tasks');} }
 }
-function openStaffTask(id){staffModal=id;closeoutPhotos=[];closeoutFiles=[];coUploading=0;render();}
+function openStaffTask(id){
+  staffModal=id;closeoutPhotos=[];closeoutFiles=[];coUploading=0;render();
+  // No Start button: if this task is due to run (accepted, Not Started, its time arrived,
+  // not locked), start it automatically so the technician can close it out directly.
+  const r=state.requests.find(x=>x.id===id);
+  if(r && r.status==='Not Started' && r.accepted && !LOCKED_STATUSES.includes(r.status)){
+    const future=r.schedStart && new Date(r.schedStart).getTime()>Date.now();
+    if(!future){ startTask(id); }   // starts via staff_start_task RPC → In Progress
+  }
+}
 function pickStaff(i){const names=staffNames();if(names[i]!=null){staffName=names[i];staffModal=null;render();}}
 function staffDetail(id){
   const r=state.requests.map(calc).find(x=>x.id===id);
@@ -2923,9 +2942,12 @@ function staffDetail(id){
   const isFuture=r.isFuture;
   const isReady=r.isReady;
   const locked=LOCKED_STATUSES.includes(r.status);
-  // a Not Started + accepted task (fresh or re-assigned) is startable — not closeable yet
-  const canStartNow=(r.status==='Not Started' && r.accepted && !r.startedAt && !isFuture);
+  // No Start button any more: a task runs automatically by time.
+  //  • immediate task → accepted as In Progress by the manager's RPC
+  //  • scheduled task → auto-runs once its scheduled moment arrives (isReady)
+  // "effectively running" = closeable now.
   const inProgress=(r.status==='In Progress');
+  const effectivelyRunning=(inProgress || (r.status==='Not Started' && r.accepted && !isFuture));
   const lockBlock=locked?`<div class="stf-locked-block">
       <div class="stf-locked-status">🔒 ${esc(stfStatusLabel(r.status))}</div>
       <div class="stf-locked-hint">${t('stfLockedHint')}</div>
@@ -2953,8 +2975,7 @@ function staffDetail(id){
       ${locked?lockBlock
             :pend?`<div class="stf-pend-msg">⏳ ${t('stfPendMsg')}</div>`
             :isFuture?`<div class="stf-future-block">🔒 ${t('futureLockMsg')}</div>`
-            :(canStartNow||isReady)?`<div class="stf-ready"><div class="stf-ready-msg">✅ ${t('readyMsg')}</div><button class="btn btn-lg stf-start" onclick="startTask(${r.id})">▶ ${t('startTaskBtn')}</button></div>`
-            :inProgress?`<div class="stf-closeout">
+            :effectivelyRunning?`<div class="stf-closeout">
                 <div class="co-block">
                   <label class="img-btn co-btn">📷 ${t('closeoutPhoto')}<input type="file" accept="image/*" multiple capture="environment" style="display:none" onchange="handleCloseout(this)"/></label>
                   <div class="img-previews" id="co-previews">${closeoutPhotos.map((u,i)=>`<div class="img-prev"><img src="${esc(u)}"/><button type="button" onclick="removeCloseout('${esc(u)}','')">×</button></div>`).join('')}</div>
