@@ -2094,7 +2094,6 @@ function viewAll(){
     const acts=(()=>{
       let b=`<button class="ico" title="${t('edit')}" onclick="openEdit(${r.id})">✎</button>`;
       if(r.effStatus==='Complete'){b+=`<button class="ico" title="${t('returnToTech')}" onclick="returnToTech(${r.id})">↩</button><button class="ico" title="${t('returnAccept')}" onclick="returnToAcceptance(${r.id})">⤴</button>`;}
-      else if(r.effStatus==='On Hold'||r.effStatus==='Needs Review'||r.effStatus==='Needs Update'){b+=`<button class="ico" title="${t('returnToTech')}" onclick="returnToTech(${r.id})">↩</button>`;}
       if(!r.archived){b+=`<button class="ico del" title="${t('del')}" onclick="askDelete(${r.id})">🗑</button>`;}
       else{b+=`<button class="ico ok" title="${t('restore')}" onclick="restoreTask(${r.id})">♻</button>`;}
       return b;
@@ -2187,16 +2186,6 @@ function returnToAcceptance(id){modal={type:'confirm',title:t('confirmReturnAcce
 async function doReturnToAcceptance(id){modal=null;if(USE_ADMIN_ACTIONS){await admTaskAction(id,'return_to_acceptance',null,'returnedToast');return;}const r=state.requests.find(x=>x.id===id);if(!r)return;r.status='Not Started';r.accepted=false;r.pendingConfirm=false;r.closed='';r.confirmedAt='';r.startedAt='';r.archived=false;render();toast(fmtID(id)+' '+t('returnedToast'));saveBg(id,r);}
 function returnToTech(id){modal={type:'confirm',title:t('confirmReturnTechQ'),msg:fmtID(id),okLabel:t('returnToTech'),okClass:'',onok:'doReturnToTech('+id+')'};renderModal();}
 async function doReturnToTech(id){modal=null;if(USE_ADMIN_ACTIONS){await admTaskAction(id,'return_to_technician',null,'returnedToast');return;}const r=state.requests.find(x=>x.id===id);if(!r)return;r.status='In Progress';r.accepted=true;r.pendingConfirm=false;r.closed='';r.confirmedAt='';r.archived=false;render();toast(fmtID(id)+' '+t('returnedToast'));saveBg(id,r);}
-// A7: apply an administrative status (On Hold / Needs Review / Needs Update) from the edit modal
-async function applyAdminStatus(id){
-  const sel=document.getElementById('tf_admstatus');if(!sel)return;
-  const map={'On Hold':'on_hold','Needs Review':'needs_review','Needs Update':'needs_update'};
-  const action=map[sel.value];if(!action){toast(admOpError({error:'invalid_action'}));return;}
-  const noteEl=document.getElementById('tf_admnote');
-  const note=noteEl?noteEl.value.trim():'';
-  modal=null;
-  await admTaskAction(id,action,note||null,'savedToast');
-}
 function fmtTime(ts){if(!ts)return '—';try{const d=new Date(new Date(ts).getTime()+3*3600000);const dt=d.toISOString().slice(0,10);let h=d.getUTCHours(),m=d.getUTCMinutes();const ap=h>=12?'PM':'AM';h=h%12||12;return dt+' '+h+':'+String(m).padStart(2,'0')+' '+ap;}catch(e){return ts;}}
 function fmtDuration(fromTs,toTs){if(!fromTs||!toTs)return '—';try{const ms=new Date(toTs).getTime()-new Date(fromTs).getTime();if(ms<0)return '—';const totalH=ms/3600000;const days=Math.floor(totalH/24);const hours=Math.round(totalH%24);if(days>0)return days+'d '+hours+'h';return hours+'h';}catch(e){return '—';}}
 function inRange(ts,from,to){if(!ts)return false;const d=new Date(ts).getTime();const f=new Date(from+'T00:00:00+03:00').getTime();const t2=new Date(to+'T23:59:59+03:00').getTime();return d>=f&&d<=t2;}
@@ -2205,7 +2194,6 @@ function loadSheetJS(){return new Promise((res,rej)=>{if(window.XLSX)return res(
 function ddActions(r){
   let b=`<button class="ico" title="${t('edit')}" onclick="event.stopPropagation();openEdit(${r.id})">✎</button>`;
   if(r.effStatus==='Complete'){b+=`<button class="ico" title="${t('returnToTech')}" onclick="event.stopPropagation();returnToTech(${r.id})">↩</button><button class="ico" title="${t('returnAccept')}" onclick="event.stopPropagation();returnToAcceptance(${r.id})">⤴</button>`;}
-  else if(r.effStatus==='On Hold'||r.effStatus==='Needs Review'||r.effStatus==='Needs Update'){b+=`<button class="ico" title="${t('returnToTech')}" onclick="event.stopPropagation();returnToTech(${r.id})">↩</button>`;}
   if(!r.archived){b+=`<button class="ico del" title="${t('del')}" onclick="event.stopPropagation();askDelete(${r.id})">🗑</button>`;}
   else{b+=`<button class="ico ok" title="${t('restore')}" onclick="event.stopPropagation();restoreTask(${r.id})">♻</button>`;}
   return b;
@@ -2562,6 +2550,20 @@ async function saveTaskForm(mode,id){
     if(!proj||!cat||!pri||!assign||!dur||!start||(statusEl&&!status)){toast(t('fillReq'));return;}
     if(!/^\d+$/.test(String(dur))||Number(dur)<1){toast(t('badDur'));return;}
     const r=state.requests.find(x=>x.id===id);if(!r)return;
+    // A7: if the manager changed the STATUS to an administrative state, that takes priority —
+    // route it through admin_task_action (server-validated) and ignore the field edits this time.
+    if(USE_ADMIN_ACTIONS && statusEl && status!==r.status){
+      const noteEl=g('tf_admnote');
+      const mnote=noteEl?(noteEl.value||'').trim():'';
+      const ACTION_MAP={'On Hold':'on_hold','Needs Review':'needs_review','Needs Update':'needs_update','Cancelled':'cancel','Not Started':'return_to_acceptance','In Progress':'return_to_technician'};
+      const action=ACTION_MAP[status];
+      if(action){
+        modal=null;
+        await admTaskAction(id,action,mnote||null,'savedToast');
+        return;
+      }
+      // Complete (or any status without a mapped action) falls through to the legacy field PATCH below
+    }
     // if this task had a scheduled start, keep sched_start consistent with the edited date
     if(r.schedStart && start && start!==r.start){
       const prev=new Date(r.schedStart);const hh=(prev.getTime()+3*3600000);const d2=new Date(hh);
@@ -2569,7 +2571,6 @@ async function saveTaskForm(mode,id){
       r.schedStart=new Date(stampMs).toISOString();
     }
     r.project=proj;r.category=cat;r.priority=pri;r.assignedTo=assign;r.duration=dur;r.start=start;r.notes=note;
-    // status is only edited here in legacy (non-admin-actions) mode; otherwise Apply Status handles it
     if(statusEl){
       r.status=status;
       if(status==='Complete'){if(!r.closed)r.closed=today();if(!r.confirmedAt)r.confirmedAt=nowTs();r.archived=false;r.accepted=true;}
@@ -2646,22 +2647,8 @@ function renderModal(){
   }
   if(modal.type==='edit'){
     const r=state.requests.find(x=>x.id===modal.id);if(!r){modal=null;return;}
-    // admin status actions available from the edit form (source-state gated by the RPC anyway)
-    const ADMIN_STATUS=['On Hold','Needs Review','Needs Update'];
-    const statusRow=USE_ADMIN_ACTIONS?`
-      <div class="edit-sep"></div>
-      <div class="edit-sec-h">${t('adminStatusH')}</div>
-      <div class="form-grid">
-        <div class="field"><label>${t('mStatus')}</label><select id="tf_admstatus">${ADMIN_STATUS.map(s=>`<option ${r.status===s?'selected':''}>${esc(s)}</option>`).join('')}</select></div>
-        <div class="field full"><label>${t('stfMgrNote')}</label><textarea id="tf_admnote" placeholder="${t('mgrNotePh')}">${esc(r.managerNote||'')}</textarea></div>
-      </div>
-      <div class="btnrow" style="justify-content:flex-end;margin-top:8px"><button class="btn amber" onclick="applyAdminStatus(${r.id})">${t('applyStatus')}</button></div>
-    `:`
-        <div class="field"><label>${t('mStatus')} <span class="req">*</span></label><select id="tf_status">${EDIT_STATUSES.map(s=>`<option ${r.status===s?'selected':''}>${esc(s)}</option>`).join('')}</select></div>
-    `;
     el.innerHTML=`<div class="modal-bg" onclick="if(event.target===this){guardCloseModal();}"><div class="modal" oninput="markDirty()" onchange="markDirty()"><h3>${t('editTitle')} — ${fmtID(r.id)}</h3>
       <p style="margin-bottom:12px">${esc(r.title)}</p>
-      <div class="edit-sec-h">${t('taskDataH')}</div>
       <div class="form-grid">
         ${fieldSelect('tf_proj',state.lists.projects,r.project,t('mProj'),true)}
         ${fieldSelect('tf_cat',state.lists.categories,r.category,t('mCat'),true)}
@@ -2669,11 +2656,11 @@ function renderModal(){
         ${empSelect('tf_assign',r.assignedTo,true)}
         <div class="field"><label>${t('mStart')} <span class="req">*</span></label><input type="date" id="tf_start" value="${r.start||today()}"/></div>
         <div class="field"><label>${t('mDur')} <span class="req">*</span></label><input type="number" min="1" id="tf_dur" value="${r.duration||''}"/></div>
-        ${USE_ADMIN_ACTIONS?'':`<div class="field"><label>${t('mStatus')} <span class="req">*</span></label><select id="tf_status">${EDIT_STATUSES.map(s=>`<option ${r.status===s?'selected':''}>${esc(s)}</option>`).join('')}</select></div>`}
+        <div class="field"><label>${t('mStatus')} <span class="req">*</span></label><select id="tf_status">${EDIT_STATUSES.map(s=>`<option ${r.status===s?'selected':''}>${esc(s)}</option>`).join('')}</select></div>
+        <div class="field full"><label>${t('stfMgrNote')}</label><textarea id="tf_admnote" placeholder="${t('mgrNotePh')}">${esc(r.managerNote||'')}</textarea></div>
         <div class="field full"><label>${t('noteLabel')}</label><textarea id="tf_notes">${esc(r.notes||'')}</textarea></div>
       </div>
-      <div class="btnrow" style="justify-content:flex-end;margin-top:14px"><button class="btn sec" onclick="guardCloseModal()">${t('cancel')}</button><button class="btn" onclick="saveTaskForm('edit',${r.id})">${USE_ADMIN_ACTIONS?t('saveDetails'):t('save')}</button></div>
-      ${statusRow}
+      <div class="btnrow" style="justify-content:flex-end;margin-top:14px"><button class="btn sec" onclick="guardCloseModal()">${t('cancel')}</button><button class="btn" onclick="saveTaskForm('edit',${r.id})">${t('save')}</button></div>
     </div></div>`;return;
   }
   if(modal.type==='add'){
