@@ -909,6 +909,8 @@ function admOpError(res){
 async function admReloadRequests(){
   try{const sb=await sbFetchAll();if(sb!==null){state.requests=sb;render();}}catch(e){}
 }
+// A6: guard against double-clicks on admin actions — declared before first use
+let adminActionBusy=false;
 // A7: shared wiring — route an admin state action through admin_task_action RPC.
 // action ∈ on_hold|needs_review|needs_update|cancel|return_to_technician|return_to_acceptance
 async function admTaskAction(id,action,note,okMsgKey){
