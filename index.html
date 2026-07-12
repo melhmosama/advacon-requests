@@ -83,7 +83,10 @@ textarea{resize:vertical;min-height:80px}
 .btn.sec:hover{background:var(--lgray)}
 .btn.danger{background:var(--white);color:var(--red);border:1.5px solid #E8C9C7}
 .btn.danger:hover{background:#FBF0EF}
-.btn.green{background:var(--green)}.btn.green:hover{background:#346B4E}
+.btn.green{background:var(--green)}
+.btn.amber{background:var(--amber)}
+.edit-sep{height:1px;background:var(--grid);margin:16px 0 4px}
+.edit-sec-h{font-size:12px;font-weight:700;color:var(--grey);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px}.btn.green:hover{background:#346B4E}
 .btnrow{display:flex;gap:10px;margin-top:8px;align-items:center;flex-wrap:wrap}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(120px);background:var(--green);color:#fff;padding:12px 22px;border-radius:10px;font-weight:600;box-shadow:0 8px 30px rgba(0,0,0,.2);z-index:150;transition:.35s;font-size:13.5px;max-width:90vw;text-align:center}
 .toast.show{transform:translateX(-50%) translateY(0)}
@@ -865,6 +868,7 @@ async function admSignOut(){
 // A6: admin RPC feature flag — route Accept/Confirm/Reject through admin_* RPCs (JWT)
 // instead of direct PATCH. Flip to false to roll back to the old direct writes.
 const USE_ADMIN_OPS = true;
+const USE_ADMIN_ACTIONS = true;   // A7: route admin state ops through admin_task_action RPC
 // call an admin_* RPC with the admin's access token. Ensures the session is valid/fresh first.
 async function admRpc(fn,args){
   const okSess=await admEnsureSession();
@@ -905,8 +909,20 @@ function admOpError(res){
 async function admReloadRequests(){
   try{const sb=await sbFetchAll();if(sb!==null){state.requests=sb;render();}}catch(e){}
 }
-// A6: guard against double-clicks on admin actions (Confirm/Confirm/Confirm etc.)
-let adminActionBusy=false;
+// A7: shared wiring — route an admin state action through admin_task_action RPC.
+// action ∈ on_hold|needs_review|needs_update|cancel|return_to_technician|return_to_acceptance
+async function admTaskAction(id,action,note,okMsgKey){
+  if(adminActionBusy)return false;
+  adminActionBusy=true;
+  try{
+    const args={p_task_id:id,p_action:action};
+    if(note!=null)args.p_note=note;
+    const res=await admRpc('admin_task_action',args);
+    if(res&&res.ok===true){toast(fmtID(id)+' '+t(okMsgKey||'savedToast'));await admReloadRequests();return true;}
+    toast(admOpError(res));if(res&&res.error==='session'){admSessionGone();}
+    return false;
+  }finally{adminActionBusy=false;}
+}
 // A6: full cleanup when the admin session dies mid-operation → close modals + return to login
 function admSessionGone(){
   modal=null;
@@ -1086,7 +1102,7 @@ const T={
   acceptTitle:"Accept request",editTitle:"Edit task",edit:"Edit",reopen:"Reopen",
   confirmCloseTitle:"Close this task?",confirmCloseMsg:"It will be marked Complete with today as the closing date, and move out of Open Tasks.",confirmCloseYes:"Close as Complete",
   durReq:"Duration is required to schedule the task",
-  addImages:"Add photos (optional)",addImagesHint:"Attach photos to explain better — take a photo or pick from your gallery.",uploading:"Uploading…",photo:"photo",photos:"photos",viewImages:"Photos",reqPhone:"Mobile number",reqPhonePh:"e.g. 0500000000",waitUpload:"Please wait — photo uploading…",sending:"Sending…",shareReq:"Share request number",shareHint:"Share the image on WhatsApp or save it to your phone.",imgSaved:"Image saved",addFiles:"Add PDF file (optional)",chooseEye:"Service Portal",chooseH1:"How can we help?",chooseP:"Choose what you would like to do.",chooseNew:"New request",chooseNewSub:"Submit a service request",chooseTrack:"Track a request",chooseTrackSub:"Check the status of requests",backChoose:"Back",addFilesHint:"Attach a PDF document if needed.",pdfOnly:"PDF files only",fileTooBig:"File too large (max 10MB)",trkEye:"Track",trkH1:"Track Requests",trkP:"Enter your request number to check its status.",trkPending:"Awaiting approval",trkProg:"In progress",trkSearchPh:"0042",trkNone:"No active requests.",trkWaiting:"Awaiting approval",trkInProg:"In progress",stfEye:"Staff",stfH1:"My Tasks",stfPick:"Select your name to view your assigned tasks.",stfNoNames:"No team members yet.",stfChange:"Change name",stfMyTasks:"Your Task List",stfNoTasks:"No tasks assigned to you right now.",stfOpen:"Open",stfBackList:"Back to list",stfDone:"Mark as done",stfDoneYes:"Yes, done",stfConfirmTitle:"Confirm completion",stfConfirmMsg:"Have you finished this task? It will be sent to the manager for confirmation.",stfDoneToast:"Sent to manager for confirmation",stfPendBadge:"Pending confirmation",stfPendMsg:"Done — awaiting manager confirmation.",stfPendMsg2:"Pending confirmation",pendBadge:"Awaiting confirmation",confirmDone:"Confirm",returnTask:"Return",returnedToast:"returned to In Progress",stOverdue:"Overdue",stOnHold:"On Hold",stNeedsReview:"Needs Review",stNeedsUpdate:"Needs Update",stComplete:"Completed",stCancelled:"Cancelled",trkNoSearch:"No request found with that number."},
+  addImages:"Add photos (optional)",addImagesHint:"Attach photos to explain better — take a photo or pick from your gallery.",uploading:"Uploading…",photo:"photo",photos:"photos",viewImages:"Photos",reqPhone:"Mobile number",reqPhonePh:"e.g. 0500000000",waitUpload:"Please wait — photo uploading…",sending:"Sending…",shareReq:"Share request number",shareHint:"Share the image on WhatsApp or save it to your phone.",imgSaved:"Image saved",addFiles:"Add PDF file (optional)",chooseEye:"Service Portal",chooseH1:"How can we help?",chooseP:"Choose what you would like to do.",chooseNew:"New request",chooseNewSub:"Submit a service request",chooseTrack:"Track a request",chooseTrackSub:"Check the status of requests",backChoose:"Back",addFilesHint:"Attach a PDF document if needed.",pdfOnly:"PDF files only",fileTooBig:"File too large (max 10MB)",trkEye:"Track",trkH1:"Track Requests",trkP:"Enter your request number to check its status.",trkPending:"Awaiting approval",trkProg:"In progress",trkSearchPh:"0042",trkNone:"No active requests.",trkWaiting:"Awaiting approval",trkInProg:"In progress",stfEye:"Staff",stfH1:"My Tasks",stfPick:"Select your name to view your assigned tasks.",stfNoNames:"No team members yet.",stfChange:"Change name",stfMyTasks:"Your Task List",stfNoTasks:"No tasks assigned to you right now.",stfOpen:"Open",stfBackList:"Back to list",stfDone:"Mark as done",stfDoneYes:"Yes, done",stfConfirmTitle:"Confirm completion",stfConfirmMsg:"Have you finished this task? It will be sent to the manager for confirmation.",stfDoneToast:"Sent to manager for confirmation",stfPendBadge:"Pending confirmation",stfPendMsg:"Done — awaiting manager confirmation.",stfPendMsg2:"Pending confirmation",pendBadge:"Awaiting confirmation",confirmDone:"Confirm",returnTask:"Return",returnedToast:"returned to In Progress",savedToast:"Updated",taskDataH:"Task details",adminStatusH:"Administrative status",applyStatus:"Apply Status",saveDetails:"Save Details",mgrNotePh:"Reason / note for the technician (optional)",stOverdue:"Overdue",stOnHold:"On Hold",stNeedsReview:"Needs Review",stNeedsUpdate:"Needs Update",stComplete:"Completed",stCancelled:"Cancelled",trkNoSearch:"No request found with that number."},
  ar:{co:"شركة المفاهيم المتقدمة للمقاولات المحدودة",sys:"طلبات خدمة التشغيل والصيانة",
   nav:{dashboard:"لوحة المعلومات",manage:"إدارة الطلبات",all:"جميع الطلبات",reports:"لوحة المعلومات والتقارير",staffdir:"دليل الموظفين",open:"المهام المفتوحة",archive:"الملغية / المحذوفة",settings:"الإعدادات"},
   navIc:{dashboard:"▦",manage:"📥",all:"📋",reports:"📊",staffdir:"👷",open:"⚙",archive:"🗂",settings:"⚙️"},
@@ -1116,7 +1132,7 @@ const T={
   acceptTitle:"قبول الطلب",editTitle:"تعديل المهمة",edit:"تعديل",reopen:"إعادة فتح",
   confirmCloseTitle:"إقفال هذه المهمة؟",confirmCloseMsg:"سيتم اعتماد المهمة كمكتملة، وتسجيل تاريخ اليوم تاريخًا للإقفال، وستخرج من قائمة المهام المفتوحة.",confirmCloseYes:"إقفال كمكتملة",
   durReq:"يلزم إدخال المدة لجدولة المهمة",
-  addImages:"إضافة صور (اختياري)",addImagesHint:"يمكنكم إرفاق صور للتوضيح، سواء بالتقاط صورة أو اختيارها من المعرض.",uploading:"جارٍ الرفع…",photo:"صورة",photos:"صور",viewImages:"الصور",reqPhone:"رقم الجوال",reqPhonePh:"مثال: 0500000000",waitUpload:"يُرجى الانتظار — جارٍ رفع الصورة…",sending:"جارٍ الإرسال…",shareReq:"مشاركة رقم الطلب",shareHint:"شارك الصورة على واتساب أو احفظها على جهازك.",imgSaved:"تم حفظ الصورة",addFiles:"إضافة ملف PDF (اختياري)",chooseEye:"بوابة الخدمات",chooseH1:"كيف يمكننا مساعدتك؟",chooseP:"اختر ما ترغب بالقيام به.",chooseNew:"طلب جديد",chooseNewSub:"تقديم طلب خدمة",chooseTrack:"تتبّع طلب",chooseTrackSub:"الاطلاع على حالة الطلبات",backChoose:"رجوع",addFilesHint:"يمكنك إرفاق ملف PDF عند الحاجة.",pdfOnly:"ملفات PDF فقط",fileTooBig:"الملف كبير جداً (الحد 10 ميجا)",trkEye:"تتبّع",trkH1:"تتبّع الطلبات",trkP:"أدخل رقم طلبك لمعرفة حالته.",trkPending:"بانتظار الموافقة",trkProg:"قيد التنفيذ",trkSearchPh:"0042",trkNone:"لا توجد طلبات جارية.",trkWaiting:"بانتظار الموافقة",trkInProg:"قيد التنفيذ",stfEye:"الموظفون",stfH1:"مهامي",stfPick:"اختر اسمك لعرض المهام المسندة إليك.",stfNoNames:"لا يوجد أعضاء فريق بعد.",stfChange:"تغيير الاسم",stfMyTasks:"قائمة المهام الخاصة بك",stfNoTasks:"لا توجد مهام مسندة إليك حالياً.",stfOpen:"فتح",stfBackList:"العودة للقائمة",stfDone:"تم الإنجاز",stfDoneYes:"نعم، تم",stfConfirmTitle:"تأكيد الإنجاز",stfConfirmMsg:"هل أنجزت هذه المهمة؟ سيتم إرسالها إلى المسؤول للتأكيد.",stfDoneToast:"تم الإرسال إلى المسؤول للتأكيد",stfPendBadge:"بانتظار التأكيد",stfPendMsg:"تم الإنجاز — بانتظار تأكيد المسؤول.",stfPendMsg2:"بانتظار التأكيد",pendBadge:"بانتظار التأكيد",confirmDone:"تأكيد",returnTask:"إرجاع",returnedToast:"أُعيدت إلى قيد التنفيذ",stOverdue:"متأخرة",stOnHold:"معلّقة",stNeedsReview:"بحاجة مراجعة",stNeedsUpdate:"بحاجة تحديث",stComplete:"مكتمل",stCancelled:"ملغي",trkNoSearch:"لا يوجد طلب بهذا الرقم."}
+  addImages:"إضافة صور (اختياري)",addImagesHint:"يمكنكم إرفاق صور للتوضيح، سواء بالتقاط صورة أو اختيارها من المعرض.",uploading:"جارٍ الرفع…",photo:"صورة",photos:"صور",viewImages:"الصور",reqPhone:"رقم الجوال",reqPhonePh:"مثال: 0500000000",waitUpload:"يُرجى الانتظار — جارٍ رفع الصورة…",sending:"جارٍ الإرسال…",shareReq:"مشاركة رقم الطلب",shareHint:"شارك الصورة على واتساب أو احفظها على جهازك.",imgSaved:"تم حفظ الصورة",addFiles:"إضافة ملف PDF (اختياري)",chooseEye:"بوابة الخدمات",chooseH1:"كيف يمكننا مساعدتك؟",chooseP:"اختر ما ترغب بالقيام به.",chooseNew:"طلب جديد",chooseNewSub:"تقديم طلب خدمة",chooseTrack:"تتبّع طلب",chooseTrackSub:"الاطلاع على حالة الطلبات",backChoose:"رجوع",addFilesHint:"يمكنك إرفاق ملف PDF عند الحاجة.",pdfOnly:"ملفات PDF فقط",fileTooBig:"الملف كبير جداً (الحد 10 ميجا)",trkEye:"تتبّع",trkH1:"تتبّع الطلبات",trkP:"أدخل رقم طلبك لمعرفة حالته.",trkPending:"بانتظار الموافقة",trkProg:"قيد التنفيذ",trkSearchPh:"0042",trkNone:"لا توجد طلبات جارية.",trkWaiting:"بانتظار الموافقة",trkInProg:"قيد التنفيذ",stfEye:"الموظفون",stfH1:"مهامي",stfPick:"اختر اسمك لعرض المهام المسندة إليك.",stfNoNames:"لا يوجد أعضاء فريق بعد.",stfChange:"تغيير الاسم",stfMyTasks:"قائمة المهام الخاصة بك",stfNoTasks:"لا توجد مهام مسندة إليك حالياً.",stfOpen:"فتح",stfBackList:"العودة للقائمة",stfDone:"تم الإنجاز",stfDoneYes:"نعم، تم",stfConfirmTitle:"تأكيد الإنجاز",stfConfirmMsg:"هل أنجزت هذه المهمة؟ سيتم إرسالها إلى المسؤول للتأكيد.",stfDoneToast:"تم الإرسال إلى المسؤول للتأكيد",stfPendBadge:"بانتظار التأكيد",stfPendMsg:"تم الإنجاز — بانتظار تأكيد المسؤول.",stfPendMsg2:"بانتظار التأكيد",pendBadge:"بانتظار التأكيد",confirmDone:"تأكيد",returnTask:"إرجاع",returnedToast:"أُعيدت إلى قيد التنفيذ",savedToast:"تم التحديث",taskDataH:"بيانات المهمة",adminStatusH:"الحالة الإدارية",applyStatus:"تطبيق الحالة",saveDetails:"حفظ البيانات",mgrNotePh:"سبب / ملاحظة للفني (اختياري)",stOverdue:"متأخرة",stOnHold:"معلّقة",stNeedsReview:"بحاجة مراجعة",stNeedsUpdate:"بحاجة تحديث",stComplete:"مكتمل",stCancelled:"ملغي",trkNoSearch:"لا يوجد طلب بهذا الرقم."}
 };
 let L='en';
 function t(k){return T[L][k];}
@@ -2149,7 +2165,7 @@ function viewArchive(){
 function saveBg(id,r){sbUpdate(id,r).catch(e=>{toast(t('connErr'));});}
 function acceptReq(id){modal={type:'accept',id};renderModal();}
 function declineReq(id){modal={type:'confirm',title:t('confirmDeclineQ'),msg:fmtID(id),okLabel:t('decline'),okClass:'danger',onok:'doDecline('+id+')'};renderModal();}
-function doDecline(id){modal=null;const r=state.requests.find(x=>x.id===id);if(!r)return;r.status='Cancelled';r.accepted=false;r.archived=true;r.pendingConfirm=false;r.closed='';r.rejectedAt=nowTs();render();toast(fmtID(id)+' '+t('declinedToast'));saveBg(id,r);}
+async function doDecline(id){modal=null;if(USE_ADMIN_ACTIONS){await admTaskAction(id,'cancel',null,'declinedToast');return;}const r=state.requests.find(x=>x.id===id);if(!r)return;r.status='Cancelled';r.accepted=false;r.archived=true;r.pendingConfirm=false;r.closed='';r.rejectedAt=nowTs();render();toast(fmtID(id)+' '+t('declinedToast'));saveBg(id,r);}
 function upd(id,f,v){const r=state.requests.find(x=>x.id===id);if(!r)return;r[f]=v;render();saveBg(id,r);}
 function closeTask(id){const r=state.requests.find(x=>x.id===id);if(!r)return;r.status='Complete';r.closed=today();r.confirmedAt=nowTs();render();toast(fmtID(id)+' '+t('closedToast'));saveBg(id,r);}
 function restoreTask(id){const r=state.requests.find(x=>x.id===id);if(!r)return;r.archived=false;r.accepted=false;r.status='Not Started';r.pendingConfirm=false;r.closed='';r.assignedTo='';r.start='';r.duration='';r.rejectedAt='';render();toast(fmtID(id)+' '+t('restoredToast'));saveBg(id,r);}
@@ -2165,9 +2181,19 @@ function reopenTask(id){const r=state.requests.find(x=>x.id===id);if(!r)return;r
 function openLightbox(url){modal={type:'img',imgs:[url],idx:0};renderModal();}
 function openCloseoutGallery(id,idx){const r=state.requests.find(x=>x.id===id);if(!r)return;let a=[];try{a=JSON.parse(r.closeoutImages||'[]');}catch(e){}if(!a.length)return;modal={type:'img',imgs:a,idx:idx||0};renderModal();}
 function returnToAcceptance(id){modal={type:'confirm',title:t('confirmReturnAcceptQ'),msg:fmtID(id),okLabel:t('returnAccept'),okClass:'',onok:'doReturnToAcceptance('+id+')'};renderModal();}
-function doReturnToAcceptance(id){modal=null;const r=state.requests.find(x=>x.id===id);if(!r)return;r.status='Not Started';r.accepted=false;r.pendingConfirm=false;r.closed='';r.confirmedAt='';r.startedAt='';r.archived=false;render();toast(fmtID(id)+' '+t('returnedToast'));saveBg(id,r);}
+async function doReturnToAcceptance(id){modal=null;if(USE_ADMIN_ACTIONS){await admTaskAction(id,'return_to_acceptance',null,'returnedToast');return;}const r=state.requests.find(x=>x.id===id);if(!r)return;r.status='Not Started';r.accepted=false;r.pendingConfirm=false;r.closed='';r.confirmedAt='';r.startedAt='';r.archived=false;render();toast(fmtID(id)+' '+t('returnedToast'));saveBg(id,r);}
 function returnToTech(id){modal={type:'confirm',title:t('confirmReturnTechQ'),msg:fmtID(id),okLabel:t('returnToTech'),okClass:'',onok:'doReturnToTech('+id+')'};renderModal();}
-function doReturnToTech(id){modal=null;const r=state.requests.find(x=>x.id===id);if(!r)return;r.status='In Progress';r.accepted=true;r.pendingConfirm=false;r.closed='';r.confirmedAt='';r.archived=false;render();toast(fmtID(id)+' '+t('returnedToast'));saveBg(id,r);}
+async function doReturnToTech(id){modal=null;if(USE_ADMIN_ACTIONS){await admTaskAction(id,'return_to_technician',null,'returnedToast');return;}const r=state.requests.find(x=>x.id===id);if(!r)return;r.status='In Progress';r.accepted=true;r.pendingConfirm=false;r.closed='';r.confirmedAt='';r.archived=false;render();toast(fmtID(id)+' '+t('returnedToast'));saveBg(id,r);}
+// A7: apply an administrative status (On Hold / Needs Review / Needs Update) from the edit modal
+async function applyAdminStatus(id){
+  const sel=document.getElementById('tf_admstatus');if(!sel)return;
+  const map={'On Hold':'on_hold','Needs Review':'needs_review','Needs Update':'needs_update'};
+  const action=map[sel.value];if(!action){toast(admOpError({error:'invalid_action'}));return;}
+  const noteEl=document.getElementById('tf_admnote');
+  const note=noteEl?noteEl.value.trim():'';
+  modal=null;
+  await admTaskAction(id,action,note||null,'savedToast');
+}
 function fmtTime(ts){if(!ts)return '—';try{const d=new Date(new Date(ts).getTime()+3*3600000);const dt=d.toISOString().slice(0,10);let h=d.getUTCHours(),m=d.getUTCMinutes();const ap=h>=12?'PM':'AM';h=h%12||12;return dt+' '+h+':'+String(m).padStart(2,'0')+' '+ap;}catch(e){return ts;}}
 function fmtDuration(fromTs,toTs){if(!fromTs||!toTs)return '—';try{const ms=new Date(toTs).getTime()-new Date(fromTs).getTime();if(ms<0)return '—';const totalH=ms/3600000;const days=Math.floor(totalH/24);const hours=Math.round(totalH%24);if(days>0)return days+'d '+hours+'h';return hours+'h';}catch(e){return '—';}}
 function inRange(ts,from,to){if(!ts)return false;const d=new Date(ts).getTime();const f=new Date(from+'T00:00:00+03:00').getTime();const t2=new Date(to+'T23:59:59+03:00').getTime();return d>=f&&d<=t2;}
@@ -2526,8 +2552,9 @@ async function saveTaskForm(mode,id){
     modal=null;render();toast(fmtID(id)+' — '+t('acceptedToast'));saveBg(id,r);return;
   }
   if(mode==='edit'){
-    const proj=g('tf_proj').value,cat=g('tf_cat').value,pri=g('tf_pri').value,start=g('tf_start').value,status=g('tf_status').value;
-    if(!proj||!cat||!pri||!assign||!dur||!start||!status){toast(t('fillReq'));return;}
+    const statusEl=g('tf_status');
+    const proj=g('tf_proj').value,cat=g('tf_cat').value,pri=g('tf_pri').value,start=g('tf_start').value,status=statusEl?statusEl.value:null;
+    if(!proj||!cat||!pri||!assign||!dur||!start||(statusEl&&!status)){toast(t('fillReq'));return;}
     if(!/^\d+$/.test(String(dur))||Number(dur)<1){toast(t('badDur'));return;}
     const r=state.requests.find(x=>x.id===id);if(!r)return;
     // if this task had a scheduled start, keep sched_start consistent with the edited date
@@ -2537,11 +2564,14 @@ async function saveTaskForm(mode,id){
       r.schedStart=new Date(stampMs).toISOString();
     }
     r.project=proj;r.category=cat;r.priority=pri;r.assignedTo=assign;r.duration=dur;r.start=start;r.notes=note;
-    r.status=status;
-    if(status==='Complete'){if(!r.closed)r.closed=today();if(!r.confirmedAt)r.confirmedAt=nowTs();r.archived=false;r.accepted=true;}
-    else if(status==='Cancelled'){r.archived=false;r.closed='';r.accepted=false;if(!r.rejectedAt)r.rejectedAt=nowTs();}
-    else if(status==='Not Started'){r.accepted=false;r.archived=false;r.closed='';}
-    else{r.closed='';r.archived=false;r.accepted=true;}
+    // status is only edited here in legacy (non-admin-actions) mode; otherwise Apply Status handles it
+    if(statusEl){
+      r.status=status;
+      if(status==='Complete'){if(!r.closed)r.closed=today();if(!r.confirmedAt)r.confirmedAt=nowTs();r.archived=false;r.accepted=true;}
+      else if(status==='Cancelled'){r.archived=false;r.closed='';r.accepted=false;if(!r.rejectedAt)r.rejectedAt=nowTs();}
+      else if(status==='Not Started'){r.accepted=false;r.archived=false;r.closed='';}
+      else{r.closed='';r.archived=false;r.accepted=true;}
+    }
     modal=null;render();toast(fmtID(id));saveBg(id,r);return;
   }
   if(mode==='add'){
@@ -2611,8 +2641,22 @@ function renderModal(){
   }
   if(modal.type==='edit'){
     const r=state.requests.find(x=>x.id===modal.id);if(!r){modal=null;return;}
+    // admin status actions available from the edit form (source-state gated by the RPC anyway)
+    const ADMIN_STATUS=['On Hold','Needs Review','Needs Update'];
+    const statusRow=USE_ADMIN_ACTIONS?`
+      <div class="edit-sep"></div>
+      <div class="edit-sec-h">${t('adminStatusH')}</div>
+      <div class="form-grid">
+        <div class="field"><label>${t('mStatus')}</label><select id="tf_admstatus">${ADMIN_STATUS.map(s=>`<option ${r.status===s?'selected':''}>${esc(s)}</option>`).join('')}</select></div>
+        <div class="field full"><label>${t('stfMgrNote')}</label><textarea id="tf_admnote" placeholder="${t('mgrNotePh')}">${esc(r.managerNote||'')}</textarea></div>
+      </div>
+      <div class="btnrow" style="justify-content:flex-end;margin-top:8px"><button class="btn amber" onclick="applyAdminStatus(${r.id})">${t('applyStatus')}</button></div>
+    `:`
+        <div class="field"><label>${t('mStatus')} <span class="req">*</span></label><select id="tf_status">${EDIT_STATUSES.map(s=>`<option ${r.status===s?'selected':''}>${esc(s)}</option>`).join('')}</select></div>
+    `;
     el.innerHTML=`<div class="modal-bg" onclick="if(event.target===this){guardCloseModal();}"><div class="modal" oninput="markDirty()" onchange="markDirty()"><h3>${t('editTitle')} — ${fmtID(r.id)}</h3>
       <p style="margin-bottom:12px">${esc(r.title)}</p>
+      <div class="edit-sec-h">${t('taskDataH')}</div>
       <div class="form-grid">
         ${fieldSelect('tf_proj',state.lists.projects,r.project,t('mProj'),true)}
         ${fieldSelect('tf_cat',state.lists.categories,r.category,t('mCat'),true)}
@@ -2620,10 +2664,11 @@ function renderModal(){
         ${empSelect('tf_assign',r.assignedTo,true)}
         <div class="field"><label>${t('mStart')} <span class="req">*</span></label><input type="date" id="tf_start" value="${r.start||today()}"/></div>
         <div class="field"><label>${t('mDur')} <span class="req">*</span></label><input type="number" min="1" id="tf_dur" value="${r.duration||''}"/></div>
-        <div class="field"><label>${t('mStatus')} <span class="req">*</span></label><select id="tf_status">${EDIT_STATUSES.map(s=>`<option ${r.status===s?'selected':''}>${esc(s)}</option>`).join('')}</select></div>
+        ${USE_ADMIN_ACTIONS?'':`<div class="field"><label>${t('mStatus')} <span class="req">*</span></label><select id="tf_status">${EDIT_STATUSES.map(s=>`<option ${r.status===s?'selected':''}>${esc(s)}</option>`).join('')}</select></div>`}
         <div class="field full"><label>${t('noteLabel')}</label><textarea id="tf_notes">${esc(r.notes||'')}</textarea></div>
       </div>
-      <div class="btnrow" style="justify-content:flex-end;margin-top:14px"><button class="btn sec" onclick="guardCloseModal()">${t('cancel')}</button><button class="btn" onclick="saveTaskForm('edit',${r.id})">${t('save')}</button></div>
+      <div class="btnrow" style="justify-content:flex-end;margin-top:14px"><button class="btn sec" onclick="guardCloseModal()">${t('cancel')}</button><button class="btn" onclick="saveTaskForm('edit',${r.id})">${USE_ADMIN_ACTIONS?t('saveDetails'):t('save')}</button></div>
+      ${statusRow}
     </div></div>`;return;
   }
   if(modal.type==='add'){
