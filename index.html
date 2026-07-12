@@ -939,9 +939,20 @@ function guardCloseModal(){
 let staffName='';         // selected staff member name
 let staffModal=null;      // staff task detail modal
 
-async function load(){
-  // fetch everything in parallel instead of one-after-another (faster open)
-  const [sb,st,rec,cfg]=await Promise.all([sbFetchAll(),sbFetchStaff(),sbFetchRecurring(),sbFetchSettings()]);
+async function load(role){
+  // A0: load only what the given role needs — don't fetch everything before we know the role.
+  //  - admin   : everything (called AFTER PIN check)
+  //  - staff   : requests + settings + staff (staff still needed by legacy staffByCode until A1)
+  //  - visitor : requests + settings only (no staff codes, no recurring templates)
+  role = role || 'visitor';
+  const wantStaff     = (role==='admin' || role==='staff');
+  const wantRecurring = (role==='admin');
+  const [sb,st,rec,cfg]=await Promise.all([
+    sbFetchAll(),
+    wantStaff     ? sbFetchStaff()     : Promise.resolve(null),
+    wantRecurring ? sbFetchRecurring() : Promise.resolve(null),
+    sbFetchSettings()
+  ]);
   if(sb!==null)state.requests=sb;
   if(st!==null)state.staff=st;
   if(rec!==null)state.recurring=rec;
@@ -974,7 +985,9 @@ async function load(){
     state.lists.priorities=out;
   }
   if(changed&&cfg){try{await sbSaveSettings();}catch(e){}}
-  try{await runRecurringGenerator(true);}catch(e){}
+  // recurring generator needs templates (loaded for admin only). Keep it running as before
+  // for admin; visitor/staff no longer trigger generation from their pages.
+  if(role==='admin'){try{await runRecurringGenerator(true);}catch(e){}}
 }
 async function saveLists(){try{await sbSaveSettings();}catch(e){}}
 async function saveLang(){try{await LS.set('advacon_lang',L);}catch(e){}}
@@ -1049,11 +1062,19 @@ async function checkAdminFlag(){
   try{LS.delete('advacon_admin');}catch(e){}
   return false;
 }
-async function tryAdmin(){const v=document.getElementById('pin').value.trim();if(v==='Ahmad1001'){setAdminFlag();state.role='admin';state.route='manage';if(!L)L='en';await saveLang();document.getElementById('gate').innerHTML='';document.getElementById('app').style.display='flex';applyDir();render();startRealtime();}else{const p=document.getElementById('pin');p.value='';p.placeholder=(L==='ar'?'رمز غير صحيح':'Incorrect code');p.style.borderColor='var(--red)';}}
+async function tryAdmin(){const v=document.getElementById('pin').value.trim();if(v==='Ahmad1001'){setAdminFlag();state.role='admin';state.route='manage';if(!L)L='en';await saveLang();await load('admin');document.getElementById('gate').innerHTML='';document.getElementById('app').style.display='flex';applyDir();render();startRealtime();}else{const p=document.getElementById('pin');p.value='';p.placeholder=(L==='ar'?'رمز غير صحيح':'Incorrect code');p.style.borderColor='var(--red)';}}
 async function enterAdminDirect(){state.role='admin';const h=(location.hash||'').replace('#','');const valid=['reports','manage','archive','staffdir','settings','all'];state.route=valid.includes(h)?h:'manage';if(!L)L='en';document.getElementById('gate').innerHTML='';document.getElementById('app').style.display='flex';applyDir();render();startRealtime();}
 function enterPublic(role){state.role=role;if(role==='staff')L='ar';else if(!L)L='ar';document.getElementById('gate').innerHTML='';document.getElementById('app').style.display='block';applyDir();render();startPublicPolling();}
 let _pubPoll=null;
-function startPublicPolling(){if(_pubPoll)return;_pubPoll=setInterval(async()=>{if(staffModal||staffModal2)return;if(document.activeElement&&['INPUT','SELECT','TEXTAREA'].includes(document.activeElement.tagName))return;const sb=await sbFetchAll();if(sb!==null){const sig=JSON.stringify(sb.map(r=>[r.id,r.status,r.accepted,r.archived,r.pendingConfirm,r.confirmedAt].join('|')));if(sig!==_pubSig){_pubSig=sig;state.requests=sb;render();}else if(state.role==='track'&&!trackQ){render();}}},20000);}
+function startPublicPolling(){
+  // A0: the visitor/track pages don't need to re-fetch ALL requests on a timer
+  // (that re-introduces the very leak A0 prevents). Only the staff page keeps
+  // polling temporarily — it still reads tasks from `requests` until A2 wires
+  // staff_get_tasks. New-request page and track page: no public polling.
+  if(state.role!=='staff')return;
+  if(_pubPoll)return;
+  _pubPoll=setInterval(async()=>{if(staffModal||staffModal2)return;if(document.activeElement&&['INPUT','SELECT','TEXTAREA'].includes(document.activeElement.tagName))return;const sb=await sbFetchAll();if(sb!==null){const sig=JSON.stringify(sb.map(r=>[r.id,r.status,r.accepted,r.archived,r.pendingConfirm,r.confirmedAt].join('|')));if(sig!==_pubSig){_pubSig=sig;state.requests=sb;render();}}},20000);
+}
 let _pubSig='';
 function applyDir(){document.body.setAttribute('dir',L==='ar'?'rtl':'ltr');document.documentElement.lang=L;}
 async function toggleLang(){L=(L==='en'?'ar':'en');if(state.role!=='staff')await saveLang();applyDir();render();}
@@ -2670,10 +2691,24 @@ function doStaffDone(id){
 }
 
 /* ===== boot ===== */
-(async function(){await load();const p=(location.pathname||'').toLowerCase();
-  if(p.indexOf('/admin')>=0){if(!L)L='en';const authed=await checkAdminFlag();if(authed)enterAdminDirect();else openAdmin();}
-  else if(p.indexOf('/staff')>=0){enterPublic('staff');}
-  else renderGate();
+(async function(){
+  // A0: decide the page/role FIRST, then load only what that role needs.
+  // This stops requests/staff/recurring from being fetched before we know the user.
+  const p=(location.pathname||'').toLowerCase();
+  if(p.indexOf('/admin')>=0){
+    if(!L)L='en';
+    const authed=await checkAdminFlag();
+    if(authed){ await load('admin'); enterAdminDirect(); }
+    else { openAdmin(); }          // no data load until PIN passes (see tryAdmin)
+  }
+  else if(p.indexOf('/staff')>=0){
+    await load('staff');
+    enterPublic('staff');
+  }
+  else {
+    await load('visitor');
+    renderGate();
+  }
 })();
 
 </script></body></html>
