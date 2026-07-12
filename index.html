@@ -739,6 +739,14 @@ tr.pendrow{background:rgba(251,239,214,.32)}
 @media(max-width:520px){.pt-tiles{grid-template-columns:1fr}}
 /* technician closeout: photo + file boxes inside opened task */
 .stf-closeout{display:flex;flex-direction:column;gap:12px;margin-top:8px}
+.stf-lock-badge{display:inline-flex;align-items:center;gap:4px;background:#FEF3C7;color:#92400E;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;white-space:nowrap}
+.stf-locked-block{margin-top:10px;padding:14px;background:#FFFBEB;border:1px solid #FDE68A;border-radius:12px;display:flex;flex-direction:column;gap:8px}
+.stf-locked-status{font-size:16px;font-weight:800;color:#92400E}
+.stf-locked-hint{font-size:13px;color:#78716C;line-height:1.5}
+.stf-mgr-note,.stf-reject-note{background:#fff;border-radius:8px;padding:8px 10px}
+.stf-mgr-note span,.stf-reject-note span{display:block;font-size:11px;font-weight:700;color:#92400E;margin-bottom:2px}
+.stf-mgr-note p,.stf-reject-note p{margin:0;font-size:14px;color:#1C1917;line-height:1.5}
+.stf-reject-note span{color:#B91C1C}
 .co-block{display:flex;flex-direction:column;gap:9px}
 .co-btn{display:inline-flex;align-items:center;gap:8px;justify-content:center;background:var(--lblue);color:var(--accent);border:1.5px dashed var(--accent);border-radius:11px;padding:12px 14px;font-weight:700;font-size:14px;cursor:pointer;transition:.15s}
 .co-btn:hover{background:var(--accent);color:#fff}
@@ -765,6 +773,8 @@ const SB_HEAD={'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'
 // true  = staff login + tasks go through server RPCs (staff_login / staff_get_tasks)
 // false = legacy local path (staffByCode + local filtering). Flip to false to roll back.
 const USE_SECURE_BACKEND = true;
+// statuses the manager can set that lock the task read-only on the technician's side
+const LOCKED_STATUSES = ['On Hold','Needs Review','Needs Update'];
 // staff session token (12h), kept in localStorage so it survives a page close.
 function stfGetSession(){
   try{const raw=localStorage.getItem('advacon_staff_sess');if(!raw)return null;
@@ -1122,7 +1132,10 @@ function startPublicPolling(){
   if(_pubPoll)return;
   if(USE_SECURE_BACKEND){
     _pubPoll=setInterval(()=>{
-      if(staffModal||staffModal2)return;
+      // keep refreshing even when a task's detail is open, so a manager's status
+      // change (e.g. On Hold) updates the card/detail live. Only pause while the
+      // closeout modal (staffModal2) is open, to not interrupt typing/uploading.
+      if(staffModal2)return;
       if(document.activeElement&&['INPUT','SELECT','TEXTAREA'].includes(document.activeElement.tagName))return;
       if(!staffName)return;                 // not logged in yet
       loadStaffTasks();
@@ -2607,7 +2620,6 @@ function viewStaff(){
   // step 2: show tasks for this person
   // A "locked" task is one the manager paused/flagged — visible to staff but read-only
   // until the manager moves it back to work (or to Not Started → returns to manager).
-  const LOCKED_STATUSES=['On Hold','Needs Review','Needs Update'];
   // Show: In Progress + locked statuses + re-assigned (Not Started & accepted).
   // Hide: Not Started that returned to manager (accepted=false), Complete, Cancelled.
   const mine=state.requests.map(calc).filter(r=>r.assignedTo===staffName && r.accepted && !r.archived && r.effStatus!=='Complete' && r.status!=='Cancelled' && r.effStatus!=='Cancelled').sort((a,b)=>b.id-a.id);
@@ -2687,7 +2699,7 @@ function staffDetail(id){
   const pend=r.pendingConfirm;
   const isFuture=r.isFuture;
   const isReady=r.isReady;
-  const locked=['On Hold','Needs Review','Needs Update'].includes(r.status);
+  const locked=LOCKED_STATUSES.includes(r.status);
   // a Not Started + accepted task (fresh or re-assigned) is startable — not closeable yet
   const canStartNow=(r.status==='Not Started' && r.accepted && !r.startedAt && !isFuture);
   const inProgress=(r.status==='In Progress');
@@ -2788,7 +2800,7 @@ async function handleCloseout(input){
   input.value='';
 }
 function removeCloseout(url,tmpId){closeoutPhotos=closeoutPhotos.filter(u=>u!==url);const el=document.getElementById(tmpId);if(el)el.remove();}
-function closeStaffConfirm(){const h=document.getElementById('staff-modal-host');if(h)h.innerHTML='';}
+function closeStaffConfirm(){staffModal2=null;const h=document.getElementById('staff-modal-host');if(h)h.innerHTML='';}
 // A3/A4: guard against double-clicks (server is atomic, but avoid confusing double toasts)
 let staffActionBusy=false;
 // full cleanup when the staff session is gone (expired locally or rejected by server)
@@ -2821,6 +2833,7 @@ async function startTask(id){
     }else{
       toast(stfRpcError(res));  // show a clear reason
       if(res&&res.error==='invalid_session'){stfSessionGone();}
+      else{await loadStaffTasks();}  // race: state changed under us → resync the card
     }
   }finally{staffActionBusy=false;}
 }
@@ -2882,6 +2895,12 @@ async function doStaffDone(id){
     }else{
       toast(stfRpcError(res));
       if(res&&res.error==='invalid_session'){stfSessionGone();}
+      else{
+        // race: the task's state changed under us (e.g. manager set On Hold / rejected / closed).
+        // Close the closeout modal and resync from the server so the card reflects reality.
+        closeStaffConfirm();staffModal=null;closeoutPhotos=[];closeoutFiles=[];closeoutComment='';
+        await loadStaffTasks();
+      }
     }
   }finally{staffActionBusy=false;}
 }
