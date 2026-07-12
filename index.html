@@ -2094,6 +2094,7 @@ function viewAll(){
     const acts=(()=>{
       let b=`<button class="ico" title="${t('edit')}" onclick="openEdit(${r.id})">✎</button>`;
       if(r.effStatus==='Complete'){b+=`<button class="ico" title="${t('returnToTech')}" onclick="returnToTech(${r.id})">↩</button><button class="ico" title="${t('returnAccept')}" onclick="returnToAcceptance(${r.id})">⤴</button>`;}
+      else if(r.effStatus==='On Hold'||r.effStatus==='Needs Review'||r.effStatus==='Needs Update'){b+=`<button class="ico" title="${t('returnToTech')}" onclick="returnToTech(${r.id})">↩</button>`;}
       if(!r.archived){b+=`<button class="ico del" title="${t('del')}" onclick="askDelete(${r.id})">🗑</button>`;}
       else{b+=`<button class="ico ok" title="${t('restore')}" onclick="restoreTask(${r.id})">♻</button>`;}
       return b;
@@ -2204,6 +2205,7 @@ function loadSheetJS(){return new Promise((res,rej)=>{if(window.XLSX)return res(
 function ddActions(r){
   let b=`<button class="ico" title="${t('edit')}" onclick="event.stopPropagation();openEdit(${r.id})">✎</button>`;
   if(r.effStatus==='Complete'){b+=`<button class="ico" title="${t('returnToTech')}" onclick="event.stopPropagation();returnToTech(${r.id})">↩</button><button class="ico" title="${t('returnAccept')}" onclick="event.stopPropagation();returnToAcceptance(${r.id})">⤴</button>`;}
+  else if(r.effStatus==='On Hold'||r.effStatus==='Needs Review'||r.effStatus==='Needs Update'){b+=`<button class="ico" title="${t('returnToTech')}" onclick="event.stopPropagation();returnToTech(${r.id})">↩</button>`;}
   if(!r.archived){b+=`<button class="ico del" title="${t('del')}" onclick="event.stopPropagation();askDelete(${r.id})">🗑</button>`;}
   else{b+=`<button class="ico ok" title="${t('restore')}" onclick="event.stopPropagation();restoreTask(${r.id})">♻</button>`;}
   return b;
