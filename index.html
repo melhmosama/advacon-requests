@@ -2765,21 +2765,101 @@ async function handleCloseout(input){
 }
 function removeCloseout(url,tmpId){closeoutPhotos=closeoutPhotos.filter(u=>u!==url);const el=document.getElementById(tmpId);if(el)el.remove();}
 function closeStaffConfirm(){const h=document.getElementById('staff-modal-host');if(h)h.innerHTML='';}
-function startTask(id){
-  const r=state.requests.find(x=>x.id===id);if(!r)return;
-  r.status='In Progress';r.startedAt=nowTs();
-  render();toast(fmtID(id)+' — '+t('taskStarted'));saveBg(id,r);
+// A3/A4: guard against double-clicks (server is atomic, but avoid confusing double toasts)
+let staffActionBusy=false;
+// full cleanup when the staff session is gone (expired locally or rejected by server)
+function stfSessionGone(){
+  stfClearSession();staffName='';state.requests=[];
+  if(typeof closeStaffConfirm==='function')closeStaffConfirm();
+  staffModal=null;staffModal2=null;
+  closeoutPhotos=[];closeoutFiles=[];closeoutComment='';
+  render();
 }
-function doStaffDone(id){
+async function startTask(id){
+  if(!USE_SECURE_BACKEND){
+    const r=state.requests.find(x=>x.id===id);if(!r)return;
+    r.status='In Progress';r.startedAt=nowTs();
+    render();toast(fmtID(id)+' — '+t('taskStarted'));saveBg(id,r);
+    return;
+  }
+  // A3: start via server RPC (validates ownership, schedule, state)
+  const sess=stfGetSession();
+  if(!sess){stfSessionGone();return;}
+  if(staffActionBusy)return;
+  staffActionBusy=true;
+  try{
+    let res=null;
+    try{res=await sbRpc('staff_start_task',{p_token:sess.token,p_task_id:id});}
+    catch(e){toast(t('connErr'));return;}
+    if(res&&res.ok===true){
+      toast(fmtID(id)+' — '+t('taskStarted'));
+      await loadStaffTasks();   // refresh from server so status reflects reality
+    }else{
+      toast(stfRpcError(res));  // show a clear reason
+      if(res&&res.error==='invalid_session'){stfSessionGone();}
+    }
+  }finally{staffActionBusy=false;}
+}
+// map RPC error codes to friendly messages
+function stfRpcError(res){
+  const e=(res&&res.error)||'';
+  const ar=(L==='ar');
+  const M={
+    not_your_task: ar?'هذه ليست مهمتك':'Not your task',
+    task_closed: ar?'المهمة مغلقة':'Task is closed',
+    already_started: ar?'المهمة بدأت أصلاً':'Task already started',
+    not_startable: ar?'لا يمكن بدء هذه المهمة':'Task not startable',
+    not_started_yet: ar?'لم يحن موعد البدء بعد':'Not started yet (scheduled)',
+    not_in_progress: ar?'المهمة غير قيد التنفيذ':'Task is not in progress',
+    pending_confirmation: ar?'المهمة بانتظار تأكيد المدير':'Pending manager confirmation',
+    invalid_images: ar?'صيغة الصور غير صحيحة':'Invalid images format',
+    too_many_images: ar?'الحد الأقصى 10 صور':'Maximum 10 images',
+    images_payload_too_large: ar?'بيانات الصور كبيرة جداً':'Images payload too large',
+    invalid_files: ar?'صيغة الملفات غير صحيحة':'Invalid files format',
+    too_many_files: ar?'الحد الأقصى 5 ملفات':'Maximum 5 files',
+    files_payload_too_large: ar?'بيانات الملفات كبيرة جداً':'Files payload too large',
+    note_too_long: ar?'التعليق أطول من الحد المسموح':'Comment is too long',
+    conflict: ar?'تعذّر التنفيذ — حاول مجدداً':'Conflict — please retry',
+    invalid_session: ar?'انتهت الجلسة — سجّل الدخول من جديد':'Session expired — log in again',
+    task_not_found: ar?'المهمة غير موجودة':'Task not found'
+  };
+  return M[e]||(ar?'تعذّر التنفيذ':'Action failed');
+}
+async function doStaffDone(id){
   if(coUploading>0){toast(t('uploading'));return;}
-  const r=state.requests.find(x=>x.id===id);if(!r){closeStaffConfirm();return;}
-  const cbox=document.getElementById('co_comment');const cmt=cbox?cbox.value.trim():'';
-  r.pendingConfirm=true;
-  if(closeoutPhotos.length)r.closeoutImages=JSON.stringify(closeoutPhotos);
-  if(closeoutFiles.length)r.closeoutFiles=JSON.stringify(closeoutFiles);
-  if(cmt)r.closeoutNote=cmt;
-  closeStaffConfirm();staffModal=null;closeoutPhotos=[];closeoutFiles=[];closeoutComment='';render();toast(t('stfDoneToast'));
-  saveBg(id,r);
+  if(!USE_SECURE_BACKEND){
+    const r=state.requests.find(x=>x.id===id);if(!r){closeStaffConfirm();return;}
+    const cbox=document.getElementById('co_comment');const cmt=cbox?cbox.value.trim():'';
+    r.pendingConfirm=true;
+    if(closeoutPhotos.length)r.closeoutImages=JSON.stringify(closeoutPhotos);
+    if(closeoutFiles.length)r.closeoutFiles=JSON.stringify(closeoutFiles);
+    if(cmt)r.closeoutNote=cmt;
+    closeStaffConfirm();staffModal=null;closeoutPhotos=[];closeoutFiles=[];closeoutComment='';render();toast(t('stfDoneToast'));
+    saveBg(id,r);
+    return;
+  }
+  // A4: submit for confirmation via server RPC
+  const sess=stfGetSession();
+  if(!sess){stfSessionGone();return;}
+  if(staffActionBusy)return;
+  staffActionBusy=true;
+  try{
+    const cbox=document.getElementById('co_comment');const cmt=cbox?cbox.value.trim():'';
+    const args={p_token:sess.token,p_task_id:id,p_note:cmt||null,
+      p_images:closeoutPhotos.length?closeoutPhotos:null,
+      p_files:closeoutFiles.length?closeoutFiles:null};
+    let res=null;
+    try{res=await sbRpc('staff_submit_task',args);}
+    catch(e){toast(t('connErr'));return;}
+    if(res&&res.ok===true){
+      closeStaffConfirm();staffModal=null;closeoutPhotos=[];closeoutFiles=[];closeoutComment='';
+      toast(t('stfDoneToast'));
+      await loadStaffTasks();
+    }else{
+      toast(stfRpcError(res));
+      if(res&&res.error==='invalid_session'){stfSessionGone();}
+    }
+  }finally{staffActionBusy=false;}
 }
 
 /* ===== boot ===== */
