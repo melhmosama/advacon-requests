@@ -899,6 +899,21 @@ function admOpError(res){
     not_pending: ar?'المهمة ليست بانتظار التأكيد':'Task is not pending confirmation',
     not_accepted: ar?'المهمة غير مقبولة':'Task is not accepted',
     conflict: ar?'تعذّر التنفيذ — حاول مجدداً':'Conflict — please retry',
+    invalid_patch: ar?'بيانات غير صالحة':'Invalid data',
+    task_deleted: ar?'المهمة محذوفة':'Task is deleted',
+    task_archived: ar?'المهمة مؤرشفة':'Task is archived',
+    pending_confirmation: ar?'المهمة بانتظار تأكيد الإنجاز — لا يمكن تعديلها':'Task awaiting completion confirmation — cannot edit',
+    missing_fields: ar?'عبّئ كل الحقول المطلوبة':'Fill all required fields',
+    invalid_priority: ar?'الأولوية غير صالحة':'Invalid priority',
+    bad_duration: ar?'المدة يجب أن تكون رقماً موجباً':'Duration must be a positive number',
+    bad_date: ar?'تاريخ غير صالح':'Invalid date',
+    bad_sched: ar?'موعد جدولة غير صالح':'Invalid schedule time',
+    schedule_date_mismatch: ar?'موعد الجدولة يجب أن يكون بنفس يوم تاريخ البدء':'Schedule time must be on the start date',
+    sched_start_required: ar?'أرسِل موعد جدولة جديداً مع تغيير التاريخ':'Send a new schedule time when changing the date',
+    already_rejected: ar?'الطلب مرفوض أصلاً':'Request already rejected',
+    invalid_transition: ar?'لا يمكن رفض طلب دخل دورة العمل':'Cannot reject a request already in workflow',
+    not_restorable: ar?'لا يمكن استعادة هذا الطلب':'This request cannot be restored',
+    not_archived: ar?'الطلب غير مؤرشف':'Request is not archived',
     network: ar?'مشكلة بالاتصال':'Connection problem'
   };
   return M[e]||(ar?'تعذّر التنفيذ':'Action failed');
@@ -918,6 +933,32 @@ async function admTaskAction(id,action,note,okMsgKey){
     const args={p_task_id:id,p_action:action};
     if(note!=null)args.p_note=note;
     const res=await admRpc('admin_task_action',args);
+    if(res&&res.ok===true){toast(fmtID(id)+' '+t(okMsgKey||'savedToast'));await admReloadRequests();return true;}
+    toast(admOpError(res));if(res&&res.error==='session'){admSessionGone();}
+    return false;
+  }finally{adminActionBusy=false;}
+}
+// A8-1: secure edit of ordinary task fields via admin_edit_task RPC (replaces direct saveBg PATCH).
+// patch: {project,category,priority,assigned_to,start_date,duration,notes,sched_start}
+async function admEditTask(id,patch,okMsgKey){
+  if(adminActionBusy)return false;
+  adminActionBusy=true;
+  try{
+    const res=await admRpc('admin_edit_task',{p_task_id:id,p_patch:patch});
+    if(res&&res.ok===true){toast(fmtID(id)+' '+t(okMsgKey||'savedToast'));await admReloadRequests();return true;}
+    toast(admOpError(res));if(res&&res.error==='session'){admSessionGone();}
+    return false;
+  }finally{adminActionBusy=false;}
+}
+// A8-2: secure reject/restore via admin_archive_task RPC (replaces direct saveBg PATCH).
+// action ∈ reject|restore ; reason optional (reject only)
+async function admArchiveTask(id,action,reason,okMsgKey){
+  if(adminActionBusy)return false;
+  adminActionBusy=true;
+  try{
+    const args={p_task_id:id,p_action:action};
+    if(reason!=null)args.p_reason=reason;
+    const res=await admRpc('admin_archive_task',args);
     if(res&&res.ok===true){toast(fmtID(id)+' '+t(okMsgKey||'savedToast'));await admReloadRequests();return true;}
     toast(admOpError(res));if(res&&res.error==='session'){admSessionGone();}
     return false;
@@ -1029,7 +1070,7 @@ const SEED={
 const MANUAL_STATUSES=["In Progress","On Hold","Needs Review","Needs Update"];
 // Edit form: full programmed list EXCEPT Overdue (auto-calculated, choice B)
 const EDIT_STATUSES=["Not Started","In Progress","Complete","On Hold","Needs Review","Needs Update","Cancelled"];
-const STATUS_COLORS={"Not Started":"#6E7A87","In Progress":"#3E6E9E","Complete":"#3C7D5A","On Hold":"#C08A3E","Overdue":"#B0504A","Needs Review":"#6E5C8A","Needs Update":"#B5973C","Cancelled":"#4A4F55","Deleted":"#8B3A3A"};
+const STATUS_COLORS={"Not Started":"#6E7A87","In Progress":"#3E6E9E","Complete":"#3C7D5A","On Hold":"#C08A3E","Overdue":"#B0504A","Needs Review":"#6E5C8A","Needs Update":"#B5973C","Cancelled":"#4A4F55","Rejected":"#8B3A3A"};
 // soft elegant badge palette: {bg, fg}
 const STATUS_SOFT={
  "Not Started":{bg:"#EDF0F3",fg:"#5A6675"},
@@ -1040,14 +1081,14 @@ const STATUS_SOFT={
  "Needs Review":{bg:"#ECE8F4",fg:"#5E4E84"},
  "Needs Update":{bg:"#F6EFD8",fg:"#8A6E1E"},
  "Cancelled":{bg:"#E9EAEC",fg:"#5A5F66"},
- "Deleted":{bg:"#F3E8E8",fg:"#8B3A3A"}
+ "Rejected":{bg:"#F3E8E8",fg:"#8B3A3A"}
 };
 function stBadge(status){const s=STATUS_SOFT[status]||{bg:"#EDF0F3",fg:"#5A6675"};return `<span class="st" style="background:${s.bg};color:${s.fg}">${esc(status)}</span>`;}
 // A6.1: archived-aware badge for list views. Archived/cancelled records show WHY they're
-// archived as the main badge (Cancelled / Deleted), not their old operational status.
+// archived-aware badge: shows Cancelled / Rejected as the reason, not the old operational status.
 function effBadge(r){
   if(r.status==='Cancelled')return `<span class="st" style="background:#FEE2E2;color:#B91C1C">${esc(t('cancelledBadge'))}</span>`;
-  if(r.status==='Deleted'||r.archived)return `<span class="st" style="background:#E5E7EB;color:#4B5563">${esc(t('deleted'))}</span>`;
+  if(r.status==='Rejected')return `<span class="st" style="background:#F3E8E8;color:#8B3A3A">${esc(t('rejectedBadge'))}</span>`;
   return stBadge(r.effStatus);
 }
 // (previous-status line intentionally omitted — deletion overwrites status by design)
@@ -1093,11 +1134,11 @@ const T={
   byCat:"Requests by Category",bySt:"Requests by Status",byPri:"Requests by Priority",byProj:"Requests by Project",wlTeam:"Workload by Team",overTime:"Requests Over Time",topReq:"Top Requesters",alerts:"Needs Attention",dueIn:"due in",overdueBy:"overdue",noAlerts:"Nothing overdue or due soon.",noData:"No data yet",
   setEye:"Configuration",setH1:"Settings",setP:"Manage dropdown lists and dashboard widgets. Changes apply everywhere.",
   chartsCfg:"Dashboard widgets",chartsCfgHint:"Choose what appears on the dashboard.",
-  sProjects:"Projects",sCats:"Service Types",sEmps:"Team Members",sStaff:"Staff Directory",stfCodeLab:"Code",stfLoginH1:"Request Execution & Tracking Portal – Team Members",stfLoginP:"Enter your 3-digit code to view your tasks.",stfLoginBtn:"Enter",stfBadCode:"Invalid code. Try again.",stfThrottled:"Too many attempts. Wait a moment and try again.",stfNetErr:"Connection problem. Try again.",stfLockedHint:"This task is paused by the manager. You can't work on it until the manager reactivates it.",stfMgrNote:"Manager note",stfRejectReason:"Reason",stfLogout:"Log out",reqByLbl:"Requested by",reqPhoneLbl:"Phone",startDateTime:"Start Date & Time (optional)",startDateTimeHint:"Leave empty to start now. Set a future time for a scheduled task.",taskStartLbl:"Scheduled start",futureTaskMsg:"Future task — scheduled to start on",futureLockMsg:"This task hasn't started yet. You can begin work once its start time arrives.",readyMsg:"This task is ready to start.",badgeFuture:"Future",badgeReady:"Ready",startTaskBtn:"Start Task",taskStarted:"Task started",badDur:"Duration must be a positive number",badDate:"Invalid start date/time",schedPast:"Scheduled time must be in the future",stfWelcome:"Welcome,",staffNeedName:"Enter a name",codeExists:"Code already used",delStaffQ:"Delete this staff member?",editStaffTitle:"Edit staff member",confirmDeclineQ:"Decline this request?",confirmDoneQ:"Confirm this task as completed?",confirmReturnQ:"Return this task to the technician?",closeoutFiles:"Attach files (optional)",coComment:"Comment (optional)",coCommentPh:"Add a short note about the work done…",coNoteLbl:"Technician comment",closeoutOptional:"Photos & files are optional.",badFileType:"Only PDF, Excel, Word allowed",closeoutPhoto:"Close-out photo (optional)",closeoutHint:"Optionally attach a photo of the completed work.",recentDone:"Recently Completed",recentDoneHint:"stays here 8h then archived",returnAccept:"Return to Acceptance",confirmReturnAcceptQ:"Return this task to the acceptance list?",returnToTech:"Return to Technician",confirmReturnTechQ:"Return this task to the assigned technician?",completedAt:"Completed at",repTitle:"Reports",repDaily:"Daily Report",repDay:"Day",repEye:"Operations",ddTitle:"Today's Live Dashboard",ddLive:"Live",ddRequested:"Requested",ddAccepted:"Accepted",ddInProgress:"In Progress",ddDaily:"Daily Tasks",ddOngoing:"Ongoing Tasks",ddClosed:"Closed",ddScheduled:"Scheduled",ddRejected:"Rejected / Deleted",ddPending:"Pending Acceptance",dd_requested:"Requested Today",dd_pending:"Pending Acceptance Today",dd_accepted:"Accepted Today",dd_inprogress:"In Progress (accepted today)",dd_daily:"Daily Tasks (started today)",dd_ongoing:"Ongoing Tasks (from earlier days)",dd_scheduled:"Scheduled / Not started",dd_closed:"Closed Today",dd_rejected:"Rejected / Deleted Today",ddHint:"Each count reflects an event that happened today (by its own time). Requested = submitted today, Pending = submitted today & still incoming.",repPageP:"Detailed task log and downloadable daily / period reports.",repDailyTitle:"Daily Report",repDailyHint:"Pick a day and download its PDF (summary) + Excel (full data). Counts events by their timestamp that day.",repPeriodTitle:"Period Report",repPeriodHint:"Requests received in the period, classified by current status (Completed / Rejected / In Progress / Other). Source: All Requests.",repTableTitle:"Detailed Task Log",colReceived:"Received",colAccepted:"Accepted",colClosed:"Closed",colDuration:"Completion",noDate:"No date",repMonthly:"Requests per month — since project start (live)",repDailyChart:"Today's activity breakdown",statsTitle:"Project Statistics — All Time",naTitle:"Needs Attention",naOverdue:"Overdue",naStalePending:"Pending >24h",naLongRunning:"Running >7 days",repFrom:"From",repTo:"To",repGen:"Generate Report",repHint:"Generates a PDF (summary) and Excel (full data) for the selected period — files download to your device.",repGenerating:"Generating report…",repPickDates:"Please select both dates",repExcelErr:"Excel export failed (check connection)",repPopup:"Please allow pop-ups to view the PDF",staffDirEye:"Team",staffDirH1:"Staff Directory",staffDirP:"Manage employees, login codes, and phone numbers shown on tracking.",staffAddNew:"Add new staff member",sPris:"Priorities",addNew:"Add new…",add:"Add",addNameAr:"Arabic name",addNameEn:"English name",
+  sProjects:"Projects",sCats:"Service Types",sEmps:"Team Members",sStaff:"Staff Directory",stfCodeLab:"Code",stfLoginH1:"Request Execution & Tracking Portal – Team Members",stfLoginP:"Enter your 3-digit code to view your tasks.",stfLoginBtn:"Enter",stfBadCode:"Invalid code. Try again.",stfThrottled:"Too many attempts. Wait a moment and try again.",stfNetErr:"Connection problem. Try again.",stfLockedHint:"This task is paused by the manager. You can't work on it until the manager reactivates it.",stfMgrNote:"Manager note",stfRejectReason:"Reason",stfLogout:"Log out",reqByLbl:"Requested by",reqPhoneLbl:"Phone",startDateTime:"Start Date & Time (optional)",startDateTimeHint:"Leave empty to start now. Set a future time for a scheduled task.",taskStartLbl:"Scheduled start",futureTaskMsg:"Future task — scheduled to start on",futureLockMsg:"This task hasn't started yet. You can begin work once its start time arrives.",readyMsg:"This task is ready to start.",badgeFuture:"Future",badgeReady:"Ready",startTaskBtn:"Start Task",taskStarted:"Task started",badDur:"Duration must be a positive number",badDate:"Invalid start date/time",schedPast:"Scheduled time must be in the future",stfWelcome:"Welcome,",staffNeedName:"Enter a name",codeExists:"Code already used",delStaffQ:"Delete this staff member?",editStaffTitle:"Edit staff member",confirmDeclineQ:"Decline this request?",confirmDoneQ:"Confirm this task as completed?",confirmReturnQ:"Return this task to the technician?",closeoutFiles:"Attach files (optional)",coComment:"Comment (optional)",coCommentPh:"Add a short note about the work done…",coNoteLbl:"Technician comment",closeoutOptional:"Photos & files are optional.",badFileType:"Only PDF, Excel, Word allowed",closeoutPhoto:"Close-out photo (optional)",closeoutHint:"Optionally attach a photo of the completed work.",recentDone:"Recently Completed",recentDoneHint:"stays here 8h then archived",returnAccept:"Return to Acceptance",confirmReturnAcceptQ:"Return this task to the acceptance list?",returnToTech:"Return to Technician",confirmReturnTechQ:"Return this task to the assigned technician?",completedAt:"Completed at",repTitle:"Reports",repDaily:"Daily Report",repDay:"Day",repEye:"Operations",ddTitle:"Today's Live Dashboard",ddLive:"Live",ddRequested:"Requested",ddAccepted:"Accepted",ddInProgress:"In Progress",ddDaily:"Daily Tasks",ddOngoing:"Ongoing Tasks",ddClosed:"Closed",ddScheduled:"Scheduled",ddRejected:"Rejected",ddPending:"Pending Acceptance",dd_requested:"Requested Today",dd_pending:"Pending Acceptance Today",dd_accepted:"Accepted Today",dd_inprogress:"In Progress (accepted today)",dd_daily:"Daily Tasks (started today)",dd_ongoing:"Ongoing Tasks (from earlier days)",dd_scheduled:"Scheduled / Not started",dd_closed:"Closed Today",dd_rejected:"Rejected Today",ddHint:"Each count reflects an event that happened today (by its own time). Requested = submitted today, Pending = submitted today & still incoming.",repPageP:"Detailed task log and downloadable daily / period reports.",repDailyTitle:"Daily Report",repDailyHint:"Pick a day and download its PDF (summary) + Excel (full data). Counts events by their timestamp that day.",repPeriodTitle:"Period Report",repPeriodHint:"Requests received in the period, classified by current status (Completed / Rejected / In Progress / Other). Source: All Requests.",repTableTitle:"Detailed Task Log",colReceived:"Received",colAccepted:"Accepted",colClosed:"Closed",colDuration:"Completion",noDate:"No date",repMonthly:"Requests per month — since project start (live)",repDailyChart:"Today's activity breakdown",statsTitle:"Project Statistics — All Time",naTitle:"Needs Attention",naOverdue:"Overdue",naStalePending:"Pending >24h",naLongRunning:"Running >7 days",repFrom:"From",repTo:"To",repGen:"Generate Report",repHint:"Generates a PDF (summary) and Excel (full data) for the selected period — files download to your device.",repGenerating:"Generating report…",repPickDates:"Please select both dates",repExcelErr:"Excel export failed (check connection)",repPopup:"Please allow pop-ups to view the PDF",staffDirEye:"Team",staffDirH1:"Staff Directory",staffDirP:"Manage employees, login codes, and phone numbers shown on tracking.",staffAddNew:"Add new staff member",sPris:"Priorities",addNew:"Add new…",add:"Add",addNameAr:"Arabic name",addNameEn:"English name",
   deptName:"Maintenance, Operation & Technical Support Department",thanksH:"Thank you",thanksMsg:"Your request has been received and will be followed up.",thanksContact:"For follow-up, contact the Maintenance, Operation & Technical Support Manager",thanksName:"Eng. Ahmad Masoud",thanksNew:"Submit another request",
-  fillReq:"Please fill in the required fields",submitted:"Request submitted",acceptedToast:"start date set to today",declinedToast:"declined",exported:"requests exported",added:"Added",exists:"Already in the list",connErr:"Connection error",closedToast:"closed",deletedToast:"archived",restoredToast:"restored",
+  fillReq:"Please fill in the required fields",submitted:"Request submitted",acceptedToast:"start date set to today",declinedToast:"declined",exported:"requests exported",added:"Added",exists:"Already in the list",connErr:"Connection error",closedToast:"closed",restoredToast:"restored",
   exitAdmin:"Exit",navVisitor:"Visitor Page",navTech:"Technician Page",enter:"Enter",page:"Page",of:"of",
-  confirmDelTitle:"Delete task?",confirmDelMsg:"This moves it to the archive (number kept). You can restore it anytime.",confirmDelYes:"Delete",cancel:"Cancel",
+  confirmRejTitle:"Reject request?",confirmRejMsg:"This moves it to the archive as Rejected (number kept). You can restore it anytime.",confirmRejYes:"Reject",rejReasonLbl:"Reason (optional)",rejReasonPh:"Why is this request being rejected?",rejectedToast:"rejected",rejectedBadge:"Rejected",rejectTask:"Reject",cancel:"Cancel",
   addTaskTitle:"Add a task",save:"Save",lang:"العربية",
   acceptTitle:"Accept request",editTitle:"Edit task",edit:"Edit",reopen:"Reopen",
   confirmCloseTitle:"Close this task?",confirmCloseMsg:"It will be marked Complete with today as the closing date, and move out of Open Tasks.",confirmCloseYes:"Close as Complete",
@@ -1123,11 +1164,11 @@ const T={
   byCat:"الطلبات حسب الفئة",bySt:"الطلبات حسب الحالة",byPri:"الطلبات حسب الأولوية",byProj:"الطلبات حسب المشروع",wlTeam:"توزيع العمل على الفريق",overTime:"الطلبات عبر الزمن",topReq:"الأكثر طلباً",alerts:"يحتاج انتباه",dueIn:"تستحق خلال",overdueBy:"متأخرة",noAlerts:"لا شيء متأخر أو قريب الاستحقاق.",noData:"لا توجد بيانات بعد",
   setEye:"الإعدادات",setH1:"الإعدادات",setP:"إدارة القوائم وعناصر لوحة المعلومات. تُطبَّق التغييرات مباشرةً في جميع أنحاء النظام.",
   chartsCfg:"عناصر لوحة المعلومات",chartsCfgHint:"حدِّد العناصر التي تظهر على لوحة المعلومات.",
-  sProjects:"المشاريع",sCats:"أنواع الخدمات",sEmps:"أعضاء الفريق",sStaff:"دليل الموظفين",stfCodeLab:"الرمز",stfLoginH1:"بوابة تنفيذ ومتابعة الطلبات – أعضاء الفريق",stfLoginP:"أدخل رمزك المكوّن من 3 أرقام لعرض مهامك.",stfLoginBtn:"دخول",stfBadCode:"رمز غير صحيح. حاول مرة أخرى.",stfThrottled:"محاولات كثيرة. انتظر لحظة وحاول مجدداً.",stfNetErr:"مشكلة بالاتصال. حاول مرة أخرى.",stfLockedHint:"هذه المهمة موقوفة من المدير. لا يمكنك العمل عليها حتى يعيد المدير تفعيلها.",stfMgrNote:"ملاحظة المدير",stfRejectReason:"السبب",stfLogout:"تسجيل خروج",reqByLbl:"مقدّم الطلب",reqPhoneLbl:"الهاتف",startDateTime:"تاريخ ووقت البدء (اختياري)",startDateTimeHint:"اتركه فارغاً ليبدأ الآن. حدّد وقتاً مستقبلياً لمهمة مجدولة.",taskStartLbl:"موعد البدء",futureTaskMsg:"مهمة مستقبلية — مجدولة للبدء في",futureLockMsg:"هذه المهمة لم تبدأ بعد. تقدر تبدأ العمل عند حلول موعد بدايتها.",readyMsg:"المهمة جاهزة للبدء.",badgeFuture:"مستقبلية",badgeReady:"جاهزة",startTaskBtn:"ابدأ المهمة",taskStarted:"بدأت المهمة",badDur:"المدة يجب أن تكون رقماً موجباً",badDate:"تاريخ/وقت بدء غير صالح",schedPast:"وقت الجدولة يجب أن يكون في المستقبل",stfWelcome:"أهلاً وسهلاً،",staffNeedName:"أدخل الاسم",codeExists:"الرمز مستخدم مسبقاً",delStaffQ:"حذف هذا الموظف؟",editStaffTitle:"تعديل بيانات الموظف",confirmDeclineQ:"رفض هذا الطلب؟",confirmDoneQ:"تأكيد إنجاز هذه المهمة؟",confirmReturnQ:"إرجاع المهمة إلى الفني؟",closeoutFiles:"إرفاق ملفات (اختياري)",coComment:"تعليق (اختياري)",coCommentPh:"أضف ملاحظة مختصرة عن العمل المنجز…",coNoteLbl:"تعليق الفني",closeoutOptional:"الصور والملفات اختيارية.",badFileType:"يُسمح بـ PDF و Excel و Word فقط",closeoutPhoto:"صورة الإنجاز (اختياري)",closeoutHint:"يمكنك إرفاق صورة للعمل بعد إنجازه.",recentDone:"المهام المكتملة حديثاً",recentDoneHint:"تبقى هنا 8 ساعات ثم تُؤرشف",returnAccept:"إرجاع إلى قائمة القبول",confirmReturnAcceptQ:"إرجاع المهمة إلى قائمة القبول؟",returnToTech:"إرجاع للفني",confirmReturnTechQ:"إرجاع المهمة إلى الفني المسؤول؟",completedAt:"وقت الإنجاز",repTitle:"التقارير",repDaily:"تقرير يومي",repDay:"اليوم",repEye:"العمليات",ddTitle:"لوحة اليوم المباشرة",ddLive:"مباشر",ddRequested:"طُلبت",ddAccepted:"قُبلت",ddInProgress:"تحت العمل",ddDaily:"مهام اليوم",ddOngoing:"مهام مستمرة",ddClosed:"أُغلقت",ddScheduled:"مجدولة / لم تبدأ",ddRejected:"رُفضت / حُذفت",ddPending:"بانتظار القبول",dd_requested:"طُلبت اليوم",dd_pending:"بانتظار القبول اليوم",dd_accepted:"قُبلت اليوم",dd_inprogress:"تحت العمل (قُبلت اليوم)",dd_daily:"مهام اليوم (بدأت اليوم)",dd_ongoing:"مهام مستمرة (من أيام سابقة)",dd_scheduled:"مجدولة / لم تبدأ",dd_closed:"أُغلقت اليوم",dd_rejected:"رُفضت / حُذفت اليوم",ddHint:"كل رقم يعكس حدثاً صار اليوم (بوقته). طُلبت = قُدّمت اليوم، بانتظار القبول = قُدّمت اليوم ولسا واردة.",repPageP:"سجل المهام التفصيلي وتقارير يومية/فترة قابلة للتحميل.",repDailyTitle:"التقرير اليومي",repDailyHint:"اختر يوماً ونزّل ملف PDF (ملخّص) + Excel (تفصيلي). يحسب الأحداث حسب توقيتها في ذلك اليوم.",repPeriodTitle:"تقرير الفترة",repPeriodHint:"الطلبات المستقبَلة خلال الفترة، مصنّفة حسب حالتها الحالية (مكتمل / مرفوض / تحت المعالجة / أخرى). المصدر: جميع الطلبات.",repTableTitle:"سجل المهام التفصيلي",colReceived:"الاستقبال",colAccepted:"القبول",colClosed:"الإغلاق",colDuration:"مدة الإنجاز",noDate:"بدون تاريخ",repMonthly:"عدد الطلبات شهرياً — منذ بداية المشروع (مباشر)",repDailyChart:"توزيع نشاط اليوم",statsTitle:"إحصائيات المشروع — منذ البداية",naTitle:"تحتاج انتباه",naOverdue:"متأخرة",naStalePending:"معلّقة >24 ساعة",naLongRunning:"شغّالة >7 أيام",repFrom:"من",repTo:"إلى",repGen:"إنشاء التقرير",repHint:"يُنشئ ملف PDF (ملخّص) وملف Excel (بيانات كاملة) للفترة المختارة — تُحمّل الملفات على جهازك.",repGenerating:"جارٍ إنشاء التقرير…",repPickDates:"يُرجى اختيار التاريخين",repExcelErr:"فشل تصدير Excel (تحقق من الاتصال)",repPopup:"يُرجى السماح بالنوافذ المنبثقة لعرض الـPDF",staffDirEye:"الفريق",staffDirH1:"دليل الموظفين",staffDirP:"إدارة الموظفين ورموز الدخول وأرقام الجوال الظاهرة في صفحة التتبّع.",staffAddNew:"إضافة موظف جديد",sPris:"الأولويات",addNew:"إضافة جديد…",add:"إضافة",addNameAr:"الاسم بالعربي",addNameEn:"الاسم بالإنجليزي",
+  sProjects:"المشاريع",sCats:"أنواع الخدمات",sEmps:"أعضاء الفريق",sStaff:"دليل الموظفين",stfCodeLab:"الرمز",stfLoginH1:"بوابة تنفيذ ومتابعة الطلبات – أعضاء الفريق",stfLoginP:"أدخل رمزك المكوّن من 3 أرقام لعرض مهامك.",stfLoginBtn:"دخول",stfBadCode:"رمز غير صحيح. حاول مرة أخرى.",stfThrottled:"محاولات كثيرة. انتظر لحظة وحاول مجدداً.",stfNetErr:"مشكلة بالاتصال. حاول مرة أخرى.",stfLockedHint:"هذه المهمة موقوفة من المدير. لا يمكنك العمل عليها حتى يعيد المدير تفعيلها.",stfMgrNote:"ملاحظة المدير",stfRejectReason:"السبب",stfLogout:"تسجيل خروج",reqByLbl:"مقدّم الطلب",reqPhoneLbl:"الهاتف",startDateTime:"تاريخ ووقت البدء (اختياري)",startDateTimeHint:"اتركه فارغاً ليبدأ الآن. حدّد وقتاً مستقبلياً لمهمة مجدولة.",taskStartLbl:"موعد البدء",futureTaskMsg:"مهمة مستقبلية — مجدولة للبدء في",futureLockMsg:"هذه المهمة لم تبدأ بعد. تقدر تبدأ العمل عند حلول موعد بدايتها.",readyMsg:"المهمة جاهزة للبدء.",badgeFuture:"مستقبلية",badgeReady:"جاهزة",startTaskBtn:"ابدأ المهمة",taskStarted:"بدأت المهمة",badDur:"المدة يجب أن تكون رقماً موجباً",badDate:"تاريخ/وقت بدء غير صالح",schedPast:"وقت الجدولة يجب أن يكون في المستقبل",stfWelcome:"أهلاً وسهلاً،",staffNeedName:"أدخل الاسم",codeExists:"الرمز مستخدم مسبقاً",delStaffQ:"حذف هذا الموظف؟",editStaffTitle:"تعديل بيانات الموظف",confirmDeclineQ:"رفض هذا الطلب؟",confirmDoneQ:"تأكيد إنجاز هذه المهمة؟",confirmReturnQ:"إرجاع المهمة إلى الفني؟",closeoutFiles:"إرفاق ملفات (اختياري)",coComment:"تعليق (اختياري)",coCommentPh:"أضف ملاحظة مختصرة عن العمل المنجز…",coNoteLbl:"تعليق الفني",closeoutOptional:"الصور والملفات اختيارية.",badFileType:"يُسمح بـ PDF و Excel و Word فقط",closeoutPhoto:"صورة الإنجاز (اختياري)",closeoutHint:"يمكنك إرفاق صورة للعمل بعد إنجازه.",recentDone:"المهام المكتملة حديثاً",recentDoneHint:"تبقى هنا 8 ساعات ثم تُؤرشف",returnAccept:"إرجاع إلى قائمة القبول",confirmReturnAcceptQ:"إرجاع المهمة إلى قائمة القبول؟",returnToTech:"إرجاع للفني",confirmReturnTechQ:"إرجاع المهمة إلى الفني المسؤول؟",completedAt:"وقت الإنجاز",repTitle:"التقارير",repDaily:"تقرير يومي",repDay:"اليوم",repEye:"العمليات",ddTitle:"لوحة اليوم المباشرة",ddLive:"مباشر",ddRequested:"طُلبت",ddAccepted:"قُبلت",ddInProgress:"تحت العمل",ddDaily:"مهام اليوم",ddOngoing:"مهام مستمرة",ddClosed:"أُغلقت",ddScheduled:"مجدولة / لم تبدأ",ddRejected:"رُفضت",ddPending:"بانتظار القبول",dd_requested:"طُلبت اليوم",dd_pending:"بانتظار القبول اليوم",dd_accepted:"قُبلت اليوم",dd_inprogress:"تحت العمل (قُبلت اليوم)",dd_daily:"مهام اليوم (بدأت اليوم)",dd_ongoing:"مهام مستمرة (من أيام سابقة)",dd_scheduled:"مجدولة / لم تبدأ",dd_closed:"أُغلقت اليوم",dd_rejected:"رُفضت اليوم",ddHint:"كل رقم يعكس حدثاً صار اليوم (بوقته). طُلبت = قُدّمت اليوم، بانتظار القبول = قُدّمت اليوم ولسا واردة.",repPageP:"سجل المهام التفصيلي وتقارير يومية/فترة قابلة للتحميل.",repDailyTitle:"التقرير اليومي",repDailyHint:"اختر يوماً ونزّل ملف PDF (ملخّص) + Excel (تفصيلي). يحسب الأحداث حسب توقيتها في ذلك اليوم.",repPeriodTitle:"تقرير الفترة",repPeriodHint:"الطلبات المستقبَلة خلال الفترة، مصنّفة حسب حالتها الحالية (مكتمل / مرفوض / تحت المعالجة / أخرى). المصدر: جميع الطلبات.",repTableTitle:"سجل المهام التفصيلي",colReceived:"الاستقبال",colAccepted:"القبول",colClosed:"الإغلاق",colDuration:"مدة الإنجاز",noDate:"بدون تاريخ",repMonthly:"عدد الطلبات شهرياً — منذ بداية المشروع (مباشر)",repDailyChart:"توزيع نشاط اليوم",statsTitle:"إحصائيات المشروع — منذ البداية",naTitle:"تحتاج انتباه",naOverdue:"متأخرة",naStalePending:"معلّقة >24 ساعة",naLongRunning:"شغّالة >7 أيام",repFrom:"من",repTo:"إلى",repGen:"إنشاء التقرير",repHint:"يُنشئ ملف PDF (ملخّص) وملف Excel (بيانات كاملة) للفترة المختارة — تُحمّل الملفات على جهازك.",repGenerating:"جارٍ إنشاء التقرير…",repPickDates:"يُرجى اختيار التاريخين",repExcelErr:"فشل تصدير Excel (تحقق من الاتصال)",repPopup:"يُرجى السماح بالنوافذ المنبثقة لعرض الـPDF",staffDirEye:"الفريق",staffDirH1:"دليل الموظفين",staffDirP:"إدارة الموظفين ورموز الدخول وأرقام الجوال الظاهرة في صفحة التتبّع.",staffAddNew:"إضافة موظف جديد",sPris:"الأولويات",addNew:"إضافة جديد…",add:"إضافة",addNameAr:"الاسم بالعربي",addNameEn:"الاسم بالإنجليزي",
   deptName:"قسم الصيانة والتشغيل والدعم الفني",thanksH:"شكراً جزيلاً",thanksMsg:"تم استلام طلبكم بنجاح، وستتم متابعته من قِبل القسم المختص.",thanksContact:"للاستفسار أو المتابعة، يُرجى التواصل مع مدير قسم الصيانة والتشغيل والدعم الفني",thanksName:"م. أحمد مسعود",thanksNew:"تقديم طلب آخر",
-  fillReq:"الرجاء تعبئة الحقول المطلوبة",submitted:"تم إرسال الطلب",acceptedToast:"تم القبول، وحُدِّد تاريخ البدء بتاريخ اليوم",declinedToast:"تم الرفض",exported:"طلب تم تصديره",added:"تمت الإضافة بنجاح",exists:"العنصر موجود بالفعل في القائمة",connErr:"تعذَّر الاتصال بالخادم",closedToast:"تم الإقفال",deletedToast:"تمت الأرشفة",restoredToast:"تم الإرجاع",
+  fillReq:"الرجاء تعبئة الحقول المطلوبة",submitted:"تم إرسال الطلب",acceptedToast:"تم القبول، وحُدِّد تاريخ البدء بتاريخ اليوم",declinedToast:"تم الرفض",exported:"طلب تم تصديره",added:"تمت الإضافة بنجاح",exists:"العنصر موجود بالفعل في القائمة",connErr:"تعذَّر الاتصال بالخادم",closedToast:"تم الإقفال",restoredToast:"تم الإرجاع",
   exitAdmin:"خروج",navVisitor:"صفحة الزائر",navTech:"صفحة الفني",enter:"دخول",page:"صفحة",of:"من",
-  confirmDelTitle:"حذف المهمة؟",confirmDelMsg:"سيتم نقل المهمة إلى الأرشيف مع الاحتفاظ برقمها، ويمكن إرجاعها في أي وقت.",confirmDelYes:"حذف",cancel:"إلغاء",
+  confirmRejTitle:"رفض الطلب؟",confirmRejMsg:"سيُنقل إلى الأرشيف كمرفوض مع الاحتفاظ برقمه، ويمكن إرجاعه في أي وقت.",confirmRejYes:"رفض",rejReasonLbl:"السبب (اختياري)",rejReasonPh:"لماذا يُرفض هذا الطلب؟",rejectedToast:"رُفض",rejectedBadge:"مرفوض",rejectTask:"رفض",cancel:"إلغاء",
   addTaskTitle:"إضافة مهمة",save:"حفظ",lang:"English",
   acceptTitle:"قبول الطلب",editTitle:"تعديل المهمة",edit:"تعديل",reopen:"إعادة فتح",
   confirmCloseTitle:"إقفال هذه المهمة؟",confirmCloseMsg:"سيتم اعتماد المهمة كمكتملة، وتسجيل تاريخ اليوم تاريخًا للإقفال، وستخرج من قائمة المهام المفتوحة.",confirmCloseYes:"إقفال كمكتملة",
@@ -1251,7 +1292,7 @@ function calc(r){
   return o;
 }
 function isOpen(r){return r.accepted && !r.archived && r.effStatus!=='Complete' && r.effStatus!=='Cancelled' && r.status!=='Cancelled';}
-function isArchived(r){return r.archived || r.status==='Cancelled' || r.status==='Deleted';}
+function isArchived(r){return r.archived || r.status==='Cancelled' || r.status==='Rejected';}
 function isIncoming(r){return !isArchived(r) && !r.accepted;}
 function isAccepted(r){return !isArchived(r) && r.accepted;}
 
@@ -1643,7 +1684,6 @@ function taskRow(r){
   acts+=`<button class="ico" title="${t('edit')}" onclick="openEdit(${r.id})">✎</button>`;
   if(isDone)acts+=`<button class="ico" title="${t('reopen')}" onclick="reopenTask(${r.id})">↺</button>`;
   else acts+=`<button class="ico ok" title="${t('closeTask')}" onclick="askClose(${r.id})">✓</button>`;
-  acts+=`<button class="ico del" title="${t('delTask')}" onclick="askDelete(${r.id})">🗑</button>`;
   const pendBadge=r.pendingConfirm?`<span class="pend-badge">⏳ ${t('pendBadge')}</span>`:'';
   return `<tr class="${rowCls}">
     <td class="c-id">${fmtID(r.id)}</td>
@@ -1997,7 +2037,7 @@ function viewManage(){
       ${r.receivedAt?drow(t('reqTime'),fmtTime(r.receivedAt)):''}
     </div>
     ${att(r)}
-    <div class="mc-acts"><button class="btn sm green" onclick="acceptReq(${r.id})">✓ ${t('accept')}</button><button class="btn sm danger" onclick="declineReq(${r.id})">✕ ${t('decline')}</button></div>
+    <div class="mc-acts"><button class="btn sm green" onclick="acceptReq(${r.id})">✓ ${t('accept')}</button><button class="btn sm danger" onclick="askReject(${r.id})">✕ ${t('decline')}</button></div>
   </div>`;
   const workCard=(r)=>{const dl=dueCell(r);const schedBadge=r.isFuture?`<span class="sched-badge future">🗓️ ${t('badgeFuture')}</span>`:(r.isReady?`<span class="sched-badge ready">▶ ${t('badgeReady')}</span>`:'');return `<div class="mcard ${r.effStatus==='Overdue'?'ov':''}">
     <div class="mc-top"><span class="mc-id">${fmtID(r.id)}</span>${schedBadge||stBadge(r.effStatus)}</div>
@@ -2017,7 +2057,7 @@ function viewManage(){
     </div>
     ${r.notes?`<div class="mc-note"><span class="mc-note-lab">📝 ${t('noteLabel')}</span>${esc(r.notes)}</div>`:''}
     ${att(r)}
-    <div class="mc-acts"><button class="btn sm sec" onclick="openEdit(${r.id})">✎ ${t('edit')}</button><button class="btn sm green" onclick="askClose(${r.id})">✓ ${t('closeTask')}</button><button class="btn sm danger" onclick="askDelete(${r.id})">🗑</button></div>
+    <div class="mc-acts"><button class="btn sm sec" onclick="openEdit(${r.id})">✎ ${t('edit')}</button><button class="btn sm green" onclick="askClose(${r.id})">✓ ${t('closeTask')}</button></div>
   </div>`;};
   const pendCard=(r)=>`<div class="mcard pendrow">
     <div class="mc-top"><span class="mc-id">${fmtID(r.id)}</span><span class="pend-badge">⏳ ${t('pendBadge')}</span></div>
@@ -2092,8 +2132,8 @@ function viewAll(){
     const acts=(()=>{
       let b=`<button class="ico" title="${t('edit')}" onclick="openEdit(${r.id})">✎</button>`;
       if(r.effStatus==='Complete'){b+=`<button class="ico" title="${t('returnToTech')}" onclick="returnToTech(${r.id})">↩</button><button class="ico" title="${t('returnAccept')}" onclick="returnToAcceptance(${r.id})">⤴</button>`;}
-      if(!r.archived){b+=`<button class="ico del" title="${t('del')}" onclick="askDelete(${r.id})">🗑</button>`;}
-      else{b+=`<button class="ico ok" title="${t('restore')}" onclick="restoreTask(${r.id})">♻</button>`;}
+      if(isIncoming(r)){b+=`<button class="ico del" title="${t('rejectTask')}" onclick="askReject(${r.id})">🗑</button>`;}
+      else if(isArchived(r)){b+=`<button class="ico ok" title="${t('restore')}" onclick="restoreTask(${r.id})">♻</button>`;}
       return b;
     })();
     return `<tr><td class="c-id">${fmtID(r.id)}</td><td class="c-title"><div class="ttl">${esc(r.title)}${pend}</div>${r.notes?`<div class="nt">📝 ${esc(r.notes)}</div>`:''}${imgIcon}${fileLinks(r)}</td><td>${esc(r.requestedBy||'—')}</td><td>${esc(r.project)}</td><td>${esc(dispCat(r.category))}</td><td><span class="prio ${r.priority}">${esc(dispPri(r.priority))}</span></td><td>${esc(r.assignedTo||'—')}</td><td>${effBadge(r)}</td><td>${esc(r.due||'—')}</td><td class="c-act">${acts}</td></tr>`;
@@ -2139,8 +2179,8 @@ function viewArchive(){
   if(pageNum.archive>total)pageNum.archive=total;
   const pageRows=rows.slice((pageNum.archive-1)*PAGE_SIZE,(pageNum.archive-1)*PAGE_SIZE+PAGE_SIZE);
   const body=pageRows.length?`<div class="tbl-wrap"><table class="tbl"><thead><tr><th>${t('mTaskId')}</th><th>${t('reqLabel')}</th><th>${t('mProj')}</th><th>${t('mStatus')}</th><th></th></tr></thead><tbody>`+pageRows.map(r=>{
-    const tag=r.archived?t('deleted'):t('declined');
-    const tagColor=r.archived?'var(--steel)':'var(--red)';
+    const tag=r.status==='Rejected'?t('rejectedBadge'):(r.status==='Cancelled'?t('cancelledBadge'):(r.archived?t('deleted'):t('declined')));
+    const tagColor=r.status==='Rejected'?'#8B3A3A':(r.archived?'var(--steel)':'var(--red)');
     const imgIcon=(()=>{let a=[];try{a=JSON.parse(r.images||'[]');}catch(e){}return a.length?`<button class="lk" onclick="openGallery(${r.id})" title="${t('viewImages')}">🖼 ${a.length}</button>`:'';})();
     const det=`<div class="arch-det">`+
       `<span><b>${t('mReqBy')}:</b> ${esc(r.requestedBy||'—')}</span>`+
@@ -2164,13 +2204,11 @@ function viewArchive(){
 /* ===== actions (instant UI, background save) ===== */
 function saveBg(id,r){sbUpdate(id,r).catch(e=>{toast(t('connErr'));});}
 function acceptReq(id){modal={type:'accept',id};renderModal();}
-function declineReq(id){modal={type:'confirm',title:t('confirmDeclineQ'),msg:fmtID(id),okLabel:t('decline'),okClass:'danger',onok:'doDecline('+id+')'};renderModal();}
-async function doDecline(id){modal=null;if(USE_ADMIN_ACTIONS){await admTaskAction(id,'cancel',null,'declinedToast');return;}const r=state.requests.find(x=>x.id===id);if(!r)return;r.status='Cancelled';r.accepted=false;r.archived=true;r.pendingConfirm=false;r.closed='';r.rejectedAt=nowTs();render();toast(fmtID(id)+' '+t('declinedToast'));saveBg(id,r);}
 function upd(id,f,v){const r=state.requests.find(x=>x.id===id);if(!r)return;r[f]=v;render();saveBg(id,r);}
 function closeTask(id){const r=state.requests.find(x=>x.id===id);if(!r)return;r.status='Complete';r.closed=today();r.confirmedAt=nowTs();render();toast(fmtID(id)+' '+t('closedToast'));saveBg(id,r);}
-function restoreTask(id){const r=state.requests.find(x=>x.id===id);if(!r)return;r.archived=false;r.accepted=false;r.status='Not Started';r.pendingConfirm=false;r.closed='';r.assignedTo='';r.start='';r.duration='';r.rejectedAt='';render();toast(fmtID(id)+' '+t('restoredToast'));saveBg(id,r);}
-function askDelete(id){modal={type:'del',id};renderModal();}
-function doDelete(id){const r=state.requests.find(x=>x.id===id);if(r){r.status='Deleted';r.archived=true;r.pendingConfirm=false;r.accepted=false;if(!r.rejectedAt)r.rejectedAt=nowTs();modal=null;render();toast(fmtID(id)+' '+t('deletedToast'));saveBg(id,r);}else{modal=null;render();}}
+async function restoreTask(id){if(USE_ADMIN_ACTIONS){await admArchiveTask(id,'restore',null,'restoredToast');return;}const r=state.requests.find(x=>x.id===id);if(!r)return;r.archived=false;r.accepted=false;r.status='Not Started';r.pendingConfirm=false;r.closed='';r.assignedTo='';r.start='';r.duration='';r.rejectedAt='';render();toast(fmtID(id)+' '+t('restoredToast'));saveBg(id,r);}
+function askReject(id){modal={type:'reject',id,reason:''};renderModal();}
+async function doReject(id,reason){if(USE_ADMIN_ACTIONS){modal=null;await admArchiveTask(id,'reject',(reason||'').trim()||null,'rejectedToast');return;}const r=state.requests.find(x=>x.id===id);if(r){r.status='Rejected';r.archived=true;r.pendingConfirm=false;r.accepted=false;if(!r.rejectedAt)r.rejectedAt=nowTs();modal=null;render();toast(fmtID(id)+' '+t('rejectedToast'));saveBg(id,r);}else{modal=null;render();}}
 
 /* ===== task form (accept / edit / add) + close/reopen + lightbox ===== */
 function openAddTask(){modal={type:'add'};renderModal();}
@@ -2192,8 +2230,8 @@ function loadSheetJS(){return new Promise((res,rej)=>{if(window.XLSX)return res(
 function ddActions(r){
   let b=`<button class="ico" title="${t('edit')}" onclick="event.stopPropagation();openEdit(${r.id})">✎</button>`;
   if(r.effStatus==='Complete'){b+=`<button class="ico" title="${t('returnToTech')}" onclick="event.stopPropagation();returnToTech(${r.id})">↩</button><button class="ico" title="${t('returnAccept')}" onclick="event.stopPropagation();returnToAcceptance(${r.id})">⤴</button>`;}
-  if(!r.archived){b+=`<button class="ico del" title="${t('del')}" onclick="event.stopPropagation();askDelete(${r.id})">🗑</button>`;}
-  else{b+=`<button class="ico ok" title="${t('restore')}" onclick="event.stopPropagation();restoreTask(${r.id})">♻</button>`;}
+  if(isIncoming(r)){b+=`<button class="ico del" title="${t('rejectTask')}" onclick="event.stopPropagation();askReject(${r.id})">🗑</button>`;}
+  else if(isArchived(r)){b+=`<button class="ico ok" title="${t('restore')}" onclick="event.stopPropagation();restoreTask(${r.id})">♻</button>`;}
   return b;
 }
 let ddOpen=null;
@@ -2208,7 +2246,7 @@ function dailyDashboard(){
     ongoing:all.filter(r=>isAccepted(r)&&!r.pendingConfirm&&r.effStatus==='In Progress'&&!inRange(r.startedAt||r.start,d,d)),
     scheduled:all.filter(r=>isAccepted(r)&&!r.pendingConfirm&&r.effStatus==='Not Started'),
     closed:all.filter(r=>r.effStatus==='Complete'&&!r.archived&&inRange(r.confirmedAt,d,d)),
-    rejected:all.filter(r=>(r.effStatus==='Cancelled'||r.archived||r.status==='Deleted')&&inRange(r.rejectedAt,d,d))
+    rejected:all.filter(r=>(r.effStatus==='Cancelled'||r.status==='Rejected'||r.archived)&&inRange(r.rejectedAt,d,d))
   };
   const ic={
     requested:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>`,
@@ -2360,7 +2398,7 @@ function viewReports(){
     {k:t('ddDaily'),v:A.filter(r=>isAccepted(r)&&!r.pendingConfirm&&r.effStatus==='In Progress'&&inRange(r.startedAt||r.start,d,d)).length,c:'var(--med)'},
     {k:t('ddOngoing'),v:A.filter(r=>isAccepted(r)&&!r.pendingConfirm&&r.effStatus==='In Progress'&&!inRange(r.startedAt||r.start,d,d)).length,c:'var(--steel)'},
     {k:t('ddClosed'),v:A.filter(r=>r.effStatus==='Complete'&&!r.archived&&inRange(r.confirmedAt,d,d)).length,c:'var(--green)'},
-    {k:t('ddRejected'),v:A.filter(r=>(r.effStatus==='Cancelled'||r.archived||r.status==='Deleted')&&inRange(r.rejectedAt,d,d)).length,c:'var(--red)'}
+    {k:t('ddRejected'),v:A.filter(r=>(r.effStatus==='Cancelled'||r.status==='Rejected'||r.archived)&&inRange(r.rejectedAt,d,d)).length,c:'var(--red)'}
   ];
 
   return `<div class="phead"><div class="eyebrow">${t('repEye')}</div><h1>${t('repTitle')}</h1><p>${t('repPageP')}</p></div>
@@ -2390,7 +2428,7 @@ function reportDataDaily(from,to){
   const daily=all.filter(r=>isAccepted(r)&&!r.pendingConfirm&&r.effStatus==='In Progress'&&inRange(r.startedAt||r.start,from,to));
   const ongoing=all.filter(r=>isAccepted(r)&&!r.pendingConfirm&&r.effStatus==='In Progress'&&!inRange(r.startedAt||r.start,from,to));
   const closed=all.filter(r=>r.effStatus==='Complete'&&!r.archived&&inRange(r.confirmedAt,from,to));
-  const rejected=all.filter(r=>(r.effStatus==='Cancelled'||r.archived||r.status==='Deleted')&&inRange(r.rejectedAt,from,to));
+  const rejected=all.filter(r=>(r.effStatus==='Cancelled'||r.status==='Rejected'||r.archived)&&inRange(r.rejectedAt,from,to));
   return {requested,pending,daily,ongoing,closed,rejected};
 }
 // Period report = requests RECEIVED in the period, classified by CURRENT status
@@ -2398,7 +2436,7 @@ function reportDataPeriod(from,to){
   const all=state.requests.map(calc);
   const inPeriod=all.filter(r=>inRange(r.receivedAt||r.received,from,to));
   const completed=inPeriod.filter(r=>r.effStatus==='Complete');
-  const rejected=inPeriod.filter(r=>r.effStatus==='Cancelled'||r.archived||r.status==='Deleted');
+  const rejected=inPeriod.filter(r=>r.effStatus==='Cancelled'||r.status==='Rejected'||r.archived);
   const inprog=inPeriod.filter(r=>r.effStatus==='In Progress');
   const other=inPeriod.filter(r=>r.effStatus!=='Complete'&&r.effStatus!=='Cancelled'&&!r.archived&&r.effStatus!=='In Progress');
   return {all:inPeriod,completed,rejected,inprog,other};
@@ -2431,19 +2469,19 @@ function reportRows(arr){
 }
 async function buildDailyExcel(data,label){
   const XLSX=await loadSheetJS();const wb=XLSX.utils.book_new();
-  const summary=[{'Metric':'Report Day','Value':label},{'Metric':'Requested','Value':data.requested.length},{'Metric':'Pending Acceptance','Value':data.pending.length},{'Metric':'Daily Tasks','Value':data.daily.length},{'Metric':'Ongoing Tasks','Value':data.ongoing.length},{'Metric':'Closed','Value':data.closed.length},{'Metric':'Rejected/Deleted','Value':data.rejected.length}];
+  const summary=[{'Metric':'Report Day','Value':label},{'Metric':'Requested','Value':data.requested.length},{'Metric':'Pending Acceptance','Value':data.pending.length},{'Metric':'Daily Tasks','Value':data.daily.length},{'Metric':'Ongoing Tasks','Value':data.ongoing.length},{'Metric':'Closed','Value':data.closed.length},{'Metric':'Rejected','Value':data.rejected.length}];
   XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(summary),'Summary');
   XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(reportRows(data.requested).length?reportRows(data.requested):[{}]),'Requested');
   XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(reportRows(data.pending).length?reportRows(data.pending):[{}]),'Pending');
   XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(reportRows(data.daily).length?reportRows(data.daily):[{}]),'Daily Tasks');
   XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(reportRows(data.ongoing).length?reportRows(data.ongoing):[{}]),'Ongoing Tasks');
   XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(reportRows(data.closed).length?reportRows(data.closed):[{}]),'Closed');
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(reportRows(data.rejected).length?reportRows(data.rejected):[{}]),'Rejected-Deleted');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(reportRows(data.rejected).length?reportRows(data.rejected):[{}]),'Rejected');
   XLSX.writeFile(wb,'ADVACON_Daily_'+label.replace(/[^0-9]/g,'_')+'.xlsx');
 }
 async function buildPeriodExcel(data,label){
   const XLSX=await loadSheetJS();const wb=XLSX.utils.book_new();
-  const summary=[{'Metric':'Report Period','Value':label},{'Metric':'Total Requested','Value':data.all.length},{'Metric':'Completed','Value':data.completed.length},{'Metric':'Rejected/Deleted','Value':data.rejected.length},{'Metric':'In Progress','Value':data.inprog.length},{'Metric':'Other (On Hold / Not Started)','Value':data.other.length}];
+  const summary=[{'Metric':'Report Period','Value':label},{'Metric':'Total Requested','Value':data.all.length},{'Metric':'Completed','Value':data.completed.length},{'Metric':'Rejected','Value':data.rejected.length},{'Metric':'In Progress','Value':data.inprog.length},{'Metric':'Other (On Hold / Not Started)','Value':data.other.length}];
   XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(summary),'Summary');
   XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(reportRows(data.all).length?reportRows(data.all):[{}]),'All Requests');
   XLSX.writeFile(wb,'ADVACON_Period_'+label.replace(/[^0-9]/g,'_')+'.xlsx');
@@ -2485,12 +2523,12 @@ function repShell(titleTxt,label,kpisHtml,bodyHtml){
 function openReportWindow(html){const w=window.open('','_blank');if(!w){toast(t('repPopup'));return;}w.document.write(html);w.document.close();}
 function kpi(n,l){return `<div class="rkpi"><div class="n">${n}</div><div class="l">${l}</div></div>`;}
 function buildDailyPDF(data,label){
-  const kpis=kpi(data.requested.length,'Requested')+kpi(data.pending.length,'Pending Acceptance')+kpi(data.daily.length,'Daily Tasks')+kpi(data.ongoing.length,'Ongoing Tasks')+kpi(data.closed.length,'Closed')+kpi(data.rejected.length,'Rejected / Deleted');
-  const body=`<h2>Requested (${data.requested.length})</h2>${repTable(data.requested)}<h2>Pending Acceptance (${data.pending.length})</h2>${repTable(data.pending)}<h2>Daily Tasks (${data.daily.length})</h2>${repTable(data.daily)}<h2>Ongoing Tasks (${data.ongoing.length})</h2>${repTable(data.ongoing)}<h2>Closed (${data.closed.length})</h2>${repTable(data.closed)}<h2>Rejected / Deleted (${data.rejected.length})</h2>${repTable(data.rejected)}`;
+  const kpis=kpi(data.requested.length,'Requested')+kpi(data.pending.length,'Pending Acceptance')+kpi(data.daily.length,'Daily Tasks')+kpi(data.ongoing.length,'Ongoing Tasks')+kpi(data.closed.length,'Closed')+kpi(data.rejected.length,'Rejected');
+  const body=`<h2>Requested (${data.requested.length})</h2>${repTable(data.requested)}<h2>Pending Acceptance (${data.pending.length})</h2>${repTable(data.pending)}<h2>Daily Tasks (${data.daily.length})</h2>${repTable(data.daily)}<h2>Ongoing Tasks (${data.ongoing.length})</h2>${repTable(data.ongoing)}<h2>Closed (${data.closed.length})</h2>${repTable(data.closed)}<h2>Rejected (${data.rejected.length})</h2>${repTable(data.rejected)}`;
   openReportWindow(repShell('Daily Operations Report',label,kpis,body));
 }
 function buildPeriodPDF(data,label){
-  const kpis=kpi(data.all.length,'Total Requested')+kpi(data.completed.length,'Completed')+kpi(data.rejected.length,'Rejected / Deleted')+kpi(data.inprog.length,'In Progress')+kpi(data.other.length,'Other');
+  const kpis=kpi(data.all.length,'Total Requested')+kpi(data.completed.length,'Completed')+kpi(data.rejected.length,'Rejected')+kpi(data.inprog.length,'In Progress')+kpi(data.other.length,'Other');
   const body=`<h2>All Requests in Period (${data.all.length})</h2>${repTable(data.all)}`;
   openReportWindow(repShell('Period Operations Report',label,kpis,body));
 }
@@ -2562,6 +2600,22 @@ async function saveTaskForm(mode,id){
       }
       // Complete (or any status without a mapped action) falls through to the legacy field PATCH below
     }
+    // A8-1: status unchanged → this is a pure field edit. Route through the secure
+    // admin_edit_task RPC (never touches status). Build sched_start consistent with the date.
+    if(USE_ADMIN_ACTIONS && statusEl && status===r.status){
+      let schedIso=r.schedStart||'';
+      if(r.schedStart && start && start!==r.start){
+        const prev=new Date(r.schedStart);const hh=(prev.getTime()+3*3600000);const d2=new Date(hh);
+        const stampMs=Date.UTC(Number(start.slice(0,4)),Number(start.slice(5,7))-1,Number(start.slice(8,10)),d2.getUTCHours(),d2.getUTCMinutes(),0)-3*3600000;
+        schedIso=new Date(stampMs).toISOString();
+      }
+      const patch={project:proj,category:cat,priority:pri,assigned_to:assign,start_date:start,duration:String(dur),notes:note||''};
+      if(schedIso)patch.sched_start=schedIso;
+      modal=null;
+      await admEditTask(id,patch,'savedToast');
+      return;
+    }
+    // Legacy path: Complete (or flag off) — keep the direct write for now (A8 later / A6 behavior).
     // if this task had a scheduled start, keep sched_start consistent with the edited date
     if(r.schedStart && start && start!==r.start){
       const prev=new Date(r.schedStart);const hh=(prev.getTime()+3*3600000);const d2=new Date(hh);
@@ -2607,10 +2661,13 @@ function renderModal(){
     el.innerHTML=`<div class="modal-bg" onclick="if(event.target===this){guardCloseModal();}"><div oninput="markDirty()" onchange="markDirty()">${periodFormHTML()}</div></div>`;return;
   }
   if(modal.type==='confirm'){
-    el.innerHTML=`<div class="modal-bg" ${close}><div class="modal" style="max-width:420px"><h3>${esc(modal.title)}</h3>${modal.msg?`<p><b>${modal.msg}</b></p>`:''}<div class="btnrow" style="justify-content:flex-end"><button class="btn sec" onclick="modal=null;renderModal()">${t('cancel')}</button><button class="btn ${modal.okClass||''}" onclick="${modal.onok}">${modal.okLabel||t('confirmDelYes')}</button></div></div></div>`;return;
+    el.innerHTML=`<div class="modal-bg" ${close}><div class="modal" style="max-width:420px"><h3>${esc(modal.title)}</h3>${modal.msg?`<p><b>${modal.msg}</b></p>`:''}<div class="btnrow" style="justify-content:flex-end"><button class="btn sec" onclick="modal=null;renderModal()">${t('cancel')}</button><button class="btn ${modal.okClass||''}" onclick="${modal.onok}">${modal.okLabel||t('confirmRejYes')}</button></div></div></div>`;return;
+  }
+  if(modal.type==='reject'){
+    el.innerHTML=`<div class="modal-bg" ${close}><div class="modal" style="max-width:440px"><h3>${t('confirmRejTitle')}</h3><p>${t('confirmRejMsg')}<br><b>${fmtID(modal.id)}</b></p><div class="field full" style="margin-top:10px"><label>${t('rejReasonLbl')}</label><textarea id="rej_reason" placeholder="${t('rejReasonPh')}">${esc(modal.reason||'')}</textarea></div><div class="btnrow" style="justify-content:flex-end;margin-top:12px"><button class="btn sec" onclick="modal=null;renderModal()">${t('cancel')}</button><button class="btn danger" onclick="doReject(${modal.id},document.getElementById('rej_reason')?document.getElementById('rej_reason').value:'')">${t('confirmRejYes')}</button></div></div></div>`;return;
   }
   if(modal.type==='del'){
-    el.innerHTML=`<div class="modal-bg" ${close}><div class="modal" style="max-width:420px"><h3>${t('confirmDelTitle')}</h3><p>${t('confirmDelMsg')}<br><b>${fmtID(modal.id)}</b></p><div class="btnrow" style="justify-content:flex-end"><button class="btn sec" onclick="modal=null;renderModal()">${t('cancel')}</button><button class="btn danger" onclick="doDelete(${modal.id})">${t('confirmDelYes')}</button></div></div></div>`;return;
+    el.innerHTML=`<div class="modal-bg" ${close}><div class="modal" style="max-width:440px"><h3>${t('confirmRejTitle')}</h3><p>${t('confirmRejMsg')}<br><b>${fmtID(modal.id)}</b></p><div class="field full" style="margin-top:10px"><label>${t('rejReasonLbl')}</label><textarea id="rej_reason" placeholder="${t('rejReasonPh')}">${esc(modal.reason||'')}</textarea></div><div class="btnrow" style="justify-content:flex-end;margin-top:12px"><button class="btn sec" onclick="modal=null;renderModal()">${t('cancel')}</button><button class="btn danger" onclick="doReject(${modal.id},document.getElementById('rej_reason')?document.getElementById('rej_reason').value:'')">${t('confirmRejYes')}</button></div></div></div>`;return;
   }
   if(modal.type==='close'){
     el.innerHTML=`<div class="modal-bg" ${close}><div class="modal" style="max-width:430px"><h3>${t('confirmCloseTitle')}</h3><p>${t('confirmCloseMsg')}<br><b>${fmtID(modal.id)}</b></p><div class="btnrow" style="justify-content:flex-end"><button class="btn sec" onclick="modal=null;renderModal()">${t('cancel')}</button><button class="btn green" onclick="doClose(${modal.id})">${t('confirmCloseYes')}</button></div></div></div>`;return;
