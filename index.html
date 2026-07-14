@@ -893,6 +893,7 @@ function admOpError(res){
   const ar=(L==='ar');
   const M={
     session: ar?'انتهت جلستك — سجّل الدخول من جديد':'Session expired — sign in again',
+    unauthorized: ar?'غير مصرح لك بتنفيذ هذه العملية':'You are not authorized to perform this action',
     not_authorized: ar?'غير مخوّل':'Not authorized',
     assignee_required: ar?'اختر الفني':'Select a technician',
     invalid_duration: ar?'المدة يجب أن تكون رقماً موجباً':'Duration must be a positive number',
