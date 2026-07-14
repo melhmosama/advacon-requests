@@ -1667,7 +1667,7 @@ async function submitReq(){
   try{
     const res=await admRpcAnon('create_request',{p_requested_by:req,p_phone:phone,p_project:proj,p_category:cat,p_title:title,p_priority:document.getElementById('f_pri').value||'Medium',p_images:imagesJson,p_files:filesJson});
     if(res&&res.ok===true){id=res.task_id;}
-    else{toast(t('connErr'));if(btn){btn.disabled=false;btn.classList.remove('loading');btn.innerHTML=t('submit')+' →';}return;}
+    else{toast(admOpError(res));if(btn){btn.disabled=false;btn.classList.remove('loading');btn.innerHTML=t('submit')+' →';}return;}
   }catch(e){toast(t('connErr'));if(btn){btn.disabled=false;btn.classList.remove('loading');btn.innerHTML=t('submit')+' →';}return;}
   thanksInfo={id,project:proj,category:cat,received:today()};reqImages=[];reqFiles=[];uploadingCount=0;state.route='thanks';render();
 }
@@ -3311,7 +3311,7 @@ function stfRpcError(res){
   const ar=(L==='ar');
   const M={
     not_your_task: ar?'هذه ليست مهمتك':'Not your task',
-    task_closed: ar?'المهمة مغلقة':'Task is closed', task_complete: ar?'المهمة مكتملة — استخدم إعادة الفتح':'Task is complete — use Reopen',
+    task_closed: ar?'المهمة مغلقة':'Task is closed', task_complete: ar?'المهمة مكتملة — استخدم إعادة الفتح':'Task is complete — use Reopen', assignee_missing: ar?'لا يوجد فني مُسنَد للمهمة':'No technician assigned', invalid_action: ar?'إجراء غير صالح':'Invalid action', task_already_cancelled: ar?'المهمة ملغاة مسبقاً':'Task already cancelled', internal_no_status: ar?'خطأ داخلي — أعد المحاولة':'Internal error — please retry', task_not_started: ar?'المهمة لم تبدأ بعد':'Task has not started yet',
     already_started: ar?'المهمة بدأت أصلاً':'Task already started',
     not_startable: ar?'لا يمكن بدء هذه المهمة':'Task not startable',
     not_started_yet: ar?'لم يحن موعد البدء بعد':'Not started yet (scheduled)',
