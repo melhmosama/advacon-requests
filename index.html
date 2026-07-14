@@ -2590,7 +2590,7 @@ async function saveTaskForm(mode,id){
   const g=i=>document.getElementById(i);
   const gv=i=>{const e=g(i);return e?e.value:'';};
   const assign=gv('tf_assign'), dur=gv('tf_dur');
-  const note=(gv('tf_notes')||'').trim();  // permanent task note (Manager Note)
+  const note=(gv('tf_notes')||'').trim();  // permanent task note / acceptance instructions
   if(mode==='accept'){
     if(!assign||!dur){toast(t('fillReq'));return;}
     if(!/^\d+$/.test(String(dur))||Number(dur)<1){toast(t('badDur'));return;}
@@ -2605,7 +2605,9 @@ async function saveTaskForm(mode,id){
       schedIso=new Date(startMs).toISOString();
     }
     if(USE_ADMIN_OPS){
-      // A6: accept + assign via server RPC (verifies admin, staff, state; always → Not Started)
+      // A6: accept + assign via server RPC
+      // verifies admin, staff and task state;
+      // immediate tasks → In Progress, future scheduled tasks → Not Started
       if(adminActionBusy)return;
       adminActionBusy=true;
       try{
