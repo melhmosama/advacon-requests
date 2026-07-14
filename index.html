@@ -872,6 +872,16 @@ async function admSignOut(){
 const USE_ADMIN_OPS = true;
 const USE_ADMIN_ACTIONS = true;   // A7: route admin state ops through admin_task_action RPC
 // call an admin_* RPC with the admin's access token. Ensures the session is valid/fresh first.
+// Batch B: anon RPC call (visitor, no admin session) — used by create_request.
+async function admRpcAnon(fn,args){
+  try{
+    const res=await fetch(SB_URL+'/rest/v1/rpc/'+fn,{method:'POST',
+      headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'},
+      body:JSON.stringify(args||{})});
+    if(!res.ok)return {ok:false,error:'http_'+res.status};
+    return await res.json();
+  }catch(e){return {ok:false,error:'network'};}
+}
 async function admRpc(fn,args){
   const okSess=await admEnsureSession();
   if(!okSess)return {ok:false,error:'session'};
@@ -908,7 +918,7 @@ function admOpError(res){
     task_deleted: ar?'المهمة محذوفة':'Task is deleted',
     task_archived: ar?'المهمة مؤرشفة':'Task is archived',
     pending_confirmation: ar?'المهمة بانتظار تأكيد الإنجاز — لا يمكن تعديلها':'Task awaiting completion confirmation — cannot edit',
-    missing_fields: ar?'عبّئ كل الحقول المطلوبة':'Fill all required fields',
+    missing_fields: ar?'عبّئ كل الحقول المطلوبة':'Fill all required fields', field_too_long: ar?'القيمة أطول من الحد المسموح':'Value exceeds allowed length',
     invalid_priority: ar?'الأولوية غير صالحة':'Invalid priority',
     bad_duration: ar?'المدة يجب أن تكون رقماً موجباً':'Duration must be a positive number',
     bad_date: ar?'تاريخ غير صالح':'Invalid date',
@@ -963,6 +973,28 @@ async function admEditSilent(id,patch){
   try{
     const res=await admRpc('admin_edit_task',{p_task_id:id,p_patch:patch});
     if(res&&res.ok===true){await admReloadRequests();return true;}
+    toast(admOpError(res));if(res&&res.error==='session'){admSessionGone();}
+    return false;
+  }finally{adminActionBusy=false;}
+}
+// Batch B: secure reopen (Complete → In Progress) via admin_reopen_task RPC.
+async function admReopenTask(id,okMsgKey){
+  if(adminActionBusy)return false;
+  adminActionBusy=true;
+  try{
+    const res=await admRpc('admin_reopen_task',{p_task_id:id});
+    if(res&&res.ok===true){await admReloadRequests();finishModal(fmtID(id)+' '+t(okMsgKey||'savedToast'));return true;}
+    toast(admOpError(res));if(res&&res.error==='session'){admSessionGone();}
+    return false;
+  }finally{adminActionBusy=false;}
+}
+// Batch B: secure manual task add via admin_add_task RPC (server sets status/accepted/archived/timestamps).
+async function admAddTask(payload,okMsgKey){
+  if(adminActionBusy)return false;
+  adminActionBusy=true;
+  try{
+    const res=await admRpc('admin_add_task',payload);
+    if(res&&res.ok===true){await admReloadRequests();finishModal(t(okMsgKey||'added'));return true;}
     toast(admOpError(res));if(res&&res.error==='session'){admSessionGone();}
     return false;
   }finally{adminActionBusy=false;}
@@ -1628,8 +1660,15 @@ async function submitReq(){
   const req=document.getElementById('f_req').value.trim(),phone=document.getElementById('f_phone').value.trim(),proj=document.getElementById('f_proj').value,cat=document.getElementById('f_cat').value,title=document.getElementById('f_title').value.trim();
   if(!req||!phone||!proj||!cat||!title){toast(t('fillReq'));return;}
   const btn=document.getElementById('submitBtn');if(btn){btn.disabled=true;btn.classList.add('loading');btn.textContent=t('sending');}
-  const obj={requestedBy:req,phone:phone,project:proj,category:cat,title:title,priority:document.getElementById('f_pri').value||'Medium',received:today(),receivedAt:nowTs(),assignedTo:'',start:'',duration:'',status:'Not Started',accepted:false,notes:'',closed:'',archived:false,images:JSON.stringify(reqImages.map(x=>x.url)),files:JSON.stringify(reqFiles.map(x=>({url:x.url,name:x.name}))),pendingConfirm:false};
-  let id=null;try{const s=await sbInsert(obj);state.requests.push(s);id=s.id;}catch(e){toast(t('connErr'));if(btn){btn.disabled=false;btn.classList.remove('loading');btn.innerHTML=t('submit')+' →';}return;}
+  // Batch B: visitor submit via create_request RPC (server forces all admin fields).
+  const imagesJson=JSON.stringify(reqImages.map(x=>x.url));
+  const filesJson=JSON.stringify(reqFiles.map(x=>({url:x.url,name:x.name})));
+  let id=null;
+  try{
+    const res=await admRpcAnon('create_request',{p_requested_by:req,p_phone:phone,p_project:proj,p_category:cat,p_title:title,p_priority:document.getElementById('f_pri').value||'Medium',p_images:imagesJson,p_files:filesJson});
+    if(res&&res.ok===true){id=res.task_id;}
+    else{toast(t('connErr'));if(btn){btn.disabled=false;btn.classList.remove('loading');btn.innerHTML=t('submit')+' →';}return;}
+  }catch(e){toast(t('connErr'));if(btn){btn.disabled=false;btn.classList.remove('loading');btn.innerHTML=t('submit')+' →';}return;}
   thanksInfo={id,project:proj,category:cat,received:today()};reqImages=[];reqFiles=[];uploadingCount=0;state.route='thanks';render();
 }
 async function shareRequest(){
@@ -2238,8 +2277,7 @@ function viewArchive(){
 /* ===== actions (instant UI, background save) ===== */
 function saveBg(id,r){sbUpdate(id,r).catch(e=>{toast(t('connErr'));});}
 function acceptReq(id){modal={type:'accept',id};renderModal();}
-function upd(id,f,v){const r=state.requests.find(x=>x.id===id);if(!r)return;r[f]=v;render();saveBg(id,r);}
-function closeTask(id){const r=state.requests.find(x=>x.id===id);if(!r)return;r.status='Complete';r.closed=today();r.confirmedAt=nowTs();render();toast(fmtID(id)+' '+t('closedToast'));saveBg(id,r);}
+async function closeTask(id){if(USE_ADMIN_ACTIONS){await admTaskAction(id,'complete',null,'closedToast');return;}const r=state.requests.find(x=>x.id===id);if(!r)return;r.status='Complete';r.closed=today();r.confirmedAt=nowTs();render();toast(fmtID(id)+' '+t('closedToast'));saveBg(id,r);}
 async function restoreTask(id){if(USE_ADMIN_ACTIONS){await admArchiveTask(id,'restore',null,'restoredToast');return;}const r=state.requests.find(x=>x.id===id);if(!r)return;r.archived=false;r.accepted=false;r.status='Not Started';r.pendingConfirm=false;r.closed='';r.assignedTo='';r.start='';r.duration='';r.rejectedAt='';render();toast(fmtID(id)+' '+t('restoredToast'));saveBg(id,r);}
 function askReject(id){modal={type:'reject',id,reason:''};renderModal();}
 async function doReject(id,reason){if(USE_ADMIN_ACTIONS){await admArchiveTask(id,'reject',(reason||'').trim()||null,'rejectedToast');return;}const r=state.requests.find(x=>x.id===id);if(r){r.status='Rejected';r.archived=true;r.pendingConfirm=false;r.accepted=false;if(!r.rejectedAt)r.rejectedAt=nowTs();modal=null;render();toast(fmtID(id)+' '+t('rejectedToast'));saveBg(id,r);}else{modal=null;render();}}
@@ -2248,8 +2286,8 @@ async function doReject(id,reason){if(USE_ADMIN_ACTIONS){await admArchiveTask(id
 function openAddTask(){modal={type:'add'};renderModal();}
 function openEdit(id){clearDirty();modal={type:'edit',id};renderModal();}
 function askClose(id){modal={type:'close',id};renderModal();}
-function doClose(id){const r=state.requests.find(x=>x.id===id);if(!r)return;r.status='Complete';r.closed=today();r.confirmedAt=nowTs();modal=null;render();toast(fmtID(id)+' '+t('closedToast'));saveBg(id,r);}
-function reopenTask(id){const r=state.requests.find(x=>x.id===id);if(!r)return;r.status='In Progress';r.closed='';r.archived=false;if(!r.start)r.start=today();render();toast(fmtID(id));saveBg(id,r);}
+async function doClose(id){if(USE_ADMIN_ACTIONS){modal=null;await admTaskAction(id,'complete',null,'closedToast');return;}const r=state.requests.find(x=>x.id===id);if(!r)return;r.status='Complete';r.closed=today();r.confirmedAt=nowTs();modal=null;render();toast(fmtID(id)+' '+t('closedToast'));saveBg(id,r);}
+async function reopenTask(id){if(USE_ADMIN_ACTIONS){await admReopenTask(id,'savedToast');return;}const r=state.requests.find(x=>x.id===id);if(!r)return;r.status='In Progress';r.closed='';r.archived=false;if(!r.start)r.start=today();render();toast(fmtID(id));saveBg(id,r);}
 function openLightbox(url){modal={type:'img',imgs:[url],idx:0};renderModal();}
 function openCloseoutGallery(id,idx){const r=state.requests.find(x=>x.id===id);if(!r)return;let a=[];try{a=JSON.parse(r.closeoutImages||'[]');}catch(e){}if(!a.length)return;modal={type:'img',imgs:a,idx:idx||0};renderModal();}
 function returnToAcceptance(id){modal={type:'confirm',title:t('confirmReturnAcceptQ'),msg:fmtID(id),okLabel:t('returnAccept'),okClass:'',onok:'doReturnToAcceptance('+id+')'};renderModal();}
@@ -2665,7 +2703,9 @@ async function saveTaskForm(mode,id){
         await admTaskAction(id,action,null,'savedToast');
         return;
       }
-      // Complete (or any status without a mapped action) falls through to the legacy field PATCH below
+      // Note: Complete IS mapped ('complete') and IS in STATUS_COMMENT_SET, so it takes the
+      // secure path above (admEditSilent → admTaskAction('complete')) and returns. Only a status
+      // with no mapped action would fall through to the legacy PATCH below.
     }
     // A8-1: status unchanged → this is a pure field edit. Route through the secure
     // admin_edit_task RPC (never touches status). Build sched_start consistent with the date.
@@ -2702,6 +2742,11 @@ async function saveTaskForm(mode,id){
     const req=g('tf_req').value.trim(),proj=g('tf_proj').value,cat=g('tf_cat').value,pri=g('tf_pri').value;
     if(!proj||!cat||!pri||!assign||!dur){toast(t('fillReq'));return;}
     const title=g('tf_title').value.trim();if(!title){toast(t('fillReq'));return;}
+    if(USE_ADMIN_OPS){
+      // Batch B: manual add via admin_add_task RPC (server sets status/accepted/archived/timestamps).
+      await admAddTask({p_requested_by:req||null,p_project:proj,p_category:cat,p_priority:pri,p_title:title,p_assigned_to:assign,p_duration:Number(dur),p_note:note||null},'added');
+      return;
+    }
     const obj={requestedBy:req||'—',project:proj,category:cat,title:title,priority:pri,received:today(),receivedAt:nowTs(),assignedTo:assign,start:today(),startedAt:nowTs(),duration:dur,status:'In Progress',accepted:true,notes:note,closed:'',archived:false,images:''};
     try{const s=await sbInsert(obj);state.requests.push(s);}catch(e){toast(t('connErr'));return;}
     modal=null;render();toast(t('added'));return;
