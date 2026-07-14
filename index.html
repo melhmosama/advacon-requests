@@ -2166,7 +2166,7 @@ function viewManage(){
       ${drow(t('completedAt'),fmtTime(r.confirmedAt))}
     </div>
     ${co.length?`<div class="co-shots"><div class="co-shots-lab">📸 ${t('closeoutPhoto')}</div><div class="co-shots-grid">${co.map((u,i)=>`<img src="${esc(u)}" onclick="openCloseoutGallery(${r.id},${i})"/>`).join('')}</div></div>`:''}${coFilesHtml(r)}${coNoteHtml(r)}
-    <div class="mc-acts"><button class="btn sm green" onclick="returnToTech(${r.id})">↩ ${t('returnToTech')}</button><button class="btn sm sec" onclick="returnToAcceptance(${r.id})">↩ ${t('returnAccept')}</button></div>
+    <div class="mc-acts"><button class="btn sm" onclick="reopenTask(${r.id})">↺ ${t('reopen')}</button></div>
   </div>`;};
   const doneSection=recentDone.length?`<div class="done-section"><div class="section-head" style="margin-top:26px"><span class="sec-dot done-dot"></span> ${t('recentDone')} <span class="count-chip" style="margin-inline-start:8px">${recentDone.length}</span> <span class="done-hint">${t('recentDoneHint')}</span></div><div class="done-grid">${recentDone.map(doneCard).join('')}</div></div>`:'';
   return head+`
@@ -2203,7 +2203,7 @@ function viewAll(){
     const pend=r.pendingConfirm?` <span class="pend-badge">⏳ ${t('pendBadge')}</span>`:'';
     const acts=(()=>{
       let b=`<button class="ico" title="${t('edit')}" onclick="openEdit(${r.id})">✎</button>`;
-      if(r.effStatus==='Complete'){b+=`<button class="ico" title="${t('returnToTech')}" onclick="returnToTech(${r.id})">↩</button><button class="ico" title="${t('returnAccept')}" onclick="returnToAcceptance(${r.id})">⤴</button>`;}
+      if(r.effStatus==='Complete'){b+=`<button class="ico" title="${t('reopen')}" onclick="reopenTask(${r.id})">↺</button>`;}
       if(isIncoming(r)){b+=`<button class="ico del" title="${t('rejectTask')}" onclick="askReject(${r.id})">🗑</button>`;}
       else if(isArchived(r)){b+=`<button class="ico ok" title="${t('restore')}" onclick="restoreTask(${r.id})">♻</button>`;}
       return b;
@@ -2301,7 +2301,7 @@ function loadSheetJS(){return new Promise((res,rej)=>{if(window.XLSX)return res(
 // ===== REPORTS SECTION =====
 function ddActions(r){
   let b=`<button class="ico" title="${t('edit')}" onclick="event.stopPropagation();openEdit(${r.id})">✎</button>`;
-  if(r.effStatus==='Complete'){b+=`<button class="ico" title="${t('returnToTech')}" onclick="event.stopPropagation();returnToTech(${r.id})">↩</button><button class="ico" title="${t('returnAccept')}" onclick="event.stopPropagation();returnToAcceptance(${r.id})">⤴</button>`;}
+  if(r.effStatus==='Complete'){b+=`<button class="ico" title="${t('reopen')}" onclick="event.stopPropagation();reopenTask(${r.id})">↺</button>`;}
   if(isIncoming(r)){b+=`<button class="ico del" title="${t('rejectTask')}" onclick="event.stopPropagation();askReject(${r.id})">🗑</button>`;}
   else if(isArchived(r)){b+=`<button class="ico ok" title="${t('restore')}" onclick="event.stopPropagation();restoreTask(${r.id})">♻</button>`;}
   return b;
@@ -3309,7 +3309,7 @@ function stfRpcError(res){
   const ar=(L==='ar');
   const M={
     not_your_task: ar?'هذه ليست مهمتك':'Not your task',
-    task_closed: ar?'المهمة مغلقة':'Task is closed',
+    task_closed: ar?'المهمة مغلقة':'Task is closed', task_complete: ar?'المهمة مكتملة — استخدم إعادة الفتح':'Task is complete — use Reopen',
     already_started: ar?'المهمة بدأت أصلاً':'Task already started',
     not_startable: ar?'لا يمكن بدء هذه المهمة':'Task not startable',
     not_started_yet: ar?'لم يحن موعد البدء بعد':'Not started yet (scheduled)',
@@ -3319,7 +3319,7 @@ function stfRpcError(res){
     too_many_images: ar?'الحد الأقصى 10 صور':'Maximum 10 images',
     images_payload_too_large: ar?'بيانات الصور كبيرة جداً':'Images payload too large',
     invalid_files: ar?'صيغة الملفات غير صحيحة':'Invalid files format',
-    too_many_files: ar?'الحد الأقصى 5 ملفات':'Maximum 5 files',
+    too_many_files: ar?'الحد الأقصى 10 ملفات':'Maximum 10 files',
     files_payload_too_large: ar?'بيانات الملفات كبيرة جداً':'Files payload too large',
     note_too_long: ar?'التعليق أطول من الحد المسموح':'Comment is too long',
     conflict: ar?'تعذّر التنفيذ — حاول مجدداً':'Conflict — please retry',
