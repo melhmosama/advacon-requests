@@ -1719,7 +1719,7 @@ function taskRow(r){
   const pendBadge=r.pendingConfirm?`<span class="pend-badge">⏳ ${t('pendBadge')}</span>`:'';
   return `<tr class="${rowCls}">
     <td class="c-id">${fmtID(r.id)}</td>
-    <td class="c-title"><div class="ttl">${esc(r.title)} ${pendBadge}</div>${r.notes?`<div class="nt">📝 ${esc(r.notes)}</div>`:''}${r.closeoutNote?`<div class="nt" style="color:var(--green)">💬 ${esc(t('coNoteLbl'))}: ${esc(r.closeoutNote)}</div>`:''}${imgIcon}${fileLinks(r)}</td>
+    <td class="c-title"><div class="ttl">${esc(r.title)} ${pendBadge}</div>${r.notes?`<div class="nt">📝 ${esc(r.notes)}</div>`:''}${r.closeoutNote?`<div class="nt" style="color:var(--green)">💬 ${esc(t('coNoteLbl'))}: ${esc(r.closeoutNote)}</div>`:''}${r.managerNote?`<div class="nt" style="color:#92400E">🗒 ${esc(t('stfMgrNote'))}: ${esc(r.managerNote)}</div>`:''}${imgIcon}${fileLinks(r)}</td>
     <td>${esc(r.project)}</td>
     <td>${esc(r.assignedTo||'—')}</td>
     <td><span class="prio ${r.priority}">${esc(dispPri(r.priority))}</span></td>
@@ -2574,7 +2574,7 @@ function galGo(i){if(!modal||modal.type!=='img')return;modal.idx=i;renderModal()
 // Save handler for accept / edit / add forms
 // A8-UI-1a: status-change comment is collected via a popup (askStatusComment), never mixed
 // with the permanent Manager Note. These statuses trigger the comment popup on save.
-const STATUS_COMMENT_SET=['On Hold','Needs Review','Needs Update','Cancelled'];
+const STATUS_COMMENT_SET=['On Hold','Needs Review','Needs Update','Cancelled','Complete'];
 // A8-UI-1a: popup to collect an optional comment for a status change, then fire the RPC.
 function askStatusComment(id,status,action){
   modal={type:'statusComment',id,status,action};renderModal();
@@ -2635,7 +2635,7 @@ async function saveTaskForm(mode,id){
     // A7: if the manager changed the STATUS to an administrative state, that takes priority —
     // route it through admin_task_action (server-validated) and ignore the field edits this time.
     if(USE_ADMIN_ACTIONS && statusEl && status!==r.status){
-      const ACTION_MAP={'On Hold':'on_hold','Needs Review':'needs_review','Needs Update':'needs_update','Cancelled':'cancel','Not Started':'return_to_acceptance','In Progress':'return_to_technician'};
+      const ACTION_MAP={'On Hold':'on_hold','Needs Review':'needs_review','Needs Update':'needs_update','Cancelled':'cancel','Complete':'complete','Not Started':'return_to_acceptance','In Progress':'return_to_technician'};
       const action=ACTION_MAP[status];
       if(action){
         // A8-UI-1a fix: the ordinary fields (incl. permanent Manager Note) must NOT be lost when
@@ -2727,7 +2727,7 @@ function renderModal(){
     el.innerHTML=`<div class="modal-bg" ${close}><div class="modal" style="max-width:420px"><h3>${esc(modal.title)}</h3>${modal.msg?`<p><b>${modal.msg}</b></p>`:''}<div class="btnrow" style="justify-content:flex-end"><button class="btn sec" onclick="modal=null;renderModal()">${t('cancel')}</button><button class="btn ${modal.okClass||''}" onclick="${modal.onok}">${modal.okLabel||t('confirmRejYes')}</button></div></div></div>`;return;
   }
   if(modal.type==='statusComment'){
-    const SC_NAMES={'On Hold':{en:'On Hold',ar:'معلّقة'},'Needs Review':{en:'Needs Review',ar:'بحاجة مراجعة'},'Needs Update':{en:'Needs Update',ar:'بحاجة تحديث'},'Cancelled':{en:'Cancelled',ar:'ملغاة'}};
+    const SC_NAMES={'On Hold':{en:'On Hold',ar:'معلّقة'},'Needs Review':{en:'Needs Review',ar:'بحاجة مراجعة'},'Needs Update':{en:'Needs Update',ar:'بحاجة تحديث'},'Cancelled':{en:'Cancelled',ar:'ملغاة'},'Complete':{en:'Complete',ar:'مكتملة'}};
     const stLbl=(SC_NAMES[modal.status]?(L==='ar'?SC_NAMES[modal.status].ar:SC_NAMES[modal.status].en):modal.status);
     el.innerHTML=`<div class="modal-bg" ${close}><div class="modal" style="max-width:460px"><h3>${t('statusCommentTitle')}</h3><p>${t('statusCommentMsg')} <b>${esc(stLbl)}</b><br><span style="color:var(--grey)">${fmtID(modal.id)}</span></p><div class="field full" style="margin-top:10px"><label>${t('statusComment')} <span style="color:var(--grey);font-weight:400">(${t('optional')})</span></label><textarea id="sc_reason" placeholder="${t('statusCommentPh')}"></textarea></div><div class="btnrow" style="justify-content:flex-end;margin-top:12px"><button class="btn sec" onclick="modal=null;renderModal()">${t('cancel')}</button><button class="btn" onclick="doStatusComment(${modal.id},'${modal.action}')">${t('confirmStatusBtn')}</button></div></div></div>`;return;
   }
