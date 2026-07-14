@@ -86,7 +86,7 @@ textarea{resize:vertical;min-height:80px}
 .btn.green{background:var(--green)}
 .btn.green:hover{background:#346B4E}
 .btnrow{display:flex;gap:10px;margin-top:8px;align-items:center;flex-wrap:wrap}
-.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(120px);background:var(--green);color:#fff;padding:12px 22px;border-radius:10px;font-weight:600;box-shadow:0 8px 30px rgba(0,0,0,.2);z-index:150;transition:.35s;font-size:13.5px;max-width:90vw;text-align:center}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(120px);background:var(--green);color:#fff;padding:12px 22px;border-radius:10px;font-weight:600;box-shadow:0 8px 30px rgba(0,0,0,.2);z-index:200;transition:.35s;font-size:13.5px;max-width:90vw;text-align:center}
 .toast.show{transform:translateX(-50%) translateY(0)}
 /* kpis */
 .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
@@ -937,7 +937,7 @@ async function admTaskAction(id,action,note,okMsgKey){
     const args={p_task_id:id,p_action:action};
     if(note!=null)args.p_note=note;
     const res=await admRpc('admin_task_action',args);
-    if(res&&res.ok===true){toast(fmtID(id)+' '+t(okMsgKey||'savedToast'));await admReloadRequests();return true;}
+    if(res&&res.ok===true){await admReloadRequests();finishModal(fmtID(id)+' '+t(okMsgKey||'savedToast'));return true;}
     toast(admOpError(res));if(res&&res.error==='session'){admSessionGone();}
     return false;
   }finally{adminActionBusy=false;}
@@ -949,7 +949,19 @@ async function admEditTask(id,patch,okMsgKey){
   adminActionBusy=true;
   try{
     const res=await admRpc('admin_edit_task',{p_task_id:id,p_patch:patch});
-    if(res&&res.ok===true){toast(fmtID(id)+' '+t(okMsgKey||'savedToast'));await admReloadRequests();return true;}
+    if(res&&res.ok===true){await admReloadRequests();finishModal(fmtID(id)+' '+t(okMsgKey||'savedToast'));return true;}
+    toast(admOpError(res));if(res&&res.error==='session'){admSessionGone();}
+    return false;
+  }finally{adminActionBusy=false;}
+}
+// A8-UI-1a: save ordinary fields WITHOUT toast/close — used before a status change so the
+// permanent Manager Note and other fields are persisted first. Returns true on success.
+async function admEditSilent(id,patch){
+  if(adminActionBusy)return false;
+  adminActionBusy=true;
+  try{
+    const res=await admRpc('admin_edit_task',{p_task_id:id,p_patch:patch});
+    if(res&&res.ok===true){await admReloadRequests();return true;}
     toast(admOpError(res));if(res&&res.error==='session'){admSessionGone();}
     return false;
   }finally{adminActionBusy=false;}
@@ -963,7 +975,7 @@ async function admArchiveTask(id,action,reason,okMsgKey){
     const args={p_task_id:id,p_action:action};
     if(reason!=null)args.p_reason=reason;
     const res=await admRpc('admin_archive_task',args);
-    if(res&&res.ok===true){toast(fmtID(id)+' '+t(okMsgKey||'savedToast'));await admReloadRequests();return true;}
+    if(res&&res.ok===true){await admReloadRequests();finishModal(fmtID(id)+' '+t(okMsgKey||'savedToast'));return true;}
     toast(admOpError(res));if(res&&res.error==='session'){admSessionGone();}
     return false;
   }finally{adminActionBusy=false;}
@@ -1271,6 +1283,22 @@ async function saveLang(){try{await LS.set('advacon_lang',L);}catch(e){}}
 async function saveWidgets(){try{await sbSaveSettings();}catch(e){}}
 
 function toast(m){const el=document.getElementById('toast');el.textContent=m;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2600);}
+// A8-UI global: after an action, show the toast ON TOP of the open modal, keep both ~1s,
+// then dismiss toast + close modal TOGETHER. Clicking anywhere dismisses both immediately.
+let _finishTimer=null,_finishClickBound=false;
+function finishModal(msg){
+  const tEl=document.getElementById('toast');
+  if(msg&&tEl){tEl.textContent=msg;tEl.classList.add('show');}
+  const closeBoth=()=>{
+    if(_finishTimer){clearTimeout(_finishTimer);_finishTimer=null;}
+    document.removeEventListener('pointerdown',onClick,true);_finishClickBound=false;
+    if(tEl)tEl.classList.remove('show');
+    modal=null;renderModal();
+  };
+  const onClick=()=>closeBoth();
+  if(!_finishClickBound){document.addEventListener('pointerdown',onClick,true);_finishClickBound=true;}
+  _finishTimer=setTimeout(closeBoth,1000);
+}
 function today(){const d=new Date(Date.now()+3*3600000);return d.toISOString().slice(0,10);}
 function saudiDateOf(ms){return new Date(ms+3*3600000).toISOString().slice(0,10);}
 function nowTs(){return new Date().toISOString();}
@@ -2213,7 +2241,7 @@ function upd(id,f,v){const r=state.requests.find(x=>x.id===id);if(!r)return;r[f]
 function closeTask(id){const r=state.requests.find(x=>x.id===id);if(!r)return;r.status='Complete';r.closed=today();r.confirmedAt=nowTs();render();toast(fmtID(id)+' '+t('closedToast'));saveBg(id,r);}
 async function restoreTask(id){if(USE_ADMIN_ACTIONS){await admArchiveTask(id,'restore',null,'restoredToast');return;}const r=state.requests.find(x=>x.id===id);if(!r)return;r.archived=false;r.accepted=false;r.status='Not Started';r.pendingConfirm=false;r.closed='';r.assignedTo='';r.start='';r.duration='';r.rejectedAt='';render();toast(fmtID(id)+' '+t('restoredToast'));saveBg(id,r);}
 function askReject(id){modal={type:'reject',id,reason:''};renderModal();}
-async function doReject(id,reason){if(USE_ADMIN_ACTIONS){modal=null;await admArchiveTask(id,'reject',(reason||'').trim()||null,'rejectedToast');return;}const r=state.requests.find(x=>x.id===id);if(r){r.status='Rejected';r.archived=true;r.pendingConfirm=false;r.accepted=false;if(!r.rejectedAt)r.rejectedAt=nowTs();modal=null;render();toast(fmtID(id)+' '+t('rejectedToast'));saveBg(id,r);}else{modal=null;render();}}
+async function doReject(id,reason){if(USE_ADMIN_ACTIONS){await admArchiveTask(id,'reject',(reason||'').trim()||null,'rejectedToast');return;}const r=state.requests.find(x=>x.id===id);if(r){r.status='Rejected';r.archived=true;r.pendingConfirm=false;r.accepted=false;if(!r.rejectedAt)r.rejectedAt=nowTs();modal=null;render();toast(fmtID(id)+' '+t('rejectedToast'));saveBg(id,r);}else{modal=null;render();}}
 
 /* ===== task form (accept / edit / add) + close/reopen + lightbox ===== */
 function openAddTask(){modal={type:'add'};renderModal();}
@@ -2224,9 +2252,9 @@ function reopenTask(id){const r=state.requests.find(x=>x.id===id);if(!r)return;r
 function openLightbox(url){modal={type:'img',imgs:[url],idx:0};renderModal();}
 function openCloseoutGallery(id,idx){const r=state.requests.find(x=>x.id===id);if(!r)return;let a=[];try{a=JSON.parse(r.closeoutImages||'[]');}catch(e){}if(!a.length)return;modal={type:'img',imgs:a,idx:idx||0};renderModal();}
 function returnToAcceptance(id){modal={type:'confirm',title:t('confirmReturnAcceptQ'),msg:fmtID(id),okLabel:t('returnAccept'),okClass:'',onok:'doReturnToAcceptance('+id+')'};renderModal();}
-async function doReturnToAcceptance(id){modal=null;if(USE_ADMIN_ACTIONS){await admTaskAction(id,'return_to_acceptance',null,'returnedToast');return;}const r=state.requests.find(x=>x.id===id);if(!r)return;r.status='Not Started';r.accepted=false;r.pendingConfirm=false;r.closed='';r.confirmedAt='';r.startedAt='';r.archived=false;render();toast(fmtID(id)+' '+t('returnedToast'));saveBg(id,r);}
+async function doReturnToAcceptance(id){if(USE_ADMIN_ACTIONS){await admTaskAction(id,'return_to_acceptance',null,'returnedToast');return;}const r=state.requests.find(x=>x.id===id);if(!r)return;r.status='Not Started';r.accepted=false;r.pendingConfirm=false;r.closed='';r.confirmedAt='';r.startedAt='';r.archived=false;render();toast(fmtID(id)+' '+t('returnedToast'));saveBg(id,r);}
 function returnToTech(id){modal={type:'confirm',title:t('confirmReturnTechQ'),msg:fmtID(id),okLabel:t('returnToTech'),okClass:'',onok:'doReturnToTech('+id+')'};renderModal();}
-async function doReturnToTech(id){modal=null;if(USE_ADMIN_ACTIONS){await admTaskAction(id,'return_to_technician',null,'returnedToast');return;}const r=state.requests.find(x=>x.id===id);if(!r)return;r.status='In Progress';r.accepted=true;r.pendingConfirm=false;r.closed='';r.confirmedAt='';r.archived=false;render();toast(fmtID(id)+' '+t('returnedToast'));saveBg(id,r);}
+async function doReturnToTech(id){if(USE_ADMIN_ACTIONS){await admTaskAction(id,'return_to_technician',null,'returnedToast');return;}const r=state.requests.find(x=>x.id===id);if(!r)return;r.status='In Progress';r.accepted=true;r.pendingConfirm=false;r.closed='';r.confirmedAt='';r.archived=false;render();toast(fmtID(id)+' '+t('returnedToast'));saveBg(id,r);}
 function fmtTime(ts){if(!ts)return '—';try{const d=new Date(new Date(ts).getTime()+3*3600000);const dt=d.toISOString().slice(0,10);let h=d.getUTCHours(),m=d.getUTCMinutes();const ap=h>=12?'PM':'AM';h=h%12||12;return dt+' '+h+':'+String(m).padStart(2,'0')+' '+ap;}catch(e){return ts;}}
 function fmtDuration(fromTs,toTs){if(!fromTs||!toTs)return '—';try{const ms=new Date(toTs).getTime()-new Date(fromTs).getTime();if(ms<0)return '—';const totalH=ms/3600000;const days=Math.floor(totalH/24);const hours=Math.round(totalH%24);if(days>0)return days+'d '+hours+'h';return hours+'h';}catch(e){return '—';}}
 function inRange(ts,from,to){if(!ts)return false;const d=new Date(ts).getTime();const f=new Date(from+'T00:00:00+03:00').getTime();const t2=new Date(to+'T23:59:59+03:00').getTime();return d>=f&&d<=t2;}
@@ -2554,7 +2582,6 @@ function askStatusComment(id,status,action){
 async function doStatusComment(id,action){
   const el=document.getElementById('sc_reason');
   const reason=el?(el.value||'').trim():'';
-  modal=null;
   await admTaskAction(id,action,reason||null,'savedToast');
 }
 async function saveTaskForm(mode,id){
@@ -2582,7 +2609,7 @@ async function saveTaskForm(mode,id){
       adminActionBusy=true;
       try{
         const res=await admRpc('admin_accept_assign_task',{p_task_id:id,p_assigned_to:assign,p_duration:Number(dur),p_sched_start:schedIso,p_note:note||null});
-        if(res&&res.ok===true){modal=null;toast(fmtID(id)+' — '+t('acceptedToast'));await admReloadRequests();}
+        if(res&&res.ok===true){await admReloadRequests();finishModal(fmtID(id)+' — '+t('acceptedToast'));}
         else{toast(admOpError(res));if(res&&res.error==='session'){admSessionGone();}}
       }finally{adminActionBusy=false;}
       return;
@@ -2611,10 +2638,27 @@ async function saveTaskForm(mode,id){
       const ACTION_MAP={'On Hold':'on_hold','Needs Review':'needs_review','Needs Update':'needs_update','Cancelled':'cancel','Not Started':'return_to_acceptance','In Progress':'return_to_technician'};
       const action=ACTION_MAP[status];
       if(action){
-        // A8-UI-1a: statuses that carry a comment open a popup to collect it (optional),
-        // then fire the RPC. Manager Note is never touched here.
+        // A8-UI-1a fix: the ordinary fields (incl. permanent Manager Note) must NOT be lost when
+        // status also changes. Save them first via admin_edit_task; only on success proceed to the
+        // status change. This never mixes the permanent note with the status-change comment.
+        let schedIso=r.schedStart||'';
+        if(r.schedStart && start && start!==r.start){
+          const prev=new Date(r.schedStart);const hh=(prev.getTime()+3*3600000);const d2=new Date(hh);
+          const stampMs=Date.UTC(Number(start.slice(0,4)),Number(start.slice(5,7))-1,Number(start.slice(8,10)),d2.getUTCHours(),d2.getUTCMinutes(),0)-3*3600000;
+          schedIso=new Date(stampMs).toISOString();
+        }
+        // admin_edit_task only edits ordinary fields on an accepted, non-archived task. For
+        // transitions where it would be rejected (e.g. returning to acceptance, or a not-yet-
+        // accepted task), skip the pre-save and go straight to the status action.
+        const canPreSave=(r.accepted && !r.archived && !r.pendingConfirm && status!=='Not Started');
+        if(canPreSave){
+          const patch={project:proj,category:cat,priority:pri,assigned_to:assign,start_date:start,duration:String(dur),notes:note||''};
+          if(schedIso)patch.sched_start=schedIso;
+          const ok=await admEditSilent(id,patch);   // saves fields; keeps modal open; no toast/close
+          if(!ok)return;                              // save failed → keep Edit modal open, no popup
+        }
+        // fields saved (or not applicable) → now handle the status change
         if(STATUS_COMMENT_SET.includes(status)){askStatusComment(id,status,action);return;}
-        modal=null;
         await admTaskAction(id,action,null,'savedToast');
         return;
       }
@@ -2631,7 +2675,6 @@ async function saveTaskForm(mode,id){
       }
       const patch={project:proj,category:cat,priority:pri,assigned_to:assign,start_date:start,duration:String(dur),notes:note||''};
       if(schedIso)patch.sched_start=schedIso;
-      modal=null;
       await admEditTask(id,patch,'savedToast');
       return;
     }
