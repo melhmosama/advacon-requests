@@ -1309,7 +1309,7 @@ async function load(role){
   if(changed&&cfg){try{await sbSaveSettings();}catch(e){}}
   // recurring generator needs templates (loaded for admin only). Keep it running as before
   // for admin; visitor/staff no longer trigger generation from their pages.
-  if(role==='admin'){try{await runRecurringGenerator(true);}catch(e){}}
+  /* CRON: server-side generate_recurring_tasks() runs every minute; browser generation disabled */
 }
 async function saveLists(){try{await sbSaveSettings();}catch(e){}}
 async function saveLang(){try{await LS.set('advacon_lang',L);}catch(e){}}
@@ -2044,13 +2044,13 @@ async function savePeriodForm(){
   clearDirty();modal=null;
   try{
     if(id){o.genCount=periodForm.genCount||0;o.lastRunAt=periodForm.lastRunAt||'';const up=await sbUpdateRecurring(id,o);const i=state.recurring.findIndex(x=>String(x.id)===String(id));if(i>=0)state.recurring[i]=up;toast(t('saved'));render();/* editing must NOT auto-generate */}
-    else{const ins=await sbInsertRecurring(o);state.recurring.push(ins);toast(t('saved'));render();try{await runRecurringGenerator();}catch(e){}}
+    else{const ins=await sbInsertRecurring(o);state.recurring.push(ins);toast(t('saved'));render();/* CRON handles generation */}
   }catch(e){toast(t('errSave'));render();}
 }
 async function togglePeriod(id){
   const tpl=state.recurring.find(x=>String(x.id)===String(id));if(!tpl)return;
   tpl.active=!tpl.active;render();
-  try{await sbPatchRecurring(id,{active:tpl.active});if(tpl.active)await runRecurringGenerator();}catch(e){}
+  try{await sbPatchRecurring(id,{active:tpl.active});/* CRON handles generation */}catch(e){}
 }
 function deletePeriod(id){
   modal={type:'confirm',title:t('delPeriodQ'),msg:t('delPeriodMsg'),okLabel:t('del'),okClass:'danger',onok:'doDeletePeriod('+id+')'};renderModal();
