@@ -1357,7 +1357,7 @@ function calc(r){
   return o;
 }
 function isOpen(r){return r.accepted && !r.archived && r.effStatus!=='Complete' && r.effStatus!=='Cancelled' && r.status!=='Cancelled';}
-function isArchived(r){return r.archived || r.status==='Cancelled' || r.status==='Rejected';}
+function isArchived(r){return r.archived || r.status==='Cancelled' || r.status==='Rejected';} /* Admin archive = a business OUTCOME (rejected/cancelled), NOT the `archived` housekeeping flag. `archived` only means the requester's 8h tracking window has closed; a Complete task that got archived is still successfully DONE and must never appear as archived/restorable to the admin. isArchived() is left untouched: it has 15 callers (isIncoming/isAccepted etc.) whose operational meaning must not shift. */ function isAdminArchived(r){return r.status==='Cancelled' || r.status==='Rejected';}
 function isIncoming(r){return !isArchived(r) && !r.accepted;}
 function isAccepted(r){return !isArchived(r) && r.accepted;}
 
@@ -2206,7 +2206,7 @@ function viewAll(){
       let b=`<button class="ico" title="${t('edit')}" onclick="openEdit(${r.id})">✎</button>`;
       if(r.effStatus==='Complete'){b+=`<button class="ico" title="${t('reopen')}" onclick="reopenTask(${r.id})">↺</button>`;} else if(r.accepted&&(r.assignedTo||'').trim()&&r.effStatus!=='Cancelled'){if(r.effStatus==='On Hold'||r.effStatus==='Needs Review'||r.effStatus==='Needs Update'){b+=`<button class="ico" title="${t('returnToTech')}" onclick="returnToTech(${r.id})">↩</button>`;}b+=`<button class="ico" title="${t('returnAccept')}" onclick="returnToAcceptance(${r.id})">⤴</button>`;}
       if(isIncoming(r)){b+=`<button class="ico del" title="${t('rejectTask')}" onclick="askReject(${r.id})">🗑</button>`;}
-      else if(isArchived(r)){b+=`<button class="ico ok" title="${t('restore')}" onclick="restoreTask(${r.id})">♻</button>`;}
+      else if(isAdminArchived(r)){b+=`<button class="ico ok" title="${t('restore')}" onclick="restoreTask(${r.id})">♻</button>`;}
       return b;
     })();
     return `<tr><td class="c-id">${fmtID(r.id)}</td><td class="c-title"><div class="ttl">${esc(r.title)}${pend}</div>${r.notes?`<div class="nt">📝 ${esc(r.notes)}</div>`:''}${imgIcon}${fileLinks(r)}</td><td>${esc(r.requestedBy||'—')}</td><td>${esc(r.project)}</td><td>${esc(dispCat(r.category))}</td><td><span class="prio ${r.priority}">${esc(dispPri(r.priority))}</span></td><td>${esc(r.assignedTo||'—')}</td><td>${effBadge(r)}</td><td>${esc(r.due||'—')}</td><td class="c-act">${acts}</td></tr>`;
@@ -2246,14 +2246,14 @@ function viewOpen(){
 /* ===== ARCHIVE ===== */
 function viewArchive(){
   let all=state.requests.map(calc);
-  let rows=byNumberDesc(all.filter(isArchived));
+  let rows=byNumberDesc(all.filter(isAdminArchived));
   if(F().q){const q=F().q.toLowerCase();rows=rows.filter(x=>(x.title+x.requestedBy+fmtID(x.id)).toLowerCase().includes(q));}
   const total=Math.max(1,Math.ceil(rows.length/PAGE_SIZE));
   if(pageNum.archive>total)pageNum.archive=total;
   const pageRows=rows.slice((pageNum.archive-1)*PAGE_SIZE,(pageNum.archive-1)*PAGE_SIZE+PAGE_SIZE);
   const body=pageRows.length?`<div class="tbl-wrap"><table class="tbl"><thead><tr><th>${t('mTaskId')}</th><th>${t('reqLabel')}</th><th>${t('mProj')}</th><th>${t('mStatus')}</th><th></th></tr></thead><tbody>`+pageRows.map(r=>{
-    const tag=r.status==='Rejected'?t('rejectedBadge'):(r.status==='Cancelled'?t('cancelledBadge'):(r.archived?t('deleted'):t('declined')));
-    const tagColor=r.status==='Rejected'?'#8B3A3A':(r.archived?'var(--steel)':'var(--red)');
+    const tag=r.status==='Rejected'?t('rejectedBadge'):(r.status==='Cancelled'?t('cancelledBadge'):t('declined'));
+    const tagColor=r.status==='Rejected'?'#8B3A3A':'var(--red)';
     const imgIcon=(()=>{let a=[];try{a=JSON.parse(r.images||'[]');}catch(e){}return a.length?`<button class="lk" onclick="openGallery(${r.id})" title="${t('viewImages')}">🖼 ${a.length}</button>`:'';})();
     const det=`<div class="arch-det">`+
       `<span><b>${t('mReqBy')}:</b> ${esc(r.requestedBy||'—')}</span>`+
@@ -2305,7 +2305,7 @@ function ddActions(r){
   let b=`<button class="ico" title="${t('edit')}" onclick="event.stopPropagation();openEdit(${r.id})">✎</button>`;
   if(r.effStatus==='Complete'){b+=`<button class="ico" title="${t('reopen')}" onclick="event.stopPropagation();reopenTask(${r.id})">↺</button>`;} else if(r.accepted&&(r.assignedTo||'').trim()&&r.effStatus!=='Cancelled'){if(r.effStatus==='On Hold'||r.effStatus==='Needs Review'||r.effStatus==='Needs Update'){b+=`<button class="ico" title="${t('returnToTech')}" onclick="event.stopPropagation();returnToTech(${r.id})">↩</button>`;}b+=`<button class="ico" title="${t('returnAccept')}" onclick="event.stopPropagation();returnToAcceptance(${r.id})">⤴</button>`;}
   if(isIncoming(r)){b+=`<button class="ico del" title="${t('rejectTask')}" onclick="event.stopPropagation();askReject(${r.id})">🗑</button>`;}
-  else if(isArchived(r)){b+=`<button class="ico ok" title="${t('restore')}" onclick="event.stopPropagation();restoreTask(${r.id})">♻</button>`;}
+  else if(isAdminArchived(r)){b+=`<button class="ico ok" title="${t('restore')}" onclick="event.stopPropagation();restoreTask(${r.id})">♻</button>`;}
   return b;
 }
 let ddOpen=null;
@@ -2319,8 +2319,8 @@ function dailyDashboard(){
     daily:all.filter(r=>isAccepted(r)&&!r.pendingConfirm&&r.effStatus==='In Progress'&&inRange(r.startedAt||r.start,d,d)),
     ongoing:all.filter(r=>isAccepted(r)&&!r.pendingConfirm&&r.effStatus==='In Progress'&&!inRange(r.startedAt||r.start,d,d)),
     scheduled:all.filter(r=>isAccepted(r)&&!r.pendingConfirm&&r.effStatus==='Not Started'),
-    closed:all.filter(r=>r.effStatus==='Complete'&&!r.archived&&inRange(r.confirmedAt,d,d)),
-    rejected:all.filter(r=>(r.effStatus==='Cancelled'||r.status==='Rejected'||r.archived)&&inRange(r.rejectedAt,d,d))
+    closed:all.filter(r=>r.effStatus==='Complete'&&inRange(r.confirmedAt,d,d)),
+    rejected:all.filter(r=>(r.effStatus==='Cancelled'||r.status==='Rejected')&&inRange(r.rejectedAt,d,d))
   };
   const ic={
     requested:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>`,
@@ -2471,8 +2471,8 @@ function viewReports(){
     {k:t('ddPending'),v:A.filter(r=>isIncoming(r)&&inRange(r.receivedAt||r.received,d,d)).length,c:'var(--amber)'},
     {k:t('ddDaily'),v:A.filter(r=>isAccepted(r)&&!r.pendingConfirm&&r.effStatus==='In Progress'&&inRange(r.startedAt||r.start,d,d)).length,c:'var(--med)'},
     {k:t('ddOngoing'),v:A.filter(r=>isAccepted(r)&&!r.pendingConfirm&&r.effStatus==='In Progress'&&!inRange(r.startedAt||r.start,d,d)).length,c:'var(--steel)'},
-    {k:t('ddClosed'),v:A.filter(r=>r.effStatus==='Complete'&&!r.archived&&inRange(r.confirmedAt,d,d)).length,c:'var(--green)'},
-    {k:t('ddRejected'),v:A.filter(r=>(r.effStatus==='Cancelled'||r.status==='Rejected'||r.archived)&&inRange(r.rejectedAt,d,d)).length,c:'var(--red)'}
+    {k:t('ddClosed'),v:A.filter(r=>r.effStatus==='Complete'&&inRange(r.confirmedAt,d,d)).length,c:'var(--green)'},
+    {k:t('ddRejected'),v:A.filter(r=>(r.effStatus==='Cancelled'||r.status==='Rejected')&&inRange(r.rejectedAt,d,d)).length,c:'var(--red)'}
   ];
 
   return `<div class="phead"><div class="eyebrow">${t('repEye')}</div><h1>${t('repTitle')}</h1><p>${t('repPageP')}</p></div>
@@ -2872,15 +2872,20 @@ function viewDashboard(){
   //   workRows -> operational: queues, alerts, workload
   const allRows=rows;
   const workRows=rows.filter(r=>!r.archived);
-  // Cancelled requests are excluded from Total and Completion Rate (not real work)
-  const counted=allRows.filter(r=>r.effStatus!=='Cancelled');
-  const total=counted.length;
+  // TOTAL means TOTAL: every request ever raised is counted, whatever its outcome.
+  // (It used to exclude Cancelled, which made the headline number disagree with the
+  //  charts and with the database — a "total" that hides records is not a total.)
+  const total=allRows.length;
   const pending=workRows.filter(isIncoming).length;
   const open=workRows.filter(isOpen).length;
-  const done=counted.filter(r=>r.effStatus==='Complete').length;
+  const done=allRows.filter(r=>r.effStatus==='Complete').length;
   const overdue=workRows.filter(r=>r.effStatus==='Overdue').length;
   const dueWk=workRows.filter(r=>typeof r.daysleft==='number'&&r.daysleft>=0&&r.daysleft<=7&&isOpen(r)).length;
-  const rate=total?Math.round(done/total*1000)/10:0;
+    // Completion rate keeps Cancelled OUT OF THE DENOMINATOR only: a withdrawn request
+  // was never work the team failed to finish, so counting it against them would be
+  // misleading. The Total above still shows it.
+  const rateBase=allRows.filter(r=>r.effStatus!=='Cancelled').length;
+  const rate=rateBase?Math.round(done/rateBase*1000)/10:0;
   const cd=allRows.filter(r=>r.effStatus==='Complete'&&r.received&&(r.closed||r.due)).map(r=>Math.round((new Date(r.closed||r.due)-new Date(r.received))/86400000)).filter(n=>n>=0);
   const avg=cd.length?Math.round(cd.reduce((a,b)=>a+b,0)/cd.length):0;
   function grp(source,field,listKey,eff){const m={};(state.lists[listKey]||[]).forEach(x=>m[biVal(x)]=0);source.forEach(r=>{const k=eff?r.effStatus:r[field];if(m[k]!=null)m[k]++;});return Object.entries(m).filter(([k,v])=>v>0);}
@@ -3084,7 +3089,7 @@ async function toggleWidget(k){state.widgets[k]=!state.widgets[k];await saveWidg
 function exportExcel(scope){
   let rows;let fname='OM_Service_Requests.csv';
   if(scope==='open'){rows=state.requests.map(calc).filter(isOpen).sort((a,b)=>a.id-b.id);fname='OM_Open_Tasks.csv';}
-  else{rows=state.requests.map(calc).filter(r=>!r.archived).sort((a,b)=>a.id-b.id);}
+  else{rows=state.requests.map(calc).sort((a,b)=>a.id-b.id);}
   const head=['#','Project','Category','Priority','Assigned To','Task Title','Manager Note','Received','Start','Duration','Status','Task ID','Due','Closed','Days Left','Progress %','Requested By','Mobile'];
   const data=rows.map((r,i)=>[i+1,r.project,r.category,r.priority,r.assignedTo,r.title,r.notes,r.received,r.start,r.duration,r.effStatus,fmtID(r.id),r.due,r.closed,r.daysleft,Math.round((r.progress||0)*100)+'%',r.requestedBy,r.phone||'']);
   let csv=[head].concat(data).map(row=>row.map(c=>{c=c==null?'':String(c);return /[",\n]/.test(c)?'"'+c.replace(/"/g,'""')+'"':c;}).join(',')).join('\n');
@@ -3094,7 +3099,7 @@ function exportExcel(scope){
 
 
 /* ===== TRACK PAGE (/track) — public, list of all active requests + search by task no ===== */
-function isActiveForTrack(r){return r.effStatus!=='Complete' && r.effStatus!=='Cancelled' && r.status!=='Cancelled' && r.status!=='Rejected' && !r.archived;}
+/* Requester tracking is derived from STATUS + confirmed_at only — never from the `archived` flag. A request is visible while it is still live, and for 8h after it is confirmed complete (see recentlyCompleted). Nothing is written to the row to make it disappear: the 8h window is computed at read time, so it cannot drift out of sync. */ function isActiveForTrack(r){return r.effStatus!=='Complete' && r.effStatus!=='Cancelled' && r.status!=='Cancelled' && r.status!=='Rejected';}
 function recentlyCompleted(r){if(r.effStatus!=='Complete'||!r.confirmedAt)return false;const diff=Date.now()-new Date(r.confirmedAt).getTime();return diff>=0 && diff<=8*60*60*1000;}
 function trkCard(r){
   const st=trackStatus(r);
@@ -3114,9 +3119,8 @@ function viewTrack(){
   const inprog=listed.filter(r=>r.accepted&&r.effStatus!=='Complete').length;
   let listHtml='';
   if(trackQ){
-    // search by task number across ALL records (secure cards: number + status + technician only)
     const q=('tsk-'+trackQ).toLowerCase().replace(/\s/g,'');
-    const rows=allCalc.filter(r=>fmtID(r.id).toLowerCase().replace(/\s/g,'').includes(q)).sort((a,b)=>b.id-a.id);
+    /* Searching BY TASK ID intentionally searches the whole history: if the requester still has his task number, he is entitled to look it up at any time. The 8h window only trims the default LIST (see `listed` above); it is not an access rule. */const rows=allCalc.filter(r=>fmtID(r.id).toLowerCase().replace(/\s/g,'').includes(q)).sort((a,b)=>b.id-a.id);
     listHtml=rows.length?`<div class="trk-list trk-search-res">${rows.map(trkCard).join('')}</div>`:`<div class="trk-empty">${t('trkNoSearch')}</div>`;
   }else{
     // default: columns by category (side by side; stacks on mobile)
