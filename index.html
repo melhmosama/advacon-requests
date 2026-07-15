@@ -2501,18 +2501,21 @@ function reportDataDaily(from,to){
   const pending=all.filter(r=>isIncoming(r)&&inRange(r.receivedAt||r.received,from,to));
   const daily=all.filter(r=>isAccepted(r)&&!r.pendingConfirm&&r.effStatus==='In Progress'&&inRange(r.startedAt||r.start,from,to));
   const ongoing=all.filter(r=>isAccepted(r)&&!r.pendingConfirm&&r.effStatus==='In Progress'&&!inRange(r.startedAt||r.start,from,to));
-  const closed=all.filter(r=>r.effStatus==='Complete'&&!r.archived&&inRange(r.confirmedAt,from,to));
-  const rejected=all.filter(r=>(r.effStatus==='Cancelled'||r.status==='Rejected'||r.archived)&&inRange(r.rejectedAt,from,to));
+  const closed=all.filter(r=>r.effStatus==='Complete'&&inRange(r.confirmedAt,from,to));
+  const rejected=all.filter(r=>(r.effStatus==='Cancelled'||r.status==='Rejected')&&inRange(r.rejectedAt,from,to));
   return {requested,pending,daily,ongoing,closed,rejected};
 }
-// Period report = requests RECEIVED in the period, classified by CURRENT status
+// Period report = requests RECEIVED in the period, classified by CURRENT status.
+// `archived` is a STORAGE flag (auto-archive after 8h), never a business state:
+// it must not affect any bucket here. Buckets are mutually exclusive and total
+// to inPeriod.length -> Complete | Cancelled/Rejected | In Progress | Other.
 function reportDataPeriod(from,to){
   const all=state.requests.map(calc);
   const inPeriod=all.filter(r=>inRange(r.receivedAt||r.received,from,to));
   const completed=inPeriod.filter(r=>r.effStatus==='Complete');
-  const rejected=inPeriod.filter(r=>r.effStatus==='Cancelled'||r.status==='Rejected'||r.archived);
+  const rejected=inPeriod.filter(r=>r.effStatus==='Cancelled'||r.status==='Rejected');
   const inprog=inPeriod.filter(r=>r.effStatus==='In Progress');
-  const other=inPeriod.filter(r=>r.effStatus!=='Complete'&&r.effStatus!=='Cancelled'&&!r.archived&&r.effStatus!=='In Progress');
+  const other=inPeriod.filter(r=>r.effStatus!=='Complete'&&r.effStatus!=='Cancelled'&&r.status!=='Rejected'&&r.effStatus!=='In Progress');
   return {all:inPeriod,completed,rejected,inprog,other};
 }
 async function generateReport(kind){
@@ -2863,25 +2866,30 @@ function renderModal(){
 /* ===== DASHBOARD ===== */
 function viewDashboard(){
   const rows=state.requests.map(calc);const W=state.widgets;
-  const active=rows.filter(r=>!r.archived);
+  // `archived` is an internal housekeeping flag (auto-archive after 8h), NOT a status.
+  // It must hide a task from day-to-day WORK LISTS, and must never change the counters.
+  //   allRows  -> historical: totals, completion, charts, reports
+  //   workRows -> operational: queues, alerts, workload
+  const allRows=rows;
+  const workRows=rows.filter(r=>!r.archived);
   // Cancelled requests are excluded from Total and Completion Rate (not real work)
-  const counted=active.filter(r=>r.effStatus!=='Cancelled');
+  const counted=allRows.filter(r=>r.effStatus!=='Cancelled');
   const total=counted.length;
-  const pending=active.filter(isIncoming).length;
-  const open=active.filter(isOpen).length;
+  const pending=workRows.filter(isIncoming).length;
+  const open=workRows.filter(isOpen).length;
   const done=counted.filter(r=>r.effStatus==='Complete').length;
-  const overdue=active.filter(r=>r.effStatus==='Overdue').length;
-  const dueWk=active.filter(r=>typeof r.daysleft==='number'&&r.daysleft>=0&&r.daysleft<=7&&isOpen(r)).length;
+  const overdue=workRows.filter(r=>r.effStatus==='Overdue').length;
+  const dueWk=workRows.filter(r=>typeof r.daysleft==='number'&&r.daysleft>=0&&r.daysleft<=7&&isOpen(r)).length;
   const rate=total?Math.round(done/total*1000)/10:0;
-  const cd=active.filter(r=>r.effStatus==='Complete'&&r.received&&(r.closed||r.due)).map(r=>Math.round((new Date(r.closed||r.due)-new Date(r.received))/86400000)).filter(n=>n>=0);
+  const cd=allRows.filter(r=>r.effStatus==='Complete'&&r.received&&(r.closed||r.due)).map(r=>Math.round((new Date(r.closed||r.due)-new Date(r.received))/86400000)).filter(n=>n>=0);
   const avg=cd.length?Math.round(cd.reduce((a,b)=>a+b,0)/cd.length):0;
-  function grp(field,listKey,eff){const m={};(state.lists[listKey]||[]).forEach(x=>m[biVal(x)]=0);active.forEach(r=>{const k=eff?r.effStatus:r[field];if(m[k]!=null)m[k]++;});return Object.entries(m).filter(([k,v])=>v>0);}
-  const cats=grp('category','categories'),sts=grp(null,'statuses',true),pris=grp('priority','priorities');
-  const pm={};active.forEach(r=>{if(r.project)pm[r.project]=(pm[r.project]||0)+1;});const projR=Object.entries(pm).sort((a,b)=>b[1]-a[1]).slice(0,8);
-  const wm={};active.forEach(r=>{if(r.assignedTo&&isOpen(r))wm[r.assignedTo]=(wm[r.assignedTo]||0)+1;});const wlR=Object.entries(wm).sort((a,b)=>b[1]-a[1]);
-  const rm={};active.forEach(r=>{if(r.requestedBy&&r.requestedBy!=='—')rm[r.requestedBy]=(rm[r.requestedBy]||0)+1;});const reqR=Object.entries(rm).sort((a,b)=>b[1]-a[1]).slice(0,8);
-  const tm={};active.forEach(r=>{if(r.received){const mo=r.received.slice(0,7);tm[mo]=(tm[mo]||0)+1;}});const tR=Object.entries(tm).sort((a,b)=>a[0]<b[0]?-1:1);
-  const al=active.filter(r=>isOpen(r)&&typeof r.daysleft==='number'&&r.daysleft<=7).sort((a,b)=>a.daysleft-b.daysleft).slice(0,12);
+  function grp(source,field,listKey,eff){const m={};(state.lists[listKey]||[]).forEach(x=>m[biVal(x)]=0);source.forEach(r=>{const k=eff?r.effStatus:r[field];if(m[k]!=null)m[k]++;});return Object.entries(m).filter(([k,v])=>v>0);}
+  const cats=grp(allRows,'category','categories'),sts=grp(allRows,null,'statuses',true),pris=grp(allRows,'priority','priorities');
+  const pm={};allRows.forEach(r=>{if(r.project)pm[r.project]=(pm[r.project]||0)+1;});const projR=Object.entries(pm).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const wm={};workRows.forEach(r=>{if(r.assignedTo&&isOpen(r))wm[r.assignedTo]=(wm[r.assignedTo]||0)+1;});const wlR=Object.entries(wm).sort((a,b)=>b[1]-a[1]);
+  const rm={};allRows.forEach(r=>{if(r.requestedBy&&r.requestedBy!=='—')rm[r.requestedBy]=(rm[r.requestedBy]||0)+1;});const reqR=Object.entries(rm).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const tm={};allRows.forEach(r=>{if(r.received){const mo=r.received.slice(0,7);tm[mo]=(tm[mo]||0)+1;}});const tR=Object.entries(tm).sort((a,b)=>a[0]<b[0]?-1:1);
+  const al=workRows.filter(r=>isOpen(r)&&typeof r.daysleft==='number'&&r.daysleft<=7).sort((a,b)=>a.daysleft-b.daysleft).slice(0,12);
   function bars(arr,cf,lf){const mx=Math.max(1,...arr.map(x=>x[1]));return arr.map(([k,v])=>`<div class="bar-row"><div class="blab">${esc(lf?lf(k):k)}</div><div class="bar-track"><div class="bar-fill" style="width:${v/mx*100}%;background:${cf?cf(k):'var(--accent)'}">${v}</div></div></div>`).join('');}
   function donut(arr,cf,lf){
     const tot=arr.reduce((a,[,v])=>a+v,0)||1;const R=54,C=2*Math.PI*R;let off=0;
