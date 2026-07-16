@@ -1076,7 +1076,16 @@ async function sbUpdate(id,o){const res=await fetch(SB_URL+'/rest/v1/requests?id
 // ===== RECURRING (period) task templates =====
 function recFromRow(r){return {id:r.id,title:r.title||'',project:r.project||'',category:r.category||'',priority:r.priority||'Medium',assignedTo:r.assigned_to||'',notes:r.notes||'',everyN:r.every_n||1,everyUnit:r.every_unit||'day',startAt:r.start_at||'',lastRunAt:r.last_run_at||'',genCount:r.gen_count||0,active:r.active!==false,includeFriday:r.include_friday!==false,createdAt:r.created_at||''};}
 function recToRow(o){return {title:o.title,project:o.project||null,category:o.category||null,priority:o.priority||'Medium',assigned_to:o.assignedTo||null,notes:o.notes||null,every_n:Number(o.everyN)||1,every_unit:o.everyUnit||'day',start_at:o.startAt||new Date().toISOString(),last_run_at:o.lastRunAt||null,gen_count:Number(o.genCount)||0,active:o.active!==false,include_friday:o.includeFriday!==false};}
-async function sbFetchRecurring(){try{const res=await fetch(SB_URL+'/rest/v1/recurring_tasks?select=*&order=id.asc',{headers:SB_HEAD});if(!res.ok)throw 0;return (await res.json()).map(recFromRow);}catch(e){return null;}}
+async function sbFetchRecurring(){
+  // RLS: templates are admin-only data. Reading goes through admin_get_recurring_tasks
+  // (SECURITY DEFINER + is_admin), so the table needs no read policy at all.
+  // The RPC returns RAW column names in id ASC order — exactly what recFromRow expects
+  // and the same order the old PostgREST query asked for — so the contract is unchanged:
+  // mapped array, or null on failure.
+  const res=await admRpc('admin_get_recurring_tasks',{});
+  if(res&&res.ok===true&&res.recurring)return res.recurring.map(recFromRow);
+  return null;
+}
 async function sbInsertRecurring(o){const res=await fetch(SB_URL+'/rest/v1/recurring_tasks',{method:'POST',headers:{...SB_HEAD,'Prefer':'return=representation'},body:JSON.stringify(recToRow(o))});if(!res.ok)throw new Error('rec insert');return recFromRow((await res.json())[0]);}
 async function sbUpdateRecurring(id,o){const res=await fetch(SB_URL+'/rest/v1/recurring_tasks?id=eq.'+id,{method:'PATCH',headers:{...SB_HEAD,'Prefer':'return=representation'},body:JSON.stringify(recToRow(o))});if(!res.ok)throw new Error('rec update');return recFromRow((await res.json())[0]);}
 async function sbPatchRecurring(id,patch){const res=await fetch(SB_URL+'/rest/v1/recurring_tasks?id=eq.'+id,{method:'PATCH',headers:SB_HEAD,body:JSON.stringify(patch)});if(!res.ok)throw new Error('rec patch');}
