@@ -1128,6 +1128,10 @@ async function sbFetchStaff(){
   return null;
 }
 async function sbFetchSettings(){try{const res=await fetch(SB_URL+'/rest/v1/app_settings?id=eq.main&select=*',{headers:SB_HEAD});if(!res.ok)throw 0;const a=await res.json();return a.length?a[0]:null;}catch(e){return null;}}
+// The storage bucket. This declaration used to sit between sbSaveSettings and
+// sbUploadImage; removing the dead sbSaveSettings took it with it, which broke
+// every upload with an opaque 'connection failed' toast.
+const SB_BUCKET='request-images';
 async function sbUploadImage(file){
   const ext=(file.name.split('.').pop()||'jpg').toLowerCase();
   const name=Date.now()+'_'+Math.random().toString(36).slice(2,8)+'.'+ext;
@@ -1659,7 +1663,7 @@ async function handleReqImages(input){
     if(wrap){const d=document.createElement('div');d.className='img-prev';d.id=tmpId;d.innerHTML='<span class="upl">'+t('uploading')+'</span>';wrap.appendChild(d);}
     uploadingCount++;setSubmitState();
     try{const url=await sbUploadImage(f);reqImages.push({url,name:f.name});const el=document.getElementById(tmpId);if(el)el.innerHTML='<img src="'+url+'"/><button type="button" onclick="removeReqImage(\''+url+'\')">×</button>';}
-    catch(e){const el=document.getElementById(tmpId);if(el)el.remove();toast(t('connErr'));}
+    catch(e){console.error('upload failed:',e&&e.message?e.message:e);const el=document.getElementById(tmpId);if(el)el.remove();toast(t('connErr'));}
     finally{uploadingCount=Math.max(0,uploadingCount-1);setSubmitState();}
   }
   input.value='';
@@ -1692,8 +1696,8 @@ async function handleReqFiles(input){
     const tmpId='f'+Math.random().toString(36).slice(2,8);
     if(wrap){const d=document.createElement('div');d.className='file-prev';d.id=tmpId;d.innerHTML='<span class="upl">'+t('uploading')+'</span>';wrap.appendChild(d);}
     uploadingCount++;setSubmitState();
-    try{const url=await sbUploadImage(f);reqFiles.push({url,name:f.name});const el=document.getElementById(tmpId);if(el)el.innerHTML='<span class="fic">📄</span><span class="fnm">'+esc(f.name)+'</span><button type="button" onclick="removeReqFile(\''+url+'\')">×</button>';}
-    catch(e){const el=document.getElementById(tmpId);if(el)el.remove();toast(t('connErr'));}
+    try{const url=await sbUploadFile(f);reqFiles.push({url,name:f.name});const el=document.getElementById(tmpId);if(el)el.innerHTML='<span class="fic">📄</span><span class="fnm">'+esc(f.name)+'</span><button type="button" onclick="removeReqFile(\''+url+'\')">×</button>';}
+    catch(e){console.error('upload failed:',e&&e.message?e.message:e);const el=document.getElementById(tmpId);if(el)el.remove();toast(t('connErr'));}
     finally{uploadingCount=Math.max(0,uploadingCount-1);setSubmitState();}
   }
   input.value='';
@@ -1903,6 +1907,10 @@ function addInterval(date,n,unit){
   return d;
 }
 let _genRunning=false;
+// Maps a schedule to its label and back (weekly <-> 1 week). This lived next to the
+// dead runRecurringGenerator and was removed with it — freqKeyOf/freqFromKey below
+// still need it, so the Periodic Tasks screen would have thrown on render.
+const FREQ_MAP=[['hourly',1,'hour'],['daily',1,'day'],['weekly',1,'week'],['biweekly',2,'week'],['monthly',1,'month'],['bimonthly',2,'month'],['quarterly',3,'month'],['semiannual',6,'month'],['yearly',1,'year']];
 function freqKeyOf(n,unit){const m=FREQ_MAP.find(p=>p[1]===Number(n)&&p[2]===unit);return m?m[0]:'daily';}
 function freqFromKey(key){const m=FREQ_MAP.find(p=>p[0]===key);return m?{everyN:m[1],everyUnit:m[2]}:{everyN:1,everyUnit:'day'};}
 function unitLabel(n,unit){
@@ -3434,7 +3442,7 @@ async function handleCloseoutFiles(input){
     if(wrap){const d=document.createElement('div');d.className='co-fileitem';d.id=tmpId;d.innerHTML='<span class="upl">'+t('uploading')+'</span>';wrap.appendChild(d);}
     coUploading++;
     try{const url=await sbUploadFile(f);closeoutFiles.push({url,name:f.name});const el=document.getElementById(tmpId);if(el)el.innerHTML='<span>📄 '+esc(f.name)+'</span><button type="button" onclick="removeCloseoutFileByUrl(\''+url+'\',\''+tmpId+'\')">×</button>';}
-    catch(e){const el=document.getElementById(tmpId);if(el)el.remove();toast(t('connErr'));}
+    catch(e){console.error('upload failed:',e&&e.message?e.message:e);const el=document.getElementById(tmpId);if(el)el.remove();toast(t('connErr'));}
     finally{coUploading--;}
   }
   input.value='';
@@ -3453,7 +3461,7 @@ async function handleCloseout(input){
     if(wrap){const d=document.createElement('div');d.className='img-prev';d.id=tmpId;d.innerHTML='<span class="upl">'+t('uploading')+'</span>';wrap.appendChild(d);}
     coUploading++;if(btn){btn.disabled=true;btn.style.opacity=.6;}
     try{const url=await sbUploadImage(f);closeoutPhotos.push(url);const el=document.getElementById(tmpId);if(el)el.innerHTML='<img src="'+url+'"/><button type="button" onclick="removeCloseout(\''+url+'\',\''+tmpId+'\')">×</button>';}
-    catch(e){const el=document.getElementById(tmpId);if(el)el.remove();toast(t('connErr'));}
+    catch(e){console.error('upload failed:',e&&e.message?e.message:e);const el=document.getElementById(tmpId);if(el)el.remove();toast(t('connErr'));}
     finally{coUploading--;if(coUploading<=0&&btn){btn.disabled=false;btn.style.opacity=1;}}
   }
   input.value='';
