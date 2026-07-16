@@ -1082,7 +1082,15 @@ async function sbUpdateRecurring(id,o){const res=await fetch(SB_URL+'/rest/v1/re
 async function sbPatchRecurring(id,patch){const res=await fetch(SB_URL+'/rest/v1/recurring_tasks?id=eq.'+id,{method:'PATCH',headers:SB_HEAD,body:JSON.stringify(patch)});if(!res.ok)throw new Error('rec patch');}
 async function sbDeleteRecurring(id){const res=await fetch(SB_URL+'/rest/v1/recurring_tasks?id=eq.'+id,{method:'DELETE',headers:SB_HEAD});if(!res.ok)throw new Error('rec delete');}
 // ===== STAFF directory (en/ar/code) =====
-async function sbFetchStaff(){try{const res=await fetch(SB_URL+'/rest/v1/staff?select=*&order=sort_order.asc',{headers:SB_HEAD});if(!res.ok)throw 0;return await res.json();}catch(e){return null;}}
+async function sbFetchStaff(){
+  // RLS: the staff table holds LOGIN CODES — it must not be readable with the public
+  // key. Reading goes through admin_get_staff (SECURITY DEFINER + is_admin), so the
+  // table needs no read policy at all. Same contract as before: array, or null on
+  // failure, so the 7 existing callers are unchanged.
+  const res=await admRpc('admin_get_staff',{});
+  if(res&&res.ok===true&&res.staff)return res.staff;
+  return null;
+}
 async function sbInsertStaff(o){const res=await fetch(SB_URL+'/rest/v1/staff',{method:'POST',headers:{...SB_HEAD,'Prefer':'return=representation'},body:JSON.stringify(o)});if(!res.ok)throw new Error('insert');return (await res.json())[0];}
 async function sbUpdateStaff(id,o){const res=await fetch(SB_URL+'/rest/v1/staff?id=eq.'+id,{method:'PATCH',headers:{...SB_HEAD,'Prefer':'return=representation'},body:JSON.stringify(o)});if(!res.ok)throw new Error('update');return (await res.json())[0];}
 async function sbDeleteStaff(id){const res=await fetch(SB_URL+'/rest/v1/staff?id=eq.'+id,{method:'DELETE',headers:SB_HEAD});if(!res.ok)throw new Error('delete');}
