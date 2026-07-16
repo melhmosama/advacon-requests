@@ -1070,7 +1070,17 @@ async function admEnsureSession(){
 
 function fromRow(r){return {id:r.id,requestedBy:r.requested_by||'',phone:r.phone||'',project:r.project||'',category:r.category||'',priority:r.priority||'Medium',title:r.title||'',received:r.received||'',assignedTo:r.assigned_to||'',start:r.start_date||'',duration:r.duration||'',status:r.status||'Not Started',accepted:!!r.accepted,notes:r.notes||'',closed:r.closed_date||'',archived:!!r.archived,images:r.images||'',files:r.files||'',pendingConfirm:!!r.pending_confirm,confirmedAt:r.confirmed_at||'',receivedAt:r.received_at||'',startedAt:r.started_at||'',closeoutImages:r.closeout_images||'',closeoutFiles:r.closeout_files||'',closeoutNote:r.closeout_note||'',schedStart:r.sched_start||'',managerNote:r.manager_note||'',rejectReason:r.reject_reason||'',pendingConfirmAt:r.pending_confirm_at||'',rejectedAt:r.rejected_at||'',cycleKey:r.cycle_key||'',recurringId:r.recurring_id||''};}
 function toRow(o){return {requested_by:o.requestedBy,phone:o.phone||null,project:o.project,category:o.category,priority:o.priority,title:o.title,received:o.received||null,assigned_to:o.assignedTo||null,start_date:o.start||null,duration:o.duration?Number(o.duration):null,status:o.status,accepted:!!o.accepted,notes:o.notes||null,closed_date:o.closed||null,archived:!!o.archived,images:o.images||null,files:o.files||null,pending_confirm:!!o.pendingConfirm,confirmed_at:o.confirmedAt||null,received_at:o.receivedAt||null,started_at:o.startedAt||null,closeout_images:o.closeoutImages||null,closeout_files:o.closeoutFiles||null,closeout_note:o.closeoutNote||null,sched_start:o.schedStart||null,rejected_at:o.rejectedAt||null,cycle_key:o.cycleKey||null,recurring_id:o.recurringId||null};}
-async function sbFetchAll(){try{const res=await fetch(SB_URL+'/rest/v1/requests?select=*&order=id.asc',{headers:SB_HEAD});if(!res.ok)throw 0;return (await res.json()).map(fromRow);}catch(e){return null;}}
+async function sbFetchAll(){
+  // RLS: requests carries every requester's name and phone. The admin's full-table
+  // read goes through admin_get_requests (SECURITY DEFINER + is_admin), so the table
+  // needs no read policy at all. Visitors never reach here — they use the track RPCs.
+  // The RPC returns RAW column names in id ASC order, exactly what fromRow() expects
+  // and the same order the old PostgREST query asked for, so the contract is unchanged:
+  // mapped array, or null on failure.
+  const res=await admRpc('admin_get_requests',{});
+  if(res&&res.ok===true&&res.requests)return res.requests.map(fromRow);
+  return null;
+}
 async function sbInsert(o){const res=await fetch(SB_URL+'/rest/v1/requests',{method:'POST',headers:{...SB_HEAD,'Prefer':'return=representation'},body:JSON.stringify(toRow(o))});if(!res.ok)throw new Error();return fromRow((await res.json())[0]);}
 async function sbUpdate(id,o){const res=await fetch(SB_URL+'/rest/v1/requests?id=eq.'+id,{method:'PATCH',headers:SB_HEAD,body:JSON.stringify(toRow(o))});if(!res.ok)throw new Error();}
 // ===== RECURRING (period) task templates =====
