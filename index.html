@@ -1746,7 +1746,7 @@ function viewMedia(){
         <div class="md-meta">${esc(r.received||'')} · ${esc(r.project||'—')} · ${esc(r.category||'—')}${r.assignedTo?' · '+esc(r.assignedTo):''}</div>
       </div>
       <div class="md-body">${secs}</div>
-      <div class="md-foot">${statusBadge?statusBadge(r.effStatus):''}</div>
+      <div class="md-foot">${effBadge(r)}</div>
     </div>`;
   }).join('');
 
