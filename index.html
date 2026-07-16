@@ -820,7 +820,7 @@ async function rpcStaffTasks(token){return await sbRpc('staff_get_tasks',{p_toke
 
 // ===== A5: admin login via Supabase Auth (replaces the PIN) — Feature Flag for rollback =====
 // true  = admin signs in with email + password (Supabase Auth) → verified by is_admin()
-// false = legacy PIN screen (Ahmad1001). Flip to false to roll back instantly.
+// Admin auth is server-verified; there is no client-side fallback.
 const USE_ADMIN_AUTH = true;
 // admin auth session (access + refresh tokens) kept in localStorage so it survives a reload.
 function admGetSession(){
@@ -1133,11 +1133,6 @@ async function sbFetchRecurring(){
   if(res&&res.ok===true&&res.recurring)return res.recurring.map(recFromRow);
   return null;
 }
-async function sbInsertRecurring(o){const res=await fetch(SB_URL+'/rest/v1/recurring_tasks',{method:'POST',headers:{...SB_HEAD,'Prefer':'return=representation'},body:JSON.stringify(recToRow(o))});if(!res.ok)throw new Error('rec insert');return recFromRow((await res.json())[0]);}
-async function sbUpdateRecurring(id,o){const res=await fetch(SB_URL+'/rest/v1/recurring_tasks?id=eq.'+id,{method:'PATCH',headers:{...SB_HEAD,'Prefer':'return=representation'},body:JSON.stringify(recToRow(o))});if(!res.ok)throw new Error('rec update');return recFromRow((await res.json())[0]);}
-async function sbPatchRecurring(id,patch){const res=await fetch(SB_URL+'/rest/v1/recurring_tasks?id=eq.'+id,{method:'PATCH',headers:SB_HEAD,body:JSON.stringify(patch)});if(!res.ok)throw new Error('rec patch');}
-async function sbDeleteRecurring(id){const res=await fetch(SB_URL+'/rest/v1/recurring_tasks?id=eq.'+id,{method:'DELETE',headers:SB_HEAD});if(!res.ok)throw new Error('rec delete');}
-// ===== STAFF directory (en/ar/code) =====
 async function sbFetchStaff(){
   // RLS: the staff table holds LOGIN CODES — it must not be readable with the public
   // key. Reading goes through admin_get_staff (SECURITY DEFINER + is_admin), so the
@@ -1147,16 +1142,7 @@ async function sbFetchStaff(){
   if(res&&res.ok===true&&res.staff)return res.staff;
   return null;
 }
-async function sbInsertStaff(o){const res=await fetch(SB_URL+'/rest/v1/staff',{method:'POST',headers:{...SB_HEAD,'Prefer':'return=representation'},body:JSON.stringify(o)});if(!res.ok)throw new Error('insert');return (await res.json())[0];}
-async function sbUpdateStaff(id,o){const res=await fetch(SB_URL+'/rest/v1/staff?id=eq.'+id,{method:'PATCH',headers:{...SB_HEAD,'Prefer':'return=representation'},body:JSON.stringify(o)});if(!res.ok)throw new Error('update');return (await res.json())[0];}
-async function sbDeleteStaff(id){const res=await fetch(SB_URL+'/rest/v1/staff?id=eq.'+id,{method:'DELETE',headers:SB_HEAD});if(!res.ok)throw new Error('delete');}
-// ===== APP SETTINGS (lists + widgets) shared via Supabase =====
 async function sbFetchSettings(){try{const res=await fetch(SB_URL+'/rest/v1/app_settings?id=eq.main&select=*',{headers:SB_HEAD});if(!res.ok)throw 0;const a=await res.json();return a.length?a[0]:null;}catch(e){return null;}}
-async function sbSaveSettings(){
-  const body={id:'main',lists:state.lists,widgets:state.widgets,updated_at:nowTs()};
-  try{const res=await fetch(SB_URL+'/rest/v1/app_settings',{method:'POST',headers:{...SB_HEAD,'Prefer':'resolution=merge-duplicates'},body:JSON.stringify(body)});return res.ok;}catch(e){return false;}
-}
-const SB_BUCKET='request-images';
 async function sbUploadImage(file){
   const ext=(file.name.split('.').pop()||'jpg').toLowerCase();
   const name=Date.now()+'_'+Math.random().toString(36).slice(2,8)+'.'+ext;
@@ -1259,7 +1245,7 @@ const T={
   acceptTitle:"Accept request",editTitle:"Edit task",edit:"Edit",reopen:"Reopen",confirmReopenQ:"Reopen this completed task?",
   confirmCloseTitle:"Close this task?",confirmCloseMsg:"It will be marked Complete with today as the closing date, and move out of Open Tasks.",confirmCloseYes:"Close as Complete",
   durReq:"Duration is required to schedule the task",
-  addImages:"Add photos (optional)",addImagesHint:"Attach photos to explain better — take a photo or pick from your gallery.",uploading:"Uploading…",photo:"photo",photos:"photos",viewImages:"Photos",reqPhone:"Mobile number",reqPhonePh:"e.g. 0500000000",waitUpload:"Please wait — photo uploading…",sending:"Sending…",shareReq:"Share request number",shareHint:"Share the image on WhatsApp or save it to your phone.",imgSaved:"Image saved",addFiles:"Add PDF file (optional)",chooseEye:"Service Portal",chooseH1:"How can we help?",chooseP:"Choose what you would like to do.",chooseNew:"New request",chooseNewSub:"Submit a service request",chooseTrack:"Track a request",chooseTrackSub:"Check the status of requests",backChoose:"Back",addFilesHint:"Attach a PDF document if needed.",pdfOnly:"PDF files only",fileTooBig:"File too large (max 10MB)",trkEye:"Track",trkH1:"Track Requests",trkP:"Enter your request number to check its status.",trkPending:"Awaiting approval",trkProg:"In progress",trkSearchPh:"0042",trkNone:"No active requests.",trkSearching:"Searching…",trkWaiting:"Awaiting approval",trkInProg:"In progress",stfEye:"Staff",stfH1:"My Tasks",stfPick:"Select your name to view your assigned tasks.",stfNoNames:"No team members yet.",stfChange:"Change name",stfMyTasks:"Your Task List",stfNoTasks:"No tasks assigned to you right now.",stfOpen:"Open",stfBackList:"Back to list",stfDone:"Mark as done",stfDoneYes:"Yes, done",stfConfirmTitle:"Confirm completion",stfConfirmMsg:"Have you finished this task? It will be sent to the manager for confirmation.",stfDoneToast:"Sent to manager for confirmation",stfPendBadge:"Pending confirmation",stfPendMsg:"Done — awaiting manager confirmation.",stfPendMsg2:"Pending confirmation",pendBadge:"Awaiting confirmation",confirmDone:"Confirm",returnTask:"Return",returnedToast:"returned to In Progress",savedToast:"Updated",mgrNotePh:"Reason / note for the technician (optional)",stOverdue:"Overdue",stOnHold:"On Hold",stNeedsReview:"Needs Review",stNeedsUpdate:"Needs Update",stComplete:"Completed",stCancelled:"Cancelled",stRejected:"Rejected",trkNoSearch:"No request found with that number."},
+  addImages:"Add photos (optional)",addImagesHint:"Attach photos to explain better — take a photo or pick from your gallery.",uploading:"Uploading…",photo:"photo",photos:"photos",viewImages:"Photos",reqPhone:"Mobile number",reqPhonePh:"e.g. 0500000000",waitUpload:"Please wait — photo uploading…",sending:"Sending…",shareReq:"Share request number",shareHint:"Share the image on WhatsApp or save it to your phone.",imgSaved:"Image saved",addFiles:"Add attachment (optional)",chooseEye:"Service Portal",chooseH1:"How can we help?",chooseP:"Choose what you would like to do.",chooseNew:"New request",chooseNewSub:"Submit a service request",chooseTrack:"Track a request",chooseTrackSub:"Check the status of requests",backChoose:"Back",addFilesHint:"Attach a PDF or Office document if needed (max 20 MB).",fileRejected:"The selected file type is not supported or exceeds the maximum allowed size (20 MB).",trkEye:"Track",trkH1:"Track Requests",trkP:"Enter your request number to check its status.",trkPending:"Awaiting approval",trkProg:"In progress",trkSearchPh:"0042",trkNone:"No active requests.",trkSearching:"Searching…",trkWaiting:"Awaiting approval",trkInProg:"In progress",stfEye:"Staff",stfH1:"My Tasks",stfPick:"Select your name to view your assigned tasks.",stfNoNames:"No team members yet.",stfChange:"Change name",stfMyTasks:"Your Task List",stfNoTasks:"No tasks assigned to you right now.",stfOpen:"Open",stfBackList:"Back to list",stfDone:"Mark as done",stfDoneYes:"Yes, done",stfConfirmTitle:"Confirm completion",stfConfirmMsg:"Have you finished this task? It will be sent to the manager for confirmation.",stfDoneToast:"Sent to manager for confirmation",stfPendBadge:"Pending confirmation",stfPendMsg:"Done — awaiting manager confirmation.",stfPendMsg2:"Pending confirmation",pendBadge:"Awaiting confirmation",confirmDone:"Confirm",returnTask:"Return",returnedToast:"returned to In Progress",savedToast:"Updated",mgrNotePh:"Reason / note for the technician (optional)",stOverdue:"Overdue",stOnHold:"On Hold",stNeedsReview:"Needs Review",stNeedsUpdate:"Needs Update",stComplete:"Completed",stCancelled:"Cancelled",stRejected:"Rejected",trkNoSearch:"No request found with that number."},
  ar:{co:"شركة المفاهيم المتقدمة للمقاولات المحدودة",sys:"طلبات خدمة التشغيل والصيانة",
   nav:{dashboard:"لوحة المعلومات",manage:"إدارة الطلبات",all:"جميع الطلبات",reports:"لوحة المعلومات والتقارير",staffdir:"دليل الموظفين",open:"المهام المفتوحة",archive:"الملغية / المحذوفة",settings:"الإعدادات"},
   navIc:{dashboard:"▦",manage:"📥",all:"📋",reports:"📊",staffdir:"👷",open:"⚙",archive:"🗂",settings:"⚙️"},
@@ -1289,7 +1275,7 @@ const T={
   acceptTitle:"قبول الطلب",editTitle:"تعديل المهمة",edit:"تعديل",reopen:"إعادة فتح",confirmReopenQ:"إعادة فتح هذه المهمة المكتملة؟",
   confirmCloseTitle:"إقفال هذه المهمة؟",confirmCloseMsg:"سيتم اعتماد المهمة كمكتملة، وتسجيل تاريخ اليوم تاريخًا للإقفال، وستخرج من قائمة المهام المفتوحة.",confirmCloseYes:"إقفال كمكتملة",
   durReq:"يلزم إدخال المدة لجدولة المهمة",
-  addImages:"إضافة صور (اختياري)",addImagesHint:"يمكنكم إرفاق صور للتوضيح، سواء بالتقاط صورة أو اختيارها من المعرض.",uploading:"جارٍ الرفع…",photo:"صورة",photos:"صور",viewImages:"الصور",reqPhone:"رقم الجوال",reqPhonePh:"مثال: 0500000000",waitUpload:"يُرجى الانتظار — جارٍ رفع الصورة…",sending:"جارٍ الإرسال…",shareReq:"مشاركة رقم الطلب",shareHint:"شارك الصورة على واتساب أو احفظها على جهازك.",imgSaved:"تم حفظ الصورة",addFiles:"إضافة ملف PDF (اختياري)",chooseEye:"بوابة الخدمات",chooseH1:"كيف يمكننا مساعدتك؟",chooseP:"اختر ما ترغب بالقيام به.",chooseNew:"طلب جديد",chooseNewSub:"تقديم طلب خدمة",chooseTrack:"تتبّع طلب",chooseTrackSub:"الاطلاع على حالة الطلبات",backChoose:"رجوع",addFilesHint:"يمكنك إرفاق ملف PDF عند الحاجة.",pdfOnly:"ملفات PDF فقط",fileTooBig:"الملف كبير جداً (الحد 10 ميجا)",trkEye:"تتبّع",trkH1:"تتبّع الطلبات",trkP:"أدخل رقم طلبك لمعرفة حالته.",trkPending:"بانتظار الموافقة",trkProg:"قيد التنفيذ",trkSearchPh:"0042",trkNone:"لا توجد طلبات جارية.",trkSearching:"جارٍ البحث…",trkWaiting:"بانتظار الموافقة",trkInProg:"قيد التنفيذ",stfEye:"الموظفون",stfH1:"مهامي",stfPick:"اختر اسمك لعرض المهام المسندة إليك.",stfNoNames:"لا يوجد أعضاء فريق بعد.",stfChange:"تغيير الاسم",stfMyTasks:"قائمة المهام الخاصة بك",stfNoTasks:"لا توجد مهام مسندة إليك حالياً.",stfOpen:"فتح",stfBackList:"العودة للقائمة",stfDone:"تم الإنجاز",stfDoneYes:"نعم، تم",stfConfirmTitle:"تأكيد الإنجاز",stfConfirmMsg:"هل أنجزت هذه المهمة؟ سيتم إرسالها إلى المسؤول للتأكيد.",stfDoneToast:"تم الإرسال إلى المسؤول للتأكيد",stfPendBadge:"بانتظار التأكيد",stfPendMsg:"تم الإنجاز — بانتظار تأكيد المسؤول.",stfPendMsg2:"بانتظار التأكيد",pendBadge:"بانتظار التأكيد",confirmDone:"تأكيد",returnTask:"إرجاع",returnedToast:"أُعيدت إلى قيد التنفيذ",savedToast:"تم التحديث",mgrNotePh:"سبب / ملاحظة للفني (اختياري)",stOverdue:"متأخرة",stOnHold:"معلّقة",stNeedsReview:"بحاجة مراجعة",stNeedsUpdate:"بحاجة تحديث",stComplete:"مكتمل",stCancelled:"ملغي",stRejected:"مرفوض",trkNoSearch:"لا يوجد طلب بهذا الرقم."}
+  addImages:"إضافة صور (اختياري)",addImagesHint:"يمكنكم إرفاق صور للتوضيح، سواء بالتقاط صورة أو اختيارها من المعرض.",uploading:"جارٍ الرفع…",photo:"صورة",photos:"صور",viewImages:"الصور",reqPhone:"رقم الجوال",reqPhonePh:"مثال: 0500000000",waitUpload:"يُرجى الانتظار — جارٍ رفع الصورة…",sending:"جارٍ الإرسال…",shareReq:"مشاركة رقم الطلب",shareHint:"شارك الصورة على واتساب أو احفظها على جهازك.",imgSaved:"تم حفظ الصورة",addFiles:"إضافة مرفق (اختياري)",chooseEye:"بوابة الخدمات",chooseH1:"كيف يمكننا مساعدتك؟",chooseP:"اختر ما ترغب بالقيام به.",chooseNew:"طلب جديد",chooseNewSub:"تقديم طلب خدمة",chooseTrack:"تتبّع طلب",chooseTrackSub:"الاطلاع على حالة الطلبات",backChoose:"رجوع",addFilesHint:"يمكنك إرفاق ملف PDF أو Office عند الحاجة (الحد 20 ميجا).",fileRejected:"نوع الملف غير مدعوم أو حجمه يتجاوز الحد المسموح (20 ميجا).",trkEye:"تتبّع",trkH1:"تتبّع الطلبات",trkP:"أدخل رقم طلبك لمعرفة حالته.",trkPending:"بانتظار الموافقة",trkProg:"قيد التنفيذ",trkSearchPh:"0042",trkNone:"لا توجد طلبات جارية.",trkSearching:"جارٍ البحث…",trkWaiting:"بانتظار الموافقة",trkInProg:"قيد التنفيذ",stfEye:"الموظفون",stfH1:"مهامي",stfPick:"اختر اسمك لعرض المهام المسندة إليك.",stfNoNames:"لا يوجد أعضاء فريق بعد.",stfChange:"تغيير الاسم",stfMyTasks:"قائمة المهام الخاصة بك",stfNoTasks:"لا توجد مهام مسندة إليك حالياً.",stfOpen:"فتح",stfBackList:"العودة للقائمة",stfDone:"تم الإنجاز",stfDoneYes:"نعم، تم",stfConfirmTitle:"تأكيد الإنجاز",stfConfirmMsg:"هل أنجزت هذه المهمة؟ سيتم إرسالها إلى المسؤول للتأكيد.",stfDoneToast:"تم الإرسال إلى المسؤول للتأكيد",stfPendBadge:"بانتظار التأكيد",stfPendMsg:"تم الإنجاز — بانتظار تأكيد المسؤول.",stfPendMsg2:"بانتظار التأكيد",pendBadge:"بانتظار التأكيد",confirmDone:"تأكيد",returnTask:"إرجاع",returnedToast:"أُعيدت إلى قيد التنفيذ",savedToast:"تم التحديث",mgrNotePh:"سبب / ملاحظة للفني (اختياري)",stOverdue:"متأخرة",stOnHold:"معلّقة",stNeedsReview:"بحاجة مراجعة",stNeedsUpdate:"بحاجة تحديث",stComplete:"مكتمل",stCancelled:"ملغي",stRejected:"مرفوض",trkNoSearch:"لا يوجد طلب بهذا الرقم."}
 };
 let L='en';
 function t(k){return T[L][k];}
@@ -1521,13 +1507,10 @@ async function checkAdminFlag(){
   return false;
 }
 async function tryAdmin(){
-  if(!USE_ADMIN_AUTH){
-    const v=document.getElementById('pin').value.trim();
-    if(v==='Ahmad1001'){setAdminFlag();state.role='admin';state.route='manage';if(!L)L='en';await saveLang();await load('admin');document.getElementById('gate').innerHTML='';document.getElementById('app').style.display='flex';applyDir();render();startRealtime();}
-    else{const p=document.getElementById('pin');p.value='';p.placeholder=(L==='ar'?'رمز غير صحيح':'Incorrect code');p.style.borderColor='var(--red)';}
-    return;
-  }
-  // A5: email + password via Supabase Auth
+  // The legacy PIN branch is gone: the password was a literal in this file, which
+  // every visitor can read. Admin sign-in is email+password via Supabase Auth,
+  // verified server-side by is_admin() — the browser cannot grant itself access.
+  // Admin sign-in: email + password via Supabase Auth
   const emEl=document.getElementById('admEmail'), pwEl=document.getElementById('admPw'), errEl=document.getElementById('admErr');
   const email=(emEl?emEl.value:'').trim(), pw=(pwEl?pwEl.value:'');
   if(!email||!pw){if(errEl)errEl.textContent=(L==='ar'?'أدخل البريد وكلمة المرور':'Enter email and password');return;}
@@ -1609,17 +1592,6 @@ function opts(arr,sel){return [`<option value="">${t('select')}</option>`].conca
 
 
 /* ===== RENDER SHELL ===== */
-function autoArchiveOld(){
-  // move tasks completed > 8 hours ago into the archive automatically
-  let changed=false;
-  state.requests.forEach(r=>{
-    if(r.status==='Complete' && !r.archived && r.confirmed_at!==undefined){
-      const ts=r.confirmedAt||r.confirmed_at;
-      if(ts && (Date.now()-new Date(ts).getTime())>8*60*60*1000){r.archived=true;changed=true;saveBg(r.id,r);}
-    }
-  });
-  return changed;
-}
 function render(){
   /* CRON: archive_stale_completed_tasks() runs every 10 min server-side; browser auto-archive disabled */
   const app=document.getElementById('app');
@@ -1699,6 +1671,9 @@ async function handleReqImages(input){
   if(!files.length)return;
   const wrap=document.getElementById('img-previews');
   for(const f of files){
+    // images had no size check at all — an oversized one used to fail with a raw
+    // server error after the upload had already started
+    if(!uploadAllowed(f)){toast(t('fileRejected'));continue;}
     const tmpId='t'+Math.random().toString(36).slice(2,8);
     if(wrap){const d=document.createElement('div');d.className='img-prev';d.id=tmpId;d.innerHTML='<span class="upl">'+t('uploading')+'</span>';wrap.appendChild(d);}
     uploadingCount++;setSubmitState();
@@ -1709,13 +1684,30 @@ async function handleReqImages(input){
   input.value='';
 }
 function removeReqImage(url){reqImages=reqImages.filter(x=>x.url!==url);const wrap=document.getElementById('img-previews');if(wrap){[...wrap.children].forEach(c=>{const img=c.querySelector('img');if(img&&img.src===url)c.remove();});}}
+// Storage bucket enforces these server-side (20MB, images+pdf+office only, and
+// deliberately NOT svg/html/js — an SVG executes script if opened directly).
+// We mirror the rules here so the user gets a clear message instead of a raw
+// server rejection; the bucket remains the real guard.
+const UPLOAD_MAX_BYTES=20*1024*1024;
+const UPLOAD_MIME_OK=['image/jpeg','image/png','image/webp','image/heic','image/heif',
+  'application/pdf','application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.ms-powerpoint',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation'];
+function uploadAllowed(f){
+  if(f.size>UPLOAD_MAX_BYTES)return false;
+  if(f.type&&UPLOAD_MIME_OK.indexOf(f.type)>=0)return true;
+  // some browsers report an empty type; fall back to the extension
+  return /\.(jpe?g|png|webp|heic|heif|pdf|docx?|xlsx?|pptx?)$/i.test(f.name);
+}
 async function handleReqFiles(input){
   const files=Array.from(input.files||[]);
   if(!files.length)return;
   const wrap=document.getElementById('file-previews');
   for(const f of files){
-    if(f.type!=='application/pdf' && !/\.pdf$/i.test(f.name)){toast(t('pdfOnly'));continue;}
-    if(f.size>10*1024*1024){toast(t('fileTooBig'));continue;}
+    if(!uploadAllowed(f)){toast(t('fileRejected'));continue;}
     const tmpId='f'+Math.random().toString(36).slice(2,8);
     if(wrap){const d=document.createElement('div');d.className='file-prev';d.id=tmpId;d.innerHTML='<span class="upl">'+t('uploading')+'</span>';wrap.appendChild(d);}
     uploadingCount++;setSubmitState();
@@ -1761,7 +1753,7 @@ function viewRequest(){
       <div class="field"><label>${t('priority')}</label><select id="f_pri">${opts(state.lists.priorities,'Medium')}</select></div>
       <div class="field"><label>${t('dateReq')}</label><input type="date" value="${today()}" readonly disabled style="background:var(--lgray);color:var(--grey)"/><span class="hint">${t('autoToday')}</span></div>
       <div class="field full"><label>${t('addImages')}</label><div class="img-upload"><label class="img-btn">📷 ${t('addImages')}<input type="file" accept="image/*" multiple style="display:none" onchange="handleReqImages(this)"/></label><span class="hint">${t('addImagesHint')}</span><div class="img-previews" id="img-previews"></div></div></div>
-      <div class="field full"><label>${t('addFiles')}</label><div class="img-upload"><label class="img-btn file-btn">📄 ${t('addFiles')}<input type="file" accept="application/pdf,.pdf" multiple style="display:none" onchange="handleReqFiles(this)"/></label><span class="hint">${t('addFilesHint')}</span><div class="file-previews" id="file-previews"></div></div></div>
+      <div class="field full"><label>${t('addFiles')}</label><div class="img-upload"><label class="img-btn file-btn">📄 ${t('addFiles')}<input type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation" multiple style="display:none" onchange="handleReqFiles(this)"/></label><span class="hint">${t('addFilesHint')}</span><div class="file-previews" id="file-previews"></div></div></div>
     </div><div class="btnrow" style="justify-content:center;margin-top:18px"><button class="btn btn-lg" id="submitBtn" onclick="submitReq()">${t('submit')} →</button></div>
   </div>`;
 }
@@ -1932,68 +1924,6 @@ function addInterval(date,n,unit){
   return d;
 }
 let _genRunning=false;
-async function runRecurringGenerator(skipRefresh){
-  if(_genRunning)return;            // prevent overlapping runs (race condition guard)
-  if(!state.recurring||!state.recurring.length)return;
-  _genRunning=true;
-  try{
-  // refresh latest tasks from the server FIRST so we never duplicate what another device already generated
-  if(!skipRefresh){try{const fresh=await sbFetchAll();if(fresh!==null)state.requests=fresh;}catch(e){}}
-  const now=Date.now();
-  const nowD=new Date();
-  // A recurring task is created with TODAY's date but the template's scheduled TIME-OF-DAY.
-  // We generate at most ONE task per due cycle (no retroactive pile-up), keyed by the cycle
-  // moment so re-running never duplicates, and a floor so deleted past tasks never come back.
-  const cycleKey=(ms)=>Math.round(ms/60000);
-  let anyGen=false;
-  for(const tpl of state.recurring){
-    if(!tpl.active||!tpl.startAt)continue;
-    const startMs=new Date(tpl.startAt).getTime();
-    if(startMs>now)continue;
-    // latest cycle whose scheduled moment has already arrived
-    let cur=new Date(tpl.startAt);let last=null;let guard=0;
-    while(cur.getTime()<=now&&guard<5000){last=new Date(cur.getTime());cur=addInterval(cur,tpl.everyN,tpl.everyUnit);guard++;}
-    if(!last)continue;
-    const cyc=cycleKey(last.getTime());
-    const floorCyc=tpl.lastRunAt?cycleKey(new Date(tpl.lastRunAt).getTime()):-Infinity;
-    if(cyc<=floorCyc)continue; // already handled this cycle (survives deletes)
-    // already a task for this cycle in the data?
-    const have=state.requests.map(calc).some(r=>String(r.recurringId)===String(tpl.id)&&r.cycleKey&&Number(r.cycleKey)===cyc);
-    if(have)continue;
-    // Friday skip applies to the DUE cycle's weekday
-    const saudiCyc=new Date(last.getTime()+3*3600000);
-    if(tpl.includeFriday===false&&saudiCyc.getUTCDay()===5){
-      // mark this cycle as handled so we don't keep re-checking it, then move on
-      try{await sbPatchRecurring(tpl.id,{last_run_at:last.toISOString()});}catch(e){}
-      tpl.lastRunAt=last.toISOString();continue;
-    }
-    // stamp = TODAY (Saudi) date + template's scheduled time-of-day
-    const hh=saudiCyc.getUTCHours(), mm=saudiCyc.getUTCMinutes();
-    const todaySaudi=new Date(nowD.getTime()+3*3600000);
-    const stampMs=Date.UTC(todaySaudi.getUTCFullYear(),todaySaudi.getUTCMonth(),todaySaudi.getUTCDate(),hh,mm,0)-3*3600000;
-    const stampIso=new Date(stampMs).toISOString();
-    // FINAL dup guard
-    const dup=state.requests.some(r=>String(r.recurringId)===String(tpl.id)&&r.cycleKey&&Number(r.cycleKey)===cyc);
-    if(dup)continue;
-    const task={
-      requestedBy:(L==='ar'?'\u0645\u0647\u0645\u0629 \u062f\u0648\u0631\u064a\u0629':'Recurring'),
-      phone:'',project:tpl.project||'',category:tpl.category||'',priority:tpl.priority||'Medium',
-      title:tpl.title,assignedTo:tpl.assignedTo||'',start:stampIso.slice(0,10),duration:'',
-      status:'In Progress',accepted:true,notes:tpl.notes||'',closed:'',archived:false,
-      images:'',files:'',pendingConfirm:false,confirmedAt:'',
-      receivedAt:stampIso,startedAt:stampIso,closeoutImages:'',rejectedAt:'',recurringId:tpl.id,cycleKey:cyc
-    };
-    let genCount=tpl.genCount||0;
-    try{const saved=await sbInsert(task);state.requests.push(saved);anyGen=true;genCount++;}catch(e){continue;}
-    tpl.lastRunAt=last.toISOString();tpl.genCount=genCount;
-    try{await sbPatchRecurring(tpl.id,{last_run_at:last.toISOString(),gen_count:genCount});}catch(e){}
-  }
-  if(anyGen){toast(t('genDone'));render();}
-  }finally{_genRunning=false;}
-}
-// ===== PERIOD TASKS UI =====
-// frequency presets: map (n,unit) <-> key
-const FREQ_MAP=[['hourly',1,'hour'],['daily',1,'day'],['weekly',1,'week'],['biweekly',2,'week'],['monthly',1,'month'],['bimonthly',2,'month'],['quarterly',3,'month'],['semiannual',6,'month'],['yearly',1,'year']];
 function freqKeyOf(n,unit){const m=FREQ_MAP.find(p=>p[1]===Number(n)&&p[2]===unit);return m?m[0]:'daily';}
 function freqFromKey(key){const m=FREQ_MAP.find(p=>p[0]===key);return m?{everyN:m[1],everyUnit:m[2]}:{everyN:1,everyUnit:'day'};}
 function unitLabel(n,unit){
