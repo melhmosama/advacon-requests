@@ -989,6 +989,26 @@ html[dir="rtl"] .wp{animation-name:wpInR}
 @media(prefers-reduced-motion:reduce){
   .wp,.wp-back{animation:none;transform:none;opacity:1}
 }
+
+/* ===== Work Evidence — Phase 3: ZIP export progress ===== */
+.wz-back{position:fixed;inset:0;background:rgba(10,16,22,.55);z-index:900;
+  display:flex;align-items:center;justify-content:center;padding:20px}
+.wz{background:var(--white);border:1px solid var(--grid);width:min(420px,100%);
+  box-shadow:0 20px 60px rgba(10,16,22,.35)}
+.wz-hd{padding:14px 18px;border-bottom:1px solid var(--grid);background:var(--lgray);
+  font-size:14px;font-weight:700;color:var(--navy)}
+.wz-bd{padding:18px}
+.wz-bar{height:7px;background:var(--lgray);border:1px solid var(--grid);overflow:hidden;margin-bottom:11px}
+.wz-fill{height:100%;background:var(--navy);width:0;transition:width .2s ease}
+.wz-fill.done{background:var(--green)}
+.wz-st{display:flex;justify-content:space-between;font-size:12px;color:var(--grey);margin-bottom:5px}
+.wz-st b{color:var(--navy);font-family:ui-monospace,Consolas,monospace}
+.wz-now{font-size:11px;color:var(--grey);overflow:hidden;text-overflow:ellipsis;
+  white-space:nowrap;direction:ltr;text-align:start;min-height:15px}
+.wz-err{font-size:11px;color:var(--red);font-weight:600;margin-top:6px}
+.wz-ft{padding:12px 18px;border-top:1px solid var(--grid);background:var(--lgray);
+  display:flex;gap:8px;justify-content:flex-end}
+@media(prefers-reduced-motion:reduce){.wz-fill{transition:none}}
 </style></head>
 <body class="notranslate"><div id="gate"></div><div class="app" id="app" style="display:none"></div><div class="toast" id="toast"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -1428,7 +1448,7 @@ const PAGE_SIZE=100;
 
 const T={
  en:{co:"ADVANCED CONCEPTS CONTRACTING CO. LTD.",sys:"O&M Service Requests",
-  weOpen:"⤢ Open",weFile1:"file",weFileN:"files",wpClose:"Close",wpOpenTask:"Open task",wpInfo:"Task information",wpTimeline:"Timeline",wpPrio:"Priority",wpBy:"Requested by",wpRec:"Received",wpSched:"Scheduled start",wpDone:"Completed",wpEvRec:"Request received",wpEvSched:"Work scheduled",wpEvStart:"Work started",wpEvSub:"Submitted for confirmation",wpEvDone:"Completed",wpEvClosed:"Closed",wpReason:"Reason",wpMgr:"Manager note",wpCloseNote:"Closeout note",weReqImg:"Requester photos",weReqDoc:"Requester documents",weTecImg:"Technician photos",weTecDoc:"Technician documents",weNoneG:"Nothing attached",wpNotFound:"That task is not in the current list",weTitle:"Work Evidence",weSub:"Proof of work, task by task",weGal:"Gallery",weTime:"Timeline",weTbl:"Table",weSoon:"SOON",weSoonT:"Coming in a later phase",weKTasks:"tasks with evidence",weKImgs:"photos",weKPair:"with before and after",weSearch:"Search",wePh:"Search a task number, title, project or technician…",weQT:"Today",weQ7:"7 days",weQ30:"30 days",weQA:"All",weAllP:"All projects",weMore:"More filters",weClear:"Clear",weFrom:"From",weTo:"To",weProj:"Project",weCat:"Category",weTech:"Technician",weStat:"Status",weSrc:"Source",weSReq:"Requester",weSTech:"Technician",weKind:"Attachment",weKImg:"Photos",weKFile:"Files",weAll:"All",weClaim:"COMPLAINT",weProof:"EVIDENCE",wePrev:"Preview unavailable",weDoc:"Document",weMoreF:"more",weFound:"tasks with evidence",weShow:"Showing",wePrevP:"‹ Previous",weNextP:"Next ›",weNoneT:"No evidence matches these filters",weNoneS:"Clear a filter or widen the dates.",nav:{dashboard:"Dashboard",manage:"Manage Requests",all:"All Requests",reports:"Dashboard & Reports",staffdir:"Staff Directory",open:"Open Tasks",archive:"Archived / Declined",media:"Work Evidence",settings:"Settings"},
+  weOpen:"⤢ Open",weFile1:"file",weFileN:"files",wpClose:"Close",wpOpenTask:"Open task",wpInfo:"Task information",wpTimeline:"Timeline",wpPrio:"Priority",wpBy:"Requested by",wpRec:"Received",wpSched:"Scheduled start",wpDone:"Completed",wpEvRec:"Request received",wpEvSched:"Work scheduled",wpEvStart:"Work started",wpEvSub:"Submitted for confirmation",wpEvDone:"Completed",wpEvClosed:"Closed",wpReason:"Reason",wpMgr:"Manager note",wpCloseNote:"Closeout note",weReqImg:"Requester photos",weReqDoc:"Requester documents",weTecImg:"Technician photos",weTecDoc:"Technician documents",weNoneG:"Nothing attached",wpNotFound:"That task is not in the current list",wzBtn:"Download ZIP",wzHint:"Exports every task matching the current filters",wzTitle:"Building the ZIP",wzTasks:"Tasks",wzFiles:"Files",wzFailed:"failed",wzCancel:"Cancel",wzCancelled:"Export cancelled",wzZipping:"Compressing…",wzDone:"files exported",wzErr:"The ZIP could not be created",wzNoLib:"The ZIP library did not load",wzFailHdr:"These files could not be downloaded. Everything else is in the package.",weTitle:"Work Evidence",weSub:"Proof of work, task by task",weGal:"Gallery",weTime:"Timeline",weTbl:"Table",weSoon:"SOON",weSoonT:"Coming in a later phase",weKTasks:"tasks with evidence",weKImgs:"photos",weKPair:"with before and after",weSearch:"Search",wePh:"Search a task number, title, project or technician…",weQT:"Today",weQ7:"7 days",weQ30:"30 days",weQA:"All",weAllP:"All projects",weMore:"More filters",weClear:"Clear",weFrom:"From",weTo:"To",weProj:"Project",weCat:"Category",weTech:"Technician",weStat:"Status",weSrc:"Source",weSReq:"Requester",weSTech:"Technician",weKind:"Attachment",weKImg:"Photos",weKFile:"Files",weAll:"All",weClaim:"COMPLAINT",weProof:"EVIDENCE",wePrev:"Preview unavailable",weDoc:"Document",weMoreF:"more",weFound:"tasks with evidence",weShow:"Showing",wePrevP:"‹ Previous",weNextP:"Next ›",weNoneT:"No evidence matches these filters",weNoneS:"Clear a filter or widen the dates.",nav:{dashboard:"Dashboard",manage:"Manage Requests",all:"All Requests",reports:"Dashboard & Reports",staffdir:"Staff Directory",open:"Open Tasks",archive:"Archived / Declined",media:"Work Evidence",settings:"Settings"},
   navIc:{dashboard:"▦",manage:"📥",all:"📋",reports:"📊",staffdir:"👷",open:"⚙",archive:"🗂",media:"◫",settings:"⚙️"},
   reqEye:"New request",reqH1:"Request a Service",reqP:"Fill in the details and submit — your request goes straight to the O&M team.",
   requestedBy:"Requested by",namePh:"Your name",projLoc:"Project / Location",svcType:"Service type",needs:"What do you need?",needsPh:"Describe the service you are requesting",
@@ -1458,7 +1478,7 @@ const T={
   durReq:"Duration is required to schedule the task",
   addImages:"Add photos (optional)",addImagesHint:"Attach photos to explain better — take a photo or pick from your gallery.",uploading:"Uploading…",photo:"photo",photos:"photos",viewImages:"Photos",reqPhone:"Mobile number",reqPhonePh:"e.g. 0500000000",waitUpload:"Please wait — photo uploading…",sending:"Sending…",shareReq:"Share request number",shareHint:"Share the image on WhatsApp or save it to your phone.",imgSaved:"Image saved",addFiles:"Add attachment (optional)",chooseEye:"Service Portal",chooseH1:"How can we help?",chooseP:"Choose what you would like to do.",chooseNew:"New request",chooseNewSub:"Submit a service request",chooseTrack:"Track a request",chooseTrackSub:"Check the status of requests",backChoose:"Back",addFilesHint:"Attach a PDF or Office document if needed (max 20 MB).",fileRejected:"The selected file type is not supported or exceeds the maximum allowed size (20 MB).",trkEye:"Track",trkH1:"Track Requests",trkP:"Enter your request number to check its status.",trkPending:"Awaiting approval",trkProg:"In progress",trkSearchPh:"0042",trkNone:"No active requests.",trkSearching:"Searching…",trkWaiting:"Awaiting approval",trkInProg:"In progress",stfEye:"Staff",stfH1:"My Tasks",stfPick:"Select your name to view your assigned tasks.",stfNoNames:"No team members yet.",stfChange:"Change name",stfMyTasks:"Your Task List",stfNoTasks:"No tasks assigned to you right now.",stfOpen:"Open",stfBackList:"Back to list",stfDone:"Mark as done",stfDoneYes:"Yes, done",stfConfirmTitle:"Confirm completion",stfConfirmMsg:"Have you finished this task? It will be sent to the manager for confirmation.",stfDoneToast:"Sent to manager for confirmation",stfPendBadge:"Pending confirmation",stfPendMsg:"Done — awaiting manager confirmation.",stfPendMsg2:"Pending confirmation",pendBadge:"Awaiting confirmation",confirmDone:"Confirm",returnTask:"Return",returnedToast:"returned to In Progress",savedToast:"Updated",mgrNotePh:"Reason / note for the technician (optional)",stOverdue:"Overdue",stOnHold:"On Hold",stNeedsReview:"Needs Review",stNeedsUpdate:"Needs Update",stComplete:"Completed",stCancelled:"Cancelled",stRejected:"Rejected",trkNoSearch:"No request found with that number."},
  ar:{co:"شركة المفاهيم المتقدمة للمقاولات المحدودة",sys:"طلبات خدمة التشغيل والصيانة",
-  weOpen:"⤢ افتح",weFile1:"ملف",weFileN:"ملفات",wpClose:"إغلاق",wpOpenTask:"افتح المهمة",wpInfo:"معلومات المهمة",wpTimeline:"الخط الزمني",wpPrio:"الأولوية",wpBy:"مقدّم الطلب",wpRec:"تاريخ الاستلام",wpSched:"موعد البدء",wpDone:"تاريخ الإنجاز",wpEvRec:"وصل الطلب",wpEvSched:"جُدول العمل",wpEvStart:"بدأ العمل",wpEvSub:"أُرسل للتأكيد",wpEvDone:"اكتمل",wpEvClosed:"أُغلق",wpReason:"السبب",wpMgr:"ملاحظة المدير",wpCloseNote:"ملاحظة الإغلاق",weReqImg:"صور مقدّم الطلب",weReqDoc:"ملفات مقدّم الطلب",weTecImg:"صور الفني",weTecDoc:"ملفات الفني",weNoneG:"ما في مرفقات",wpNotFound:"المهمة مش موجودة بالقائمة الحالية",weTitle:"سجلّ الإثبات",weSub:"إثبات الإنجاز، مهمة بمهمة",weGal:"معرض",weTime:"زمني",weTbl:"جدول",weSoon:"قريباً",weSoonT:"بمرحلة لاحقة",weKTasks:"مهمة فيها إثبات",weKImgs:"صورة",weKPair:"فيها قبل وبعد",weSearch:"بحث",wePh:"ابحث برقم المهمة أو العنوان أو المشروع أو الفني…",weQT:"اليوم",weQ7:"٧ أيام",weQ30:"٣٠ يوم",weQA:"الكل",weAllP:"كل المشاريع",weMore:"فلاتر أكثر",weClear:"مسح",weFrom:"من",weTo:"إلى",weProj:"المشروع",weCat:"التصنيف",weTech:"الفني",weStat:"الحالة",weSrc:"المصدر",weSReq:"مقدّم الطلب",weSTech:"الفني",weKind:"نوع المرفق",weKImg:"صور",weKFile:"ملفات",weAll:"الكل",weClaim:"شكوى",weProof:"إثبات",wePrev:"تعذّر عرض الصورة",weDoc:"مستند",weMoreF:"غيره",weFound:"مهمة فيها إثبات",weShow:"يعرض",wePrevP:"‹ السابق",weNextP:"التالي ›",weNoneT:"ما في إثباتات تطابق هذه الفلاتر",weNoneS:"امسح فلتر أو وسّع التواريخ.",nav:{dashboard:"لوحة المعلومات",manage:"إدارة الطلبات",all:"جميع الطلبات",reports:"لوحة المعلومات والتقارير",staffdir:"دليل الموظفين",open:"المهام المفتوحة",archive:"الملغية / المحذوفة",media:"سجلّ الإثبات",settings:"الإعدادات"},
+  weOpen:"⤢ افتح",weFile1:"ملف",weFileN:"ملفات",wpClose:"إغلاق",wpOpenTask:"افتح المهمة",wpInfo:"معلومات المهمة",wpTimeline:"الخط الزمني",wpPrio:"الأولوية",wpBy:"مقدّم الطلب",wpRec:"تاريخ الاستلام",wpSched:"موعد البدء",wpDone:"تاريخ الإنجاز",wpEvRec:"وصل الطلب",wpEvSched:"جُدول العمل",wpEvStart:"بدأ العمل",wpEvSub:"أُرسل للتأكيد",wpEvDone:"اكتمل",wpEvClosed:"أُغلق",wpReason:"السبب",wpMgr:"ملاحظة المدير",wpCloseNote:"ملاحظة الإغلاق",weReqImg:"صور مقدّم الطلب",weReqDoc:"ملفات مقدّم الطلب",weTecImg:"صور الفني",weTecDoc:"ملفات الفني",weNoneG:"ما في مرفقات",wpNotFound:"المهمة مش موجودة بالقائمة الحالية",wzBtn:"تحميل ZIP",wzHint:"بيصدّر كل المهام المطابقة للفلاتر الحالية",wzTitle:"جاري تجهيز الحزمة",wzTasks:"المهام",wzFiles:"الملفات",wzFailed:"فشلت",wzCancel:"إلغاء",wzCancelled:"تم إلغاء التصدير",wzZipping:"جاري الضغط…",wzDone:"ملف تم تصديره",wzErr:"تعذّر إنشاء الحزمة",wzNoLib:"مكتبة الضغط ما حمّلت",wzFailHdr:"هذه الملفات تعذّر تحميلها. الباقي كامل داخل الحزمة.",weTitle:"سجلّ الإثبات",weSub:"إثبات الإنجاز، مهمة بمهمة",weGal:"معرض",weTime:"زمني",weTbl:"جدول",weSoon:"قريباً",weSoonT:"بمرحلة لاحقة",weKTasks:"مهمة فيها إثبات",weKImgs:"صورة",weKPair:"فيها قبل وبعد",weSearch:"بحث",wePh:"ابحث برقم المهمة أو العنوان أو المشروع أو الفني…",weQT:"اليوم",weQ7:"٧ أيام",weQ30:"٣٠ يوم",weQA:"الكل",weAllP:"كل المشاريع",weMore:"فلاتر أكثر",weClear:"مسح",weFrom:"من",weTo:"إلى",weProj:"المشروع",weCat:"التصنيف",weTech:"الفني",weStat:"الحالة",weSrc:"المصدر",weSReq:"مقدّم الطلب",weSTech:"الفني",weKind:"نوع المرفق",weKImg:"صور",weKFile:"ملفات",weAll:"الكل",weClaim:"شكوى",weProof:"إثبات",wePrev:"تعذّر عرض الصورة",weDoc:"مستند",weMoreF:"غيره",weFound:"مهمة فيها إثبات",weShow:"يعرض",wePrevP:"‹ السابق",weNextP:"التالي ›",weNoneT:"ما في إثباتات تطابق هذه الفلاتر",weNoneS:"امسح فلتر أو وسّع التواريخ.",nav:{dashboard:"لوحة المعلومات",manage:"إدارة الطلبات",all:"جميع الطلبات",reports:"لوحة المعلومات والتقارير",staffdir:"دليل الموظفين",open:"المهام المفتوحة",archive:"الملغية / المحذوفة",media:"سجلّ الإثبات",settings:"الإعدادات"},
   navIc:{dashboard:"▦",manage:"📥",all:"📋",reports:"📊",staffdir:"👷",open:"⚙",archive:"🗂",media:"◫",settings:"⚙️"},
   reqEye:"طلب جديد",reqH1:"طلب خدمة",reqP:"يُرجى تعبئة التفاصيل وإرسال الطلب؛ ليصل مباشرةً إلى قسم التشغيل والصيانة.",
   requestedBy:"مقدّم الطلب",namePh:"الاسم",projLoc:"المشروع / الموقع",svcType:"نوع الخدمة",needs:"تفاصيل الطلب",needsPh:"يُرجى وصف الخدمة المطلوبة بوضوح",
@@ -2063,6 +2083,8 @@ function viewMedia(){
     <div class="we-more">
       <button class="btn sm sec" onclick="weeAdv()">${weAdv?'▲':'▼'} ${t('weMore')}</button>
       <button class="btn sm sec" onclick="weeClear()">${t('weClear')}</button>
+      <button class="btn sm" onclick="weZip()" ${wzBusy||!all.length?'disabled':''}
+        title="${t('wzHint')}">⬇ ${t('wzBtn')}</button>
     </div>
   </div>
   ${weAdv?`<div class="we-adv">
@@ -2104,6 +2126,201 @@ function weePick(id){
   render();
   openEvidencePanel(id);
 }
+/* ===== WORK EVIDENCE — Phase 3: filtered ZIP export =====
+   Exports the CURRENT FILTERED result set (weRows()), not the visible page and
+   not the whole archive. No RPC, no table read, no Storage change: it fetches
+   only the attachment URLs already present in state.requests.
+
+   JSZip 3.10.1 is already loaded from cdnjs in <head> — no new library.
+
+   Concurrency is capped so a 300-file export does not fire 300 requests at once
+   and does not freeze the tab. A failed file never aborts the package; it is
+   recorded in failed-downloads.txt instead. */
+const WZ_CONC=4;                 // parallel downloads — enough to be quick, small enough to be polite
+let wzBusy=false;
+let wzCancel=false;
+
+function wzSafe(name){
+  // strip what Windows and macOS reject, keep Arabic and the rest of Unicode
+  let s=String(name||'').replace(/[<>:"/\\|?*\x00-\x1F]/g,'_').replace(/\s+/g,' ').trim();
+  s=s.replace(/^\.+/,'').replace(/\.+$/,'');
+  if(!s)s='file';
+  if(s.length>90){                       // keep the extension when truncating
+    const d=s.lastIndexOf('.');
+    const ext=(d>0&&s.length-d<=8)?s.slice(d):'';
+    s=s.slice(0,90-ext.length)+ext;
+  }
+  return s;
+}
+function wzExt(u){
+  const m=String(u||'').split('?')[0].match(/\.([A-Za-z0-9]{1,5})$/);
+  return m?('.'+m[1].toLowerCase()):'';
+}
+/* a name already used in this folder becomes name_2, name_3 … */
+function wzUniq(used,folder,name){
+  const key=folder+'/'+name.toLowerCase();
+  if(!used[key]){used[key]=1;return name;}
+  const d=name.lastIndexOf('.');
+  const base=d>0?name.slice(0,d):name;
+  const ext=d>0?name.slice(d):'';
+  let n=used[key]+1;
+  while(used[folder+'/'+(base+'_'+n+ext).toLowerCase()])n++;
+  used[key]=n;
+  const out=base+'_'+n+ext;
+  used[folder+'/'+out.toLowerCase()]=1;
+  return out;
+}
+function wzCsvCell(v){
+  // Titles and names come from the public request form. Excel treats a leading
+  // = + - @ as a formula, so neutralise it with a leading apostrophe first.
+  let s=String(v==null?'':v);
+  if(/^[=+\-@\t\r]/.test(s.replace(/^[\s\u00A0]+/,'')))s="'"+s;
+  return '"'+s.replace(/"/g,'""')+'"';
+}
+
+function wzProgress(done,total,files,fails,now,finished){
+  const el=document.getElementById('wz_box');
+  if(!el)return;
+  const pct=total?Math.round(done/total*100):0;
+  const fill=el.querySelector('.wz-fill');
+  if(fill){fill.style.width=pct+'%';if(finished)fill.classList.add('done');}
+  const s=el.querySelector('.wz-st');
+  if(s)s.innerHTML='<span>'+t('wzTasks')+' <b>'+done+' / '+total+'</b></span>'+
+    '<span>'+t('wzFiles')+' <b>'+files+'</b></span>';
+  const n=el.querySelector('.wz-now');
+  if(n)n.textContent=now||'';
+  const e=el.querySelector('.wz-err');
+  if(e)e.textContent=fails?(fails+' '+t('wzFailed')):'';
+}
+function wzClose(){
+  const b=document.getElementById('wz_back');
+  if(b)b.remove();
+}
+function wzStop(){ wzCancel=true; }
+
+/* fetch one url -> blob; never throws, so one bad file cannot kill the package */
+function wzGet(url){
+  return fetch(url,{cache:'no-store'})
+    .then(function(r){ if(!r.ok)throw new Error('HTTP '+r.status); return r.blob(); })
+    .then(function(b){ return {ok:true,blob:b}; })
+    .catch(function(e){ return {ok:false,err:(e&&e.message)||'failed'}; });
+}
+/* run jobs with a fixed number of workers instead of Promise.all on everything */
+function wzPool(jobs,limit,onEach){
+  let i=0;
+  const worker=function(){
+    if(wzCancel||i>=jobs.length)return Promise.resolve();
+    const job=jobs[i++];
+    return wzGet(job.url).then(function(res){
+      onEach(job,res);
+      return worker();
+    });
+  };
+  const n=Math.min(limit,jobs.length);
+  const runners=[];
+  for(let k=0;k<n;k++)runners.push(worker());
+  return Promise.all(runners);
+}
+
+async function weZip(){
+  if(wzBusy)return;
+  const rows=weRows();                       // the CURRENT filtered set, all pages
+  if(!rows.length){ toast(t('weNoneT')); return; }
+  if(typeof JSZip==='undefined'){ toast(t('wzNoLib')); return; }
+
+  wzBusy=true; wzCancel=false;
+  render();
+
+  const back=document.createElement('div');
+  back.id='wz_back'; back.className='wz-back';
+  back.innerHTML='<div class="wz" id="wz_box" role="dialog" aria-modal="true">'+
+    '<div class="wz-hd">'+t('wzTitle')+'</div>'+
+    '<div class="wz-bd"><div class="wz-bar"><div class="wz-fill"></div></div>'+
+    '<div class="wz-st"></div><div class="wz-now"></div><div class="wz-err"></div></div>'+
+    '<div class="wz-ft"><button class="btn sm sec" onclick="wzStop()">'+t('wzCancel')+'</button></div>'+
+    '</div>';
+  document.body.appendChild(back);
+
+  const zip=new JSZip();
+  const root='Work-Evidence_'+weDay(0);
+  const folder=zip.folder(root);
+  const used={};
+  const failed=[];
+  let filesOk=0, taskN=0;
+
+  // index.csv — built from the same rows, so it always matches the folders
+  const csv=[['Task ID','Title','Project','Category','Status','Requester','Technician',
+    'Received Date','Completion Date','Complaint Images','Evidence Images','Files']
+    .map(wzCsvCell).join(',')];
+
+  for(const r of rows){
+    if(wzCancel)break;
+    const a=weAtt(r);
+    const tid=fmtID(r.id);
+    const tf=folder.folder(tid);
+
+    csv.push([tid, r.title||'', r.project||'', r.category||'', r.effStatus||'',
+      r.requestedBy||'', r.assignedTo||'', (r.received||'').slice(0,10), r.closed||'',
+      a.ci.length, a.pi.length, a.cd.length+a.pd.length].map(wzCsvCell).join(','));
+
+    // requester = Complaint, technician = Evidence — the page's own vocabulary
+    const jobs=[];
+    a.ci.forEach((u,i)=>jobs.push({url:u, dir:tid+'/Complaint/Images',
+      name:wzUniq(used,tid+'/Complaint/Images','Complaint_Image_'+String(i+1).padStart(2,'0')+(wzExt(u)||'.jpg'))}));
+    a.pi.forEach((u,i)=>jobs.push({url:u, dir:tid+'/Evidence/Images',
+      name:wzUniq(used,tid+'/Evidence/Images','Evidence_Image_'+String(i+1).padStart(2,'0')+(wzExt(u)||'.jpg'))}));
+    a.cd.forEach((f,i)=>jobs.push({url:f.url, dir:tid+'/Complaint/Files',
+      name:wzUniq(used,tid+'/Complaint/Files', f.name?wzSafe(f.name)
+        :('Complaint_File_'+String(i+1).padStart(2,'0')+wzExt(f.url)))}));
+    a.pd.forEach((f,i)=>jobs.push({url:f.url, dir:tid+'/Evidence/Files',
+      name:wzUniq(used,tid+'/Evidence/Files', f.name?wzSafe(f.name)
+        :('Evidence_File_'+String(i+1).padStart(2,'0')+wzExt(f.url)))}));
+
+    await wzPool(jobs, WZ_CONC, function(job,res){
+      if(res.ok){ zip.file(root+'/'+job.dir+'/'+job.name, res.blob); filesOk++; }
+      else { failed.push(tid+'  '+job.dir+'/'+job.name+'  —  '+res.err+'  —  '+job.url); }
+      wzProgress(taskN, rows.length, filesOk, failed.length, job.name);
+    });
+
+    taskN++;
+    wzProgress(taskN, rows.length, filesOk, failed.length, tid);
+    await new Promise(r2=>setTimeout(r2,0));   // yield so the UI stays alive
+  }
+
+  if(wzCancel){ wzClose(); wzBusy=false; render(); toast(t('wzCancelled')); return; }
+
+  folder.file('index.csv','\ufeff'+csv.join('\r\n'));
+  if(failed.length){
+    folder.file('failed-downloads.txt',
+      t('wzFailHdr')+'\r\n\r\n'+failed.join('\r\n')+'\r\n');
+  }
+
+  // Compression cannot be cancelled — retire the control rather than leave a
+  // button that does nothing.
+  const ft=document.querySelector('#wz_box .wz-ft');
+  if(ft)ft.innerHTML='<span class="wz-now">'+t('wzZipping')+'</span>';
+  wzProgress(rows.length, rows.length, filesOk, failed.length, t('wzZipping'));
+  try{
+    const blob=await zip.generateAsync({type:'blob',compression:'DEFLATE',
+      compressionOptions:{level:6}}, function(m){
+        const el=document.getElementById('wz_box');
+        if(el){const n=el.querySelector('.wz-now');if(n)n.textContent=t('wzZipping')+' '+Math.round(m.percent)+'%';}
+      });
+    const a2=document.createElement('a');
+    a2.href=URL.createObjectURL(blob);
+    a2.download=root+'.zip';
+    a2.click();
+    setTimeout(function(){URL.revokeObjectURL(a2.href);},4000);
+    wzProgress(rows.length, rows.length, filesOk, failed.length, '', true);
+    toast(filesOk+' '+t('wzDone')+(failed.length?(' · '+failed.length+' '+t('wzFailed')):''));
+  }catch(e){
+    toast(t('wzErr'));
+  }
+  setTimeout(wzClose,700);
+  wzBusy=false;
+  render();
+}
+
 /* ===== WORK EVIDENCE — Phase 2: the details panel =====
    Slides in over the gallery, which stays visible behind it. No refetch: the
    task comes from state.requests, already loaded by admin_get_requests().
