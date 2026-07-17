@@ -798,32 +798,26 @@ tr.pendrow{background:rgba(251,239,214,.32)}
 .we-kpi span{font-size:11px;color:var(--grey);font-weight:600;display:block;margin-top:2px}
 
 .we-ctl{background:var(--white);border:1px solid var(--grid);box-shadow:var(--shadow);
-  padding:10px 12px;display:flex;gap:9px;align-items:center;flex-wrap:wrap}
-.we-srch{flex:1 1 220px;min-width:180px;padding:8px 11px;border:1px solid var(--grid);
+  padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+.we-row1{display:flex}
+.we-srch{flex:1;width:100%;height:36px;padding:0 12px;border:1px solid var(--grid);
   font-size:13px;font-family:inherit;color:var(--txt);background:var(--white)}
 .we-srch:focus{outline:2px solid var(--accent);outline-offset:-1px}
-.we-quick{display:flex;gap:5px}
-.we-chip{padding:6px 11px;border:1px solid var(--grid);background:var(--white);color:var(--steel);
-  font-size:12px;font-family:inherit;cursor:pointer;font-weight:600;white-space:nowrap}
-.we-chip:hover{border-color:var(--accent);color:var(--med)}
-.we-chip.on{background:var(--navy);border-color:var(--navy);color:var(--white)}
-.we-chip:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
-.we-sel{padding:7px 9px;border:1px solid var(--grid);background:var(--white);color:var(--txt);
-  font-size:12px;font-family:inherit;min-width:120px}
+/* one flat row: every control visible, nothing hidden behind a toggle */
+.we-row2{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.we-fld{display:flex;flex-direction:column;gap:3px;flex:1 1 132px;min-width:118px}
+.we-fld label{font-size:10px;color:var(--grey);font-weight:700;letter-spacing:.02em}
+.we-sel{height:34px;padding:0 8px;border:1px solid var(--grid);background:var(--white);
+  color:var(--txt);font-size:12px;font-family:inherit;width:100%}
 .we-sel:focus{outline:2px solid var(--accent);outline-offset:-1px}
-.we-more{margin-inline-start:auto;display:flex;gap:7px}
-
-.we-adv{background:var(--white);border:1px solid var(--grid);border-top:0;box-shadow:var(--shadow);
-  padding:11px 12px;display:flex;gap:9px;flex-wrap:wrap;align-items:flex-end}
-.we-f{display:flex;flex-direction:column;gap:3px}
-.we-f label{font-size:10px;color:var(--grey);font-weight:700}
-.we-f input,.we-f select{padding:6px 8px;border:1px solid var(--grid);background:var(--white);
-  color:var(--txt);font-size:12px;font-family:inherit;min-width:110px}
-.we-f input:focus,.we-f select:focus{outline:2px solid var(--accent);outline-offset:-1px}
-
-.we-meta{display:flex;justify-content:space-between;align-items:center;margin:14px 0 8px;
-  font-size:12px;color:var(--grey)}
-.we-meta b{color:var(--navy);font-family:ui-monospace,Consolas,monospace}
+.we-dt{height:34px;padding:0 8px;border:1px solid var(--grid);background:var(--white);
+  color:var(--txt);font-size:12px;font-family:inherit;width:100%}
+.we-dt:focus{outline:2px solid var(--accent);outline-offset:-1px}
+.we-acts{display:flex;gap:8px;align-items:flex-end;flex:0 0 auto;padding-bottom:0}
+.we-acts .btn{height:34px;white-space:nowrap}
+.we-meta{display:flex;justify-content:space-between;align-items:center;margin:12px 0 8px;
+  font-size:12px;color:var(--grey);flex-wrap:wrap;gap:6px}
+.we-meta b{color:var(--navy);font-family:ui-monospace,Consolas,monospace;font-size:14px}
 
 /* the stage — the only dark surface on the page */
 .we-stage{background:#1F2937;padding:22px;border:1px solid #16202B}
@@ -895,11 +889,15 @@ tr.pendrow{background:rgba(251,239,214,.32)}
 .we-empty p{font-size:13px;margin:0;color:#6E8299}
 
 @media(max-width:1024px){.we-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:860px){
+  .we-fld{flex:1 1 46%;min-width:0}
+  .we-acts{flex:1 1 100%}
+  .we-acts .btn{flex:1}
+}
 @media(max-width:600px){
   .we-grid{grid-template-columns:1fr}
   .we-stage{padding:12px}
-  .we-more{margin-inline-start:0;width:100%}
-  .we-quick{width:100%;overflow-x:auto}
+  .we-fld{flex:1 1 100%}
   .we-kpi b{font-size:20px}
 }
 @media(prefers-reduced-motion:reduce){.we-tile{transition:none}.we-tile:hover{transform:none}}
@@ -1448,7 +1446,7 @@ const PAGE_SIZE=100;
 
 const T={
  en:{co:"ADVANCED CONCEPTS CONTRACTING CO. LTD.",sys:"O&M Service Requests",
-  weOpen:"⤢ Open",weFile1:"file",weFileN:"files",wpClose:"Close",wpOpenTask:"Open task",wpInfo:"Task information",wpTimeline:"Timeline",wpPrio:"Priority",wpBy:"Requested by",wpRec:"Received",wpSched:"Scheduled start",wpDone:"Completed",wpEvRec:"Request received",wpEvSched:"Work scheduled",wpEvStart:"Work started",wpEvSub:"Submitted for confirmation",wpEvDone:"Completed",wpEvClosed:"Closed",wpReason:"Reason",wpMgr:"Manager note",wpCloseNote:"Closeout note",weReqImg:"Requester photos",weReqDoc:"Requester documents",weTecImg:"Technician photos",weTecDoc:"Technician documents",weNoneG:"Nothing attached",wpNotFound:"That task is not in the current list",wzBtn:"Download ZIP",wzHint:"Exports every task matching the current filters",wzTitle:"Building the ZIP",wzTasks:"Tasks",wzFiles:"Files",wzFailed:"failed",wzCancel:"Cancel",wzCancelled:"Export cancelled",wzZipping:"Compressing…",wzDone:"files exported",wzErr:"The ZIP could not be created",wzNoLib:"The ZIP library did not load",wzFailHdr:"These files could not be downloaded. Everything else is in the package.",weTitle:"Work Evidence",weSub:"Proof of work, task by task",weGal:"Gallery",weTime:"Timeline",weTbl:"Table",weSoon:"SOON",weSoonT:"Coming in a later phase",weKTasks:"tasks with evidence",weKImgs:"photos",weKPair:"with before and after",weSearch:"Search",wePh:"Search a task number, title, project or technician…",weQT:"Today",weQ7:"7 days",weQ30:"30 days",weQA:"All",weAllP:"All projects",weMore:"More filters",weClear:"Clear",weFrom:"From",weTo:"To",weProj:"Project",weCat:"Category",weTech:"Technician",weStat:"Status",weSrc:"Source",weSReq:"Requester",weSTech:"Technician",weKind:"Attachment",weKImg:"Photos",weKFile:"Files",weAll:"All",weClaim:"COMPLAINT",weProof:"EVIDENCE",wePrev:"Preview unavailable",weDoc:"Document",weMoreF:"more",weFound:"tasks with evidence",weShow:"Showing",wePrevP:"‹ Previous",weNextP:"Next ›",weNoneT:"No evidence matches these filters",weNoneS:"Clear a filter or widen the dates.",nav:{dashboard:"Dashboard",manage:"Manage Requests",all:"All Requests",reports:"Dashboard & Reports",staffdir:"Staff Directory",open:"Open Tasks",archive:"Archived / Declined",media:"Work Evidence",settings:"Settings"},
+  weOpen:"⤢ Open",weFile1:"file",weFileN:"files",wpClose:"Close",wpOpenTask:"Open task",wpInfo:"Task information",wpTimeline:"Timeline",wpPrio:"Priority",wpBy:"Requested by",wpRec:"Received",wpSched:"Scheduled start",wpDone:"Completed",wpEvRec:"Request received",wpEvSched:"Work scheduled",wpEvStart:"Work started",wpEvSub:"Submitted for confirmation",wpEvDone:"Completed",wpEvClosed:"Closed",wpReason:"Reason",wpMgr:"Manager note",wpCloseNote:"Closeout note",weReqImg:"Requester photos",weReqDoc:"Requester documents",weTecImg:"Technician photos",weTecDoc:"Technician documents",weNoneG:"Nothing attached",wpNotFound:"That task is not in the current list",wzBtn:"Download ZIP",wzHint:"Exports every task matching the current filters",wzTitle:"Building the ZIP",wzTasks:"Tasks",wzFiles:"Files",wzFailed:"failed",wzCancel:"Cancel",wzCancelled:"Export cancelled",wzZipping:"Compressing…",wzDone:"files exported",wzErr:"The ZIP could not be created",wzNoLib:"The ZIP library did not load",wzFailHdr:"These files could not be downloaded. Everything else is in the package.",weAllC:"All categories",weAllT:"All technicians",weAllS:"All statuses",weReset:"Reset filters",weResults:"results",weTitle:"Work Evidence",weSub:"Proof of work, task by task",weGal:"Gallery",weTime:"Timeline",weTbl:"Table",weSoon:"SOON",weSoonT:"Coming in a later phase",weKTasks:"tasks with evidence",weKImgs:"photos",weKPair:"with before and after",weSearch:"Search",wePh:"Search by ID, title, requester or technician...",weQT:"Today",weQ7:"7 days",weQ30:"30 days",weQA:"All",weAllP:"All projects",weMore:"More filters",weClear:"Clear",weFrom:"From",weTo:"To",weProj:"Project",weCat:"Category",weTech:"Technician",weStat:"Status",weSrc:"Source",weSReq:"Requester",weSTech:"Technician",weKind:"Attachment",weKImg:"Photos",weKFile:"Files",weAll:"All",weClaim:"COMPLAINT",weProof:"EVIDENCE",wePrev:"Preview unavailable",weDoc:"Document",weMoreF:"more",weFound:"tasks with evidence",weShow:"Showing",wePrevP:"‹ Previous",weNextP:"Next ›",weNoneT:"No evidence matches these filters",weNoneS:"Clear a filter or widen the dates.",nav:{dashboard:"Dashboard",manage:"Manage Requests",all:"All Requests",reports:"Dashboard & Reports",staffdir:"Staff Directory",open:"Open Tasks",archive:"Archived / Declined",media:"Work Evidence",settings:"Settings"},
   navIc:{dashboard:"▦",manage:"📥",all:"📋",reports:"📊",staffdir:"👷",open:"⚙",archive:"🗂",media:"◫",settings:"⚙️"},
   reqEye:"New request",reqH1:"Request a Service",reqP:"Fill in the details and submit — your request goes straight to the O&M team.",
   requestedBy:"Requested by",namePh:"Your name",projLoc:"Project / Location",svcType:"Service type",needs:"What do you need?",needsPh:"Describe the service you are requesting",
@@ -1478,7 +1476,7 @@ const T={
   durReq:"Duration is required to schedule the task",
   addImages:"Add photos (optional)",addImagesHint:"Attach photos to explain better — take a photo or pick from your gallery.",uploading:"Uploading…",photo:"photo",photos:"photos",viewImages:"Photos",reqPhone:"Mobile number",reqPhonePh:"e.g. 0500000000",waitUpload:"Please wait — photo uploading…",sending:"Sending…",shareReq:"Share request number",shareHint:"Share the image on WhatsApp or save it to your phone.",imgSaved:"Image saved",addFiles:"Add attachment (optional)",chooseEye:"Service Portal",chooseH1:"How can we help?",chooseP:"Choose what you would like to do.",chooseNew:"New request",chooseNewSub:"Submit a service request",chooseTrack:"Track a request",chooseTrackSub:"Check the status of requests",backChoose:"Back",addFilesHint:"Attach a PDF or Office document if needed (max 20 MB).",fileRejected:"The selected file type is not supported or exceeds the maximum allowed size (20 MB).",trkEye:"Track",trkH1:"Track Requests",trkP:"Enter your request number to check its status.",trkPending:"Awaiting approval",trkProg:"In progress",trkSearchPh:"0042",trkNone:"No active requests.",trkSearching:"Searching…",trkWaiting:"Awaiting approval",trkInProg:"In progress",stfEye:"Staff",stfH1:"My Tasks",stfPick:"Select your name to view your assigned tasks.",stfNoNames:"No team members yet.",stfChange:"Change name",stfMyTasks:"Your Task List",stfNoTasks:"No tasks assigned to you right now.",stfOpen:"Open",stfBackList:"Back to list",stfDone:"Mark as done",stfDoneYes:"Yes, done",stfConfirmTitle:"Confirm completion",stfConfirmMsg:"Have you finished this task? It will be sent to the manager for confirmation.",stfDoneToast:"Sent to manager for confirmation",stfPendBadge:"Pending confirmation",stfPendMsg:"Done — awaiting manager confirmation.",stfPendMsg2:"Pending confirmation",pendBadge:"Awaiting confirmation",confirmDone:"Confirm",returnTask:"Return",returnedToast:"returned to In Progress",savedToast:"Updated",mgrNotePh:"Reason / note for the technician (optional)",stOverdue:"Overdue",stOnHold:"On Hold",stNeedsReview:"Needs Review",stNeedsUpdate:"Needs Update",stComplete:"Completed",stCancelled:"Cancelled",stRejected:"Rejected",trkNoSearch:"No request found with that number."},
  ar:{co:"شركة المفاهيم المتقدمة للمقاولات المحدودة",sys:"طلبات خدمة التشغيل والصيانة",
-  weOpen:"⤢ افتح",weFile1:"ملف",weFileN:"ملفات",wpClose:"إغلاق",wpOpenTask:"افتح المهمة",wpInfo:"معلومات المهمة",wpTimeline:"الخط الزمني",wpPrio:"الأولوية",wpBy:"مقدّم الطلب",wpRec:"تاريخ الاستلام",wpSched:"موعد البدء",wpDone:"تاريخ الإنجاز",wpEvRec:"وصل الطلب",wpEvSched:"جُدول العمل",wpEvStart:"بدأ العمل",wpEvSub:"أُرسل للتأكيد",wpEvDone:"اكتمل",wpEvClosed:"أُغلق",wpReason:"السبب",wpMgr:"ملاحظة المدير",wpCloseNote:"ملاحظة الإغلاق",weReqImg:"صور مقدّم الطلب",weReqDoc:"ملفات مقدّم الطلب",weTecImg:"صور الفني",weTecDoc:"ملفات الفني",weNoneG:"ما في مرفقات",wpNotFound:"المهمة مش موجودة بالقائمة الحالية",wzBtn:"تحميل ZIP",wzHint:"بيصدّر كل المهام المطابقة للفلاتر الحالية",wzTitle:"جاري تجهيز الحزمة",wzTasks:"المهام",wzFiles:"الملفات",wzFailed:"فشلت",wzCancel:"إلغاء",wzCancelled:"تم إلغاء التصدير",wzZipping:"جاري الضغط…",wzDone:"ملف تم تصديره",wzErr:"تعذّر إنشاء الحزمة",wzNoLib:"مكتبة الضغط ما حمّلت",wzFailHdr:"هذه الملفات تعذّر تحميلها. الباقي كامل داخل الحزمة.",weTitle:"سجلّ الإثبات",weSub:"إثبات الإنجاز، مهمة بمهمة",weGal:"معرض",weTime:"زمني",weTbl:"جدول",weSoon:"قريباً",weSoonT:"بمرحلة لاحقة",weKTasks:"مهمة فيها إثبات",weKImgs:"صورة",weKPair:"فيها قبل وبعد",weSearch:"بحث",wePh:"ابحث برقم المهمة أو العنوان أو المشروع أو الفني…",weQT:"اليوم",weQ7:"٧ أيام",weQ30:"٣٠ يوم",weQA:"الكل",weAllP:"كل المشاريع",weMore:"فلاتر أكثر",weClear:"مسح",weFrom:"من",weTo:"إلى",weProj:"المشروع",weCat:"التصنيف",weTech:"الفني",weStat:"الحالة",weSrc:"المصدر",weSReq:"مقدّم الطلب",weSTech:"الفني",weKind:"نوع المرفق",weKImg:"صور",weKFile:"ملفات",weAll:"الكل",weClaim:"شكوى",weProof:"إثبات",wePrev:"تعذّر عرض الصورة",weDoc:"مستند",weMoreF:"غيره",weFound:"مهمة فيها إثبات",weShow:"يعرض",wePrevP:"‹ السابق",weNextP:"التالي ›",weNoneT:"ما في إثباتات تطابق هذه الفلاتر",weNoneS:"امسح فلتر أو وسّع التواريخ.",nav:{dashboard:"لوحة المعلومات",manage:"إدارة الطلبات",all:"جميع الطلبات",reports:"لوحة المعلومات والتقارير",staffdir:"دليل الموظفين",open:"المهام المفتوحة",archive:"الملغية / المحذوفة",media:"سجلّ الإثبات",settings:"الإعدادات"},
+  weOpen:"⤢ افتح",weFile1:"ملف",weFileN:"ملفات",wpClose:"إغلاق",wpOpenTask:"افتح المهمة",wpInfo:"معلومات المهمة",wpTimeline:"الخط الزمني",wpPrio:"الأولوية",wpBy:"مقدّم الطلب",wpRec:"تاريخ الاستلام",wpSched:"موعد البدء",wpDone:"تاريخ الإنجاز",wpEvRec:"وصل الطلب",wpEvSched:"جُدول العمل",wpEvStart:"بدأ العمل",wpEvSub:"أُرسل للتأكيد",wpEvDone:"اكتمل",wpEvClosed:"أُغلق",wpReason:"السبب",wpMgr:"ملاحظة المدير",wpCloseNote:"ملاحظة الإغلاق",weReqImg:"صور مقدّم الطلب",weReqDoc:"ملفات مقدّم الطلب",weTecImg:"صور الفني",weTecDoc:"ملفات الفني",weNoneG:"ما في مرفقات",wpNotFound:"المهمة مش موجودة بالقائمة الحالية",wzBtn:"تحميل ZIP",wzHint:"بيصدّر كل المهام المطابقة للفلاتر الحالية",wzTitle:"جاري تجهيز الحزمة",wzTasks:"المهام",wzFiles:"الملفات",wzFailed:"فشلت",wzCancel:"إلغاء",wzCancelled:"تم إلغاء التصدير",wzZipping:"جاري الضغط…",wzDone:"ملف تم تصديره",wzErr:"تعذّر إنشاء الحزمة",wzNoLib:"مكتبة الضغط ما حمّلت",wzFailHdr:"هذه الملفات تعذّر تحميلها. الباقي كامل داخل الحزمة.",weAllC:"كل التصنيفات",weAllT:"كل الفنيين",weAllS:"كل الحالات",weReset:"مسح الفلاتر",weResults:"نتيجة",weTitle:"سجلّ الإثبات",weSub:"إثبات الإنجاز، مهمة بمهمة",weGal:"معرض",weTime:"زمني",weTbl:"جدول",weSoon:"قريباً",weSoonT:"بمرحلة لاحقة",weKTasks:"مهمة فيها إثبات",weKImgs:"صورة",weKPair:"فيها قبل وبعد",weSearch:"بحث",wePh:"ابحث برقم المهمة أو العنوان أو مقدّم الطلب أو الفني...",weQT:"اليوم",weQ7:"٧ أيام",weQ30:"٣٠ يوم",weQA:"الكل",weAllP:"كل المشاريع",weMore:"فلاتر أكثر",weClear:"مسح",weFrom:"من",weTo:"إلى",weProj:"المشروع",weCat:"التصنيف",weTech:"الفني",weStat:"الحالة",weSrc:"المصدر",weSReq:"مقدّم الطلب",weSTech:"الفني",weKind:"نوع المرفق",weKImg:"صور",weKFile:"ملفات",weAll:"الكل",weClaim:"شكوى",weProof:"إثبات",wePrev:"تعذّر عرض الصورة",weDoc:"مستند",weMoreF:"غيره",weFound:"مهمة فيها إثبات",weShow:"يعرض",wePrevP:"‹ السابق",weNextP:"التالي ›",weNoneT:"ما في إثباتات تطابق هذه الفلاتر",weNoneS:"امسح فلتر أو وسّع التواريخ.",nav:{dashboard:"لوحة المعلومات",manage:"إدارة الطلبات",all:"جميع الطلبات",reports:"لوحة المعلومات والتقارير",staffdir:"دليل الموظفين",open:"المهام المفتوحة",archive:"الملغية / المحذوفة",media:"سجلّ الإثبات",settings:"الإعدادات"},
   navIc:{dashboard:"▦",manage:"📥",all:"📋",reports:"📊",staffdir:"👷",open:"⚙",archive:"🗂",media:"◫",settings:"⚙️"},
   reqEye:"طلب جديد",reqH1:"طلب خدمة",reqP:"يُرجى تعبئة التفاصيل وإرسال الطلب؛ ليصل مباشرةً إلى قسم التشغيل والصيانة.",
   requestedBy:"مقدّم الطلب",namePh:"الاسم",projLoc:"المشروع / الموقع",svcType:"نوع الخدمة",needs:"تفاصيل الطلب",needsPh:"يُرجى وصف الخدمة المطلوبة بوضوح",
@@ -1907,8 +1905,7 @@ function render(){
    gated). No new table read, no new grant. */
 
 const WE_PAGE=24;
-let weF={q:'',quick:'',from:'',to:'',proj:'',cat:'',tech:'',stat:'',src:'',kind:''};
-let weAdv=false;      // "More filters" is closed by default — no vertical filter wall
+let weF={q:'',from:'',to:'',proj:'',cat:'',tech:'',stat:'',src:'',kind:''};
 let wePg=1;
 let weSel=0;          // selected task id, Phase 2 reads this
 
@@ -2056,8 +2053,10 @@ function viewMedia(){
   const opt=(arr,cur)=>arr.map(v=>`<option value="${esc(v)}" ${cur===v?'selected':''}>${esc(v)}</option>`).join('');
   const cats=(state.lists.categories||[]).map(c=>typeof c==='string'?c:(c.en||''));
   const techs=[...new Set(state.requests.map(r=>r.assignedTo).filter(Boolean))].sort();
-  const sts=["Not Started","In Progress","On Hold","Needs Review","Needs Update","Complete","Rejected","Cancelled"];
-  const qk=(k,lab)=>`<button class="we-chip ${weF.quick===k?'on':''}" onclick="weeQuick('${k}')">${lab}</button>`;
+  // Work Evidence dropdown only: Rejected/Cancelled are not useful to filter TO
+  // when browsing proof of work. Their tasks still appear under "All statuses" —
+  // no filtering logic changed.
+  const sts=["Not Started","In Progress","On Hold","Needs Review","Needs Update","Complete"];
 
   const head=`<div class="we-hd">
     <div class="we-top">
@@ -2075,33 +2074,34 @@ function viewMedia(){
     </div>
   </div>
   <div class="we-ctl">
-    <input class="we-srch" type="search" id="we_q" value="${esc(weF.q)}" placeholder="${t('wePh')}"
-      oninput="weeSet('q',this.value)" aria-label="${t('weSearch')}"/>
-    <div class="we-quick">${qk('today',t('weQT'))}${qk('7',t('weQ7'))}${qk('30',t('weQ30'))}${qk('',t('weQA'))}</div>
-    <select class="we-sel" onchange="weeSet('proj',this.value)" aria-label="${t('weProj')}">
-      <option value="">${t('weAllP')}</option>${opt(state.lists.projects||[],weF.proj)}</select>
-    <div class="we-more">
-      <button class="btn sm sec" onclick="weeAdv()">${weAdv?'▲':'▼'} ${t('weMore')}</button>
-      <button class="btn sm sec" onclick="weeClear()">${t('weClear')}</button>
-      <button class="btn sm" onclick="weZip()" ${wzBusy||!all.length?'disabled':''}
-        title="${t('wzHint')}">⬇ ${t('wzBtn')}</button>
+    <div class="we-row1">
+      <input class="we-srch" type="search" id="we_q" value="${esc(weF.q)}" placeholder="${t('wePh')}"
+        oninput="weeSet('q',this.value)" aria-label="${t('weSearch')}"/>
     </div>
-  </div>
-  ${weAdv?`<div class="we-adv">
-    <div class="we-f"><label>${t('weFrom')}</label><input type="date" value="${weF.from}" onchange="weeSet('from',this.value)"/></div>
-    <div class="we-f"><label>${t('weTo')}</label><input type="date" value="${weF.to}" onchange="weeSet('to',this.value)"/></div>
-    <div class="we-f"><label>${t('weCat')}</label><select onchange="weeSet('cat',this.value)"><option value="">${t('weAll')}</option>${opt(cats,weF.cat)}</select></div>
-    <div class="we-f"><label>${t('weTech')}</label><select onchange="weeSet('tech',this.value)"><option value="">${t('weAll')}</option>${opt(techs,weF.tech)}</select></div>
-    <div class="we-f"><label>${t('weStat')}</label><select onchange="weeSet('stat',this.value)"><option value="">${t('weAll')}</option>${opt(sts,weF.stat)}</select></div>
-    <div class="we-f"><label>${t('weSrc')}</label><select onchange="weeSet('src',this.value)">
-      <option value="">${t('weAll')}</option>
-      <option value="req" ${weF.src==='req'?'selected':''}>${t('weSReq')}</option>
-      <option value="tech" ${weF.src==='tech'?'selected':''}>${t('weSTech')}</option></select></div>
-    <div class="we-f"><label>${t('weKind')}</label><select onchange="weeSet('kind',this.value)">
-      <option value="">${t('weAll')}</option>
-      <option value="img" ${weF.kind==='img'?'selected':''}>${t('weKImg')}</option>
-      <option value="file" ${weF.kind==='file'?'selected':''}>${t('weKFile')}</option></select></div>
-  </div>`:''}`;
+    <div class="we-row2">
+      <div class="we-fld"><label for="we_cat">${t('weCat')}</label>
+        <select class="we-sel" id="we_cat" onchange="weeSet('cat',this.value)">
+          <option value="">${t('weAllC')}</option>${opt(cats,weF.cat)}</select></div>
+      <div class="we-fld"><label for="we_tech">${t('weTech')}</label>
+        <select class="we-sel" id="we_tech" onchange="weeSet('tech',this.value)">
+          <option value="">${t('weAllT')}</option>${opt(techs,weF.tech)}</select></div>
+      <div class="we-fld"><label for="we_proj">${t('weProj')}</label>
+        <select class="we-sel" id="we_proj" onchange="weeSet('proj',this.value)">
+          <option value="">${t('weAllP')}</option>${opt(state.lists.projects||[],weF.proj)}</select></div>
+      <div class="we-fld"><label for="we_stat">${t('weStat')}</label>
+        <select class="we-sel" id="we_stat" onchange="weeSet('stat',this.value)">
+          <option value="">${t('weAllS')}</option>${opt(sts,weF.stat)}</select></div>
+      <div class="we-fld"><label for="we_from">${t('weFrom')}</label>
+        <input class="we-dt" id="we_from" type="date" value="${weF.from}" onchange="weeSet('from',this.value)"/></div>
+      <div class="we-fld"><label for="we_to">${t('weTo')}</label>
+        <input class="we-dt" id="we_to" type="date" value="${weF.to}" onchange="weeSet('to',this.value)"/></div>
+      <div class="we-acts">
+        <button class="btn sm sec" onclick="weeClear()">${t('weReset')}</button>
+        <button class="btn sm" onclick="weZip()" ${wzBusy||!all.length?'disabled':''}
+          title="${t('wzHint')}">⬇ ${t('wzBtn')}</button>
+      </div>
+    </div>
+  </div>`;
 
   if(!all.length){
     return head+`<div class="we-stage"><div class="we-empty">
@@ -2115,8 +2115,8 @@ function viewMedia(){
   </div>`:'';
 
   return head+
-    `<div class="we-meta"><span><b>${all.length}</b> ${t('weFound')}</span>
-      <span>${t('weShow')} ${(wePg-1)*WE_PAGE+1}–${Math.min(wePg*WE_PAGE,all.length)}</span></div>
+    `<div class="we-meta"><span>${t('weShow')} <b>${all.length}</b> ${t('weResults')}</span>
+      <span>${(wePg-1)*WE_PAGE+1}–${Math.min(wePg*WE_PAGE,all.length)}</span></div>
     <div class="we-stage"><div class="we-grid">${rows.map(weTile).join('')}</div></div>${pg}`;
 }
 
@@ -2494,23 +2494,13 @@ function wpOpenTask(id){
 }
 
 function weeGo(p){wePg=p;render();window.scrollTo(0,0);}
-function weeAdv(){weAdv=!weAdv;render();}
 function weeSet(k,v){
   weF[k]=v; wePg=1;
-  if(k==='from'||k==='to')weF.quick='';
   render();
   if(k==='q'){const b=document.getElementById('we_q');if(b){b.focus();b.setSelectionRange(b.value.length,b.value.length);}}
 }
-function weeQuick(k){
-  weF.quick=k; wePg=1;
-  if(k===''){weF.from='';weF.to='';}
-  else if(k==='today'){weF.from=weDay(0);weF.to=weDay(0);}
-  else if(k==='7'){weF.from=weDay(6);weF.to=weDay(0);}
-  else if(k==='30'){weF.from=weDay(29);weF.to=weDay(0);}
-  render();
-}
 function weeClear(){
-  weF={q:'',quick:'',from:'',to:'',proj:'',cat:'',tech:'',stat:'',src:'',kind:''};
+  weF={q:'',from:'',to:'',proj:'',cat:'',tech:'',stat:'',src:'',kind:''};
   wePg=1; weSel=0; render();
 }
 
