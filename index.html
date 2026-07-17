@@ -1859,15 +1859,29 @@ function weStats(rows){
   return {tasks:rows.length, img:img, pair:pair};
 }
 
+/* A broken image (heic on Windows) must leave a labelled placeholder, not a hole.
+   Built with DOM calls: putting HTML inside an onerror="" attribute breaks the tag
+   the moment that HTML contains a double quote. */
+function weFallback(img){
+  if(!img||img.dataset.fb)return;
+  img.dataset.fb='1';
+  img.style.display='none';
+  const d=document.createElement('div');
+  d.className='we-fb';
+  const i=document.createElement('i');
+  i.textContent='🖼';
+  d.appendChild(i);
+  d.appendChild(document.createTextNode(t('wePrev')));
+  if(img.parentNode)img.parentNode.appendChild(d);
+}
+
 function weTile(r){
   const a=weAtt(r);
   const nI=a.ci.length+a.pi.length, nD=a.cd.length+a.pd.length;
   const both=a.ci.length>0&&a.pi.length>0;
-  const fb=`<div class="we-fb"><i>🖼</i>${t('wePrev')}</div>`;
   const half=(url,tag,cls,extra)=>`<div class="we-half">
       <span class="we-tag ${cls}">${tag}</span>
-      <img src="${esc(url)}" loading="lazy" alt="${esc(r.title||'')}"
-        onerror="this.style.display='none';this.parentNode.insertAdjacentHTML('beforeend','${fb.replace(/'/g,"\\'")}')"/>
+      <img src="${esc(url)}" loading="lazy" alt="${esc(r.title||'')}" onerror="weFallback(this)"/>
       ${extra||''}</div>`;
 
   let media;
