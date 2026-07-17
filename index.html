@@ -1463,60 +1463,100 @@ function staffNames(){const sl=staffList();return sl.length?sl.map(x=>x.en):(sta
   return (state.lists.employees||[]).map(biVal);
 }
 /* ===== DEPARTMENT MANAGER =====
-   Staff Directory is the source of truth for the manager's name, phone, code and
-   active flag. Settings stores ONLY a pointer: the stable staff id.
+   Staff Directory is the source of truth. Settings stores the manager's stable
+   staff id PLUS a public snapshot of the three fields a visitor must see.
 
-   Why widgets and not a new column: admin_patch_app_settings whitelists exactly
-   two top-level keys (lists, widgets) and rejects anything else with
-   'invalid_patch'. It also checks that EVERY key inside `lists` is an array, so
-   a scalar there is rejected with 'invalid_lists'. `widgets` is only required to
-   be an object — no per-key type check — and the app already persists a nested
-   object there (state.widgets.closed). So the id rides a proven, allowed path
-   with no schema migration. */
+   Why a snapshot is unavoidable: load() sets wantStaff=(role==='admin'), so a
+   visitor NEVER loads state.staff — the staff table holds LOGIN CODES and must
+   not be readable with the public key (A0/A1). An id-only pointer therefore
+   resolves to null for every visitor, which is exactly the bug this fixes.
+   app_settings IS loaded for every role, so the snapshot rides that path.
+
+   The snapshot is never edited by hand: it is written FROM the staff record at
+   designation time and refreshed whenever that staff member's name, phone or
+   active flag changes. mgrSync() is the single writer.
+
+   Stored under `widgets` because admin_patch_app_settings whitelists exactly
+   {lists, widgets}, and rejects any non-array key inside `lists`. `widgets` only
+   has to be an object — and already holds a nested object (widgets.closed). */
 function mgrId(){
   const v=state.widgets&&state.widgets.departmentManagerStaffId;
   return (v===undefined||v===null||v==='')?null:String(v);
 }
-/* The one resolver. Every manager name/phone on every page goes through this.
-   Returns null when unset, when the id no longer matches a staff row, or when
-   that staff member is deactivated — never a fallback to "the first employee". */
+/* Tolerant of legacy rows: active may be true/false, 1/0, "true"/"false", or
+   absent. Only an explicit falsey value means inactive. */
+function staffActive(s){
+  if(!s)return false;
+  const a=s.active;
+  if(a===undefined||a===null)return true;          // legacy row: no flag = active
+  if(a===false||a===0||a==='false'||a==='0'||a==='')return false;
+  return true;
+}
+/* Admin-side resolver: live from Staff Directory. */
 function getDepartmentManager(){
   const id=mgrId();
   if(!id)return null;
-  return staffList().find(s=>String(s.id)===id&&s.active!==false)||null;
+  return staffList().find(s=>String(s.id)===id&&staffActive(s))||null;
 }
-/* Name in the current interface language, using the same rule as every other
-   staff name in the app. */
+/* What every page renders. Admin resolves live; a visitor (who has no staff
+   table) falls back to the snapshot written from that same record. */
+function mgrCard(){
+  const live=getDepartmentManager();
+  if(live)return {en:live.en||live.ar||'', ar:live.ar||live.en||'', phone:live.phone||''};
+  const id=mgrId();
+  const snap=state.widgets&&state.widgets.departmentManagerSnapshot;
+  // the snapshot is only valid for the currently designated id
+  if(id&&snap&&String(snap.id)===id&&snap.active!==false){
+    return {en:snap.en||snap.ar||'', ar:snap.ar||snap.en||'', phone:snap.phone||''};
+  }
+  return null;
+}
 function mgrName(){
-  const m=getDepartmentManager();
+  const m=mgrCard();
   if(!m)return '';
   return (L==='ar'?(m.ar||m.en):(m.en||m.ar))||'';
 }
 function mgrPhone(){
-  const m=getDepartmentManager();
+  const m=mgrCard();
   return (m&&m.phone)?String(m.phone):'';
 }
-/* Shared contact block. One markup, so tracking / thanks / anywhere else cannot
-   drift apart. Shows the neutral message when no active manager is designated. */
 function mgrContactHTML(cls){
-  const m=getDepartmentManager();
+  const m=mgrCard();
   if(!m)return `<div class="${cls||''} mgr-none">${esc(t('mgrNone'))}</div>`;
-  const ph=mgrPhone();
-  const nm=esc(mgrName());
+  const ph=(m.phone||'').trim();
+  const nm=esc((L==='ar'?(m.ar||m.en):(m.en||m.ar))||'');
   if(!ph)return `<div class="${cls||''}"><b>${nm}</b></div>`;
   return `<div class="${cls||''}"><b>${nm}</b><br>
     <a class="mgr-tel" href="tel:${esc(ph.replace(/[^\d+]/g,''))}" dir="ltr">📱 ${esc(ph)}</a></div>`;
 }
-/* Designate a manager. Stores the id only; the previous manager loses the
-   designation automatically because a single id is stored, not a per-staff flag.
-   Their record and history are untouched. */
+/* The single writer of the snapshot. Called on designation and after any edit
+   to a staff member — so a phone change in Staff Directory reaches the visitor.
+   Returns false only if the settings save fails. */
+async function mgrSync(){
+  const id=mgrId();
+  if(!id){ state.widgets.departmentManagerSnapshot=null; return await saveWidgets(true); }
+  const s=staffList().find(x=>String(x.id)===id);
+  if(!s){ return await saveWidgets(true); }        // stale id: keep it, no snapshot
+  state.widgets.departmentManagerSnapshot={
+    id:s.id, en:s.en||'', ar:s.ar||'', phone:s.phone||'', active:staffActive(s)
+  };
+  return await saveWidgets(true);
+}
+/* Designate (or un-designate) the manager. The UI is NOT updated optimistically:
+   on a failed save the previous value is restored and the radio does not move. */
 async function setDeptManager(id){
-  const prev=state.widgets.departmentManagerStaffId;
-  state.widgets.departmentManagerStaffId=(String(prev)===String(id))?null:id;
-  const ok=await saveWidgets(true);
-  if(!ok){ state.widgets.departmentManagerStaffId=prev; }
+  const prevId=state.widgets.departmentManagerStaffId;
+  const prevSnap=state.widgets.departmentManagerSnapshot;
+  state.widgets.departmentManagerStaffId=(String(prevId)===String(id))?null:id;
+  const ok=await mgrSync();
+  if(!ok){
+    state.widgets.departmentManagerStaffId=prevId;
+    state.widgets.departmentManagerSnapshot=prevSnap;
+    render();
+    return;
+  }
   render();
-  if(ok)toast(t('saved'));
+  toast(t('saved'));
 }
 function staffPhone(name){const s=staffList().find(x=>x.en===name);return (s&&s.phone)?s.phone:(STAFF_PHONE[name]||'');}
 // staff phone numbers (shown on /track once accepted). Fill when numbers are provided.
@@ -4027,6 +4067,7 @@ async function updStaffField(id,field,val){
     const res=await admRpc('admin_patch_staff',{p_staff_id:id,p_patch:{[field]:v||null}});
     if(res&&res.ok===true){
       const st=await sbFetchStaff();if(st!==null)state.staff=st;
+      if(mgrId()===String(id))await mgrSync();   // keep the public snapshot true
       if(res.tasks_updated>0){await admReloadRequests();}
       if(res.templates_updated>0){const rec=await sbFetchRecurring();if(rec!==null)state.recurring=rec;}
       render();toast(t('saved'));
@@ -4092,6 +4133,7 @@ async function saveStaffEdit(){clearDirty();
     if(res&&res.ok===true){
       modal=null;
       const st=await sbFetchStaff();if(st!==null)state.staff=st;
+      if(mgrId()===String(id))await mgrSync();   // snapshot follows the record
       if(res.tasks_updated>0){await admReloadRequests();}
       if(res.templates_updated>0){const rec=await sbFetchRecurring();if(rec!==null)state.recurring=rec;}
       render();toast(t('saved'));
@@ -4113,6 +4155,7 @@ async function doDelStaff(id){
     const res=await admRpc('admin_deactivate_staff',{p_staff_id:id});
     if(res&&res.ok===true){
       const st=await sbFetchStaff();if(st!==null)state.staff=st;
+      if(mgrId()===String(id))await mgrSync();   // snapshot follows the record
       render();toast(t('saved'));
     }else{
       toast(admOpError(res));
@@ -4127,6 +4170,7 @@ async function doReactivateStaff(id){
     const res=await admRpc('admin_reactivate_staff',{p_staff_id:id});
     if(res&&res.ok===true){
       const st=await sbFetchStaff();if(st!==null)state.staff=st;
+      if(mgrId()===String(id))await mgrSync();   // snapshot follows the record
       render();toast(t('saved'));
     }else{
       toast(admOpError(res));
