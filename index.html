@@ -785,12 +785,15 @@ tr.pendrow{background:rgba(251,239,214,.32)}
 .we-mode.on .we-soon{background:var(--accent);color:var(--white)}
 
 .we-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin:12px 0 14px}
-.we-kpi{background:var(--white);border:1px solid var(--grid);box-shadow:var(--shadow);padding:12px 14px;
-  border-inline-start:3px solid var(--navy)}
+.we-kpi{background:var(--white);border:1px solid var(--grid);box-shadow:var(--shadow);
+  padding:14px 16px;border-inline-start:3px solid var(--navy);display:flex;
+  align-items:center;gap:12px}
+.we-kpi .ki{font-size:20px;font-style:normal;opacity:.75;flex:none}
+.we-kpi .kb{min-width:0}
 .we-kpi.claim{border-inline-start-color:var(--amber)}
 .we-kpi.proof{border-inline-start-color:var(--green)}
 .we-kpi.pair{border-inline-start-color:var(--accent)}
-.we-kpi b{display:block;font-size:24px;color:var(--navy);font-weight:700;line-height:1.1;
+.we-kpi b{display:block;font-size:26px;color:var(--navy);font-weight:700;line-height:1.1;
   font-family:ui-monospace,'Cascadia Mono',Consolas,monospace;letter-spacing:-.02em}
 .we-kpi span{font-size:11px;color:var(--grey);font-weight:600;display:block;margin-top:2px}
 
@@ -823,24 +826,36 @@ tr.pendrow{background:rgba(251,239,214,.32)}
 .we-meta b{color:var(--navy);font-family:ui-monospace,Consolas,monospace}
 
 /* the stage — the only dark surface on the page */
-.we-stage{background:#1F2937;padding:18px;border:1px solid #16202B}
-.we-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}
+.we-stage{background:#1F2937;padding:22px;border:1px solid #16202B}
+.we-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(268px,1fr));gap:18px;
+  align-items:start}
 .we-tile{background:#2A3744;border:1px solid #16202B;cursor:pointer;display:flex;flex-direction:column;
-  transition:border-color .12s,transform .12s}
-.we-tile:hover{border-color:var(--accent);transform:translateY(-2px)}
+  overflow:hidden;transition:border-color .12s,transform .12s}
+.we-tile:hover{border-color:#5B9BD5;transform:translateY(-3px);
+  box-shadow:0 10px 28px rgba(0,0,0,.42)}
+.we-tile:hover .we-half img{transform:scale(1.04)}
+.we-tile:hover .we-open{opacity:1;transform:translateY(0)}
 .we-tile.sel{border-color:#5B9BD5;box-shadow:0 0 0 2px rgba(91,155,213,.45)}
 .we-tile:focus-visible{outline:2px solid #5B9BD5;outline-offset:2px}
 
-.we-imgs{display:flex;height:190px;background:#16202B;position:relative}
-.we-half{flex:1;position:relative;overflow:hidden;min-width:0}
+.we-imgs{display:flex;height:220px;min-height:220px;max-height:220px;flex:none;
+  background:#16202B;position:relative;overflow:hidden}
+.we-half{flex:1 1 0;position:relative;overflow:hidden;min-width:0;height:100%}
 .we-half+.we-half{border-inline-start:2px solid #16202B}
-.we-half img{width:100%;height:100%;object-fit:cover;display:block}
+.we-half img{width:100%;height:100%;object-fit:cover;display:block;max-height:220px;
+  transition:transform .25s ease}
 .we-tag{position:absolute;top:7px;inset-inline-start:7px;font-size:9px;font-weight:700;
   padding:3px 7px;letter-spacing:.04em;color:#fff;z-index:2}
 .we-tag.claim{background:var(--amber)}
 .we-tag.proof{background:var(--green)}
 .we-more-n{position:absolute;bottom:7px;inset-inline-end:7px;background:rgba(0,0,0,.72);color:#fff;
   font-size:10px;font-weight:700;padding:2px 6px;z-index:2}
+/* nothing on the tile said it was clickable — this appears on hover/focus */
+.we-open{position:absolute;bottom:8px;inset-inline-start:8px;background:rgba(21,64,110,.94);
+  color:#fff;font-size:10px;font-weight:700;padding:4px 9px;z-index:3;opacity:0;
+  transform:translateY(4px);transition:opacity .16s,transform .16s;pointer-events:none;
+  display:flex;align-items:center;gap:4px}
+.we-tile:focus-visible .we-open{opacity:1;transform:translateY(0)}
 
 /* an image that fails (heic on Windows) must not leave a hole */
 .we-fb{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;
@@ -848,19 +863,23 @@ tr.pendrow{background:rgba(251,239,214,.32)}
 .we-fb i{font-size:22px;font-style:normal}
 
 /* files-only tasks get a real tile, never an empty photo frame */
-.we-docs{height:190px;background:#16202B;display:flex;flex-direction:column;align-items:center;
-  justify-content:center;gap:7px;padding:16px}
-.we-docs i{font-size:34px;font-style:normal}
+.we-docs{height:220px;min-height:220px;max-height:220px;flex:none;
+  background:linear-gradient(160deg,#1C2733,#141D26);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;
+  padding:18px;overflow:hidden}
+.we-docs i{font-size:44px;font-style:normal;line-height:1}
 .we-docs .nm{font-size:12px;color:#C7D3DF;text-align:center;word-break:break-word;
-  max-width:100%;font-weight:600}
+  max-width:100%;font-weight:600;display:-webkit-box;-webkit-line-clamp:3;
+  -webkit-box-orient:vertical;overflow:hidden;line-height:1.35}
 .we-docs .ct{font-size:10px;color:#6E8299}
 
-.we-ft{padding:9px 11px;background:#2A3744;border-top:1px solid #16202B}
+.we-ft{padding:11px 13px;background:#2A3744;border-top:1px solid #16202B}
 .we-r1{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:5px}
-.we-id{font-size:12px;font-weight:700;color:#8FB4D9;font-family:ui-monospace,Consolas,monospace}
-.we-ti{font-size:12px;color:#E3EAF1;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;
-  -webkit-box-orient:vertical;overflow:hidden;margin-bottom:6px;min-height:33px}
-.we-r2{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:10px;color:#7D8FA3}
+.we-id{font-size:13px;font-weight:700;color:#8FB4D9;font-family:ui-monospace,Consolas,monospace;
+  letter-spacing:.01em}
+.we-ti{font-size:13px;color:#E3EAF1;line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;
+  -webkit-box-orient:vertical;overflow:hidden;margin-bottom:7px}
+.we-r2{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:11px;color:#8296AB}
 .we-pj{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .we-ct{display:flex;gap:7px;white-space:nowrap}
 
@@ -1323,7 +1342,7 @@ const PAGE_SIZE=100;
 
 const T={
  en:{co:"ADVANCED CONCEPTS CONTRACTING CO. LTD.",sys:"O&M Service Requests",
-  weTitle:"Work Evidence",weSub:"Proof of work, task by task",weGal:"Gallery",weTime:"Timeline",weTbl:"Table",weSoon:"SOON",weSoonT:"Coming in a later phase",weKTasks:"tasks with evidence",weKImgs:"photos",weKPair:"with before and after",weSearch:"Search",wePh:"Search a task number, title, project or technician…",weQT:"Today",weQ7:"7 days",weQ30:"30 days",weQA:"All",weAllP:"All projects",weMore:"More filters",weClear:"Clear",weFrom:"From",weTo:"To",weProj:"Project",weCat:"Category",weTech:"Technician",weStat:"Status",weSrc:"Source",weSReq:"Requester",weSTech:"Technician",weKind:"Attachment",weKImg:"Photos",weKFile:"Files",weAll:"All",weClaim:"COMPLAINT",weProof:"EVIDENCE",wePrev:"Preview unavailable",weDoc:"Document",weMoreF:"more",weFound:"tasks with evidence",weShow:"Showing",wePrevP:"‹ Previous",weNextP:"Next ›",weNoneT:"No evidence matches these filters",weNoneS:"Clear a filter or widen the dates.",wePanelSoon:"Details panel will be added in Phase 2",nav:{dashboard:"Dashboard",manage:"Manage Requests",all:"All Requests",reports:"Dashboard & Reports",staffdir:"Staff Directory",open:"Open Tasks",archive:"Archived / Declined",media:"Work Evidence",settings:"Settings"},
+  weOpen:"⤢ Open",weFile1:"file",weFileN:"files",weTitle:"Work Evidence",weSub:"Proof of work, task by task",weGal:"Gallery",weTime:"Timeline",weTbl:"Table",weSoon:"SOON",weSoonT:"Coming in a later phase",weKTasks:"tasks with evidence",weKImgs:"photos",weKPair:"with before and after",weSearch:"Search",wePh:"Search a task number, title, project or technician…",weQT:"Today",weQ7:"7 days",weQ30:"30 days",weQA:"All",weAllP:"All projects",weMore:"More filters",weClear:"Clear",weFrom:"From",weTo:"To",weProj:"Project",weCat:"Category",weTech:"Technician",weStat:"Status",weSrc:"Source",weSReq:"Requester",weSTech:"Technician",weKind:"Attachment",weKImg:"Photos",weKFile:"Files",weAll:"All",weClaim:"COMPLAINT",weProof:"EVIDENCE",wePrev:"Preview unavailable",weDoc:"Document",weMoreF:"more",weFound:"tasks with evidence",weShow:"Showing",wePrevP:"‹ Previous",weNextP:"Next ›",weNoneT:"No evidence matches these filters",weNoneS:"Clear a filter or widen the dates.",wePanelSoon:"Details panel will be added in Phase 2",nav:{dashboard:"Dashboard",manage:"Manage Requests",all:"All Requests",reports:"Dashboard & Reports",staffdir:"Staff Directory",open:"Open Tasks",archive:"Archived / Declined",media:"Work Evidence",settings:"Settings"},
   navIc:{dashboard:"▦",manage:"📥",all:"📋",reports:"📊",staffdir:"👷",open:"⚙",archive:"🗂",media:"◫",settings:"⚙️"},
   reqEye:"New request",reqH1:"Request a Service",reqP:"Fill in the details and submit — your request goes straight to the O&M team.",
   requestedBy:"Requested by",namePh:"Your name",projLoc:"Project / Location",svcType:"Service type",needs:"What do you need?",needsPh:"Describe the service you are requesting",
@@ -1353,7 +1372,7 @@ const T={
   durReq:"Duration is required to schedule the task",
   addImages:"Add photos (optional)",addImagesHint:"Attach photos to explain better — take a photo or pick from your gallery.",uploading:"Uploading…",photo:"photo",photos:"photos",viewImages:"Photos",reqPhone:"Mobile number",reqPhonePh:"e.g. 0500000000",waitUpload:"Please wait — photo uploading…",sending:"Sending…",shareReq:"Share request number",shareHint:"Share the image on WhatsApp or save it to your phone.",imgSaved:"Image saved",addFiles:"Add attachment (optional)",chooseEye:"Service Portal",chooseH1:"How can we help?",chooseP:"Choose what you would like to do.",chooseNew:"New request",chooseNewSub:"Submit a service request",chooseTrack:"Track a request",chooseTrackSub:"Check the status of requests",backChoose:"Back",addFilesHint:"Attach a PDF or Office document if needed (max 20 MB).",fileRejected:"The selected file type is not supported or exceeds the maximum allowed size (20 MB).",trkEye:"Track",trkH1:"Track Requests",trkP:"Enter your request number to check its status.",trkPending:"Awaiting approval",trkProg:"In progress",trkSearchPh:"0042",trkNone:"No active requests.",trkSearching:"Searching…",trkWaiting:"Awaiting approval",trkInProg:"In progress",stfEye:"Staff",stfH1:"My Tasks",stfPick:"Select your name to view your assigned tasks.",stfNoNames:"No team members yet.",stfChange:"Change name",stfMyTasks:"Your Task List",stfNoTasks:"No tasks assigned to you right now.",stfOpen:"Open",stfBackList:"Back to list",stfDone:"Mark as done",stfDoneYes:"Yes, done",stfConfirmTitle:"Confirm completion",stfConfirmMsg:"Have you finished this task? It will be sent to the manager for confirmation.",stfDoneToast:"Sent to manager for confirmation",stfPendBadge:"Pending confirmation",stfPendMsg:"Done — awaiting manager confirmation.",stfPendMsg2:"Pending confirmation",pendBadge:"Awaiting confirmation",confirmDone:"Confirm",returnTask:"Return",returnedToast:"returned to In Progress",savedToast:"Updated",mgrNotePh:"Reason / note for the technician (optional)",stOverdue:"Overdue",stOnHold:"On Hold",stNeedsReview:"Needs Review",stNeedsUpdate:"Needs Update",stComplete:"Completed",stCancelled:"Cancelled",stRejected:"Rejected",trkNoSearch:"No request found with that number."},
  ar:{co:"شركة المفاهيم المتقدمة للمقاولات المحدودة",sys:"طلبات خدمة التشغيل والصيانة",
-  weTitle:"سجلّ الإثبات",weSub:"إثبات الإنجاز، مهمة بمهمة",weGal:"معرض",weTime:"زمني",weTbl:"جدول",weSoon:"قريباً",weSoonT:"بمرحلة لاحقة",weKTasks:"مهمة فيها إثبات",weKImgs:"صورة",weKPair:"فيها قبل وبعد",weSearch:"بحث",wePh:"ابحث برقم المهمة أو العنوان أو المشروع أو الفني…",weQT:"اليوم",weQ7:"٧ أيام",weQ30:"٣٠ يوم",weQA:"الكل",weAllP:"كل المشاريع",weMore:"فلاتر أكثر",weClear:"مسح",weFrom:"من",weTo:"إلى",weProj:"المشروع",weCat:"التصنيف",weTech:"الفني",weStat:"الحالة",weSrc:"المصدر",weSReq:"مقدّم الطلب",weSTech:"الفني",weKind:"نوع المرفق",weKImg:"صور",weKFile:"ملفات",weAll:"الكل",weClaim:"شكوى",weProof:"إثبات",wePrev:"تعذّر عرض الصورة",weDoc:"مستند",weMoreF:"غيره",weFound:"مهمة فيها إثبات",weShow:"يعرض",wePrevP:"‹ السابق",weNextP:"التالي ›",weNoneT:"ما في إثباتات تطابق هذه الفلاتر",weNoneS:"امسح فلتر أو وسّع التواريخ.",wePanelSoon:"لوح التفاصيل بيجي بالمرحلة الثانية",nav:{dashboard:"لوحة المعلومات",manage:"إدارة الطلبات",all:"جميع الطلبات",reports:"لوحة المعلومات والتقارير",staffdir:"دليل الموظفين",open:"المهام المفتوحة",archive:"الملغية / المحذوفة",media:"سجلّ الإثبات",settings:"الإعدادات"},
+  weOpen:"⤢ افتح",weFile1:"ملف",weFileN:"ملفات",weTitle:"سجلّ الإثبات",weSub:"إثبات الإنجاز، مهمة بمهمة",weGal:"معرض",weTime:"زمني",weTbl:"جدول",weSoon:"قريباً",weSoonT:"بمرحلة لاحقة",weKTasks:"مهمة فيها إثبات",weKImgs:"صورة",weKPair:"فيها قبل وبعد",weSearch:"بحث",wePh:"ابحث برقم المهمة أو العنوان أو المشروع أو الفني…",weQT:"اليوم",weQ7:"٧ أيام",weQ30:"٣٠ يوم",weQA:"الكل",weAllP:"كل المشاريع",weMore:"فلاتر أكثر",weClear:"مسح",weFrom:"من",weTo:"إلى",weProj:"المشروع",weCat:"التصنيف",weTech:"الفني",weStat:"الحالة",weSrc:"المصدر",weSReq:"مقدّم الطلب",weSTech:"الفني",weKind:"نوع المرفق",weKImg:"صور",weKFile:"ملفات",weAll:"الكل",weClaim:"شكوى",weProof:"إثبات",wePrev:"تعذّر عرض الصورة",weDoc:"مستند",weMoreF:"غيره",weFound:"مهمة فيها إثبات",weShow:"يعرض",wePrevP:"‹ السابق",weNextP:"التالي ›",weNoneT:"ما في إثباتات تطابق هذه الفلاتر",weNoneS:"امسح فلتر أو وسّع التواريخ.",wePanelSoon:"لوح التفاصيل بيجي بالمرحلة الثانية",nav:{dashboard:"لوحة المعلومات",manage:"إدارة الطلبات",all:"جميع الطلبات",reports:"لوحة المعلومات والتقارير",staffdir:"دليل الموظفين",open:"المهام المفتوحة",archive:"الملغية / المحذوفة",media:"سجلّ الإثبات",settings:"الإعدادات"},
   navIc:{dashboard:"▦",manage:"📥",all:"📋",reports:"📊",staffdir:"👷",open:"⚙",archive:"🗂",media:"◫",settings:"⚙️"},
   reqEye:"طلب جديد",reqH1:"طلب خدمة",reqP:"يُرجى تعبئة التفاصيل وإرسال الطلب؛ ليصل مباشرةً إلى قسم التشغيل والصيانة.",
   requestedBy:"مقدّم الطلب",namePh:"الاسم",projLoc:"المشروع / الموقع",svcType:"نوع الخدمة",needs:"تفاصيل الطلب",needsPh:"يُرجى وصف الخدمة المطلوبة بوضوح",
@@ -1903,13 +1922,13 @@ function weTile(r){
     media=`<div class="we-docs">
       <i>${weIcon(d.name||d.url)}</i>
       <span class="nm">${esc(d.name||t('weDoc'))}</span>
-      <span class="ct">${src}${nD>1?' · +'+(nD-1)+' '+t('weMoreF'):''}</span>
+      <span class="ct">${src} · ${nD} ${nD===1?t('weFile1'):t('weFileN')}</span>
     </div>`;
   }
 
   return `<div class="we-tile ${weSel===r.id?'sel':''}" tabindex="0" onclick="weePick(${r.id})"
       onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();weePick(${r.id});}">
-    ${media}
+    <div style="position:relative">${media}<span class="we-open">${t('weOpen')}</span></div>
     <div class="we-ft">
       <div class="we-r1"><span class="we-id">${fmtID(r.id)}</span>${effBadge(r)}</div>
       <div class="we-ti">${esc(r.title||'—')}</div>
@@ -1944,9 +1963,9 @@ function viewMedia(){
       </div>
     </div>
     <div class="we-kpis">
-      <div class="we-kpi"><b>${s.tasks}</b><span>${t('weKTasks')}</span></div>
-      <div class="we-kpi proof"><b>${s.img}</b><span>${t('weKImgs')}</span></div>
-      <div class="we-kpi pair"><b>${s.pair}</b><span>${t('weKPair')}</span></div>
+      <div class="we-kpi"><i class="ki">🗂</i><span class="kb"><b>${s.tasks}</b><span>${t('weKTasks')}</span></span></div>
+      <div class="we-kpi proof"><i class="ki">📷</i><span class="kb"><b>${s.img}</b><span>${t('weKImgs')}</span></span></div>
+      <div class="we-kpi pair"><i class="ki">⇄</i><span class="kb"><b>${s.pair}</b><span>${t('weKPair')}</span></span></div>
     </div>
   </div>
   <div class="we-ctl">
