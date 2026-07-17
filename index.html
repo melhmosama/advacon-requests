@@ -1501,6 +1501,9 @@ function getDepartmentManager(){
 /* What every page renders. Admin resolves live; a visitor (who has no staff
    table) falls back to the snapshot written from that same record. */
 function mgrCard(){
+  // An id saved by an older build may not match any staff row (a real case: id 1
+  // when the real ids are 21/6/8). Without a snapshot it is unresolvable, so it
+  // must read as "not configured" rather than break the page.
   const live=getDepartmentManager();
   if(live)return {en:live.en||live.ar||'', ar:live.ar||live.en||'', phone:live.phone||''};
   const id=mgrId();
@@ -1536,7 +1539,10 @@ async function mgrSync(){
   const id=mgrId();
   if(!id){ state.widgets.departmentManagerSnapshot=null; return await saveWidgets(true); }
   const s=staffList().find(x=>String(x.id)===id);
-  if(!s){ return await saveWidgets(true); }        // stale id: keep it, no snapshot
+  // A miss must NOT silently persist an id with no snapshot — that is exactly how
+  // the manager became unresolvable. Refuse the write instead of storing a
+  // pointer that can never resolve.
+  if(!s){ return false; }
   state.widgets.departmentManagerSnapshot={
     id:s.id, en:s.en||'', ar:s.ar||'', phone:s.phone||'', active:staffActive(s)
   };
@@ -1547,8 +1553,16 @@ async function mgrSync(){
 async function setDeptManager(id){
   const prevId=state.widgets.departmentManagerStaffId;
   const prevSnap=state.widgets.departmentManagerSnapshot;
-  state.widgets.departmentManagerStaffId=(String(prevId)===String(id))?null:id;
-  const ok=await mgrSync();
+  const off=(String(prevId)===String(id));
+  // Resolve from the live list BEFORE writing anything, so a bad id can never be
+  // persisted. staffList() is what rendered the radio, so this cannot miss.
+  const s=off?null:staffList().find(x=>String(x.id)===String(id));
+  if(!off&&!s){ toast(t('connErr')); return; }
+  state.widgets.departmentManagerStaffId=off?null:s.id;
+  state.widgets.departmentManagerSnapshot=off?null:{
+    id:s.id, en:s.en||'', ar:s.ar||'', phone:s.phone||'', active:staffActive(s)
+  };
+  const ok=await saveWidgets(true);
   if(!ok){
     state.widgets.departmentManagerStaffId=prevId;
     state.widgets.departmentManagerSnapshot=prevSnap;
