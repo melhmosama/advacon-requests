@@ -1020,6 +1020,70 @@ html[dir="rtl"] .wp{animation-name:wpInR}
 .mgr-none{color:var(--grey);font-size:12px;font-style:italic}
 .mgr-tel{color:inherit;text-decoration:none;font-weight:700}
 .thanks-mgr{margin-top:4px}
+
+/* ===== Image & Document Studio — Phase 4: table view ===== */
+.we-modes{display:flex;gap:6px}
+.we-mode{background:transparent;border:1px solid var(--grid);color:var(--steel);
+  font-size:11px;font-weight:700;font-family:inherit;padding:6px 11px;cursor:pointer}
+.we-mode:hover{background:var(--lgray);color:var(--med)}
+.we-mode.on{background:var(--navy);border-color:var(--navy);color:var(--white)}
+.we-mode:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+
+.we-tbl-wrap{background:var(--white);border:1px solid var(--grid);box-shadow:var(--shadow);
+  overflow:auto;max-height:calc(100vh - 300px)}
+.we-tbl{width:100%;border-collapse:collapse;font-size:12px;min-width:1080px}
+.we-tbl thead th{position:sticky;top:0;z-index:2;background:var(--navy);color:var(--white);
+  padding:9px 8px;text-align:start;font-size:10.5px;font-weight:700;white-space:nowrap;
+  letter-spacing:.02em}
+.we-tbl thead th.srt{cursor:pointer;user-select:none}
+.we-tbl thead th.srt:hover{background:#1b4a75}
+.we-tbl thead th .ar{opacity:.45;font-size:9px;margin-inline-start:3px}
+.we-tbl thead th.on .ar{opacity:1}
+.we-tbl tbody td{padding:8px;border-bottom:1px solid var(--grid);vertical-align:middle}
+.we-tbl tbody tr{cursor:pointer}
+.we-tbl tbody tr:nth-child(even){background:var(--lgray)}
+.we-tbl tbody tr:hover{background:var(--lblue)}
+.we-tbl tbody tr.sel{background:var(--lblue);box-shadow:inset 3px 0 0 var(--navy)}
+.we-tbl tbody tr:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.we-tid{font-family:ui-monospace,Consolas,monospace;font-weight:700;color:var(--navy);white-space:nowrap}
+.we-ttl2{max-width:230px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.we-dt2{font-family:ui-monospace,Consolas,monospace;font-size:11px;color:var(--grey);white-space:nowrap}
+.we-num{text-align:center;font-family:ui-monospace,Consolas,monospace}
+/* a count is a shortcut, not decoration — make that legible */
+.we-cnt{background:transparent;border:0;font:inherit;color:var(--med);font-weight:700;
+  cursor:pointer;padding:2px 7px;min-width:26px}
+.we-cnt:hover{background:var(--navy);color:var(--white)}
+.we-cnt:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.we-cnt.zero{color:var(--grid);cursor:default;font-weight:400}
+.we-cnt.zero:hover{background:transparent;color:var(--grid)}
+.we-tot{font-weight:700;color:var(--navy)}
+.we-act{background:transparent;border:1px solid var(--grid);color:var(--steel);
+  font-size:11px;font-family:inherit;padding:4px 9px;cursor:pointer;white-space:nowrap}
+.we-act:hover{border-color:var(--navy);color:var(--navy);background:var(--white)}
+.we-empty2{padding:44px 20px;text-align:center;color:var(--grey);font-size:13px}
+
+.we-pg{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px;
+  font-size:12px;color:var(--grey)}
+.we-pg .sp{margin-inline-start:auto;display:flex;align-items:center;gap:6px}
+.we-rows{height:28px;border:1px solid var(--grid);background:var(--white);color:var(--txt);
+  font-size:12px;font-family:inherit;padding:0 6px}
+
+@media(max-width:820px){
+  /* a wide table on a phone is unusable — each row becomes a card */
+  .we-tbl-wrap{border:0;box-shadow:none;background:transparent;overflow:visible;max-height:none}
+  .we-tbl{min-width:0;display:block}
+  .we-tbl thead{display:none}
+  .we-tbl tbody,.we-tbl tr,.we-tbl td{display:block}
+  .we-tbl tbody tr{background:var(--white)!important;border:1px solid var(--grid);
+    box-shadow:var(--shadow);margin-bottom:10px;padding:10px 12px}
+  .we-tbl tbody tr.sel{box-shadow:inset 3px 0 0 var(--navy),var(--shadow)}
+  .we-tbl tbody td{border:0;padding:3px 0;display:flex;justify-content:space-between;
+    align-items:center;gap:10px}
+  .we-tbl tbody td::before{content:attr(data-l);font-size:10px;font-weight:700;
+    color:var(--grey);letter-spacing:.02em}
+  .we-tbl tbody td.hide-m{display:none}
+  .we-ttl2{max-width:none;white-space:normal;text-align:end}
+}
 </style></head>
 <body class="notranslate"><div id="gate"></div><div class="app" id="app" style="display:none"></div><div class="toast" id="toast"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -1406,7 +1470,6 @@ const SEED={
   categories:[{en:"Maintenance",ar:"أعمال الصيانة"},{en:"Movement",ar:"النقل والتنقّل"},{en:"Procurement",ar:"المشتريات"},{en:"Fuel Supply",ar:"تزويد الوقود"},{en:"Material Transport",ar:"نقل المواد"},{en:"Others",ar:"أخرى"},{en:"Administrative",ar:"شؤون إدارية"}],
   priorities:[{en:"Low",ar:"منخفضة"},{en:"Medium",ar:"متوسطة"},{en:"High",ar:"عالية"}],
   statuses:["Not Started","In Progress","Complete","On Hold","Overdue","Needs Review","Needs Update","Cancelled"],
-  employees:["Ahmad M. Masoud","Mohamed Fouad","Mustafa Tohami Mahdy","Mustafa M.El Amin","Mohamed Aly","Hamdy Ahmed","Mohammed Abdo Alshaebi","Waliedin Ahmed","Alameldin Ahmad","Mahmoud Gomaa","Raqeb","Mohammed Hageb","Ele Team","Mech Team","Civil Team","Irr & Plumbing Team","All Teams","Others"]
 };
 // MANUAL statuses only (the rest are automatic)
 const MANUAL_STATUSES=["In Progress","On Hold","Needs Review","Needs Update"];
@@ -1435,7 +1498,14 @@ function effBadge(r){
 }
 // (previous-status line intentionally omitted — deletion overwrites status by design)
 const PR_COLOR={High:'#B0504A',Medium:'#C08A3E',Med:'#C08A3E',Low:'#5B7A99'};
-// Arabic display names for the /staff page only (DB value stays English). Editable later via settings.
+// HISTORICAL Arabic display names — NOT a dropdown source, and never an option
+// builder (staffDisp is its only reader, and Staff Directory always wins first).
+// It exists because 67 real archived requests are assigned to names that predate
+// Staff Directory: All Teams(12), Civil Team(33), Ele Team(15),
+// Irr & Plumbing Team(2), Mech Team(1), Others(4) — verified against the live
+// requests table. Deleting these would show those tasks in English on the Arabic
+// UI, which rules 7/10 forbid. They are NOT assignable: activeStaffNames() reads
+// the directory only. filterStaffNames() keeps them findable.
 let STAFF_AR={
  "Ahmad M. Masoud":"أحمد م. مسعود","Mohamed Fouad":"محمد فؤاد","Mustafa Tohami Mahdy":"مصطفى تهامي مهدي","Mustafa M.El Amin":"مصطفى م. الأمين","Mohamed Aly":"محمد علي","Hamdy Ahmed":"حمدي أحمد","Mohammed Abdo Alshaebi":"محمد عبده الشعبي","Waliedin Ahmed":"ولي الدين أحمد","Alameldin Ahmad":"علم الدين أحمد","Mahmoud Gomaa":"محمود جمعة","Raqeb":"رقيب","Mohammed Hageb":"محمد حاجب","Ele Team":"فريق الكهرباء","Mech Team":"فريق الميكانيك","Civil Team":"فريق مدني","Irr & Plumbing Team":"فريق الري والسباكة","All Teams":"جميع الفرق","Others":"أخرى"
 };
@@ -1455,12 +1525,13 @@ function filterStaffNames(){
   });
   return act.concat(extra.sort());
 }
-function staffNames(){const sl=staffList();return sl.length?sl.map(x=>x.en):(state.lists.employees||[]).map(biVal);} /* assignment pickers only: a deactivated technician must not be selectable. staffNames() still returns everyone so FILTERS and historical display keep working. */ function activeStaffNames(){
-  const all=staffList();
-  // fall back to the legacy employees list ONLY when staff data is absent —
-  // not when staff exists but everyone is disabled (that must yield nobody)
-  if(all.length)return all.filter(x=>x.active!==false).map(x=>x.en);
-  return (state.lists.employees||[]).map(biVal);
+ /* Assignment pickers only: a deactivated technician must not be selectable.
+   filterStaffNames() is the FILTER counterpart — it keeps an inactive technician
+   visible while they still hold tasks, so historical work stays findable. */ function activeStaffNames(){
+  // Staff Directory is the ONLY source (§3). No legacy fallback: if the
+  // directory is empty or everyone is disabled, nobody is assignable — the
+  // honest answer, rather than resurrecting hardcoded names.
+  return staffList().filter(x=>x.active!==false).map(x=>x.en);
 }
 /* ===== DEPARTMENT MANAGER =====
    Staff Directory is the source of truth. Settings stores the manager's stable
@@ -1551,26 +1622,50 @@ async function mgrSync(){
 /* Designate (or un-designate) the manager. The UI is NOT updated optimistically:
    on a failed save the previous value is restored and the radio does not move. */
 async function setDeptManager(id){
-  const prevId=state.widgets.departmentManagerStaffId;
-  const prevSnap=state.widgets.departmentManagerSnapshot;
-  const off=(String(prevId)===String(id));
-  // Resolve from the live list BEFORE writing anything, so a bad id can never be
-  // persisted. staffList() is what rendered the radio, so this cannot miss.
-  const s=off?null:staffList().find(x=>String(x.id)===String(id));
-  if(!off&&!s){ toast(t('connErr')); return; }
-  state.widgets.departmentManagerStaffId=off?null:s.id;
-  state.widgets.departmentManagerSnapshot=off?null:{
-    id:s.id, en:s.en||'', ar:s.ar||'', phone:s.phone||'', active:staffActive(s)
+  const selectedId=String(id);
+  // A radio must never unselect itself: clicking the current manager again used
+  // to clear the designation, which silently removed the public contact.
+  if(mgrId()===selectedId)return;
+  const member=staffList().find(x=>String(x.id)===selectedId&&staffActive(x));
+  if(!member){ toast(t('connErr')); render(); return; }
+  const prev=JSON.parse(JSON.stringify(state.widgets));
+  state.widgets.departmentManagerStaffId=member.id;
+  state.widgets.departmentManagerSnapshot={
+    id:member.id, en:member.en||'', ar:member.ar||'', phone:member.phone||'', active:true
   };
   const ok=await saveWidgets(true);
-  if(!ok){
-    state.widgets.departmentManagerStaffId=prevId;
-    state.widgets.departmentManagerSnapshot=prevSnap;
-    render();
-    return;
-  }
+  if(!ok){ state.widgets=prev; render(); return; }
   render();
   toast(t('saved'));
+}
+/* Clearing the designation needs its own explicit action — it must not be a
+   side effect of clicking the selected radio. */
+async function clearDeptManager(){
+  if(!mgrId())return;
+  const prev=JSON.parse(JSON.stringify(state.widgets));
+  state.widgets.departmentManagerStaffId=null;
+  state.widgets.departmentManagerSnapshot=null;
+  const ok=await saveWidgets(true);
+  if(!ok){ state.widgets=prev; render(); return; }
+  render(); toast(t('saved'));
+}
+/* BUG 2 — an installation may already hold an id saved before snapshots existed,
+   or a stale snapshot after the record changed. Visitors cannot repair it (no
+   staff table), so the admin session heals it once after load. */
+async function repairManagerSnapshot(){
+  const id=mgrId();
+  if(!id)return;
+  const m=staffList().find(x=>String(x.id)===id);
+  if(!m)return;                                  // unknown id: leave it for the admin to see
+  const cur=state.widgets.departmentManagerSnapshot;
+  const okSnap = cur && String(cur.id)===id && cur.en===(m.en||'') &&
+                 cur.ar===(m.ar||'') && cur.phone===(m.phone||'') &&
+                 cur.active===staffActive(m);
+  if(okSnap)return;
+  state.widgets.departmentManagerSnapshot={
+    id:m.id, en:m.en||'', ar:m.ar||'', phone:m.phone||'', active:staffActive(m)
+  };
+  await saveWidgets(false);                      // silent: this is a background repair
 }
 function staffPhone(name){const s=staffList().find(x=>x.en===name);return (s&&s.phone)?s.phone:(STAFF_PHONE[name]||'');}
 // staff phone numbers (shown on /track once accepted). Fill when numbers are provided.
@@ -1587,7 +1682,7 @@ const PAGE_SIZE=100;
 
 const T={
  en:{co:"ADVANCED CONCEPTS CONTRACTING CO. LTD.",sys:"O&M Service Requests",
-  weOpen:"⤢ Open",weFile1:"file",weFileN:"files",wpClose:"Close",wpOpenTask:"Open task",wpInfo:"Task information",wpTimeline:"Timeline",wpPrio:"Priority",wpBy:"Requested by",wpRec:"Received",wpSched:"Scheduled start",wpDone:"Completed",wpEvRec:"Request received",wpEvSched:"Work scheduled",wpEvStart:"Work started",wpEvSub:"Submitted for confirmation",wpEvDone:"Completed",wpEvClosed:"Closed",wpReason:"Reason",wpMgr:"Manager note",wpCloseNote:"Closeout note",weReqImg:"Requester photos",weReqDoc:"Requester documents",weTecImg:"Technician photos",weTecDoc:"Technician documents",weNoneG:"Nothing attached",wpNotFound:"That task is not in the current list",wzBtn:"Download ZIP",wzHint:"Exports every task matching the current filters",wzTitle:"Building the ZIP",wzTasks:"Tasks",wzFiles:"Files",wzFailed:"failed",wzCancel:"Cancel",wzCancelled:"Export cancelled",wzZipping:"Compressing…",wzDone:"files exported",wzErr:"The ZIP could not be created",wzNoLib:"The ZIP library did not load",wzFailHdr:"These files could not be downloaded. Everything else is in the package.",weAllC:"All categories",weAllT:"All technicians",weAllS:"All statuses",weReset:"Reset filters",weResults:"results",weKImages:"Total images",weKDocs:"Total documents",weKClaim:"Complaint",weKProof:"Evidence",mgrRole:"Department Manager",mgrNone:"Department Manager contact is not currently configured.",weTitle:"Image & Document Studio",weSub:"Every image and document, task by task",weGal:"Gallery",weTime:"Timeline",weTbl:"Table",weSoon:"SOON",weSoonT:"Coming in a later phase",weSearch:"Search",wePh:"Search by ID, title, requester or technician...",weAllP:"All projects",weFrom:"From",weTo:"To",weProj:"Project",weCat:"Category",weTech:"Technician",weStat:"Status",weSReq:"Requester",weSTech:"Technician",weKFile:"Files",weClaim:"COMPLAINT",weProof:"EVIDENCE",wePrev:"Preview unavailable",weDoc:"Document",weShow:"Showing",wePrevP:"‹ Previous",weNextP:"Next ›",weNoneT:"No evidence matches these filters",weNoneS:"Clear a filter or widen the dates.",nav:{dashboard:"Dashboard",manage:"Manage Requests",all:"All Requests",reports:"Dashboard & Reports",staffdir:"Staff Directory",open:"Open Tasks",archive:"Archived / Declined",media:"Image & Document Studio",settings:"Settings"},
+  weOpen:"⤢ Open",weFile1:"file",weFileN:"files",wpClose:"Close",wpOpenTask:"Open task",wpInfo:"Task information",wpTimeline:"Timeline",wpPrio:"Priority",wpBy:"Requested by",wpRec:"Received",wpSched:"Scheduled start",wpDone:"Completed",wpEvRec:"Request received",wpEvSched:"Work scheduled",wpEvStart:"Work started",wpEvSub:"Submitted for confirmation",wpEvDone:"Completed",wpEvClosed:"Closed",wpReason:"Reason",wpMgr:"Manager note",wpCloseNote:"Closeout note",weReqImg:"Requester photos",weReqDoc:"Requester documents",weTecImg:"Technician photos",weTecDoc:"Technician documents",weNoneG:"Nothing attached",wpNotFound:"That task is not in the current list",wzBtn:"Download ZIP",wzHint:"Exports every task matching the current filters",wzTitle:"Building the ZIP",wzTasks:"Tasks",wzFiles:"Files",wzFailed:"failed",wzCancel:"Cancel",wzCancelled:"Export cancelled",wzZipping:"Compressing…",wzDone:"files exported",wzErr:"The ZIP could not be created",wzNoLib:"The ZIP library did not load",wzFailHdr:"These files could not be downloaded. Everything else is in the package.",weAllC:"All categories",weAllT:"All technicians",weAllS:"All statuses",weReset:"Reset filters",weResults:"results",weKImages:"Total images",weKDocs:"Total documents",weKClaim:"Complaint",weKProof:"Evidence",mgrRole:"Department Manager",mgrNone:"Department Manager contact is not currently configured.",weNoRes:"No matching records found.",weRowsL:"Rows",weCID:"Request ID",weCTtl:"Request title",weCCI:"Complaint images",weCEI:"Evidence images",weCTI:"Total images",weCCD:"Complaint documents",weCED:"Evidence documents",weCTD:"Total documents",weCCrt:"Created",weCUpd:"Last updated",weCAct:"Actions",weCOpen:"Open",weTitle:"Image & Document Studio",weSub:"Every image and document, task by task",weGal:"Gallery",weTime:"Timeline",weTbl:"Table",weSoon:"SOON",weSoonT:"Coming in a later phase",weSearch:"Search",wePh:"Search by ID, title, requester or technician...",weAllP:"All projects",weFrom:"From",weTo:"To",weProj:"Project",weCat:"Category",weTech:"Technician",weStat:"Status",weSReq:"Requester",weSTech:"Technician",weKFile:"Files",weClaim:"COMPLAINT",weProof:"EVIDENCE",wePrev:"Preview unavailable",weDoc:"Document",weShow:"Showing",wePrevP:"‹ Previous",weNextP:"Next ›",weNoneT:"No evidence matches these filters",weNoneS:"Clear a filter or widen the dates.",nav:{dashboard:"Dashboard",manage:"Manage Requests",all:"All Requests",reports:"Dashboard & Reports",staffdir:"Staff Directory",open:"Open Tasks",archive:"Archived / Declined",media:"Image & Document Studio",settings:"Settings"},
   navIc:{dashboard:"▦",manage:"📥",all:"📋",reports:"📊",staffdir:"👷",open:"⚙",archive:"🗂",media:"◫",settings:"⚙️"},
   reqEye:"New request",reqH1:"Request a Service",reqP:"Fill in the details and submit — your request goes straight to the O&M team.",
   requestedBy:"Requested by",namePh:"Your name",projLoc:"Project / Location",svcType:"Service type",needs:"What do you need?",needsPh:"Describe the service you are requesting",
@@ -1617,7 +1712,7 @@ const T={
   durReq:"Duration is required to schedule the task",
   addImages:"Add photos (optional)",addImagesHint:"Attach photos to explain better — take a photo or pick from your gallery.",uploading:"Uploading…",photo:"photo",photos:"photos",viewImages:"Photos",reqPhone:"Mobile number",reqPhonePh:"e.g. 0500000000",waitUpload:"Please wait — photo uploading…",sending:"Sending…",shareReq:"Share request number",shareHint:"Share the image on WhatsApp or save it to your phone.",imgSaved:"Image saved",addFiles:"Add attachment (optional)",chooseEye:"Service Portal",chooseH1:"How can we help?",chooseP:"Choose what you would like to do.",chooseNew:"New request",chooseNewSub:"Submit a service request",chooseTrack:"Track a request",chooseTrackSub:"Check the status of requests",backChoose:"Back",addFilesHint:"Attach a PDF or Office document if needed (max 20 MB).",fileRejected:"The selected file type is not supported or exceeds the maximum allowed size (20 MB).",trkEye:"Track",trkH1:"Track Requests",trkP:"Enter your request number to check its status.",trkPending:"Awaiting approval",trkProg:"In progress",trkSearchPh:"0042",trkNone:"No active requests.",trkSearching:"Searching…",trkWaiting:"Awaiting approval",trkInProg:"In progress",stfEye:"Staff",stfH1:"My Tasks",stfPick:"Select your name to view your assigned tasks.",stfNoNames:"No team members yet.",stfChange:"Change name",stfMyTasks:"Your Task List",stfNoTasks:"No tasks assigned to you right now.",stfOpen:"Open",stfBackList:"Back to list",stfDone:"Mark as done",stfDoneYes:"Yes, done",stfConfirmTitle:"Confirm completion",stfConfirmMsg:"Have you finished this task? It will be sent to the manager for confirmation.",stfDoneToast:"Sent to manager for confirmation",stfPendBadge:"Pending confirmation",stfPendMsg:"Done — awaiting manager confirmation.",stfPendMsg2:"Pending confirmation",pendBadge:"Awaiting confirmation",confirmDone:"Confirm",returnTask:"Return",returnedToast:"returned to In Progress",savedToast:"Updated",mgrNotePh:"Reason / note for the technician (optional)",stOverdue:"Overdue",stOnHold:"On Hold",stNeedsReview:"Needs Review",stNeedsUpdate:"Needs Update",stComplete:"Completed",stCancelled:"Cancelled",stRejected:"Rejected",trkNoSearch:"No request found with that number."},
  ar:{co:"شركة المفاهيم المتقدمة للمقاولات المحدودة",sys:"طلبات خدمة التشغيل والصيانة",
-  weOpen:"⤢ افتح",weFile1:"ملف",weFileN:"ملفات",wpClose:"إغلاق",wpOpenTask:"افتح المهمة",wpInfo:"معلومات المهمة",wpTimeline:"الخط الزمني",wpPrio:"الأولوية",wpBy:"مقدّم الطلب",wpRec:"تاريخ الاستلام",wpSched:"موعد البدء",wpDone:"تاريخ الإنجاز",wpEvRec:"وصل الطلب",wpEvSched:"جُدول العمل",wpEvStart:"بدأ العمل",wpEvSub:"أُرسل للتأكيد",wpEvDone:"اكتمل",wpEvClosed:"أُغلق",wpReason:"السبب",wpMgr:"ملاحظة المدير",wpCloseNote:"ملاحظة الإغلاق",weReqImg:"صور مقدّم الطلب",weReqDoc:"ملفات مقدّم الطلب",weTecImg:"صور الفني",weTecDoc:"ملفات الفني",weNoneG:"ما في مرفقات",wpNotFound:"المهمة مش موجودة بالقائمة الحالية",wzBtn:"تحميل ZIP",wzHint:"بيصدّر كل المهام المطابقة للفلاتر الحالية",wzTitle:"جاري تجهيز الحزمة",wzTasks:"المهام",wzFiles:"الملفات",wzFailed:"فشلت",wzCancel:"إلغاء",wzCancelled:"تم إلغاء التصدير",wzZipping:"جاري الضغط…",wzDone:"ملف تم تصديره",wzErr:"تعذّر إنشاء الحزمة",wzNoLib:"مكتبة الضغط ما حمّلت",wzFailHdr:"هذه الملفات تعذّر تحميلها. الباقي كامل داخل الحزمة.",weAllC:"كل التصنيفات",weAllT:"كل الفنيين",weAllS:"كل الحالات",weReset:"مسح الفلاتر",weResults:"نتيجة",weKImages:"إجمالي الصور",weKDocs:"إجمالي الملفات",weKClaim:"صور البلاغ",weKProof:"صور الإثبات",mgrRole:"مدير القسم",mgrNone:"بيانات التواصل مع مدير القسم غير محددة حاليًا.",weTitle:"استوديو الصور والملفات",weSub:"كل الصور والملفات، مهمة بمهمة",weGal:"معرض",weTime:"زمني",weTbl:"جدول",weSoon:"قريباً",weSoonT:"بمرحلة لاحقة",weSearch:"بحث",wePh:"ابحث برقم المهمة أو العنوان أو مقدّم الطلب أو الفني...",weAllP:"كل المشاريع",weFrom:"من",weTo:"إلى",weProj:"المشروع",weCat:"التصنيف",weTech:"الفني",weStat:"الحالة",weSReq:"مقدّم الطلب",weSTech:"الفني",weKFile:"ملفات",weClaim:"شكوى",weProof:"إثبات",wePrev:"تعذّر عرض الصورة",weDoc:"مستند",weShow:"يعرض",wePrevP:"‹ السابق",weNextP:"التالي ›",weNoneT:"ما في إثباتات تطابق هذه الفلاتر",weNoneS:"امسح فلتر أو وسّع التواريخ.",nav:{dashboard:"لوحة المعلومات",manage:"إدارة الطلبات",all:"جميع الطلبات",reports:"لوحة المعلومات والتقارير",staffdir:"دليل الموظفين",open:"المهام المفتوحة",archive:"الملغية / المحذوفة",media:"استوديو الصور والملفات",settings:"الإعدادات"},
+  weOpen:"⤢ افتح",weFile1:"ملف",weFileN:"ملفات",wpClose:"إغلاق",wpOpenTask:"افتح المهمة",wpInfo:"معلومات المهمة",wpTimeline:"الخط الزمني",wpPrio:"الأولوية",wpBy:"مقدّم الطلب",wpRec:"تاريخ الاستلام",wpSched:"موعد البدء",wpDone:"تاريخ الإنجاز",wpEvRec:"وصل الطلب",wpEvSched:"جُدول العمل",wpEvStart:"بدأ العمل",wpEvSub:"أُرسل للتأكيد",wpEvDone:"اكتمل",wpEvClosed:"أُغلق",wpReason:"السبب",wpMgr:"ملاحظة المدير",wpCloseNote:"ملاحظة الإغلاق",weReqImg:"صور مقدّم الطلب",weReqDoc:"ملفات مقدّم الطلب",weTecImg:"صور الفني",weTecDoc:"ملفات الفني",weNoneG:"ما في مرفقات",wpNotFound:"المهمة مش موجودة بالقائمة الحالية",wzBtn:"تحميل ZIP",wzHint:"بيصدّر كل المهام المطابقة للفلاتر الحالية",wzTitle:"جاري تجهيز الحزمة",wzTasks:"المهام",wzFiles:"الملفات",wzFailed:"فشلت",wzCancel:"إلغاء",wzCancelled:"تم إلغاء التصدير",wzZipping:"جاري الضغط…",wzDone:"ملف تم تصديره",wzErr:"تعذّر إنشاء الحزمة",wzNoLib:"مكتبة الضغط ما حمّلت",wzFailHdr:"هذه الملفات تعذّر تحميلها. الباقي كامل داخل الحزمة.",weAllC:"كل التصنيفات",weAllT:"كل الفنيين",weAllS:"كل الحالات",weReset:"مسح الفلاتر",weResults:"نتيجة",weKImages:"إجمالي الصور",weKDocs:"إجمالي الملفات",weKClaim:"صور البلاغ",weKProof:"صور الإثبات",mgrRole:"مدير القسم",mgrNone:"بيانات التواصل مع مدير القسم غير محددة حاليًا.",weNoRes:"لا توجد نتائج مطابقة.",weRowsL:"صفوف",weCID:"رقم الطلب",weCTtl:"عنوان الطلب",weCCI:"صور البلاغ",weCEI:"صور الإثبات",weCTI:"إجمالي الصور",weCCD:"ملفات البلاغ",weCED:"ملفات الإثبات",weCTD:"إجمالي الملفات",weCCrt:"تاريخ الإنشاء",weCUpd:"آخر تحديث",weCAct:"إجراءات",weCOpen:"فتح",weTitle:"استوديو الصور والملفات",weSub:"كل الصور والملفات، مهمة بمهمة",weGal:"معرض",weTime:"زمني",weTbl:"جدول",weSoon:"قريباً",weSoonT:"بمرحلة لاحقة",weSearch:"بحث",wePh:"ابحث برقم المهمة أو العنوان أو مقدّم الطلب أو الفني...",weAllP:"كل المشاريع",weFrom:"من",weTo:"إلى",weProj:"المشروع",weCat:"التصنيف",weTech:"الفني",weStat:"الحالة",weSReq:"مقدّم الطلب",weSTech:"الفني",weKFile:"ملفات",weClaim:"شكوى",weProof:"إثبات",wePrev:"تعذّر عرض الصورة",weDoc:"مستند",weShow:"يعرض",wePrevP:"‹ السابق",weNextP:"التالي ›",weNoneT:"ما في إثباتات تطابق هذه الفلاتر",weNoneS:"امسح فلتر أو وسّع التواريخ.",nav:{dashboard:"لوحة المعلومات",manage:"إدارة الطلبات",all:"جميع الطلبات",reports:"لوحة المعلومات والتقارير",staffdir:"دليل الموظفين",open:"المهام المفتوحة",archive:"الملغية / المحذوفة",media:"استوديو الصور والملفات",settings:"الإعدادات"},
   navIc:{dashboard:"▦",manage:"📥",all:"📋",reports:"📊",staffdir:"👷",open:"⚙",archive:"🗂",media:"◫",settings:"⚙️"},
   reqEye:"طلب جديد",reqH1:"طلب خدمة",reqP:"يُرجى تعبئة التفاصيل وإرسال الطلب؛ ليصل مباشرةً إلى قسم التشغيل والصيانة.",
   requestedBy:"مقدّم الطلب",namePh:"الاسم",projLoc:"المشروع / الموقع",svcType:"نوع الخدمة",needs:"تفاصيل الطلب",needsPh:"يُرجى وصف الخدمة المطلوبة بوضوح",
@@ -1720,6 +1815,7 @@ async function load(role){
     if(cfg.widgets)state.widgets=Object.assign(JSON.parse(JSON.stringify(DEFAULT_WIDGETS)),cfg.widgets);
   }
   try{const r=await LS.get('advacon_lang');if(r&&r.value)L=r.value;}catch(e){}
+  try{const rw=await LS.get('advacon_we_rows');if(rw&&rw.value)WE_ROWS=parseInt(rw.value,10)||25;}catch(e){}
   // migrate lists to bilingual {en,ar} objects (categories & priorities) — keeps old data, never loses it
   const AR_CAT={"Maint 🔧":"أعمال الصيانة","Movement 🔄":"النقل والتنقّل","Procurement 🛒":"المشتريات","Fuel Supply ⛽":"تزويد الوقود","Material Transport 🚛":"نقل المواد","Others 🧩":"أخرى","Maintenance":"أعمال الصيانة","Movement":"النقل والتنقّل","Procurement":"المشتريات","Fuel Supply":"تزويد الوقود","Material Transport":"نقل المواد","Others":"أخرى","Administrative":"شؤون إدارية"};
   const EN_CAT={"Maint 🔧":"Maintenance","Movement 🔄":"Movement","Procurement 🛒":"Procurement","Fuel Supply ⛽":"Fuel Supply","Material Transport 🚛":"Material Transport","Others 🧩":"Others"};
@@ -1897,6 +1993,7 @@ async function tryAdmin(){
   // success → open the manager dashboard
   state.role='admin';state.route='manage';if(!L)L='en';await saveLang();
   await load('admin');
+  await repairManagerSnapshot();   // heal a pre-snapshot or stale manager record
   document.getElementById('gate').innerHTML='';document.getElementById('app').style.display='flex';applyDir();render();startRealtime();
 }
 async function enterAdminDirect(){state.role='admin';const h=(location.hash||'').replace('#','');const valid=['reports','manage','archive','staffdir','settings','all'];state.route=valid.includes(h)?h:'manage';if(!L)L='en';document.getElementById('gate').innerHTML='';document.getElementById('app').style.display='flex';applyDir();render();startRealtime();}
@@ -2045,7 +2142,8 @@ function render(){
    Data: state.requests, already loaded by admin_get_requests() (is_admin()
    gated). No new table read, no new grant. */
 
-const WE_PAGE=24;
+const WE_PAGE=24;          // gallery tiles per page — a clean grid, unchanged
+let WE_ROWS=25;            // table rows per page — user-selectable (§7)
 let weF={q:'',from:'',to:'',proj:'',cat:'',tech:'',stat:'',src:'',kind:''};
 let wePg=1;
 let weSel=0;          // selected task id, Phase 2 reads this
@@ -2236,9 +2334,9 @@ function viewMedia(){
     <div class="we-top">
       <div class="phead" style="margin:0"><h1 style="margin:0">${t('weTitle')}</h1><p class="sub" style="margin:2px 0 0">${t('weSub')}</p></div>
       <div class="we-modes">
-        <button class="we-mode on">▦ ${t('weGal')}</button>
+        <button class="we-mode ${weView==='grid'?'on':''}" onclick="weSetView('grid')">▦ ${t('weGal')}</button>
+        <button class="we-mode ${weView==='table'?'on':''}" onclick="weSetView('table')">☰ ${t('weTbl')}</button>
         <button class="we-mode" disabled title="${t('weSoonT')}">⋮ ${t('weTime')} <span class="we-soon">${t('weSoon')}</span></button>
-        <button class="we-mode" disabled title="${t('weSoonT')}">☰ ${t('weTbl')} <span class="we-soon">${t('weSoon')}</span></button>
       </div>
     </div>
     <div class="we-kpis">
@@ -2291,10 +2389,175 @@ function viewMedia(){
     <button onclick="weeGo(${wePg+1})" ${wePg>=pages?'disabled':''}>${t('weNextP')}</button>
   </div>`:'';
 
+  // The table is a LENS over the same `all` rows — one pipeline, two views.
+  if(weView==='table'){
+    return head+
+      `<div class="we-meta"><span>${t('weShow')} <b>${all.length}</b> ${t('weResults')}</span></div>
+      ${weTable(weTblRows())}`;
+  }
   return head+
     `<div class="we-meta"><span>${t('weShow')} <b>${all.length}</b> ${t('weResults')}</span>
       <span>${(wePg-1)*WE_PAGE+1}–${Math.min(wePg*WE_PAGE,all.length)}</span></div>
     <div class="we-stage"><div class="we-grid">${rows.map(weTile).join('')}</div></div>${pg}`;
+}
+
+/* ===== IMAGE & DOCUMENT STUDIO — Phase 4: table view =====
+   The table is a LENS over weRows() — the same filtered set the gallery, the KPI
+   cards and the ZIP already use. No second filtering pipeline exists.
+
+   §10 performance: weAtt()+weIsImage() run once per row per render and the result
+   is cached on weTblCache, keyed by the row id and the filter signature. Sorting
+   and paging read the cache instead of re-classifying every attachment. */
+let weView='grid';          // 'grid' | 'table'
+let weSort='id';            // id | received | updated | status | staff | img | doc
+let weDir=-1;               // -1 desc, 1 asc
+let weTblCache=null;        // {sig, rows}
+
+/* No updated_at column exists in the schema, so "last updated" is derived from
+   the newest real timestamp the row actually carries. Nothing is invented. */
+function weUpdated(r){
+  const c=[r.confirmedAt,r.rejectedAt,r.pendingConfirmAt,r.startedAt,r.receivedAt,r.closed,r.received]
+    .filter(Boolean).map(x=>String(x));
+  if(!c.length)return '';
+  return c.sort().pop();
+}
+/* One classification pass per row, cached. */
+function weTblRows(){
+  // The signature must be computable WITHOUT touching the rows, otherwise
+  // weRows() re-classifies every attachment on what should be a cache hit.
+  // weF + the request count + the sort fully determine the result.
+  // The signature must change whenever the DATA changes, not just its length —
+  // editing a task in place (same count) must not serve stale counts. Summing the
+  // ids and attachment lengths is cheap and catches edits, adds and deletes,
+  // without touching 10 call sites that could fall out of sync.
+  let stamp=0;
+  const src=state.requests||[];
+  for(let i=0;i<src.length;i++){
+    const r=src[i];
+    stamp+=(r.id||0)
+      +(r.images?r.images.length:0)+(r.closeoutImages?r.closeoutImages.length:0)
+      +(r.files?r.files.length:0)+(r.closeoutFiles?r.closeoutFiles.length:0)
+      +(r.status?r.status.length:0)+(r.assignedTo?r.assignedTo.length:0);
+  }
+  const sig=JSON.stringify(weF)+'|'+src.length+'|'+stamp+'|'+weSort+'|'+weDir;
+  if(weTblCache&&weTblCache.sig===sig)return weTblCache.rows;
+  const base=weRows();
+  const rows=base.map(r=>{
+    const a=weAtt(r);
+    let ci=0,pi=0,cd=0,pd=0;
+    a.ci.forEach(u=>{ weIsImage(u)?ci++:cd++; });
+    a.pi.forEach(u=>{ weIsImage(u)?pi++:pd++; });
+    a.cd.forEach(f=>{ weIsImage(f)?ci++:cd++; });
+    a.pd.forEach(f=>{ weIsImage(f)?pi++:pd++; });
+    return {r:r, a:a, ci:ci, pi:pi, img:ci+pi, cd:cd, pd:pd, doc:cd+pd, upd:weUpdated(r)};
+  });
+  const key=(x)=>{
+    switch(weSort){
+      case 'received': return String(x.r.received||'');
+      case 'updated' : return x.upd;
+      case 'status'  : return String(x.r.effStatus||'');
+      case 'staff'   : return String(x.r.assignedTo||'');
+      case 'img'     : return x.img;
+      case 'doc'     : return x.doc;
+      default        : return x.r.id;
+    }
+  };
+  rows.sort((p,q)=>{
+    const A=key(p),B=key(q);
+    if(A<B)return -1*weDir;
+    if(A>B)return  1*weDir;
+    return (p.r.id-q.r.id)*weDir;      // stable tiebreak
+  });
+  weTblCache={sig:sig, rows:rows};
+  return rows;
+}
+function weSetView(v){ weView=v; wePg=1; render(); }
+function weSetSort(k){
+  if(weSort===k)weDir=-weDir; else { weSort=k; weDir=(k==='id'||k==='received'||k==='updated')?-1:1; }
+  wePg=1; render();
+}
+function weSetRows(n){ WE_ROWS=parseInt(n,10)||25; wePg=1; try{LS.set('advacon_we_rows',String(WE_ROWS));}catch(e){} render(); }
+
+/* Open the gallery straight from a count — no navigation, no drawer first. */
+function weGoImgs(id,side){
+  const r=state.requests.map(calc).find(x=>x.id===id);
+  if(!r)return;
+  const a=weAtt(r);
+  const list=(side==='c'?a.ci:a.pi).filter(u=>weIsImage(u))
+    .concat((side==='c'?a.cd:a.pd).filter(f=>weIsImage(f)).map(f=>f.url));
+  if(!list.length)return;
+  openGallery(id,list,0);
+}
+/* Documents open in the details panel's Files tab — the component that already
+   lists them, rather than a second list widget. */
+function weGoDocs(id,side){
+  weSel=id; wpFor=id; wpTab='docs';
+  renderPanel();
+}
+
+function weTable(rows){
+  if(!rows.length)return `<div class="we-tbl-wrap"><div class="we-empty2">${t('weNoRes')}</div></div>`;
+  const total=Math.max(1,Math.ceil(rows.length/WE_ROWS));
+  if(wePg>total)wePg=total;
+  const page=rows.slice((wePg-1)*WE_ROWS,(wePg-1)*WE_ROWS+WE_ROWS);
+  const ar=(k)=>weSort===k?(weDir===1?'▲':'▼'):'';
+  const th=(k,lab)=>`<th class="srt ${weSort===k?'on':''}" onclick="weSetSort('${k}')">${lab}<span class="ar">${ar(k)||'⇅'}</span></th>`;
+  const cnt=(n,id,fn,side)=>n?`<button class="we-cnt" onclick="event.stopPropagation();${fn}(${id},'${side}')">${n}</button>`
+    :`<span class="we-cnt zero">0</span>`;
+
+  const body=page.map(x=>{
+    const r=x.r;
+    return `<tr class="${weSel===r.id?'sel':''}" tabindex="0" onclick="weePick(${r.id})"
+      onkeydown="if(event.key==='Enter'){event.preventDefault();weePick(${r.id});}">
+      <td data-l="${t('weCID')}" class="we-tid">${fmtID(r.id)}</td>
+      <td data-l="${t('weCat')}" class="hide-m">${esc(r.category||'—')}</td>
+      <td data-l="${t('weProj')}">${esc(r.project||'—')}</td>
+      <td data-l="${t('weCTtl')}" class="we-ttl2" title="${esc(r.title||'')}">${esc(r.title||'—')}</td>
+      <td data-l="${t('weTech')}">${esc(r.assignedTo?staffDisp(r.assignedTo):'—')}</td>
+      <td data-l="${t('weStat')}">${effBadge(r)}</td>
+      <td data-l="${t('weCCI')}" class="we-num">${cnt(x.ci,r.id,'weGoImgs','c')}</td>
+      <td data-l="${t('weCEI')}" class="we-num">${cnt(x.pi,r.id,'weGoImgs','p')}</td>
+      <td data-l="${t('weCTI')}" class="we-num we-tot">${x.img}</td>
+      <td data-l="${t('weCCD')}" class="we-num">${cnt(x.cd,r.id,'weGoDocs','c')}</td>
+      <td data-l="${t('weCED')}" class="we-num">${cnt(x.pd,r.id,'weGoDocs','p')}</td>
+      <td data-l="${t('weCTD')}" class="we-num we-tot">${x.doc}</td>
+      <td data-l="${t('weCCrt')}" class="we-dt2 hide-m">${esc((r.received||'').slice(0,10)||'—')}</td>
+      <td data-l="${t('weCUpd')}" class="we-dt2 hide-m">${esc((x.upd||'').slice(0,10)||'—')}</td>
+      <td data-l="${t('weCAct')}"><button class="we-act"
+        onclick="event.stopPropagation();weePick(${r.id})">${t('weCOpen')}</button></td>
+    </tr>`;
+  }).join('');
+
+  return `<div class="we-tbl-wrap"><table class="we-tbl">
+    <thead><tr>
+      ${th('id',t('weCID'))}
+      <th class="hide-m">${t('weCat')}</th>
+      <th>${t('weProj')}</th>
+      <th>${t('weCTtl')}</th>
+      ${th('staff',t('weTech'))}
+      ${th('status',t('weStat'))}
+      <th>${t('weCCI')}</th>
+      <th>${t('weCEI')}</th>
+      ${th('img',t('weCTI'))}
+      <th>${t('weCCD')}</th>
+      <th>${t('weCED')}</th>
+      ${th('doc',t('weCTD'))}
+      ${th('received',t('weCCrt'))}
+      ${th('updated',t('weCUpd'))}
+      <th>${t('weCAct')}</th>
+    </tr></thead><tbody>${body}</tbody></table></div>
+  <div class="we-pg">
+    <span>${t('weShow')} <b>${(wePg-1)*WE_ROWS+1}–${Math.min(wePg*WE_ROWS,rows.length)}</b> / ${rows.length}</span>
+    <div class="sp">
+      <label for="we_rows">${t('weRowsL')}</label>
+      <select class="we-rows" id="we_rows" onchange="weSetRows(this.value)">
+        ${[10,25,50,100].map(n=>`<option ${WE_ROWS===n?'selected':''}>${n}</option>`).join('')}
+      </select>
+      ${total>1?`<button class="btn sm sec" ${wePg<=1?'disabled':''} onclick="weeGo(${wePg-1})">‹</button>
+      <span>${wePg} / ${total}</span>
+      <button class="btn sm sec" ${wePg>=total?'disabled':''} onclick="weeGo(${wePg+1})">›</button>`:''}
+    </div>
+  </div>`;
 }
 
 function weePick(id){
@@ -2401,7 +2664,9 @@ function wzPool(jobs,limit,onEach){
 
 async function weZip(){
   if(wzBusy)return;
-  const rows=weRows();                       // the CURRENT filtered set, all pages
+  // §8: same filtered set, in the order the user is actually looking at.
+  // weTblRows() IS weRows() + the active sort — one pipeline, not a second one.
+  const rows=weTblRows().map(x=>x.r);        // CURRENT filtered set, sorted, all pages
   if(!rows.length){ toast(t('weNoneT')); return; }
   if(typeof JSZip==='undefined'){ toast(t('wzNoLib')); return; }
 
@@ -2683,13 +2948,13 @@ function wpOpenTask(id){
 
 function weeGo(p){wePg=p;render();window.scrollTo(0,0);}
 function weeSet(k,v){
-  weF[k]=v; wePg=1;
+  weF[k]=v; wePg=1; weTblCache=null;   // filters changed -> the memo is stale
   render();
   if(k==='q'){const b=document.getElementById('we_q');if(b){b.focus();b.setSelectionRange(b.value.length,b.value.length);}}
 }
 function weeClear(){
   weF={q:'',from:'',to:'',proj:'',cat:'',tech:'',stat:'',src:'',kind:''};
-  wePg=1; weSel=0; render();
+  wePg=1; weSel=0; weTblCache=null; render();
 }
 
 /* ===== REQUEST + THANKS ===== */
@@ -3069,12 +3334,12 @@ function openPeriodForm(id,presetCat){
 }
 function periodFormHTML(){
   const f=periodForm;const projs=state.lists.projects||[];const cats=state.lists.categories||[];const pris=state.lists.priorities||[];
-  // §3: a disabled technician must not be offered for a NEW assignment. Keep an
-  // already-assigned name in the list so editing an old task cannot blank it.
-  const staff=(state.staff||[]).filter(s=>{
-    const nm=(s.en||s.ar||'');
-    return s.active!==false || (f.assignedTo&&f.assignedTo===nm);
-  });
+  // §12: no per-page filtering — activeStaffNames() is the single source. An
+  // already-assigned inactive name is kept so editing an old template cannot
+  // silently blank its technician.
+  const names=activeStaffNames().slice();
+  if(f.assignedTo&&names.indexOf(f.assignedTo)===-1)names.unshift(f.assignedTo);
+  const staff=names.map(n2=>staffList().find(x=>x.en===n2)||{en:n2,ar:''});
   const projOpts=projs.map(p=>`<option ${f.project===p?'selected':''}>${esc(p)}</option>`).join('');
   const catOpts=cats.map(c=>{const v=typeof c==='object'?(c.en||c.ar):c;return `<option ${f.category===v?'selected':''}>${esc(v)}</option>`;}).join('');
   const priOpts=pris.map(p=>{const v=typeof p==='object'?(p.en||p.ar):p;return `<option ${f.priority===v?'selected':''}>${esc(v)}</option>`;}).join('');
@@ -4048,7 +4313,7 @@ function viewStaffDir(){
     <div class="staff-row-mgr">
       <label class="mgr-pick ${mgrId()===String(s.id)?'on':''}" title="${esc(t('mgrRole'))}">
         <input type="radio" name="deptmgr" ${mgrId()===String(s.id)?'checked':''}
-          ${s.active===false?'disabled':''} onclick="setDeptManager(${s.id})"/>
+          ${s.active===false?'disabled':''} onchange="setDeptManager(${s.id})"/>
         <span>${t('mgrRole')}</span>
       </label>
     </div>
@@ -4627,7 +4892,7 @@ async function doStaffDone(id){
   if(p.indexOf('/admin')>=0){
     if(!L)L='en';
     const authed=await checkAdminFlag();
-    if(authed){ await load('admin'); enterAdminDirect(); }
+    if(authed){ await load('admin'); await repairManagerSnapshot(); enterAdminDirect(); }
     else { openAdmin(); }          // no data load until PIN passes (see tryAdmin)
   }
   else if(p.indexOf('/staff')>=0){
