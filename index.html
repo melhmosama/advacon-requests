@@ -1465,6 +1465,32 @@ async function sbUploadFile(file){
   return SB_URL+'/storage/v1/object/public/'+SB_BUCKET+'/'+name;
 }
 
+// H2 Phase 2: resolve a stored public image/file URL to a short-lived SIGNED url
+// via the sign-image Edge Function. Admin JWT (header) or staff token (body) is
+// attached automatically; the server decides if the caller may see this object.
+// TRANSITIONAL: while the bucket is still public, any sign failure falls back to
+// the original public URL so nothing breaks. (After Phase 5 this fallback is
+// replaced by a retry state - see Phase 3.) Not yet wired to any render site.
+async function signedUrl(storedUrl){
+  if(!storedUrl || storedUrl.indexOf('/request-images/')<0) return storedUrl;
+  const key=storedUrl.split('/request-images/')[1];
+  if(!key) return storedUrl;
+  try{
+    const headers={'Content-Type':'application/json'};
+    const body={key:key};
+    const a=admGetSession();
+    if(a && a.access_token) headers['Authorization']='Bearer '+a.access_token;
+    const s=stfGetSession();
+    if(s && s.token) body.staffToken=s.token;
+    const r=await fetch(SB_URL+'/functions/v1/sign-image',{
+      method:'POST', headers:headers, body:JSON.stringify(body)
+    });
+    if(!r.ok) return storedUrl;
+    const d=await r.json();
+    return (d && d.signedUrl) ? d.signedUrl : storedUrl;
+  }catch(e){ return storedUrl; }
+}
+
 const SEED={
   projects:["324","324-03","324-04","324-06","324-A","324-B","324-C","336","339","374","382","385","388","392","Offices","Workshops & Warehouses","Eng - Residences Saq","Eng - Residences Sk3","Labors - Residences SK","Labors - Residences Sa","Labors - Residences 324-03","Labors - Residences 339","Labors - Residences 336","For all","Others"],
   categories:[{en:"Maintenance",ar:"أعمال الصيانة"},{en:"Movement",ar:"النقل والتنقّل"},{en:"Procurement",ar:"المشتريات"},{en:"Fuel Supply",ar:"تزويد الوقود"},{en:"Material Transport",ar:"نقل المواد"},{en:"Others",ar:"أخرى"},{en:"Administrative",ar:"شؤون إدارية"}],
