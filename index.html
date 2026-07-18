@@ -1451,14 +1451,14 @@ async function sbFetchSettings(){try{const res=await fetch(SB_URL+'/rest/v1/app_
 // every upload with an opaque 'connection failed' toast.
 const SB_BUCKET='request-images';
 async function sbUploadImage(file){
-  const ext=(file.name.split('.').pop()||'jpg').toLowerCase();
+  const ext=((file.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,5))||'jpg';
   const name=Date.now()+'_'+Math.random().toString(36).slice(2,8)+'.'+ext;
   const res=await fetch(SB_URL+'/storage/v1/object/'+SB_BUCKET+'/'+name,{method:'POST',headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':file.type||'image/jpeg'},body:file});
   if(!res.ok){const detail=await res.text().catch(()=>'');throw new Error('upload '+res.status+': '+detail);}
   return SB_URL+'/storage/v1/object/public/'+SB_BUCKET+'/'+name;
 }
 async function sbUploadFile(file){
-  const ext=(file.name.split('.').pop()||'bin').toLowerCase();
+  const ext=((file.name.split('.').pop()||'bin').toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,5))||'bin';
   const name=Date.now()+'_'+Math.random().toString(36).slice(2,8)+'.'+ext;
   const res=await fetch(SB_URL+'/storage/v1/object/'+SB_BUCKET+'/'+name,{method:'POST',headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':file.type||'application/octet-stream'},body:file});
   if(!res.ok){const detail=await res.text().catch(()=>'');throw new Error('upload '+res.status+': '+detail);}
