@@ -4990,14 +4990,16 @@ let invShelves = [];         // shelves of the selected row's warehouse (for the
 
 async function loadInventory(force){
   if(invLoaded && !force) return;
-  try{
-    const rows = await sbRpc('inventory_list');   // returns array of row objects
-    invData = Array.isArray(rows) ? rows : [];
-    invLoaded = true;
-  }catch(e){
+  // admRpc carries the admin session token; it returns {ok:false,error} on failure (no throw)
+  const rows = await admRpc('inventory_list', {});
+  if(rows && rows.ok === false){
     invData = []; invLoaded = true;
-    console.warn('inventory_list failed', e);
+    console.warn('inventory_list failed', rows.error);
+    if(typeof toast==='function') toast(admOpError(rows));
+    return;
   }
+  invData = Array.isArray(rows) ? rows : [];
+  invLoaded = true;
 }
 
 /* unique warehouses / categories for filter dropdowns (from the data itself) */
@@ -5130,8 +5132,8 @@ function invOpen(id){ invSel=id; invShelfEdit=false; render(); }
 function invClose(){ invSel=null; invShelfEdit=false; render(); }
 
 async function invEditShelf(iwId, whId){
-  try{ invShelves = await sbRpc('warehouse_shelves',{p_warehouse_id:whId}) || []; }
-  catch(e){ invShelves=[]; }
+  const sh = await admRpc('warehouse_shelves', {p_warehouse_id:whId});
+  invShelves = (sh && sh.ok===false) ? [] : (Array.isArray(sh) ? sh : []);
   invShelfEdit=true; render();
 }
 function invCancelShelf(){ invShelfEdit=false; render(); }
@@ -5141,8 +5143,8 @@ async function invSaveShelf(iwId){
   const shelfId=sel?sel.value:'';
   if(!shelfId){ alert(t('invPickShelf')); return; }
   try{
-    const res=await sbRpc('admin_set_item_warehouse_shelf',{p_item_warehouse_id:iwId, p_shelf_id:shelfId, p_note:'via inventory drawer'});
-    // RPC may signal failure in the body without throwing — verify before treating as success
+    const res=await admRpc('admin_set_item_warehouse_shelf',{p_item_warehouse_id:iwId, p_shelf_id:shelfId, p_note:'via inventory drawer'});
+    // admRpc returns {ok:false,error} on failure (no throw) — verify before treating as success
     if(res && res.ok===false){ alert(t('invShelfErr')+' '+(res.error||'')); return; }
     await loadInventory(true);          // refresh full dataset
     invShelfEdit=false;
