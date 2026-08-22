@@ -1084,6 +1084,51 @@ html[dir="rtl"] .wp{animation-name:wpInR}
   .we-tbl tbody td.hide-m{display:none}
   .we-ttl2{max-width:none;white-space:normal;text-align:end}
 }
+
+/* ===== INVENTORY SCREEN (6D) ===== */
+.inv-toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px}
+.inv-search{flex:1;min-width:220px;position:relative}
+.inv-search input{width:100%;padding:10px 12px 10px 34px;border:1.5px solid var(--grid);border-radius:9px;font-family:inherit;font-size:13.5px;background:var(--white)}
+.inv-search .si{position:absolute;inset-inline-start:11px;top:50%;transform:translateY(-50%);color:var(--grey);font-size:14px;pointer-events:none}
+.inv-filters{display:flex;flex-wrap:wrap;gap:8px}
+.inv-filters select{padding:9px 11px;border:1.5px solid var(--grid);border-radius:9px;font-family:inherit;font-size:13px;background:var(--white);color:var(--txt);cursor:pointer}
+.inv-filters .toggle{display:flex;align-items:center;gap:6px;padding:9px 12px;border:1.5px solid var(--grid);border-radius:9px;background:var(--white);font-size:13px;font-weight:600;color:var(--grey);cursor:pointer;user-select:none}
+.inv-filters .toggle.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+.inv-row{cursor:pointer}
+.inv-row:hover{background:var(--pale)}
+.inv-row.sel{background:var(--lblue)}
+.num{text-align:end;font-variant-numeric:tabular-nums}
+.av-badge{display:inline-block;min-width:34px;text-align:center;padding:2px 9px;border-radius:11px;font-weight:700;font-size:12.5px}
+.av-ok{background:#E8F1EC;color:var(--green)}
+.av-low{background:#F7ECDD;color:var(--amber)}
+.av-zero{background:#F5E5E4;color:var(--red)}
+.noshelf{color:var(--amber);font-weight:600;font-size:12px}
+.st-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-inline-end:5px}
+.st-on{background:var(--green)}.st-off{background:var(--red)}
+/* drawer */
+.dwr-scrim{position:fixed;inset:0;background:rgba(21,64,110,.28);z-index:80;opacity:0;pointer-events:none;transition:.2s}
+.dwr-scrim.open{opacity:1;pointer-events:auto}
+.dwr{position:fixed;top:0;inset-inline-end:0;height:100vh;width:460px;max-width:92vw;background:var(--white);box-shadow:-8px 0 40px rgba(21,64,110,.18);z-index:81;transform:translateX(100%);transition:transform .22s;display:flex;flex-direction:column}
+html[dir=rtl] .dwr{transform:translateX(-100%)}
+.dwr.open{transform:translateX(0)!important}
+.dwr-head{padding:18px 20px;border-bottom:1px solid var(--grid);display:flex;align-items:flex-start;gap:12px}
+.dwr-head .code{font-size:12px;font-weight:700;letter-spacing:.04em;color:var(--med);background:var(--pale);padding:2px 9px;border-radius:7px;display:inline-block;margin-bottom:6px}
+.dwr-head h3{font-size:16px;color:var(--navy);line-height:1.4}
+.dwr-head .en{font-size:12.5px;color:var(--grey);margin-top:2px}
+.dwr-x{margin-inline-start:auto;background:none;border:none;font-size:22px;line-height:1;color:var(--grey);cursor:pointer;padding:0 4px}
+.dwr-body{padding:16px 20px;overflow-y:auto;flex:1}
+.dwr-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 16px}
+.dwr-f{display:flex;flex-direction:column;gap:3px}
+.dwr-f .lb{font-size:11px;font-weight:700;letter-spacing:.03em;color:var(--grey);text-transform:uppercase}
+.dwr-f .vl{font-size:14px;color:var(--txt);font-weight:600}
+.dwr-f.full{grid-column:1 / -1}
+.dwr-sep{height:1px;background:var(--grid);margin:16px 0}
+.dwr-shelf-row{display:flex;align-items:center;gap:10px}
+.dwr-shelf-row select{flex:1;padding:8px 10px;border:1.5px solid var(--grid);border-radius:8px;font-family:inherit;font-size:13.5px;background:var(--white)}
+.btn-sm{padding:7px 14px;border-radius:8px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;border:1.5px solid var(--grid);background:var(--white);color:var(--med)}
+.btn-sm.pri{background:var(--navy);color:#fff;border-color:var(--navy)}
+.btn-sm:disabled{opacity:.5;cursor:default}
+@media(max-width:640px){.dwr{width:100vw;max-width:100vw}.dwr-grid{grid-template-columns:1fr}}
 </style></head>
 <body class="notranslate"><div id="gate"></div><div class="app" id="app" style="display:none"></div><div class="toast" id="toast"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -1708,8 +1753,9 @@ const PAGE_SIZE=100;
 
 const T={
  en:{co:"ADVANCED CONCEPTS CONTRACTING CO. LTD.",sys:"O&M Service Requests",
-  weOpen:"⤢ Open",weFile1:"file",weFileN:"files",wpClose:"Close",wpOpenTask:"Open task",wpInfo:"Task information",wpTimeline:"Timeline",wpPrio:"Priority",wpBy:"Requested by",wpRec:"Received",wpSched:"Scheduled start",wpDone:"Completed",wpEvRec:"Request received",wpEvSched:"Work scheduled",wpEvStart:"Work started",wpEvSub:"Submitted for confirmation",wpEvDone:"Completed",wpEvClosed:"Closed",wpReason:"Reason",wpMgr:"Manager note",wpCloseNote:"Closeout note",weReqImg:"Requester photos",weReqDoc:"Requester documents",weTecImg:"Technician photos",weTecDoc:"Technician documents",weNoneG:"Nothing attached",wpNotFound:"That task is not in the current list",wzBtn:"Download ZIP",wzHint:"Exports every task matching the current filters",wzTitle:"Building the ZIP",wzTasks:"Tasks",wzFiles:"Files",wzFailed:"failed",wzCancel:"Cancel",wzCancelled:"Export cancelled",wzZipping:"Compressing…",wzDone:"files exported",wzErr:"The ZIP could not be created",wzNoLib:"The ZIP library did not load",wzFailHdr:"These files could not be downloaded. Everything else is in the package.",weAllC:"All categories",weAllT:"All technicians",weAllS:"All statuses",weReset:"Reset filters",weResults:"results",weKImages:"Total images",weKDocs:"Total documents",weKClaim:"Complaint",weKProof:"Evidence",mgrRole:"Department Manager",mgrNone:"Department Manager contact is not currently configured.",weNoRes:"No matching records found.",weRowsL:"Rows",weCID:"Request ID",weCTtl:"Request title",weCCI:"Complaint images",weCEI:"Evidence images",weCTI:"Total images",weCCD:"Complaint documents",weCED:"Evidence documents",weCTD:"Total documents",weCCrt:"Created",weCUpd:"Last updated",weCAct:"Actions",weCOpen:"Open",weTitle:"Image & Document Studio",weSub:"Every image and document, task by task",weGal:"Gallery",weTime:"Timeline",weTbl:"Table",weSoon:"SOON",weSoonT:"Coming in a later phase",weSearch:"Search",wePh:"Search by ID, title, requester or technician...",weAllP:"All projects",weFrom:"From",weTo:"To",weProj:"Project",weCat:"Category",weTech:"Technician",weStat:"Status",weSReq:"Requester",weSTech:"Technician",weKFile:"Files",weClaim:"COMPLAINT",weProof:"EVIDENCE",wePrev:"Preview unavailable",weDoc:"Document",weShow:"Showing",wePrevP:"‹ Previous",weNextP:"Next ›",weNoneT:"No evidence matches these filters",weNoneS:"Clear a filter or widen the dates.",nav:{dashboard:"Dashboard",manage:"Manage Requests",all:"All Requests",reports:"Dashboard & Reports",staffdir:"Staff Directory",open:"Open Tasks",archive:"Archived / Declined",media:"Image & Document Studio",settings:"Settings"},
-  navIc:{dashboard:"▦",manage:"📥",all:"📋",reports:"📊",staffdir:"👷",open:"⚙",archive:"🗂",media:"◫",settings:"⚙️"},
+  weOpen:"⤢ Open",weFile1:"file",weFileN:"files",wpClose:"Close",wpOpenTask:"Open task",wpInfo:"Task information",wpTimeline:"Timeline",wpPrio:"Priority",wpBy:"Requested by",wpRec:"Received",wpSched:"Scheduled start",wpDone:"Completed",wpEvRec:"Request received",wpEvSched:"Work scheduled",wpEvStart:"Work started",wpEvSub:"Submitted for confirmation",wpEvDone:"Completed",wpEvClosed:"Closed",wpReason:"Reason",wpMgr:"Manager note",wpCloseNote:"Closeout note",weReqImg:"Requester photos",weReqDoc:"Requester documents",weTecImg:"Technician photos",weTecDoc:"Technician documents",weNoneG:"Nothing attached",wpNotFound:"That task is not in the current list",wzBtn:"Download ZIP",wzHint:"Exports every task matching the current filters",wzTitle:"Building the ZIP",wzTasks:"Tasks",wzFiles:"Files",wzFailed:"failed",wzCancel:"Cancel",wzCancelled:"Export cancelled",wzZipping:"Compressing…",wzDone:"files exported",wzErr:"The ZIP could not be created",wzNoLib:"The ZIP library did not load",wzFailHdr:"These files could not be downloaded. Everything else is in the package.",weAllC:"All categories",weAllT:"All technicians",weAllS:"All statuses",weReset:"Reset filters",weResults:"results",weKImages:"Total images",weKDocs:"Total documents",weKClaim:"Complaint",weKProof:"Evidence",mgrRole:"Department Manager",mgrNone:"Department Manager contact is not currently configured.",weNoRes:"No matching records found.",weRowsL:"Rows",weCID:"Request ID",weCTtl:"Request title",weCCI:"Complaint images",weCEI:"Evidence images",weCTI:"Total images",weCCD:"Complaint documents",weCED:"Evidence documents",weCTD:"Total documents",weCCrt:"Created",weCUpd:"Last updated",weCAct:"Actions",weCOpen:"Open",weTitle:"Image & Document Studio",weSub:"Every image and document, task by task",weGal:"Gallery",weTime:"Timeline",weTbl:"Table",weSoon:"SOON",weSoonT:"Coming in a later phase",weSearch:"Search",wePh:"Search by ID, title, requester or technician...",weAllP:"All projects",weFrom:"From",weTo:"To",weProj:"Project",weCat:"Category",weTech:"Technician",weStat:"Status",weSReq:"Requester",weSTech:"Technician",weKFile:"Files",weClaim:"COMPLAINT",weProof:"EVIDENCE",wePrev:"Preview unavailable",weDoc:"Document",weShow:"Showing",wePrevP:"‹ Previous",weNextP:"Next ›",weNoneT:"No evidence matches these filters",weNoneS:"Clear a filter or widen the dates.",nav:{dashboard:"Dashboard",inventory:"Inventory",manage:"Manage Requests",all:"All Requests",reports:"Dashboard & Reports",staffdir:"Staff Directory",open:"Open Tasks",archive:"Archived / Declined",media:"Image & Document Studio",settings:"Settings"},
+  invEye:"WAREHOUSE",invH1:"Inventory",invP:"Live stock across all warehouses.",invLoading:"Loading inventory…",invNoMatch:"No items match these filters.",invSearchPh:"Search by code or name…",invAllWh:"All warehouses",invAllCat:"All categories",invLow:"Low stock",invNoShelfF:"No shelf",invItems:"items",invCode:"Code",invName:"Name",invCat:"Category",invType:"Type",invUnit:"Unit",invOnHand:"On Hand",invReserved:"Reserved",invAvail:"Available",invMin:"Min Level",invWh:"Warehouse",invShelf:"Shelf",invStatus:"Status",invNoShelf:"No shelf",invActive:"Active",invInactive:"Inactive",invSetShelf:"Set Shelf",invChangeShelf:"Change Shelf",invNoShelvesWh:"No shelves in this warehouse",invPickShelf:"Please choose a shelf.",invShelfErr:"Could not update the shelf:",
+  navIc:{dashboard:"▦",inventory:"📦",manage:"📥",all:"📋",reports:"📊",staffdir:"👷",open:"⚙",archive:"🗂",media:"◫",settings:"⚙️"},
   reqEye:"New request",reqH1:"Request a Service",reqP:"Fill in the details and submit — your request goes straight to the O&M team.",
   requestedBy:"Requested by",namePh:"Your name",projLoc:"Project / Location",svcType:"Service type",needs:"What do you need?",needsPh:"Describe the service you are requesting",
   priority:"Priority",dateReq:"Date requested",autoToday:"Set automatically to today",submit:"Submit request",select:"— select —",
@@ -1738,8 +1784,9 @@ const T={
   durReq:"Duration is required to schedule the task",
   addImages:"Add photos (optional)",addImagesHint:"Attach photos to explain better — take a photo or pick from your gallery.",uploading:"Uploading…",photo:"photo",photos:"photos",viewImages:"Photos",reqPhone:"Mobile number",reqPhonePh:"e.g. 0500000000",waitUpload:"Please wait — photo uploading…",sending:"Sending…",shareReq:"Share request number",shareHint:"Share the image on WhatsApp or save it to your phone.",imgSaved:"Image saved",addFiles:"Add attachment (optional)",chooseEye:"Service Portal",chooseH1:"How can we help?",chooseP:"Choose what you would like to do.",chooseNew:"New request",chooseNewSub:"Submit a service request",chooseTrack:"Track a request",chooseTrackSub:"Check the status of requests",backChoose:"Back",addFilesHint:"Attach a PDF or Office document if needed (max 20 MB).",fileRejected:"The selected file type is not supported or exceeds the maximum allowed size (20 MB).",trkEye:"Track",trkH1:"Track Requests",trkP:"Enter your request number to check its status.",trkPending:"Awaiting approval",trkProg:"In progress",trkSearchPh:"0042",trkNone:"No active requests.",trkSearching:"Searching…",trkWaiting:"Awaiting approval",trkInProg:"In progress",stfEye:"Staff",stfH1:"My Tasks",stfPick:"Select your name to view your assigned tasks.",stfNoNames:"No team members yet.",stfChange:"Change name",stfMyTasks:"Your Task List",stfNoTasks:"No tasks assigned to you right now.",stfOpen:"Open",stfBackList:"Back to list",stfDone:"Mark as done",stfDoneYes:"Yes, done",stfConfirmTitle:"Confirm completion",stfConfirmMsg:"Have you finished this task? It will be sent to the manager for confirmation.",stfDoneToast:"Sent to manager for confirmation",stfPendBadge:"Pending confirmation",stfPendMsg:"Done — awaiting manager confirmation.",stfPendMsg2:"Pending confirmation",pendBadge:"Awaiting confirmation",confirmDone:"Confirm",returnTask:"Return",returnedToast:"returned to In Progress",savedToast:"Updated",mgrNotePh:"Reason / note for the technician (optional)",stOverdue:"Overdue",stOnHold:"On Hold",stNeedsReview:"Needs Review",stNeedsUpdate:"Needs Update",stComplete:"Completed",stCancelled:"Cancelled",stRejected:"Rejected",trkNoSearch:"No request found with that number."},
  ar:{co:"شركة المفاهيم المتقدمة للمقاولات المحدودة",sys:"طلبات خدمة التشغيل والصيانة",
-  weOpen:"⤢ افتح",weFile1:"ملف",weFileN:"ملفات",wpClose:"إغلاق",wpOpenTask:"افتح المهمة",wpInfo:"معلومات المهمة",wpTimeline:"الخط الزمني",wpPrio:"الأولوية",wpBy:"مقدّم الطلب",wpRec:"تاريخ الاستلام",wpSched:"موعد البدء",wpDone:"تاريخ الإنجاز",wpEvRec:"وصل الطلب",wpEvSched:"جُدول العمل",wpEvStart:"بدأ العمل",wpEvSub:"أُرسل للتأكيد",wpEvDone:"اكتمل",wpEvClosed:"أُغلق",wpReason:"السبب",wpMgr:"ملاحظة المدير",wpCloseNote:"ملاحظة الإغلاق",weReqImg:"صور مقدّم الطلب",weReqDoc:"ملفات مقدّم الطلب",weTecImg:"صور الفني",weTecDoc:"ملفات الفني",weNoneG:"ما في مرفقات",wpNotFound:"المهمة مش موجودة بالقائمة الحالية",wzBtn:"تحميل ZIP",wzHint:"بيصدّر كل المهام المطابقة للفلاتر الحالية",wzTitle:"جاري تجهيز الحزمة",wzTasks:"المهام",wzFiles:"الملفات",wzFailed:"فشلت",wzCancel:"إلغاء",wzCancelled:"تم إلغاء التصدير",wzZipping:"جاري الضغط…",wzDone:"ملف تم تصديره",wzErr:"تعذّر إنشاء الحزمة",wzNoLib:"مكتبة الضغط ما حمّلت",wzFailHdr:"هذه الملفات تعذّر تحميلها. الباقي كامل داخل الحزمة.",weAllC:"كل التصنيفات",weAllT:"كل الفنيين",weAllS:"كل الحالات",weReset:"مسح الفلاتر",weResults:"نتيجة",weKImages:"إجمالي الصور",weKDocs:"إجمالي الملفات",weKClaim:"صور البلاغ",weKProof:"صور الإثبات",mgrRole:"مدير القسم",mgrNone:"بيانات التواصل مع مدير القسم غير محددة حاليًا.",weNoRes:"لا توجد نتائج مطابقة.",weRowsL:"صفوف",weCID:"رقم الطلب",weCTtl:"عنوان الطلب",weCCI:"صور البلاغ",weCEI:"صور الإثبات",weCTI:"إجمالي الصور",weCCD:"ملفات البلاغ",weCED:"ملفات الإثبات",weCTD:"إجمالي الملفات",weCCrt:"تاريخ الإنشاء",weCUpd:"آخر تحديث",weCAct:"إجراءات",weCOpen:"فتح",weTitle:"استوديو الصور والملفات",weSub:"كل الصور والملفات، مهمة بمهمة",weGal:"معرض",weTime:"زمني",weTbl:"جدول",weSoon:"قريباً",weSoonT:"بمرحلة لاحقة",weSearch:"بحث",wePh:"ابحث برقم المهمة أو العنوان أو مقدّم الطلب أو الفني...",weAllP:"كل المشاريع",weFrom:"من",weTo:"إلى",weProj:"المشروع",weCat:"التصنيف",weTech:"الفني",weStat:"الحالة",weSReq:"مقدّم الطلب",weSTech:"الفني",weKFile:"ملفات",weClaim:"شكوى",weProof:"إثبات",wePrev:"تعذّر عرض الصورة",weDoc:"مستند",weShow:"يعرض",wePrevP:"‹ السابق",weNextP:"التالي ›",weNoneT:"ما في إثباتات تطابق هذه الفلاتر",weNoneS:"امسح فلتر أو وسّع التواريخ.",nav:{dashboard:"لوحة المعلومات",manage:"إدارة الطلبات",all:"جميع الطلبات",reports:"لوحة المعلومات والتقارير",staffdir:"دليل الموظفين",open:"المهام المفتوحة",archive:"الملغية / المحذوفة",media:"استوديو الصور والملفات",settings:"الإعدادات"},
-  navIc:{dashboard:"▦",manage:"📥",all:"📋",reports:"📊",staffdir:"👷",open:"⚙",archive:"🗂",media:"◫",settings:"⚙️"},
+  weOpen:"⤢ افتح",weFile1:"ملف",weFileN:"ملفات",wpClose:"إغلاق",wpOpenTask:"افتح المهمة",wpInfo:"معلومات المهمة",wpTimeline:"الخط الزمني",wpPrio:"الأولوية",wpBy:"مقدّم الطلب",wpRec:"تاريخ الاستلام",wpSched:"موعد البدء",wpDone:"تاريخ الإنجاز",wpEvRec:"وصل الطلب",wpEvSched:"جُدول العمل",wpEvStart:"بدأ العمل",wpEvSub:"أُرسل للتأكيد",wpEvDone:"اكتمل",wpEvClosed:"أُغلق",wpReason:"السبب",wpMgr:"ملاحظة المدير",wpCloseNote:"ملاحظة الإغلاق",weReqImg:"صور مقدّم الطلب",weReqDoc:"ملفات مقدّم الطلب",weTecImg:"صور الفني",weTecDoc:"ملفات الفني",weNoneG:"ما في مرفقات",wpNotFound:"المهمة مش موجودة بالقائمة الحالية",wzBtn:"تحميل ZIP",wzHint:"بيصدّر كل المهام المطابقة للفلاتر الحالية",wzTitle:"جاري تجهيز الحزمة",wzTasks:"المهام",wzFiles:"الملفات",wzFailed:"فشلت",wzCancel:"إلغاء",wzCancelled:"تم إلغاء التصدير",wzZipping:"جاري الضغط…",wzDone:"ملف تم تصديره",wzErr:"تعذّر إنشاء الحزمة",wzNoLib:"مكتبة الضغط ما حمّلت",wzFailHdr:"هذه الملفات تعذّر تحميلها. الباقي كامل داخل الحزمة.",weAllC:"كل التصنيفات",weAllT:"كل الفنيين",weAllS:"كل الحالات",weReset:"مسح الفلاتر",weResults:"نتيجة",weKImages:"إجمالي الصور",weKDocs:"إجمالي الملفات",weKClaim:"صور البلاغ",weKProof:"صور الإثبات",mgrRole:"مدير القسم",mgrNone:"بيانات التواصل مع مدير القسم غير محددة حاليًا.",weNoRes:"لا توجد نتائج مطابقة.",weRowsL:"صفوف",weCID:"رقم الطلب",weCTtl:"عنوان الطلب",weCCI:"صور البلاغ",weCEI:"صور الإثبات",weCTI:"إجمالي الصور",weCCD:"ملفات البلاغ",weCED:"ملفات الإثبات",weCTD:"إجمالي الملفات",weCCrt:"تاريخ الإنشاء",weCUpd:"آخر تحديث",weCAct:"إجراءات",weCOpen:"فتح",weTitle:"استوديو الصور والملفات",weSub:"كل الصور والملفات، مهمة بمهمة",weGal:"معرض",weTime:"زمني",weTbl:"جدول",weSoon:"قريباً",weSoonT:"بمرحلة لاحقة",weSearch:"بحث",wePh:"ابحث برقم المهمة أو العنوان أو مقدّم الطلب أو الفني...",weAllP:"كل المشاريع",weFrom:"من",weTo:"إلى",weProj:"المشروع",weCat:"التصنيف",weTech:"الفني",weStat:"الحالة",weSReq:"مقدّم الطلب",weSTech:"الفني",weKFile:"ملفات",weClaim:"شكوى",weProof:"إثبات",wePrev:"تعذّر عرض الصورة",weDoc:"مستند",weShow:"يعرض",wePrevP:"‹ السابق",weNextP:"التالي ›",weNoneT:"ما في إثباتات تطابق هذه الفلاتر",weNoneS:"امسح فلتر أو وسّع التواريخ.",nav:{dashboard:"لوحة المعلومات",inventory:"المخزون",manage:"إدارة الطلبات",all:"جميع الطلبات",reports:"لوحة المعلومات والتقارير",staffdir:"دليل الموظفين",open:"المهام المفتوحة",archive:"الملغية / المحذوفة",media:"استوديو الصور والملفات",settings:"الإعدادات"},
+  invEye:"المستودع",invH1:"المخزون",invP:"الأرصدة الحيّة في كل المستودعات.",invLoading:"جاري تحميل المخزون…",invNoMatch:"ما في أصناف تطابق هذه الفلاتر.",invSearchPh:"ابحث بالكود أو الاسم…",invAllWh:"كل المستودعات",invAllCat:"كل التصنيفات",invLow:"مخزون منخفض",invNoShelfF:"بلا رف",invItems:"صنف",invCode:"الكود",invName:"الاسم",invCat:"التصنيف",invType:"النوع",invUnit:"الوحدة",invOnHand:"المتوفّر",invReserved:"محجوز",invAvail:"المتاح",invMin:"الحد الأدنى",invWh:"المستودع",invShelf:"الرف",invStatus:"الحالة",invNoShelf:"بلا رف",invActive:"نشط",invInactive:"معطّل",invSetShelf:"تعيين رف",invChangeShelf:"تغيير الرف",invNoShelvesWh:"ما في أرفف بهذا المستودع",invPickShelf:"اختر رفاً من فضلك.",invShelfErr:"تعذّر تحديث الرف:",
+  navIc:{dashboard:"▦",inventory:"📦",manage:"📥",all:"📋",reports:"📊",staffdir:"👷",open:"⚙",archive:"🗂",media:"◫",settings:"⚙️"},
   reqEye:"طلب جديد",reqH1:"طلب خدمة",reqP:"يُرجى تعبئة التفاصيل وإرسال الطلب؛ ليصل مباشرةً إلى قسم التشغيل والصيانة.",
   requestedBy:"مقدّم الطلب",namePh:"الاسم",projLoc:"المشروع / الموقع",svcType:"نوع الخدمة",needs:"تفاصيل الطلب",needsPh:"يُرجى وصف الخدمة المطلوبة بوضوح",
   priority:"الأولوية",dateReq:"تاريخ الطلب",autoToday:"يُحدّد تلقائياً بتاريخ اليوم",submit:"إرسال الطلب",select:"— اختر —",
@@ -2022,7 +2069,7 @@ async function tryAdmin(){
   await repairManagerSnapshot();   // heal a pre-snapshot or stale manager record
   document.getElementById('gate').innerHTML='';document.getElementById('app').style.display='flex';applyDir();render();startRealtime();
 }
-async function enterAdminDirect(){state.role='admin';const h=(location.hash||'').replace('#','');const valid=['reports','manage','archive','staffdir','settings','all'];state.route=valid.includes(h)?h:'manage';if(!L)L='en';document.getElementById('gate').innerHTML='';document.getElementById('app').style.display='flex';applyDir();render();startRealtime();}
+async function enterAdminDirect(){state.role='admin';const h=(location.hash||'').replace('#','');const valid=['reports','inventory','manage','archive','staffdir','media','settings','all'];state.route=valid.includes(h)?h:'manage';if(!L)L='en';document.getElementById('gate').innerHTML='';document.getElementById('app').style.display='flex';applyDir();render();startRealtime();}
 function enterPublic(role){state.role=role;if(role==='staff')L='ar';else if(!L)L='ar';document.getElementById('gate').innerHTML='';document.getElementById('app').style.display='block';applyDir();
   // A1: if a valid staff session exists, restore it and load tasks from the server
   if(role==='staff'){const sess=stfGetSession();if(sess&&sess.en){staffName=sess.en;render();loadStaffTasks();startPublicPolling();return;}}
@@ -2117,7 +2164,7 @@ function render(){
     return;
   }
   // admin: sidebar shell
-  const navk=["reports","manage","archive","staffdir","media","settings","all"];
+  const navk=["reports","inventory","manage","archive","staffdir","media","settings","all"];
   const rows=state.requests.map(calc);
   const pendingCount=rows.filter(isIncoming).length;
   let nav=navk.map(k=>{
@@ -2140,7 +2187,8 @@ function render(){
       <main class="content"><div class="wrap" id="view"></div></main>
     </div>`;
   const v=document.getElementById('view');
-  if(state.route==='manage')v.innerHTML=viewManage();
+  if(state.route==='inventory')v.innerHTML=viewInventory();
+  else if(state.route==='manage')v.innerHTML=viewManage();
   else if(state.route==='all')v.innerHTML=viewAll();
   else if(state.route==='staffdir')v.innerHTML=viewStaffDir();
   else if(state.route==='open')v.innerHTML=viewOpen();
@@ -4931,4 +4979,184 @@ async function doStaffDone(id){
   }
 })();
 
+
+/* ===== INVENTORY SCREEN (6D) ===== */
+let invData = [];            // full dataset from inventory_list()
+let invLoaded = false;
+let invFilters = { q:'', warehouse:'', category:'', low:false, noshelf:false };
+let invSel = null;           // selected item_warehouse_id (drawer)
+let invShelfEdit = false;    // is the drawer shelf in edit mode
+let invShelves = [];         // shelves of the selected row's warehouse (for the select)
+
+async function loadInventory(force){
+  if(invLoaded && !force) return;
+  try{
+    const rows = await sbRpc('inventory_list');   // returns array of row objects
+    invData = Array.isArray(rows) ? rows : [];
+    invLoaded = true;
+  }catch(e){
+    invData = []; invLoaded = true;
+    console.warn('inventory_list failed', e);
+  }
+}
+
+/* unique warehouses / categories for filter dropdowns (from the data itself) */
+function invWarehouses(){
+  const m={}; invData.forEach(r=>{ if(r.warehouse_id) m[r.warehouse_id]=(L==='ar'?r.warehouse_name_ar:r.warehouse_name_en)||r.warehouse_code; });
+  return Object.entries(m).map(([id,name])=>({id,name}));
+}
+function invCategories(){
+  const m={}; invData.forEach(r=>{ if(r.category_id) m[r.category_id]=(L==='ar'?r.category_name_ar:r.category_name_en)||r.category_name_ar; });
+  return Object.entries(m).map(([id,name])=>({id,name})).sort((a,b)=>a.name.localeCompare(b.name));
+}
+
+function invApply(){
+  const f=invFilters, q=(f.q||'').trim().toLowerCase();
+  return invData.filter(r=>{
+    if(f.warehouse && r.warehouse_id!==f.warehouse) return false;
+    if(f.category  && r.category_id!==f.category)   return false;
+    if(f.low     && !r.is_low_stock)                return false;
+    if(f.noshelf && r.shelf_id)                     return false;
+    if(q){
+      const hay=((r.item_code||'')+' '+(r.name_ar||'')+' '+(r.name_en||'')).toLowerCase();
+      if(!hay.includes(q)) return false;
+    }
+    return true;
+  });
+}
+
+
+/* ══ SECTION 3 — VIEW  (paste with the other view*() functions) ══ */
+function viewInventory(){
+  if(!invLoaded){ loadInventory().then(render); return `<div class="empty">${t('invLoading')}</div>`; }
+  const rows=invApply();
+  const whs=invWarehouses(), cats=invCategories();
+  const whOpts=`<option value="">${t('invAllWh')}</option>`+whs.map(w=>`<option value="${w.id}" ${invFilters.warehouse===w.id?'selected':''}>${esc(w.name)}</option>`).join('');
+  const catOpts=`<option value="">${t('invAllCat')}</option>`+cats.map(c=>`<option value="${c.id}" ${invFilters.category===c.id?'selected':''}>${esc(c.name)}</option>`).join('');
+  const body = rows.length ? `<div class="tbl-wrap"><table class="tbl">
+    <thead><tr>
+      <th>${t('invCode')}</th><th>${t('invName')}</th><th>${t('invCat')}</th><th>${t('invType')}</th><th>${t('invUnit')}</th>
+      <th class="num">${t('invOnHand')}</th><th class="num">${t('invReserved')}</th><th class="num">${t('invAvail')}</th>
+      <th>${t('invWh')}</th><th>${t('invShelf')}</th><th>${t('invStatus')}</th>
+    </tr></thead><tbody>`+rows.map(r=>{
+      const avCls=(Number(r.available)<=0)?'av-zero':(r.is_low_stock?'av-low':'av-ok');
+      const shelf=r.shelf_id?esc(r.shelf_name):`<span class="noshelf">${t('invNoShelf')}</span>`;
+      const nm=`<div class="ttl">${esc(r.name_ar)}</div>`+(r.name_en?`<div class="nt">${esc(r.name_en)}</div>`:'');
+      const st=r.item_active?`<span class="st-dot st-on"></span>${t('invActive')}`:`<span class="st-dot st-off"></span>${t('invInactive')}`;
+      return `<tr class="inv-row ${invSel===r.item_warehouse_id?'sel':''}" onclick="invOpen('${r.item_warehouse_id}')">
+        <td class="c-id">${esc(r.item_code)}</td><td class="c-title">${nm}</td>
+        <td>${esc(L==='ar'?r.category_name_ar:r.category_name_en||r.category_name_ar)}</td>
+        <td>${esc(L==='ar'?r.item_type_name_ar:r.item_type_name_en||r.item_type_name_ar)}</td>
+        <td>${esc(L==='ar'?r.unit_name_ar:r.unit_name_en||r.unit_name_ar)}</td>
+        <td class="num">${fmtNum(r.on_hand)}</td><td class="num">${fmtNum(r.reserved)}</td>
+        <td class="num"><span class="av-badge ${avCls}">${fmtNum(r.available)}</span></td>
+        <td>${esc(r.warehouse_code)}</td><td>${shelf}</td><td>${st}</td>
+      </tr>`;
+    }).join('')+`</tbody></table></div>` : `<div class="empty">${t('invNoMatch')}</div>`;
+
+  return `<div class="phead"><div class="eyebrow">${t('invEye')}</div><h1>${t('invH1')}</h1><p>${t('invP')}</p></div>
+  <div class="inv-toolbar">
+    <div class="inv-search"><span class="si">🔍</span>
+      <input type="text" value="${esc(invFilters.q)}" placeholder="${t('invSearchPh')}" oninput="invSet('q',this.value)"></div>
+    <div class="inv-filters">
+      <select onchange="invSet('warehouse',this.value)">${whOpts}</select>
+      <select onchange="invSet('category',this.value)">${catOpts}</select>
+      <div class="toggle ${invFilters.low?'on':''}" onclick="invToggle('low')">⚠ ${t('invLow')}</div>
+      <div class="toggle ${invFilters.noshelf?'on':''}" onclick="invToggle('noshelf')">📍 ${t('invNoShelfF')}</div>
+    </div>
+  </div>
+  <div class="filterbar" style="margin-top:-4px"><div class="spacer"></div><span class="count-chip">${rows.length} / ${invData.length} ${t('invItems')}</span></div>
+  ${body}
+  ${invDrawer()}`;
+}
+
+/* right-side drawer */
+function invDrawer(){
+  const r=invData.find(x=>x.item_warehouse_id===invSel);
+  const open=r?'open':'';
+  if(!r) return `<div class="dwr-scrim" onclick="invClose()"></div><aside class="dwr"></aside>`;
+  const avCls=(Number(r.available)<=0)?'av-zero':(r.is_low_stock?'av-low':'av-ok');
+  const isAdmin=(state.role==='admin');
+  // shelf field: view mode vs edit mode
+  let shelfBlock;
+  if(invShelfEdit){
+    const opts=invShelves.map(s=>`<option value="${s.shelf_id}" ${r.shelf_id===s.shelf_id?'selected':''}>${esc(s.shelf_name)}</option>`).join('');
+    shelfBlock=`<div class="dwr-f full"><span class="lb">${t('invShelf')}</span>
+      <div class="dwr-shelf-row">
+        <select id="invShelfSel">${opts||`<option value="">${t('invNoShelvesWh')}</option>`}</select>
+        <button class="btn-sm pri" onclick="invSaveShelf('${r.item_warehouse_id}')">${t('save')}</button>
+        <button class="btn-sm" onclick="invCancelShelf()">${t('cancel')}</button>
+      </div></div>`;
+  } else {
+    const shelfVal=r.shelf_id?esc(r.shelf_name):`<span class="noshelf">${t('invNoShelf')}</span>`;
+    const btn=isAdmin?`<button class="btn-sm" style="margin-inline-start:auto" onclick="invEditShelf('${r.item_warehouse_id}','${r.warehouse_id}')">${r.shelf_id?t('invChangeShelf'):t('invSetShelf')}</button>`:'';
+    shelfBlock=`<div class="dwr-f full"><span class="lb">${t('invShelf')}</span>
+      <div class="dwr-shelf-row"><span class="vl">${shelfVal}</span>${btn}</div></div>`;
+  }
+  return `<div class="dwr-scrim open" onclick="invClose()"></div>
+  <aside class="dwr open">
+    <div class="dwr-head">
+      <div><span class="code">${esc(r.item_code)}</span><h3>${esc(r.name_ar)}</h3>${r.name_en?`<div class="en">${esc(r.name_en)}</div>`:''}</div>
+      <button class="dwr-x" onclick="invClose()">×</button>
+    </div>
+    <div class="dwr-body">
+      <div class="dwr-grid">
+        <div class="dwr-f"><span class="lb">${t('invCat')}</span><span class="vl">${esc(L==='ar'?r.category_name_ar:r.category_name_en||r.category_name_ar)}</span></div>
+        <div class="dwr-f"><span class="lb">${t('invType')}</span><span class="vl">${esc(L==='ar'?r.item_type_name_ar:r.item_type_name_en||r.item_type_name_ar)}</span></div>
+        <div class="dwr-f"><span class="lb">${t('invUnit')}</span><span class="vl">${esc(L==='ar'?r.unit_name_ar:r.unit_name_en||r.unit_name_ar)}</span></div>
+        <div class="dwr-f"><span class="lb">${t('invWh')}</span><span class="vl">${esc(L==='ar'?r.warehouse_name_ar:r.warehouse_name_en||r.warehouse_code)}</span></div>
+      </div>
+      <div class="dwr-sep"></div>
+      <div class="dwr-grid">
+        <div class="dwr-f"><span class="lb">${t('invOnHand')}</span><span class="vl">${fmtNum(r.on_hand)}</span></div>
+        <div class="dwr-f"><span class="lb">${t('invReserved')}</span><span class="vl">${fmtNum(r.reserved)}</span></div>
+        <div class="dwr-f"><span class="lb">${t('invAvail')}</span><span class="vl"><span class="av-badge ${avCls}">${fmtNum(r.available)}</span></span></div>
+        <div class="dwr-f"><span class="lb">${t('invMin')}</span><span class="vl">${r.min_level==null?'—':fmtNum(r.min_level)}</span></div>
+      </div>
+      <div class="dwr-sep"></div>
+      <div class="dwr-grid">
+        ${shelfBlock}
+        <div class="dwr-f full"><span class="lb">${t('invStatus')}</span><span class="vl">${r.item_active?`<span class="st-dot st-on"></span>${t('invActive')}`:`<span class="st-dot st-off"></span>${t('invInactive')}`}</span></div>
+      </div>
+    </div>
+  </aside>`;
+}
+
+
+/* ══ SECTION 4 — HANDLERS  (paste with other onclick handlers) ══ */
+function invSet(k,v){ invFilters[k]=v; render(); }
+function invToggle(k){ invFilters[k]=!invFilters[k]; render(); }
+function invOpen(id){ invSel=id; invShelfEdit=false; render(); }
+function invClose(){ invSel=null; invShelfEdit=false; render(); }
+
+async function invEditShelf(iwId, whId){
+  try{ invShelves = await sbRpc('warehouse_shelves',{p_warehouse_id:whId}) || []; }
+  catch(e){ invShelves=[]; }
+  invShelfEdit=true; render();
+}
+function invCancelShelf(){ invShelfEdit=false; render(); }
+
+async function invSaveShelf(iwId){
+  const sel=document.getElementById('invShelfSel');
+  const shelfId=sel?sel.value:'';
+  if(!shelfId){ alert(t('invPickShelf')); return; }
+  try{
+    const res=await sbRpc('admin_set_item_warehouse_shelf',{p_item_warehouse_id:iwId, p_shelf_id:shelfId, p_note:'via inventory drawer'});
+    // RPC may signal failure in the body without throwing — verify before treating as success
+    if(res && res.ok===false){ alert(t('invShelfErr')+' '+(res.error||'')); return; }
+    await loadInventory(true);          // refresh full dataset
+    invShelfEdit=false;
+    render();
+  }catch(e){
+    alert(t('invShelfErr')+' '+(e&&e.message?e.message:''));
+  }
+}
+
+/* number formatter — exact, no rounding, drop trailing .00 */
+function fmtNum(n){
+  if(n==null) return '—';
+  const num=Number(n);
+  if(Number.isInteger(num)) return num.toLocaleString('en-US');
+  return num.toLocaleString('en-US',{maximumFractionDigits:6});
+}
 </script></body></html>
