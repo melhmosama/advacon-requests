@@ -4979,32 +4979,6 @@ async function doStaffDone(id){
   }finally{staffActionBusy=false;}
 }
 
-/* ===== boot ===== */
-(async function(){
-  // A0: decide the page/role FIRST, then load only what that role needs.
-  // This stops requests/staff/recurring from being fetched before we know the user.
-  const p=(location.pathname||'').toLowerCase();
-  if(p.indexOf('/admin')>=0){
-    if(!L)L='en';
-    const authed=await checkAdminFlag();
-    if(authed){ await load('admin'); await repairManagerSnapshot(); enterAdminDirect(); }
-    else { openAdmin(); }          // no data load until PIN passes (see tryAdmin)
-  }
-  else if(p.indexOf('/asset')>=0){
-    // Asset portal — independent session. If a valid asset session exists, go straight in.
-    const okAsset=await assetEnsureSession();
-    if(okAsset && assetModuleAccess(assetRole).indexOf('warehouses')>=0){ assetEnterModule('warehouses'); }
-    else { assetView='landing'; renderAsset(); }
-  }
-  else if(p.indexOf('/staff')>=0){
-    await load('staff');
-    enterPublic('staff');
-  }
-  else {
-    await load('visitor');
-    renderGate();
-  }
-})();
 
 
 /* ===== INVENTORY SCREEN (6D) ===== */
@@ -5481,4 +5455,32 @@ function renderAsset(){
   if(assetView==='login'){ setTimeout(()=>{var p=document.getElementById('asEmail');if(p)p.focus();},100); }
 }
 
+
+/* ===== boot — MOVED to end: runs after ALL Asset Portal state/const/fn are initialized (fixes TDZ on assetRole) ===== */
+/* ===== boot ===== */
+(async function(){
+  // A0: decide the page/role FIRST, then load only what that role needs.
+  // This stops requests/staff/recurring from being fetched before we know the user.
+  const p=(location.pathname||'').toLowerCase();
+  if(p.indexOf('/admin')>=0){
+    if(!L)L='en';
+    const authed=await checkAdminFlag();
+    if(authed){ await load('admin'); await repairManagerSnapshot(); enterAdminDirect(); }
+    else { openAdmin(); }          // no data load until PIN passes (see tryAdmin)
+  }
+  else if(p.indexOf('/asset')>=0){
+    // Asset portal — independent session. If a valid asset session exists, go straight in.
+    const okAsset=await assetEnsureSession();
+    if(okAsset && assetModuleAccess(assetRole).indexOf('warehouses')>=0){ assetEnterModule('warehouses'); }
+    else { assetView='landing'; renderAsset(); }
+  }
+  else if(p.indexOf('/staff')>=0){
+    await load('staff');
+    enterPublic('staff');
+  }
+  else {
+    await load('visitor');
+    renderGate();
+  }
+})();
 </script></body></html>
