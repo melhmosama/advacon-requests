@@ -1146,6 +1146,30 @@ html[dir=rtl] .dwr{transform:translateX(-100%)}
 .cat-bar{margin-top:5px;height:5px;background:var(--grid);border-radius:4px;overflow:hidden}
 .cat-bar span{display:block;height:100%;background:var(--accent);border-radius:4px}
 .cat-n{font-weight:700;color:var(--navy)}
+/* ===== Stock Movements ===== */
+.mv-new{background:var(--navy);color:#fff;border:none;border-radius:9px;padding:9px 16px;font-family:inherit;font-weight:700;font-size:13.5px;cursor:pointer;display:flex;align-items:center;gap:8px;opacity:.55}
+.mv-new[disabled]{cursor:default}
+.mv-filters{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+.mv-filters select{padding:9px 12px;border:1.5px solid var(--grid);border-radius:9px;background:var(--white);font-family:inherit;font-size:13px;color:var(--txt);cursor:pointer}
+.mv-date{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--grey);font-weight:600}
+.mv-date input{padding:8px 10px;border:1.5px solid var(--grid);border-radius:9px;background:var(--white);font-family:inherit;font-size:13px;color:var(--txt)}
+.mv-chip{display:inline-flex;align-items:center;gap:8px;background:var(--pale);border:1.5px solid var(--accent);border-radius:20px;padding:7px 14px;font-size:12.5px;font-weight:600;color:var(--navy)}
+.mv-chip-x{cursor:pointer;font-weight:800;color:var(--med);font-size:15px;line-height:1}
+.mv-pick-wrap{position:relative}
+.mv-pick-btn{padding:9px 14px;border:1.5px solid var(--grid);border-radius:9px;background:var(--white);font-family:inherit;font-size:13px;color:var(--med);font-weight:700;cursor:pointer}
+.mv-pick-dd{position:absolute;top:calc(100% + 6px);inset-inline-start:0;width:340px;max-width:80vw;background:var(--white);border:1.5px solid var(--grid);border-radius:12px;box-shadow:var(--shadow);z-index:60;overflow:hidden}
+.mv-pick-search{width:100%;box-sizing:border-box;padding:11px 14px;border:none;border-bottom:1px solid var(--grid);font-family:inherit;font-size:13.5px;outline:none}
+.mv-pick-list{max-height:300px;overflow-y:auto}
+.mv-pick-row{padding:10px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--head);transition:.1s}
+.mv-pick-row:hover{background:var(--pale)}
+.mv-pick-code{font-family:monospace;font-size:12px;color:var(--med);font-weight:700;margin-inline-end:6px}
+.mv-pick-load{padding:16px 14px;text-align:center;color:var(--grey);font-size:13px}
+.mv-pager{display:flex;justify-content:space-between;align-items:center;padding:14px 4px 4px;flex-wrap:wrap;gap:10px}
+.mv-count{font-size:12.5px;color:var(--grey);font-weight:600}
+.mv-pgbtns{display:flex;gap:8px}
+.mv-pgbtns button{padding:8px 14px;border:1.5px solid var(--grid);border-radius:9px;background:var(--white);font-family:inherit;font-size:13px;font-weight:700;color:var(--med);cursor:pointer}
+.mv-pgbtns button[disabled]{opacity:.4;cursor:default}
+@media(max-width:640px){.mv-pick-dd{width:280px}}
 /* ===== Warehouse module sub-tab bar ===== */
 .wh-subbar{display:flex;gap:4px;flex-wrap:wrap;border-bottom:2px solid var(--grid);margin-bottom:20px;padding-bottom:0}
 .wh-subtab{position:relative;background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-2px;padding:10px 14px;font-family:inherit;font-size:13.5px;font-weight:700;color:var(--grey);cursor:pointer;display:flex;align-items:center;gap:6px;transition:.15s;white-space:nowrap}
@@ -1842,7 +1866,7 @@ const PAGE_SIZE=100;
 const T={
  en:{co:"ADVANCED CONCEPTS CONTRACTING CO. LTD.",sys:"O&M Service Requests",
   weOpen:"⤢ Open",weFile1:"file",weFileN:"files",wpClose:"Close",wpOpenTask:"Open task",wpInfo:"Task information",wpTimeline:"Timeline",wpPrio:"Priority",wpBy:"Requested by",wpRec:"Received",wpSched:"Scheduled start",wpDone:"Completed",wpEvRec:"Request received",wpEvSched:"Work scheduled",wpEvStart:"Work started",wpEvSub:"Submitted for confirmation",wpEvDone:"Completed",wpEvClosed:"Closed",wpReason:"Reason",wpMgr:"Manager note",wpCloseNote:"Closeout note",weReqImg:"Requester photos",weReqDoc:"Requester documents",weTecImg:"Technician photos",weTecDoc:"Technician documents",weNoneG:"Nothing attached",wpNotFound:"That task is not in the current list",wzBtn:"Download ZIP",wzHint:"Exports every task matching the current filters",wzTitle:"Building the ZIP",wzTasks:"Tasks",wzFiles:"Files",wzFailed:"failed",wzCancel:"Cancel",wzCancelled:"Export cancelled",wzZipping:"Compressing…",wzDone:"files exported",wzErr:"The ZIP could not be created",wzNoLib:"The ZIP library did not load",wzFailHdr:"These files could not be downloaded. Everything else is in the package.",weAllC:"All categories",weAllT:"All technicians",weAllS:"All statuses",weReset:"Reset filters",weResults:"results",weKImages:"Total images",weKDocs:"Total documents",weKClaim:"Complaint",weKProof:"Evidence",mgrRole:"Department Manager",mgrNone:"Department Manager contact is not currently configured.",weNoRes:"No matching records found.",weRowsL:"Rows",weCID:"Request ID",weCTtl:"Request title",weCCI:"Complaint images",weCEI:"Evidence images",weCTI:"Total images",weCCD:"Complaint documents",weCED:"Evidence documents",weCTD:"Total documents",weCCrt:"Created",weCUpd:"Last updated",weCAct:"Actions",weCOpen:"Open",weTitle:"Image & Document Studio",weSub:"Every image and document, task by task",weGal:"Gallery",weTime:"Timeline",weTbl:"Table",weSoon:"SOON",weSoonT:"Coming in a later phase",weSearch:"Search",wePh:"Search by ID, title, requester or technician...",weAllP:"All projects",weFrom:"From",weTo:"To",weProj:"Project",weCat:"Category",weTech:"Technician",weStat:"Status",weSReq:"Requester",weSTech:"Technician",weKFile:"Files",weClaim:"COMPLAINT",weProof:"EVIDENCE",wePrev:"Preview unavailable",weDoc:"Document",weShow:"Showing",wePrevP:"‹ Previous",weNextP:"Next ›",weNoneT:"No evidence matches these filters",weNoneS:"Clear a filter or widen the dates.",nav:{dashboard:"Dashboard",assets:"Assets",manage:"Manage Requests",all:"All Requests",reports:"Dashboard & Reports",staffdir:"Staff Directory",open:"Open Tasks",archive:"Archived / Declined",media:"Image & Document Studio",settings:"Settings"},
-  am_title:"Company Assets",as_eye:"COMPANY ASSETS",as_h1:"Assets",as_p:"Manage all company assets.",as_back:"Assets",am_subtitle:"إدارة أصول الشركة",am_soon:"Soon",am_warehouses:"Warehouses",am_fleet:"Fleet & Vehicles",am_equipment:"Equipment",am_other:"Other Assets",am_login_title:"Asset access · دخول الأصول",am_login_sub:"Company Assets · أصول الشركة",am_signin:"Sign in · دخول",am_back:"Back",am_logout:"Log out",am_wh_sys:"Warehouse Management",awh_dashboard:"Dashboard",awh_inventory:"Inventory",awh_movements:"Movements",awh_materialreq:"Material Requests",awh_shelves:"Warehouses & Shelves",awh_batches:"Batches & Expiry",awh_reports:"Reports",invOutF:"Out of Stock",dashEye:"WAREHOUSE SYSTEM",dashH1:"Dashboard",dashAllWh:"All warehouses",dashLoading:"Loading dashboard…",dashNone:"No data available.",dashTotalItems:"Total Items",dashOnHand:"Total On Hand",dashAvailable:"Available",dashReserved:"Reserved",dashLow:"Low Stock",dashOut:"Out of Stock",dashNoShelf:"Without Shelf",dashExpiring:"Expiring Batches",dashPending:"Pending Material Requests",dashActionNeeded:"Action needed",dashCatTitle:"Category Distribution",dashCatCat:"Category",dashCatItems:"Items",dashCatOpen:"Open in Inventory",dashNoCat:"No categories to show.",dashRecent:"Recent Movements",dashNoMv:"No movements yet.",dashCDate:"Date",dashCType:"Type",dashCItem:"Item",dashCQty:"Qty",dashCWh:"Warehouse",dashCActor:"By",mvT_OPENING_BALANCE:"Opening",mvT_RECEIPT:"Receipt",mvT_ISSUE:"Issue",mvT_RETURN:"Return",mvT_TRANSFER_IN:"Transfer In",mvT_TRANSFER_OUT:"Transfer Out",mvT_DISPOSAL:"Disposal",mvT_ADJUSTMENT:"Adjustment",
+  am_title:"Company Assets",as_eye:"COMPANY ASSETS",as_h1:"Assets",as_p:"Manage all company assets.",as_back:"Assets",am_subtitle:"إدارة أصول الشركة",am_soon:"Soon",am_warehouses:"Warehouses",am_fleet:"Fleet & Vehicles",am_equipment:"Equipment",am_other:"Other Assets",am_login_title:"Asset access · دخول الأصول",am_login_sub:"Company Assets · أصول الشركة",am_signin:"Sign in · دخول",am_back:"Back",am_logout:"Log out",am_wh_sys:"Warehouse Management",awh_dashboard:"Dashboard",awh_inventory:"Inventory",awh_movements:"Movements",awh_materialreq:"Material Requests",awh_shelves:"Warehouses & Shelves",awh_batches:"Batches & Expiry",awh_reports:"Reports",invOutF:"Out of Stock",dashEye:"WAREHOUSE SYSTEM",dashH1:"Dashboard",dashAllWh:"All warehouses",dashLoading:"Loading dashboard…",dashNone:"No data available.",dashTotalItems:"Total Items",dashOnHand:"Total On Hand",dashAvailable:"Available",dashReserved:"Reserved",dashLow:"Low Stock",dashOut:"Out of Stock",dashNoShelf:"Without Shelf",dashExpiring:"Expiring Batches",dashPending:"Pending Material Requests",dashActionNeeded:"Action needed",dashCatTitle:"Category Distribution",dashCatCat:"Category",dashCatItems:"Items",dashCatOpen:"Open in Inventory",dashNoCat:"No categories to show.",dashRecent:"Recent Movements",dashNoMv:"No movements yet.",dashCDate:"Date",dashCType:"Type",dashCItem:"Item",dashCQty:"Qty",dashCWh:"Warehouse",dashCActor:"By",mvEye:"WAREHOUSE SYSTEM",mvH1:"Stock Movements",mvLoading:"Loading movements…",mvNone:"No movements match these filters.",mvAllWh:"All warehouses",mvAllTypes:"All types",mvFrom:"From",mvTo:"To",mvItem:"Item",mvItemPick:"Filter by item",mvItemPh:"Search by code or name…",mvNoItems:"No items found.",mvNew:"New Movement",mvSoonHint:"Coming in the next phase",mvOf:"of",mvPrev:"Prev",mvNext:"Next",mvT_OPENING_BALANCE:"Opening",mvT_RECEIPT:"Receipt",mvT_ISSUE:"Issue",mvT_RETURN:"Return",mvT_TRANSFER_IN:"Transfer In",mvT_TRANSFER_OUT:"Transfer Out",mvT_DISPOSAL:"Disposal",mvT_ADJUSTMENT:"Adjustment",
   invEye:"WAREHOUSE",invH1:"Inventory",invP:"Live stock across all warehouses.",invLoading:"Loading inventory…",invNoMatch:"No items match these filters.",invSearchPh:"Search by code or name…",invAllWh:"All warehouses",invAllCat:"All categories",invLow:"Low stock",invNoShelfF:"No shelf",invItems:"items",invCode:"Code",invName:"Name",invCat:"Category",invType:"Type",invUnit:"Unit",invOnHand:"On Hand",invReserved:"Reserved",invAvail:"Available",invMin:"Min Level",invWh:"Warehouse",invShelf:"Shelf",invStatus:"Status",invNoShelf:"No shelf",invActive:"Active",invInactive:"Inactive",invSetShelf:"Set Shelf",invChangeShelf:"Change Shelf",invNoShelvesWh:"No shelves in this warehouse",invPickShelf:"Please choose a shelf.",invShelfErr:"Could not update the shelf:",
   navIc:{dashboard:"▦",assets:"📦",manage:"📥",all:"📋",reports:"📊",staffdir:"👷",open:"⚙",archive:"🗂",media:"◫",settings:"⚙️"},
   reqEye:"New request",reqH1:"Request a Service",reqP:"Fill in the details and submit — your request goes straight to the O&M team.",
@@ -1874,7 +1898,7 @@ const T={
   addImages:"Add photos (optional)",addImagesHint:"Attach photos to explain better — take a photo or pick from your gallery.",uploading:"Uploading…",photo:"photo",photos:"photos",viewImages:"Photos",reqPhone:"Mobile number",reqPhonePh:"e.g. 0500000000",waitUpload:"Please wait — photo uploading…",sending:"Sending…",shareReq:"Share request number",shareHint:"Share the image on WhatsApp or save it to your phone.",imgSaved:"Image saved",addFiles:"Add attachment (optional)",chooseEye:"Service Portal",chooseH1:"How can we help?",chooseP:"Choose what you would like to do.",chooseNew:"New request",chooseNewSub:"Submit a service request",chooseTrack:"Track a request",chooseTrackSub:"Check the status of requests",backChoose:"Back",addFilesHint:"Attach a PDF or Office document if needed (max 20 MB).",fileRejected:"The selected file type is not supported or exceeds the maximum allowed size (20 MB).",trkEye:"Track",trkH1:"Track Requests",trkP:"Enter your request number to check its status.",trkPending:"Awaiting approval",trkProg:"In progress",trkSearchPh:"0042",trkNone:"No active requests.",trkSearching:"Searching…",trkWaiting:"Awaiting approval",trkInProg:"In progress",stfEye:"Staff",stfH1:"My Tasks",stfPick:"Select your name to view your assigned tasks.",stfNoNames:"No team members yet.",stfChange:"Change name",stfMyTasks:"Your Task List",stfNoTasks:"No tasks assigned to you right now.",stfOpen:"Open",stfBackList:"Back to list",stfDone:"Mark as done",stfDoneYes:"Yes, done",stfConfirmTitle:"Confirm completion",stfConfirmMsg:"Have you finished this task? It will be sent to the manager for confirmation.",stfDoneToast:"Sent to manager for confirmation",stfPendBadge:"Pending confirmation",stfPendMsg:"Done — awaiting manager confirmation.",stfPendMsg2:"Pending confirmation",pendBadge:"Awaiting confirmation",confirmDone:"Confirm",returnTask:"Return",returnedToast:"returned to In Progress",savedToast:"Updated",mgrNotePh:"Reason / note for the technician (optional)",stOverdue:"Overdue",stOnHold:"On Hold",stNeedsReview:"Needs Review",stNeedsUpdate:"Needs Update",stComplete:"Completed",stCancelled:"Cancelled",stRejected:"Rejected",trkNoSearch:"No request found with that number."},
  ar:{co:"شركة المفاهيم المتقدمة للمقاولات المحدودة",sys:"طلبات خدمة التشغيل والصيانة",
   weOpen:"⤢ افتح",weFile1:"ملف",weFileN:"ملفات",wpClose:"إغلاق",wpOpenTask:"افتح المهمة",wpInfo:"معلومات المهمة",wpTimeline:"الخط الزمني",wpPrio:"الأولوية",wpBy:"مقدّم الطلب",wpRec:"تاريخ الاستلام",wpSched:"موعد البدء",wpDone:"تاريخ الإنجاز",wpEvRec:"وصل الطلب",wpEvSched:"جُدول العمل",wpEvStart:"بدأ العمل",wpEvSub:"أُرسل للتأكيد",wpEvDone:"اكتمل",wpEvClosed:"أُغلق",wpReason:"السبب",wpMgr:"ملاحظة المدير",wpCloseNote:"ملاحظة الإغلاق",weReqImg:"صور مقدّم الطلب",weReqDoc:"ملفات مقدّم الطلب",weTecImg:"صور الفني",weTecDoc:"ملفات الفني",weNoneG:"ما في مرفقات",wpNotFound:"المهمة مش موجودة بالقائمة الحالية",wzBtn:"تحميل ZIP",wzHint:"بيصدّر كل المهام المطابقة للفلاتر الحالية",wzTitle:"جاري تجهيز الحزمة",wzTasks:"المهام",wzFiles:"الملفات",wzFailed:"فشلت",wzCancel:"إلغاء",wzCancelled:"تم إلغاء التصدير",wzZipping:"جاري الضغط…",wzDone:"ملف تم تصديره",wzErr:"تعذّر إنشاء الحزمة",wzNoLib:"مكتبة الضغط ما حمّلت",wzFailHdr:"هذه الملفات تعذّر تحميلها. الباقي كامل داخل الحزمة.",weAllC:"كل التصنيفات",weAllT:"كل الفنيين",weAllS:"كل الحالات",weReset:"مسح الفلاتر",weResults:"نتيجة",weKImages:"إجمالي الصور",weKDocs:"إجمالي الملفات",weKClaim:"صور البلاغ",weKProof:"صور الإثبات",mgrRole:"مدير القسم",mgrNone:"بيانات التواصل مع مدير القسم غير محددة حاليًا.",weNoRes:"لا توجد نتائج مطابقة.",weRowsL:"صفوف",weCID:"رقم الطلب",weCTtl:"عنوان الطلب",weCCI:"صور البلاغ",weCEI:"صور الإثبات",weCTI:"إجمالي الصور",weCCD:"ملفات البلاغ",weCED:"ملفات الإثبات",weCTD:"إجمالي الملفات",weCCrt:"تاريخ الإنشاء",weCUpd:"آخر تحديث",weCAct:"إجراءات",weCOpen:"فتح",weTitle:"استوديو الصور والملفات",weSub:"كل الصور والملفات، مهمة بمهمة",weGal:"معرض",weTime:"زمني",weTbl:"جدول",weSoon:"قريباً",weSoonT:"بمرحلة لاحقة",weSearch:"بحث",wePh:"ابحث برقم المهمة أو العنوان أو مقدّم الطلب أو الفني...",weAllP:"كل المشاريع",weFrom:"من",weTo:"إلى",weProj:"المشروع",weCat:"التصنيف",weTech:"الفني",weStat:"الحالة",weSReq:"مقدّم الطلب",weSTech:"الفني",weKFile:"ملفات",weClaim:"شكوى",weProof:"إثبات",wePrev:"تعذّر عرض الصورة",weDoc:"مستند",weShow:"يعرض",wePrevP:"‹ السابق",weNextP:"التالي ›",weNoneT:"ما في إثباتات تطابق هذه الفلاتر",weNoneS:"امسح فلتر أو وسّع التواريخ.",nav:{dashboard:"لوحة المعلومات",assets:"الأصول",manage:"إدارة الطلبات",all:"جميع الطلبات",reports:"لوحة المعلومات والتقارير",staffdir:"دليل الموظفين",open:"المهام المفتوحة",archive:"الملغية / المحذوفة",media:"استوديو الصور والملفات",settings:"الإعدادات"},
-  am_title:"أصول الشركة",as_eye:"أصول الشركة",as_h1:"الأصول",as_p:"إدارة كل أصول الشركة.",as_back:"الأصول",am_subtitle:"إدارة أصول الشركة",am_soon:"قريباً",am_warehouses:"المستودعات",am_fleet:"المركبات",am_equipment:"المعدّات",am_other:"أصول أخرى",am_login_title:"دخول الأصول",am_login_sub:"أصول الشركة",am_signin:"دخول",am_back:"رجوع",am_logout:"خروج",am_wh_sys:"إدارة المستودعات",awh_dashboard:"لوحة المعلومات",awh_inventory:"المخزون",awh_movements:"الحركات",awh_materialreq:"طلبات المواد",awh_shelves:"المستودعات والأرفف",awh_batches:"الدفعات والصلاحية",awh_reports:"التقارير",invOutF:"نافد",dashEye:"نظام المستودعات",dashH1:"لوحة المعلومات",dashAllWh:"كل المستودعات",dashLoading:"جاري تحميل اللوحة…",dashNone:"لا توجد بيانات.",dashTotalItems:"إجمالي الأصناف",dashOnHand:"إجمالي الكمية",dashAvailable:"المتاح",dashReserved:"المحجوز",dashLow:"مخزون منخفض",dashOut:"نافد المخزون",dashNoShelf:"بدون رف",dashExpiring:"دفعات قرب الانتهاء",dashPending:"طلبات مواد معلّقة",dashActionNeeded:"يحتاج إجراء",dashCatTitle:"التوزيع حسب التصنيف",dashCatCat:"التصنيف",dashCatItems:"الأصناف",dashCatOpen:"فتح في المخزون",dashNoCat:"لا توجد تصنيفات.",dashRecent:"آخر الحركات",dashNoMv:"لا توجد حركات بعد.",dashCDate:"التاريخ",dashCType:"النوع",dashCItem:"الصنف",dashCQty:"الكمية",dashCWh:"المستودع",dashCActor:"بواسطة",mvT_OPENING_BALANCE:"رصيد افتتاحي",mvT_RECEIPT:"استلام",mvT_ISSUE:"صرف",mvT_RETURN:"إرجاع",mvT_TRANSFER_IN:"تحويل وارد",mvT_TRANSFER_OUT:"تحويل صادر",mvT_DISPOSAL:"إتلاف",mvT_ADJUSTMENT:"تسوية",
+  am_title:"أصول الشركة",as_eye:"أصول الشركة",as_h1:"الأصول",as_p:"إدارة كل أصول الشركة.",as_back:"الأصول",am_subtitle:"إدارة أصول الشركة",am_soon:"قريباً",am_warehouses:"المستودعات",am_fleet:"المركبات",am_equipment:"المعدّات",am_other:"أصول أخرى",am_login_title:"دخول الأصول",am_login_sub:"أصول الشركة",am_signin:"دخول",am_back:"رجوع",am_logout:"خروج",am_wh_sys:"إدارة المستودعات",awh_dashboard:"لوحة المعلومات",awh_inventory:"المخزون",awh_movements:"الحركات",awh_materialreq:"طلبات المواد",awh_shelves:"المستودعات والأرفف",awh_batches:"الدفعات والصلاحية",awh_reports:"التقارير",invOutF:"نافد",dashEye:"نظام المستودعات",dashH1:"لوحة المعلومات",dashAllWh:"كل المستودعات",dashLoading:"جاري تحميل اللوحة…",dashNone:"لا توجد بيانات.",dashTotalItems:"إجمالي الأصناف",dashOnHand:"إجمالي الكمية",dashAvailable:"المتاح",dashReserved:"المحجوز",dashLow:"مخزون منخفض",dashOut:"نافد المخزون",dashNoShelf:"بدون رف",dashExpiring:"دفعات قرب الانتهاء",dashPending:"طلبات مواد معلّقة",dashActionNeeded:"يحتاج إجراء",dashCatTitle:"التوزيع حسب التصنيف",dashCatCat:"التصنيف",dashCatItems:"الأصناف",dashCatOpen:"فتح في المخزون",dashNoCat:"لا توجد تصنيفات.",dashRecent:"آخر الحركات",dashNoMv:"لا توجد حركات بعد.",dashCDate:"التاريخ",dashCType:"النوع",dashCItem:"الصنف",dashCQty:"الكمية",dashCWh:"المستودع",dashCActor:"بواسطة",mvEye:"نظام المستودعات",mvH1:"حركات المخزون",mvLoading:"جاري تحميل الحركات…",mvNone:"لا توجد حركات مطابقة.",mvAllWh:"كل المستودعات",mvAllTypes:"كل الأنواع",mvFrom:"من",mvTo:"إلى",mvItem:"الصنف",mvItemPick:"تصفية حسب الصنف",mvItemPh:"ابحث بالكود أو الاسم…",mvNoItems:"لا توجد أصناف.",mvNew:"حركة جديدة",mvSoonHint:"في المرحلة التالية",mvOf:"من",mvPrev:"السابق",mvNext:"التالي",mvT_OPENING_BALANCE:"رصيد افتتاحي",mvT_RECEIPT:"استلام",mvT_ISSUE:"صرف",mvT_RETURN:"إرجاع",mvT_TRANSFER_IN:"تحويل وارد",mvT_TRANSFER_OUT:"تحويل صادر",mvT_DISPOSAL:"إتلاف",mvT_ADJUSTMENT:"تسوية",
   invEye:"المستودع",invH1:"المخزون",invP:"الأرصدة الحيّة في كل المستودعات.",invLoading:"جاري تحميل المخزون…",invNoMatch:"ما في أصناف تطابق هذه الفلاتر.",invSearchPh:"ابحث بالكود أو الاسم…",invAllWh:"كل المستودعات",invAllCat:"كل التصنيفات",invLow:"مخزون منخفض",invNoShelfF:"بلا رف",invItems:"صنف",invCode:"الكود",invName:"الاسم",invCat:"التصنيف",invType:"النوع",invUnit:"الوحدة",invOnHand:"المتوفّر",invReserved:"محجوز",invAvail:"المتاح",invMin:"الحد الأدنى",invWh:"المستودع",invShelf:"الرف",invStatus:"الحالة",invNoShelf:"بلا رف",invActive:"نشط",invInactive:"معطّل",invSetShelf:"تعيين رف",invChangeShelf:"تغيير الرف",invNoShelvesWh:"ما في أرفف بهذا المستودع",invPickShelf:"اختر رفاً من فضلك.",invShelfErr:"تعذّر تحديث الرف:",
   navIc:{dashboard:"▦",assets:"📦",manage:"📥",all:"📋",reports:"📊",staffdir:"👷",open:"⚙",archive:"🗂",media:"◫",settings:"⚙️"},
   reqEye:"طلب جديد",reqH1:"طلب خدمة",reqP:"يُرجى تعبئة التفاصيل وإرسال الطلب؛ ليصل مباشرةً إلى قسم التشغيل والصيانة.",
@@ -5064,6 +5088,55 @@ let invFilters = { q:'', warehouse:'', category:'', low:false, out:false, noshel
 /* ---- Dashboard state + context-aware helpers (mirror the Inventory pattern) ---- */
 let dashData=null, dashLoaded=false, dashLoading=false, dashWh='';
 let whSub='dashboard';   // active sub-tab of the Warehouse module in /admin
+/* ---- Stock Movements state + context-aware helpers ---- */
+let mvData=null, mvTotal=0, mvLoaded=false, mvLoading=false;
+let mvPage=0;                       // 0-based page
+const MV_PAGE_SIZE=100;
+let mvFilters={ type:'', warehouse:'', item_id:'', item_label:'', date_from:'', date_to:'' };
+let mvItemList=null, mvItemQuery='', mvItemOpen=false;   // item picker (client-side from inventory_list)
+function mvRpc(fn,args){ return dashIsAsset() ? assetRpc(fn,args) : admRpc(fn,args); }
+function mvRender(){ if(dashIsAsset()) renderAsset(); else render(); }
+async function loadMovements(force){
+  if(mvLoaded && !force){ mvRender(); return; }
+  if(mvLoading) return;
+  mvLoading=true;
+  const res = await mvRpc('movements_list', {
+    p_warehouse_id: mvFilters.warehouse||null,
+    p_movement_type: mvFilters.type||null,
+    p_item_id: mvFilters.item_id||null,
+    p_date_from: mvFilters.date_from||null,
+    p_date_to: mvFilters.date_to||null,
+    p_limit: MV_PAGE_SIZE,
+    p_offset: mvPage*MV_PAGE_SIZE
+  });
+  mvLoading=false;
+  if(res && res.ok===false){ mvData=[]; mvTotal=0; mvLoaded=true; console.warn('movements_list failed', res.error); toast(typeof admOpError!=='undefined'?admOpError:'Error'); mvRender(); return; }
+  mvData = (res && Array.isArray(res.movements)) ? res.movements : [];
+  mvTotal = (res && typeof res.total_count==='number') ? res.total_count : 0;
+  mvLoaded = true;
+  mvRender();
+}
+function mvApplyReload(){ mvPage=0; mvLoaded=false; loadMovements(true); }   // filter change → page 0
+function mvSetType(v){ mvFilters.type=v; mvApplyReload(); }
+function mvSetWh(v){ mvFilters.warehouse=v; mvApplyReload(); }
+function mvSetDateFrom(v){ mvFilters.date_from=v; mvApplyReload(); }
+function mvSetDateTo(v){ mvFilters.date_to=v; mvApplyReload(); }
+function mvPickItem(id,label){ mvFilters.item_id=id; mvFilters.item_label=label; mvItemOpen=false; mvItemQuery=''; mvApplyReload(); }
+function mvClearItem(){ mvFilters.item_id=''; mvFilters.item_label=''; mvApplyReload(); }
+function mvPrev(){ if(mvPage>0){ mvPage--; mvLoaded=false; loadMovements(true); } }
+function mvNext(){ if((mvPage+1)*MV_PAGE_SIZE < mvTotal){ mvPage++; mvLoaded=false; loadMovements(true); } }
+// item picker list (reuse inventory_list; load once, search client-side)
+async function mvEnsureItems(){
+  if(mvItemList!==null) return;
+  const rows = await mvRpc('inventory_list', {});
+  mvItemList = (rows && Array.isArray(rows)) ? rows : [];
+}
+function mvToggleItemPicker(){
+  mvItemOpen=!mvItemOpen;
+  if(mvItemOpen && mvItemList===null){ mvEnsureItems().then(mvRender); }
+  mvRender();
+}
+function mvItemSearch(v){ mvItemQuery=v; mvRender(); }
 function dashIsAsset(){ return invIsAsset(); }
 function dashRender(){ if(dashIsAsset()) renderAsset(); else render(); }
 function dashRpc(fn,args){ return dashIsAsset() ? assetRpc(fn,args) : admRpc(fn,args); }
@@ -5142,7 +5215,7 @@ function invApply(){
 const WH_SUBNAV=[
   { key:'dashboard',  ic:'▦',  live:true  },
   { key:'inventory',  ic:'📦', live:true  },
-  { key:'movements',  ic:'🔁', live:false },
+  { key:'movements',  ic:'🔁', live:true  },
   { key:'materialreq',ic:'📝', live:false },
   { key:'shelves',    ic:'🗄', live:false },
   { key:'batches',    ic:'⏳', live:false },
@@ -5168,6 +5241,7 @@ function whSubContent(){
   const active=whGetSub();
   if(active==='dashboard') return viewWhDashboard();
   if(active==='inventory') return viewInventory();
+  if(active==='movements') return viewMovements();
   return `<div class="empty">${t('am_soon')}</div>`;
 }
 
@@ -5207,6 +5281,103 @@ function dashGoCat(catId){
   if(dashIsAsset()){ assetSub='inventory'; renderAsset(); }
   else { whSub='inventory'; go('inventory'); }
 }
+function viewMovements(){
+  const isAsset=dashIsAsset();
+  const isAdmin = isAsset ? (assetRole==='admin') : (state.role==='admin');
+  if(!mvLoaded){ loadMovements(); return `<div class="empty">${t('mvLoading')}</div>`; }
+  const rows=Array.isArray(mvData)?mvData:[];
+  const n=v=>fmtNum(v);
+
+  // warehouse options — from dashData.warehouses if we have it, else derive from rows
+  let whOpts=`<option value="">${t('mvAllWh')}</option>`;
+  let whList=(dashData&&Array.isArray(dashData.warehouses))?dashData.warehouses:[];
+  if(!whList.length){ const seen={}; rows.forEach(r=>{ if(r.warehouse_id&&!seen[r.warehouse_id]){seen[r.warehouse_id]=1; whList.push({id:r.warehouse_id,code:r.warehouse_code,name_ar:r.warehouse_name_ar,name_en:r.warehouse_name_en});} }); }
+  whList.forEach(w=>{ const nm=L==='ar'?(w.name_ar||w.code):(w.name_en||w.code); whOpts+=`<option value="${w.id}" ${mvFilters.warehouse===w.id?'selected':''}>${esc(nm)}</option>`; });
+
+  // movement-type options
+  const TYPES=['OPENING_BALANCE','RECEIPT','ISSUE','RETURN','TRANSFER_IN','TRANSFER_OUT','DISPOSAL','ADJUSTMENT'];
+  let typeOpts=`<option value="">${t('mvAllTypes')}</option>`;
+  TYPES.forEach(tp=>{ typeOpts+=`<option value="${tp}" ${mvFilters.type===tp?'selected':''}>${t('mvT_'+tp)}</option>`; });
+
+  // item picker
+  let itemPicker;
+  if(mvFilters.item_id){
+    itemPicker=`<div class="mv-chip">${t('mvItem')}: ${esc(mvFilters.item_label)} <span class="mv-chip-x" onclick="mvClearItem()">×</span></div>`;
+  }else{
+    let dd='';
+    if(mvItemOpen){
+      const q=(mvItemQuery||'').trim().toLowerCase();
+      let list=(mvItemList||[]);
+      if(q) list=list.filter(r=>((r.item_code||'').toLowerCase().includes(q) || (r.name_ar||'').toLowerCase().includes(q) || (r.name_en||'').toLowerCase().includes(q)));
+      list=list.slice(0,30);
+      const inner = (mvItemList===null) ? `<div class="mv-pick-load">${t('mvLoading')}</div>`
+        : (list.length ? list.map(r=>{ const nm=L==='ar'?(r.name_ar||r.name_en):(r.name_en||r.name_ar); return `<div class="mv-pick-row" onclick="mvPickItem('${r.item_id}', '${esc((r.item_code||'')+' · '+(nm||'')).replace(/'/g,"\\'")}')"><span class="mv-pick-code">${esc(r.item_code||'')}</span> ${esc(nm||'')}</div>`; }).join('') : `<div class="mv-pick-load">${t('mvNoItems')}</div>`);
+      dd=`<div class="mv-pick-dd"><input class="mv-pick-search" placeholder="${t('mvItemPh')}" value="${esc(mvItemQuery)}" oninput="mvItemSearch(this.value)" autofocus/><div class="mv-pick-list">${inner}</div></div>`;
+    }
+    itemPicker=`<div class="mv-pick-wrap"><button class="mv-pick-btn" onclick="mvToggleItemPicker()">${t('mvItemPick')} ▾</button>${dd}</div>`;
+  }
+
+  // new-movement button (admin only; disabled this phase)
+  const newBtn = isAdmin ? `<button class="mv-new" disabled title="${t('mvSoonHint')}">+ ${t('mvNew')} <span class="wst-soon">${t('am_soon')}</span></button>` : '';
+
+  // table rows
+  const typeCls=mt=>({RECEIPT:'mv-in',OPENING_BALANCE:'mv-in',RETURN:'mv-in',TRANSFER_IN:'mv-in',ISSUE:'mv-out',TRANSFER_OUT:'mv-out',DISPOSAL:'mv-out',ADJUSTMENT:'mv-adj'})[mt]||'';
+  const showActor = rows.some(m=>m.actor_email);
+  const body = rows.length ? rows.map(m=>{
+    const nm=L==='ar'?(m.item_name_ar||m.item_code):(m.item_name_en||m.item_name_ar||m.item_code);
+    const wh=L==='ar'?(m.warehouse_name_ar||m.warehouse_code):(m.warehouse_name_en||m.warehouse_code);
+    const dt=new Date(m.created_at);
+    const dstr=dt.toLocaleDateString(L==='ar'?'ar':'en-GB',{day:'2-digit',month:'short',year:'2-digit'})+' '+dt.toLocaleTimeString(L==='ar'?'ar':'en-GB',{hour:'2-digit',minute:'2-digit'});
+    const q=Number(m.qty); const qCls=q>0?'q-pos':(q<0?'q-neg':'');
+    return `<tr>
+      <td class="mv-dt">${dstr}</td>
+      <td><span class="mv-badge ${typeCls(m.movement_type)}">${t('mvT_'+m.movement_type)||m.movement_type}</span></td>
+      <td class="mv-item"><span class="mv-code">${esc(m.item_code||'')}</span> ${esc(nm||'')}</td>
+      <td class="mv-q ${qCls}">${q>0?'+':''}${n(q)}</td>
+      <td>${esc(wh||'')}</td>
+      ${showActor?`<td class="mv-actor">${esc(m.actor_email||'')}</td>`:''}
+    </tr>`;
+  }).join('') : `<tr><td colspan="${showActor?6:5}" class="empty">${t('mvNone')}</td></tr>`;
+
+  // paging
+  const from = mvTotal===0 ? 0 : (mvPage*MV_PAGE_SIZE + 1);
+  const to = Math.min((mvPage+1)*MV_PAGE_SIZE, mvTotal);
+  const hasPrev = mvPage>0;
+  const hasNext = (mvPage+1)*MV_PAGE_SIZE < mvTotal;
+  const pager=`<div class="mv-pager">
+    <span class="mv-count">${from}–${to} ${t('mvOf')} ${n(mvTotal)}</span>
+    <div class="mv-pgbtns">
+      <button ${hasPrev?'':'disabled'} onclick="mvPrev()">‹ ${t('mvPrev')}</button>
+      <button ${hasNext?'':'disabled'} onclick="mvNext()">${t('mvNext')} ›</button>
+    </div>
+  </div>`;
+
+  const backBtn = (!isAsset && state.role==='admin') ? `<button onclick="go('assets')" class="dash-back">‹ ${t('as_back')}</button>` : '';
+
+  return `${backBtn}
+    <div class="dash-head">
+      <div><div class="eyebrow">${t('mvEye')}</div><h1>${t('mvH1')}</h1></div>
+      ${newBtn}
+    </div>
+    <div class="mv-filters">
+      <select onchange="mvSetType(this.value)">${typeOpts}</select>
+      <select onchange="mvSetWh(this.value)">${whOpts}</select>
+      <label class="mv-date">${t('mvFrom')} <input type="date" value="${esc(mvFilters.date_from)}" onchange="mvSetDateFrom(this.value)"/></label>
+      <label class="mv-date">${t('mvTo')} <input type="date" value="${esc(mvFilters.date_to)}" onchange="mvSetDateTo(this.value)"/></label>
+      ${itemPicker}
+    </div>
+    <div class="panel mv-panel">
+      <div class="tbl-wrap"><table class="tbl mv-tbl">
+        <thead><tr>
+          <th>${t('dashCDate')}</th><th>${t('dashCType')}</th><th>${t('dashCItem')}</th>
+          <th>${t('dashCQty')}</th><th>${t('dashCWh')}</th>${showActor?`<th>${t('dashCActor')}</th>`:''}
+        </tr></thead>
+        <tbody>${body}</tbody>
+      </table></div>
+      ${pager}
+    </div>`;
+}
+
 function viewWhDashboard(){
   const isAsset=dashIsAsset();
   const isAdmin = isAsset ? (assetRole==='admin') : (state.role==='admin');
