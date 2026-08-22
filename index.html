@@ -1227,7 +1227,16 @@ async function admSignIn(email,password){
     });
     isAdmin=(await ar.json())===true;
   }catch(e){return {ok:false,error:'network'};}
-  if(!isAdmin)return {ok:false,error:'not_admin'};
+  if(!isAdmin){
+    // not an admin — fetch the role so the UI can point them to the right portal
+    let role=null;
+    try{
+      const rr=await fetch(SB_URL+'/rest/v1/rpc/get_my_role',{method:'POST',
+        headers:{'apikey':SB_KEY,'Authorization':'Bearer '+login.access_token,'Content-Type':'application/json'},body:'{}'});
+      if(rr.ok){const v=await rr.json(); role=(typeof v==='string'&&v)?v:null;}
+    }catch(e){}
+    return {ok:false,error:'not_admin',role:role};
+  }
   const sess={access_token:login.access_token,refresh_token:login.refresh_token,
     expires_at:login.expires_at||null,user_id:(login.user&&login.user.id)||null};
   admSetSession(sess);
@@ -2076,7 +2085,12 @@ async function tryAdmin(){
   if(pwEl)pwEl.value='';   // never keep the password around
   if(!r.ok){
     let msg;
-    if(r.error==='not_admin')msg=(L==='ar'?'هذا الحساب ليس مديراً.':'This account is not an admin.');
+    if(r.error==='not_admin'){
+      // point them to their real portal, derived from permissions (not role-name)
+      const belongs=whereDoesRoleBelong(r.role);
+      if(belongs==='/asset')msg=(L==='ar'?'هذا حساب مسؤول أصول — الدخول عبر /asset':'This is an asset-manager account — sign in at /asset');
+      else msg=(L==='ar'?'هذا الحساب ليس مديراً.':'This account is not an admin.');
+    }
     else if(r.error==='network')msg=(L==='ar'?'مشكلة بالاتصال. حاول مجدداً.':'Connection problem. Try again.');
     else msg=(L==='ar'?'بريد أو كلمة مرور غير صحيحة.':'Invalid email or password.');
     if(errEl)errEl.textContent=msg;
@@ -5202,15 +5216,21 @@ function fmtNum(n){
 
 /* ══ SECTION 1 — MODULE PERMISSION MAP (the whole future lives here) ══ */
 function assetModuleAccess(role){
+  // admin is intentionally NOT here — admins use /admin (which has the Assets section).
   const map = {
-    admin:       ['warehouses'],
     storekeeper: ['warehouses']
     // later:
     // fleet_manager:     ['fleet'],
-    // equipment_manager: ['equipment'],
-    // asset_admin:       ['warehouses','fleet','equipment']
+    // equipment_manager: ['equipment']
   };
   return map[role] || [];
+}
+// Which PORTAL a role belongs to — derived from permissions, never role-name checks.
+// admin → /admin ; any role with an asset module → /asset ; otherwise no access.
+function whereDoesRoleBelong(role){
+  if(role === 'admin') return '/admin';
+  if(assetModuleAccess(role).length > 0) return '/asset';
+  return null;
 }
 // module metadata for the landing grid (add a line per future module)
 const ASSET_MODULES = [
@@ -5266,9 +5286,10 @@ async function assetSignIn(email,password){
   }catch(e){return {ok:false,error:'network'};}
   const role=await assetFetchRole(login.access_token);
   if(!role || assetModuleAccess(role).length===0){
-    // valid credentials but no asset access → do not keep the session
+    // valid credentials but not an asset user → drop the session, tell them where they belong
     try{await fetch(SB_URL+'/auth/v1/logout',{method:'POST',headers:{'apikey':SB_KEY,'Authorization':'Bearer '+login.access_token,'Content-Type':'application/json'},body:'{}'});}catch(e){}
-    return {ok:false,error:'no_access'};
+    const belongs=whereDoesRoleBelong(role);   // '/admin' for admins, null otherwise
+    return {ok:false,error: belongs==='/admin' ? 'use_admin' : 'no_access'};
   }
   const sess={access_token:login.access_token,refresh_token:login.refresh_token,
     expires_at:login.expires_at||null,user_id:(login.user&&login.user.id)||null,role:role};
@@ -5374,7 +5395,8 @@ async function assetTryLogin(){
   if(pwEl)pwEl.value='';
   if(!r.ok){
     let msg;
-    if(r.error==='no_access')msg=(L==='ar'?'هذا الحساب لا يملك صلاحية على الأصول.':'This account has no asset access.');
+    if(r.error==='use_admin')msg=(L==='ar'?'هذا حساب مدير — الدخول عبر /admin':'This is an administrator account — sign in at /admin');
+    else if(r.error==='no_access')msg=(L==='ar'?'هذا الحساب لا يملك صلاحية على الأصول.':'This account has no asset access.');
     else if(r.error==='network')msg=(L==='ar'?'مشكلة بالاتصال. حاول مجدداً.':'Connection problem. Try again.');
     else msg=(L==='ar'?'بريد أو كلمة مرور غير صحيحة.':'Invalid email or password.');
     if(errEl)errEl.textContent=msg;
