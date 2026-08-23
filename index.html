@@ -1178,6 +1178,22 @@ html[dir=rtl] .dwr{transform:translateX(-100%)}
 .mv-choose-btn .mc-lb{font-size:15px;font-weight:800;color:var(--navy)}
 .mv-choose-btn .mc-sub{font-size:12px;color:var(--grey)}
 .rc-hint2{font-size:11px;color:var(--grey);margin-top:5px}
+.aj-dir{display:flex;gap:8px}
+.aj-dir-btn{flex:1;padding:10px;border:1.5px solid var(--grid);border-radius:9px;background:var(--white);font-family:inherit;font-size:13.5px;font-weight:700;color:var(--grey);cursor:pointer;transition:.12s}
+.aj-dir-btn.on.inc{border-color:var(--green);background:color-mix(in srgb,var(--green) 12%,#fff);color:var(--green)}
+.aj-dir-btn.on.dec{border-color:var(--red);background:color-mix(in srgb,var(--red) 12%,#fff);color:var(--red)}
+.rt-mode{display:flex;gap:8px;margin-bottom:14px}
+.rt-mode-btn{flex:1;padding:9px;border:1.5px solid var(--grid);border-radius:9px;background:var(--white);font-family:inherit;font-size:13px;font-weight:700;color:var(--grey);cursor:pointer;transition:.12s}
+.rt-mode-btn.on{border-color:var(--navy);background:var(--pale);color:var(--navy)}
+.rt-issues{border:1.5px solid var(--grid);border-radius:10px;overflow:hidden;max-height:220px;overflow-y:auto}
+.rt-issue-row{padding:10px 12px;border-bottom:1px solid var(--head);cursor:pointer;transition:.1s}
+.rt-issue-row:hover{background:var(--pale)}
+.rt-ir-date{font-size:12px;color:var(--grey);font-weight:700;margin-bottom:3px}
+.rt-ir-nums{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--txt)}
+.rt-ir-rem{color:var(--navy);font-weight:700}
+.rt-none,.rt-hint{padding:12px;text-align:center;color:var(--grey);font-size:12.5px;background:var(--head);border-radius:9px}
+
+
 
 .mv-scrim{position:fixed;inset:0;background:rgba(20,35,55,.45);z-index:200}
 .mv-modal{position:fixed;z-index:201;top:50%;inset-inline-start:50%;transform:translate(-50%,-50%);background:var(--white);border-radius:16px;width:440px;max-width:94vw;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.3);overflow:hidden}
@@ -1899,7 +1915,7 @@ const PAGE_SIZE=100;
 const T={
  en:{co:"ADVANCED CONCEPTS CONTRACTING CO. LTD.",sys:"O&M Service Requests",
   weOpen:"⤢ Open",weFile1:"file",weFileN:"files",wpClose:"Close",wpOpenTask:"Open task",wpInfo:"Task information",wpTimeline:"Timeline",wpPrio:"Priority",wpBy:"Requested by",wpRec:"Received",wpSched:"Scheduled start",wpDone:"Completed",wpEvRec:"Request received",wpEvSched:"Work scheduled",wpEvStart:"Work started",wpEvSub:"Submitted for confirmation",wpEvDone:"Completed",wpEvClosed:"Closed",wpReason:"Reason",wpMgr:"Manager note",wpCloseNote:"Closeout note",weReqImg:"Requester photos",weReqDoc:"Requester documents",weTecImg:"Technician photos",weTecDoc:"Technician documents",weNoneG:"Nothing attached",wpNotFound:"That task is not in the current list",wzBtn:"Download ZIP",wzHint:"Exports every task matching the current filters",wzTitle:"Building the ZIP",wzTasks:"Tasks",wzFiles:"Files",wzFailed:"failed",wzCancel:"Cancel",wzCancelled:"Export cancelled",wzZipping:"Compressing…",wzDone:"files exported",wzErr:"The ZIP could not be created",wzNoLib:"The ZIP library did not load",wzFailHdr:"These files could not be downloaded. Everything else is in the package.",weAllC:"All categories",weAllT:"All technicians",weAllS:"All statuses",weReset:"Reset filters",weResults:"results",weKImages:"Total images",weKDocs:"Total documents",weKClaim:"Complaint",weKProof:"Evidence",mgrRole:"Department Manager",mgrNone:"Department Manager contact is not currently configured.",weNoRes:"No matching records found.",weRowsL:"Rows",weCID:"Request ID",weCTtl:"Request title",weCCI:"Complaint images",weCEI:"Evidence images",weCTI:"Total images",weCCD:"Complaint documents",weCED:"Evidence documents",weCTD:"Total documents",weCCrt:"Created",weCUpd:"Last updated",weCAct:"Actions",weCOpen:"Open",weTitle:"Image & Document Studio",weSub:"Every image and document, task by task",weGal:"Gallery",weTime:"Timeline",weTbl:"Table",weSoon:"SOON",weSoonT:"Coming in a later phase",weSearch:"Search",wePh:"Search by ID, title, requester or technician...",weAllP:"All projects",weFrom:"From",weTo:"To",weProj:"Project",weCat:"Category",weTech:"Technician",weStat:"Status",weSReq:"Requester",weSTech:"Technician",weKFile:"Files",weClaim:"COMPLAINT",weProof:"EVIDENCE",wePrev:"Preview unavailable",weDoc:"Document",weShow:"Showing",wePrevP:"‹ Previous",weNextP:"Next ›",weNoneT:"No evidence matches these filters",weNoneS:"Clear a filter or widen the dates.",nav:{dashboard:"Dashboard",assets:"Assets",manage:"Manage Requests",all:"All Requests",reports:"Dashboard & Reports",staffdir:"Staff Directory",open:"Open Tasks",archive:"Archived / Declined",media:"Image & Document Studio",settings:"Settings"},
-  am_title:"Company Assets",as_eye:"COMPANY ASSETS",as_h1:"Assets",as_p:"Manage all company assets.",as_back:"Assets",am_subtitle:"إدارة أصول الشركة",am_soon:"Soon",am_warehouses:"Warehouses",am_fleet:"Fleet & Vehicles",am_equipment:"Equipment",am_other:"Other Assets",am_login_title:"Asset access · دخول الأصول",am_login_sub:"Company Assets · أصول الشركة",am_signin:"Sign in · دخول",am_back:"Back",am_logout:"Log out",am_wh_sys:"Warehouse Management",awh_dashboard:"Dashboard",awh_inventory:"Inventory",awh_movements:"Movements",awh_materialreq:"Material Requests",awh_shelves:"Warehouses & Shelves",awh_batches:"Batches & Expiry",awh_reports:"Reports",invOutF:"Out of Stock",dashEye:"WAREHOUSE SYSTEM",dashH1:"Dashboard",dashAllWh:"All warehouses",dashLoading:"Loading dashboard…",dashNone:"No data available.",dashTotalItems:"Total Items",dashOnHand:"Total On Hand",dashAvailable:"Available",dashReserved:"Reserved",dashLow:"Low Stock",dashOut:"Out of Stock",dashNoShelf:"Without Shelf",dashExpiring:"Expiring Batches",dashPending:"Pending Material Requests",dashActionNeeded:"Action needed",dashCatTitle:"Category Distribution",dashCatCat:"Category",dashCatItems:"Items",dashCatOpen:"Open in Inventory",dashNoCat:"No categories to show.",dashRecent:"Recent Movements",dashNoMv:"No movements yet.",dashCDate:"Date",dashCType:"Type",dashCItem:"Item",dashCQty:"Qty",dashCWh:"Warehouse",dashCActor:"By",mvEye:"WAREHOUSE SYSTEM",mvH1:"Stock Movements",mvLoading:"Loading movements…",mvNone:"No movements match these filters.",mvAllWh:"All warehouses",mvAllTypes:"All types",mvFrom:"From",mvTo:"To",mvItem:"Item",mvItemPick:"Filter by item",mvItemPh:"Search by code or name…",mvNoItems:"No items found.",mvNew:"New Movement",mvSoonHint:"Coming in the next phase",mvOf:"of",mvPrev:"Prev",mvNext:"Next",mvRcSelItem:"Select item",mvRcItem:"Item",mvRcWh:"Warehouse",mvRcOnHand:"On hand",mvRcAvail:"Available",mvRcUnit:"Unit",mvRcQty:"Quantity received",mvRcBatch:"Batch no.",mvRcBatchPh:"Leave empty for default batch",mvRcExpiry:"Expiry date",mvRcNote:"Note",mvRcPost:"Post Receipt",mvRcSaving:"Posting…",mvRcCancel:"Cancel",mvRcOk:"Receipt posted successfully",mvRcErrItem:"Please select an item.",mvRcErrQty:"Enter a quantity greater than zero.",mvRcErrExpiry:"Expiry date needs a batch number.",mvRcErrGeneric:"Could not post the receipt. Please try again.",mvRcErr_qty_must_be_positive:"Quantity must be greater than zero.",mvRcErr_expiry_requires_batch_no:"Expiry date needs a batch number.",mvRcErr_expiry_mismatch:"This batch already has a different expiry date.",mvRcErr_batch_inactive:"That batch is inactive.",mvRcErr_item_warehouse_not_found:"Item not found in this warehouse.",mvRcErr_item_warehouse_inactive:"This item is inactive in the warehouse.",mvRcErr_not_authorized:"You are not authorized to post movements.",mvChooseReceipt:"Stock coming in",mvChooseIssue:"Stock going out",mvIsQty:"Quantity to issue",mvIsBatch:"Batch no.",mvIsBatchPh:"Leave empty for default batch",mvIsBatchNote:"Refers to an existing batch (exact match).",mvIsPost:"Post Issue",mvIsSaving:"Posting…",mvIsOk:"Issue posted successfully",mvIsOver:"Warning: quantity exceeds available",mvIsReq:"requested",mvIsErrGeneric:"Could not post the issue. Please try again.",mvIsErr_would_break_reserved:"Not enough available stock (some is reserved).",mvIsErr_qty_must_be_positive:"Quantity must be greater than zero.",mvIsErr_default_batch_missing:"No default batch found for this item.",mvIsErr_batch_not_found:"That batch number was not found for this item.",mvIsErr_batch_inactive:"That batch is inactive.",mvIsErr_item_warehouse_not_found:"Item not found in this warehouse.",mvIsErr_item_warehouse_inactive:"This item is inactive in the warehouse.",mvIsErr_not_authorized:"You are not authorized to post movements.",mvT_OPENING_BALANCE:"Opening",mvT_RECEIPT:"Receipt",mvT_ISSUE:"Issue",mvT_RETURN:"Return",mvT_TRANSFER_IN:"Transfer In",mvT_TRANSFER_OUT:"Transfer Out",mvT_DISPOSAL:"Disposal",mvT_ADJUSTMENT:"Adjustment",
+  am_title:"Company Assets",as_eye:"COMPANY ASSETS",as_h1:"Assets",as_p:"Manage all company assets.",as_back:"Assets",am_subtitle:"إدارة أصول الشركة",am_soon:"Soon",am_warehouses:"Warehouses",am_fleet:"Fleet & Vehicles",am_equipment:"Equipment",am_other:"Other Assets",am_login_title:"Asset access · دخول الأصول",am_login_sub:"Company Assets · أصول الشركة",am_signin:"Sign in · دخول",am_back:"Back",am_logout:"Log out",am_wh_sys:"Warehouse Management",awh_dashboard:"Dashboard",awh_inventory:"Inventory",awh_movements:"Movements",awh_materialreq:"Material Requests",awh_shelves:"Warehouses & Shelves",awh_batches:"Batches & Expiry",awh_reports:"Reports",invOutF:"Out of Stock",dashEye:"WAREHOUSE SYSTEM",dashH1:"Dashboard",dashAllWh:"All warehouses",dashLoading:"Loading dashboard…",dashNone:"No data available.",dashTotalItems:"Total Items",dashOnHand:"Total On Hand",dashAvailable:"Available",dashReserved:"Reserved",dashLow:"Low Stock",dashOut:"Out of Stock",dashNoShelf:"Without Shelf",dashExpiring:"Expiring Batches",dashPending:"Pending Material Requests",dashActionNeeded:"Action needed",dashCatTitle:"Category Distribution",dashCatCat:"Category",dashCatItems:"Items",dashCatOpen:"Open in Inventory",dashNoCat:"No categories to show.",dashRecent:"Recent Movements",dashNoMv:"No movements yet.",dashCDate:"Date",dashCType:"Type",dashCItem:"Item",dashCQty:"Qty",dashCWh:"Warehouse",dashCActor:"By",mvEye:"WAREHOUSE SYSTEM",mvH1:"Stock Movements",mvLoading:"Loading movements…",mvNone:"No movements match these filters.",mvAllWh:"All warehouses",mvAllTypes:"All types",mvFrom:"From",mvTo:"To",mvItem:"Item",mvItemPick:"Filter by item",mvItemPh:"Search by code or name…",mvNoItems:"No items found.",mvNew:"New Movement",mvSoonHint:"Coming in the next phase",mvOf:"of",mvPrev:"Prev",mvNext:"Next",mvRcSelItem:"Select item",mvRcItem:"Item",mvRcWh:"Warehouse",mvRcOnHand:"On hand",mvRcAvail:"Available",mvRcUnit:"Unit",mvRcQty:"Quantity received",mvRcBatch:"Batch no.",mvRcBatchPh:"Leave empty for default batch",mvRcExpiry:"Expiry date",mvRcNote:"Note",mvRcPost:"Post Receipt",mvRcSaving:"Posting…",mvRcCancel:"Cancel",mvRcOk:"Receipt posted successfully",mvRcErrItem:"Please select an item.",mvRcErrQty:"Enter a quantity greater than zero.",mvRcErrExpiry:"Expiry date needs a batch number.",mvRcErrGeneric:"Could not post the receipt. Please try again.",mvRcErr_qty_must_be_positive:"Quantity must be greater than zero.",mvRcErr_expiry_requires_batch_no:"Expiry date needs a batch number.",mvRcErr_expiry_mismatch:"This batch already has a different expiry date.",mvRcErr_batch_inactive:"That batch is inactive.",mvRcErr_item_warehouse_not_found:"Item not found in this warehouse.",mvRcErr_item_warehouse_inactive:"This item is inactive in the warehouse.",mvRcErr_not_authorized:"You are not authorized to post movements.",mvChooseReceipt:"Stock coming in",mvChooseIssue:"Stock going out",mvIsQty:"Quantity to issue",mvIsBatch:"Batch no.",mvIsBatchPh:"Leave empty for default batch",mvIsBatchNote:"Refers to an existing batch (exact match).",mvIsPost:"Post Issue",mvIsSaving:"Posting…",mvIsOk:"Issue posted successfully",mvIsOver:"Warning: quantity exceeds available",mvIsReq:"requested",mvIsErrGeneric:"Could not post the issue. Please try again.",mvIsErr_would_break_reserved:"Not enough available stock (some is reserved).",mvIsErr_qty_must_be_positive:"Quantity must be greater than zero.",mvIsErr_default_batch_missing:"No default batch found for this item.",mvIsErr_batch_not_found:"That batch number was not found for this item.",mvIsErr_batch_inactive:"That batch is inactive.",mvIsErr_item_warehouse_not_found:"Item not found in this warehouse.",mvIsErr_item_warehouse_inactive:"This item is inactive in the warehouse.",mvIsErr_not_authorized:"You are not authorized to post movements.",mvChooseDisposal:"Damaged / unfit stock",mvChooseReturn:"Returned from an issue",mvRtLinked:"Linked to issue",mvRtUnlinked:"Unlinked",mvRtIssue:"Original issue",mvRtQty:"Quantity to return",mvRtIssued:"Issued",mvRtReturned:"Returned",mvRtRemain:"Returnable",mvRtNoIssues:"No returnable issues for this item.",mvRtPickItemFirst:"Select an item first.",mvRtUnlinkedHint:"Use only when there is no original issue to link to.",mvRtPost:"Post Return",mvRtOk:"Return posted successfully",mvRtErrRef:"Please select the original issue.",mvRtErrNote:"A note is required for an unlinked return.",mvRtErrGeneric:"Could not post the return. Please try again.",mvRtErr_return_exceeds_issued:"Quantity exceeds what remains returnable.",mvRtErr_linked_return_batch_not_allowed:"A linked return cannot specify a batch.",mvRtErr_return_note_required:"A note is required for an unlinked return.",mvRtErr_issue_movement_not_found:"The original issue was not found.",mvRtErr_ref_not_an_issue:"The referenced movement is not an issue.",mvRtErr_issue_iw_mismatch:"The issue belongs to a different item/warehouse.",mvRtErr_batch_not_found:"That batch number was not found.",mvRtErr_batch_inactive:"That batch is inactive.",mvRtErr_default_batch_missing:"No default batch found for this item.",mvRtErr_item_warehouse_not_found:"Item not found in this warehouse.",mvRtErr_item_warehouse_inactive:"This item is inactive in the warehouse.",mvChooseAdjust:"Correct a stock count",mvDpQty:"Quantity to dispose",mvDpReason:"Reason",mvDpReasonSel:"Select a reason",mvDpR_storage_damage:"Storage damage",mvDpR_expired:"Expired",mvDpR_broken:"Broken",mvDpR_unfit_for_use:"Unfit for use",mvDpR_other:"Other",mvDpPost:"Post Disposal",mvDpOk:"Disposal posted successfully",mvDpErrReason:"Please select a reason.",mvDpErrNote:"A note is required for disposal.",mvDpErrGeneric:"Could not post the disposal. Please try again.",mvDpErr_invalid_reason_category:"Please select a valid reason.",mvDpErr_disposal_note_required:"A note is required for disposal.",mvDpErr_would_break_reserved:"Not enough available stock (some is reserved).",mvDpErr_default_batch_missing:"No default batch found for this item.",mvDpErr_batch_not_found:"That batch number was not found.",mvDpErr_batch_inactive:"That batch is inactive.",mvDpErr_item_warehouse_not_found:"Item not found in this warehouse.",mvDpErr_item_warehouse_inactive:"This item is inactive in the warehouse.",mvAjInc:"Increase",mvAjDec:"Decrease",mvAjDir:"Direction",mvAjQty:"Quantity",mvAjReason:"Reason",mvAjR_periodic_count:"Periodic count",mvAjR_data_entry_correction:"Data entry correction",mvAjR_unexplained_variance:"Unexplained variance",mvAjR_system_reconciliation:"System reconciliation",mvAjR_other:"Other",mvAjNoteOtherHint:"A note is required when reason is Other.",mvAjPost:"Post Adjustment",mvAjOk:"Adjustment posted successfully",mvAjErrDir:"Please choose increase or decrease.",mvAjErrReason:"Please select a reason.",mvAjErrNoteOther:"A note is required when reason is Other.",mvAjErrGeneric:"Could not post the adjustment. Please try again.",mvAjErr_invalid_direction:"Please choose increase or decrease.",mvAjErr_invalid_reason_category:"Please select a valid reason.",mvAjErr_note_required_for_other:"A note is required when reason is Other.",mvAjErr_would_break_reserved:"This decrease would break existing reservations.",mvAjErr_default_batch_missing:"No default batch found for this item.",mvAjErr_batch_not_found:"That batch number was not found.",mvAjErr_batch_inactive:"That batch is inactive.",mvAjErr_item_warehouse_not_found:"Item not found in this warehouse.",mvAjErr_item_warehouse_inactive:"This item is inactive in the warehouse.",mvT_OPENING_BALANCE:"Opening",mvT_RECEIPT:"Receipt",mvT_ISSUE:"Issue",mvT_RETURN:"Return",mvT_TRANSFER_IN:"Transfer In",mvT_TRANSFER_OUT:"Transfer Out",mvT_DISPOSAL:"Disposal",mvT_ADJUSTMENT:"Adjustment",
   invEye:"WAREHOUSE",invH1:"Inventory",invP:"Live stock across all warehouses.",invLoading:"Loading inventory…",invNoMatch:"No items match these filters.",invSearchPh:"Search by code or name…",invAllWh:"All warehouses",invAllCat:"All categories",invLow:"Low stock",invNoShelfF:"No shelf",invItems:"items",invCode:"Code",invName:"Name",invCat:"Category",invType:"Type",invUnit:"Unit",invOnHand:"On Hand",invReserved:"Reserved",invAvail:"Available",invMin:"Min Level",invWh:"Warehouse",invShelf:"Shelf",invStatus:"Status",invNoShelf:"No shelf",invActive:"Active",invInactive:"Inactive",invSetShelf:"Set Shelf",invChangeShelf:"Change Shelf",invNoShelvesWh:"No shelves in this warehouse",invPickShelf:"Please choose a shelf.",invShelfErr:"Could not update the shelf:",
   navIc:{dashboard:"▦",assets:"📦",manage:"📥",all:"📋",reports:"📊",staffdir:"👷",open:"⚙",archive:"🗂",media:"◫",settings:"⚙️"},
   reqEye:"New request",reqH1:"Request a Service",reqP:"Fill in the details and submit — your request goes straight to the O&M team.",
@@ -1931,7 +1947,7 @@ const T={
   addImages:"Add photos (optional)",addImagesHint:"Attach photos to explain better — take a photo or pick from your gallery.",uploading:"Uploading…",photo:"photo",photos:"photos",viewImages:"Photos",reqPhone:"Mobile number",reqPhonePh:"e.g. 0500000000",waitUpload:"Please wait — photo uploading…",sending:"Sending…",shareReq:"Share request number",shareHint:"Share the image on WhatsApp or save it to your phone.",imgSaved:"Image saved",addFiles:"Add attachment (optional)",chooseEye:"Service Portal",chooseH1:"How can we help?",chooseP:"Choose what you would like to do.",chooseNew:"New request",chooseNewSub:"Submit a service request",chooseTrack:"Track a request",chooseTrackSub:"Check the status of requests",backChoose:"Back",addFilesHint:"Attach a PDF or Office document if needed (max 20 MB).",fileRejected:"The selected file type is not supported or exceeds the maximum allowed size (20 MB).",trkEye:"Track",trkH1:"Track Requests",trkP:"Enter your request number to check its status.",trkPending:"Awaiting approval",trkProg:"In progress",trkSearchPh:"0042",trkNone:"No active requests.",trkSearching:"Searching…",trkWaiting:"Awaiting approval",trkInProg:"In progress",stfEye:"Staff",stfH1:"My Tasks",stfPick:"Select your name to view your assigned tasks.",stfNoNames:"No team members yet.",stfChange:"Change name",stfMyTasks:"Your Task List",stfNoTasks:"No tasks assigned to you right now.",stfOpen:"Open",stfBackList:"Back to list",stfDone:"Mark as done",stfDoneYes:"Yes, done",stfConfirmTitle:"Confirm completion",stfConfirmMsg:"Have you finished this task? It will be sent to the manager for confirmation.",stfDoneToast:"Sent to manager for confirmation",stfPendBadge:"Pending confirmation",stfPendMsg:"Done — awaiting manager confirmation.",stfPendMsg2:"Pending confirmation",pendBadge:"Awaiting confirmation",confirmDone:"Confirm",returnTask:"Return",returnedToast:"returned to In Progress",savedToast:"Updated",mgrNotePh:"Reason / note for the technician (optional)",stOverdue:"Overdue",stOnHold:"On Hold",stNeedsReview:"Needs Review",stNeedsUpdate:"Needs Update",stComplete:"Completed",stCancelled:"Cancelled",stRejected:"Rejected",trkNoSearch:"No request found with that number."},
  ar:{co:"شركة المفاهيم المتقدمة للمقاولات المحدودة",sys:"طلبات خدمة التشغيل والصيانة",
   weOpen:"⤢ افتح",weFile1:"ملف",weFileN:"ملفات",wpClose:"إغلاق",wpOpenTask:"افتح المهمة",wpInfo:"معلومات المهمة",wpTimeline:"الخط الزمني",wpPrio:"الأولوية",wpBy:"مقدّم الطلب",wpRec:"تاريخ الاستلام",wpSched:"موعد البدء",wpDone:"تاريخ الإنجاز",wpEvRec:"وصل الطلب",wpEvSched:"جُدول العمل",wpEvStart:"بدأ العمل",wpEvSub:"أُرسل للتأكيد",wpEvDone:"اكتمل",wpEvClosed:"أُغلق",wpReason:"السبب",wpMgr:"ملاحظة المدير",wpCloseNote:"ملاحظة الإغلاق",weReqImg:"صور مقدّم الطلب",weReqDoc:"ملفات مقدّم الطلب",weTecImg:"صور الفني",weTecDoc:"ملفات الفني",weNoneG:"ما في مرفقات",wpNotFound:"المهمة مش موجودة بالقائمة الحالية",wzBtn:"تحميل ZIP",wzHint:"بيصدّر كل المهام المطابقة للفلاتر الحالية",wzTitle:"جاري تجهيز الحزمة",wzTasks:"المهام",wzFiles:"الملفات",wzFailed:"فشلت",wzCancel:"إلغاء",wzCancelled:"تم إلغاء التصدير",wzZipping:"جاري الضغط…",wzDone:"ملف تم تصديره",wzErr:"تعذّر إنشاء الحزمة",wzNoLib:"مكتبة الضغط ما حمّلت",wzFailHdr:"هذه الملفات تعذّر تحميلها. الباقي كامل داخل الحزمة.",weAllC:"كل التصنيفات",weAllT:"كل الفنيين",weAllS:"كل الحالات",weReset:"مسح الفلاتر",weResults:"نتيجة",weKImages:"إجمالي الصور",weKDocs:"إجمالي الملفات",weKClaim:"صور البلاغ",weKProof:"صور الإثبات",mgrRole:"مدير القسم",mgrNone:"بيانات التواصل مع مدير القسم غير محددة حاليًا.",weNoRes:"لا توجد نتائج مطابقة.",weRowsL:"صفوف",weCID:"رقم الطلب",weCTtl:"عنوان الطلب",weCCI:"صور البلاغ",weCEI:"صور الإثبات",weCTI:"إجمالي الصور",weCCD:"ملفات البلاغ",weCED:"ملفات الإثبات",weCTD:"إجمالي الملفات",weCCrt:"تاريخ الإنشاء",weCUpd:"آخر تحديث",weCAct:"إجراءات",weCOpen:"فتح",weTitle:"استوديو الصور والملفات",weSub:"كل الصور والملفات، مهمة بمهمة",weGal:"معرض",weTime:"زمني",weTbl:"جدول",weSoon:"قريباً",weSoonT:"بمرحلة لاحقة",weSearch:"بحث",wePh:"ابحث برقم المهمة أو العنوان أو مقدّم الطلب أو الفني...",weAllP:"كل المشاريع",weFrom:"من",weTo:"إلى",weProj:"المشروع",weCat:"التصنيف",weTech:"الفني",weStat:"الحالة",weSReq:"مقدّم الطلب",weSTech:"الفني",weKFile:"ملفات",weClaim:"شكوى",weProof:"إثبات",wePrev:"تعذّر عرض الصورة",weDoc:"مستند",weShow:"يعرض",wePrevP:"‹ السابق",weNextP:"التالي ›",weNoneT:"ما في إثباتات تطابق هذه الفلاتر",weNoneS:"امسح فلتر أو وسّع التواريخ.",nav:{dashboard:"لوحة المعلومات",assets:"الأصول",manage:"إدارة الطلبات",all:"جميع الطلبات",reports:"لوحة المعلومات والتقارير",staffdir:"دليل الموظفين",open:"المهام المفتوحة",archive:"الملغية / المحذوفة",media:"استوديو الصور والملفات",settings:"الإعدادات"},
-  am_title:"أصول الشركة",as_eye:"أصول الشركة",as_h1:"الأصول",as_p:"إدارة كل أصول الشركة.",as_back:"الأصول",am_subtitle:"إدارة أصول الشركة",am_soon:"قريباً",am_warehouses:"المستودعات",am_fleet:"المركبات",am_equipment:"المعدّات",am_other:"أصول أخرى",am_login_title:"دخول الأصول",am_login_sub:"أصول الشركة",am_signin:"دخول",am_back:"رجوع",am_logout:"خروج",am_wh_sys:"إدارة المستودعات",awh_dashboard:"لوحة المعلومات",awh_inventory:"المخزون",awh_movements:"الحركات",awh_materialreq:"طلبات المواد",awh_shelves:"المستودعات والأرفف",awh_batches:"الدفعات والصلاحية",awh_reports:"التقارير",invOutF:"نافد",dashEye:"نظام المستودعات",dashH1:"لوحة المعلومات",dashAllWh:"كل المستودعات",dashLoading:"جاري تحميل اللوحة…",dashNone:"لا توجد بيانات.",dashTotalItems:"إجمالي الأصناف",dashOnHand:"إجمالي الكمية",dashAvailable:"المتاح",dashReserved:"المحجوز",dashLow:"مخزون منخفض",dashOut:"نافد المخزون",dashNoShelf:"بدون رف",dashExpiring:"دفعات قرب الانتهاء",dashPending:"طلبات مواد معلّقة",dashActionNeeded:"يحتاج إجراء",dashCatTitle:"التوزيع حسب التصنيف",dashCatCat:"التصنيف",dashCatItems:"الأصناف",dashCatOpen:"فتح في المخزون",dashNoCat:"لا توجد تصنيفات.",dashRecent:"آخر الحركات",dashNoMv:"لا توجد حركات بعد.",dashCDate:"التاريخ",dashCType:"النوع",dashCItem:"الصنف",dashCQty:"الكمية",dashCWh:"المستودع",dashCActor:"بواسطة",mvEye:"نظام المستودعات",mvH1:"حركات المخزون",mvLoading:"جاري تحميل الحركات…",mvNone:"لا توجد حركات مطابقة.",mvAllWh:"كل المستودعات",mvAllTypes:"كل الأنواع",mvFrom:"من",mvTo:"إلى",mvItem:"الصنف",mvItemPick:"تصفية حسب الصنف",mvItemPh:"ابحث بالكود أو الاسم…",mvNoItems:"لا توجد أصناف.",mvNew:"حركة جديدة",mvSoonHint:"في المرحلة التالية",mvOf:"من",mvPrev:"السابق",mvNext:"التالي",mvRcSelItem:"اختر الصنف",mvRcItem:"الصنف",mvRcWh:"المستودع",mvRcOnHand:"الرصيد الحالي",mvRcAvail:"المتاح",mvRcUnit:"الوحدة",mvRcQty:"الكمية المستلمة",mvRcBatch:"رقم الدفعة",mvRcBatchPh:"اتركه فارغاً للدفعة الافتراضية",mvRcExpiry:"تاريخ الصلاحية",mvRcNote:"ملاحظة",mvRcPost:"تسجيل الاستلام",mvRcSaving:"جاري التسجيل…",mvRcCancel:"إلغاء",mvRcOk:"تم تسجيل الاستلام بنجاح",mvRcErrItem:"الرجاء اختيار صنف.",mvRcErrQty:"أدخل كمية أكبر من صفر.",mvRcErrExpiry:"تاريخ الصلاحية يحتاج رقم دفعة.",mvRcErrGeneric:"تعذّر تسجيل الاستلام. حاول مجدداً.",mvRcErr_qty_must_be_positive:"الكمية يجب أن تكون أكبر من صفر.",mvRcErr_expiry_requires_batch_no:"تاريخ الصلاحية يحتاج رقم دفعة.",mvRcErr_expiry_mismatch:"هذه الدفعة لها تاريخ صلاحية مختلف.",mvRcErr_batch_inactive:"هذه الدفعة غير نشطة.",mvRcErr_item_warehouse_not_found:"الصنف غير موجود في هذا المستودع.",mvRcErr_item_warehouse_inactive:"هذا الصنف غير نشط في المستودع.",mvRcErr_not_authorized:"لا تملك صلاحية تسجيل الحركات.",mvChooseReceipt:"بضاعة واردة",mvChooseIssue:"بضاعة صادرة",mvIsQty:"الكمية المصروفة",mvIsBatch:"رقم الدفعة",mvIsBatchPh:"اتركه فارغاً للدفعة الافتراضية",mvIsBatchNote:"يشير إلى دفعة موجودة (مطابقة تامة).",mvIsPost:"تسجيل الصرف",mvIsSaving:"جاري التسجيل…",mvIsOk:"تم الصرف بنجاح",mvIsOver:"تنبيه: الكمية أكبر من المتاح",mvIsReq:"المطلوب",mvIsErrGeneric:"تعذّر تسجيل الصرف. حاول مجدداً.",mvIsErr_would_break_reserved:"المتاح غير كافٍ (جزء منه محجوز).",mvIsErr_qty_must_be_positive:"الكمية يجب أن تكون أكبر من صفر.",mvIsErr_default_batch_missing:"لا توجد دفعة افتراضية لهذا الصنف.",mvIsErr_batch_not_found:"رقم الدفعة غير موجود لهذا الصنف.",mvIsErr_batch_inactive:"هذه الدفعة غير نشطة.",mvIsErr_item_warehouse_not_found:"الصنف غير موجود في هذا المستودع.",mvIsErr_item_warehouse_inactive:"هذا الصنف غير نشط في المستودع.",mvIsErr_not_authorized:"لا تملك صلاحية تسجيل الحركات.",mvT_OPENING_BALANCE:"رصيد افتتاحي",mvT_RECEIPT:"استلام",mvT_ISSUE:"صرف",mvT_RETURN:"إرجاع",mvT_TRANSFER_IN:"تحويل وارد",mvT_TRANSFER_OUT:"تحويل صادر",mvT_DISPOSAL:"إتلاف",mvT_ADJUSTMENT:"تسوية",
+  am_title:"أصول الشركة",as_eye:"أصول الشركة",as_h1:"الأصول",as_p:"إدارة كل أصول الشركة.",as_back:"الأصول",am_subtitle:"إدارة أصول الشركة",am_soon:"قريباً",am_warehouses:"المستودعات",am_fleet:"المركبات",am_equipment:"المعدّات",am_other:"أصول أخرى",am_login_title:"دخول الأصول",am_login_sub:"أصول الشركة",am_signin:"دخول",am_back:"رجوع",am_logout:"خروج",am_wh_sys:"إدارة المستودعات",awh_dashboard:"لوحة المعلومات",awh_inventory:"المخزون",awh_movements:"الحركات",awh_materialreq:"طلبات المواد",awh_shelves:"المستودعات والأرفف",awh_batches:"الدفعات والصلاحية",awh_reports:"التقارير",invOutF:"نافد",dashEye:"نظام المستودعات",dashH1:"لوحة المعلومات",dashAllWh:"كل المستودعات",dashLoading:"جاري تحميل اللوحة…",dashNone:"لا توجد بيانات.",dashTotalItems:"إجمالي الأصناف",dashOnHand:"إجمالي الكمية",dashAvailable:"المتاح",dashReserved:"المحجوز",dashLow:"مخزون منخفض",dashOut:"نافد المخزون",dashNoShelf:"بدون رف",dashExpiring:"دفعات قرب الانتهاء",dashPending:"طلبات مواد معلّقة",dashActionNeeded:"يحتاج إجراء",dashCatTitle:"التوزيع حسب التصنيف",dashCatCat:"التصنيف",dashCatItems:"الأصناف",dashCatOpen:"فتح في المخزون",dashNoCat:"لا توجد تصنيفات.",dashRecent:"آخر الحركات",dashNoMv:"لا توجد حركات بعد.",dashCDate:"التاريخ",dashCType:"النوع",dashCItem:"الصنف",dashCQty:"الكمية",dashCWh:"المستودع",dashCActor:"بواسطة",mvEye:"نظام المستودعات",mvH1:"حركات المخزون",mvLoading:"جاري تحميل الحركات…",mvNone:"لا توجد حركات مطابقة.",mvAllWh:"كل المستودعات",mvAllTypes:"كل الأنواع",mvFrom:"من",mvTo:"إلى",mvItem:"الصنف",mvItemPick:"تصفية حسب الصنف",mvItemPh:"ابحث بالكود أو الاسم…",mvNoItems:"لا توجد أصناف.",mvNew:"حركة جديدة",mvSoonHint:"في المرحلة التالية",mvOf:"من",mvPrev:"السابق",mvNext:"التالي",mvRcSelItem:"اختر الصنف",mvRcItem:"الصنف",mvRcWh:"المستودع",mvRcOnHand:"الرصيد الحالي",mvRcAvail:"المتاح",mvRcUnit:"الوحدة",mvRcQty:"الكمية المستلمة",mvRcBatch:"رقم الدفعة",mvRcBatchPh:"اتركه فارغاً للدفعة الافتراضية",mvRcExpiry:"تاريخ الصلاحية",mvRcNote:"ملاحظة",mvRcPost:"تسجيل الاستلام",mvRcSaving:"جاري التسجيل…",mvRcCancel:"إلغاء",mvRcOk:"تم تسجيل الاستلام بنجاح",mvRcErrItem:"الرجاء اختيار صنف.",mvRcErrQty:"أدخل كمية أكبر من صفر.",mvRcErrExpiry:"تاريخ الصلاحية يحتاج رقم دفعة.",mvRcErrGeneric:"تعذّر تسجيل الاستلام. حاول مجدداً.",mvRcErr_qty_must_be_positive:"الكمية يجب أن تكون أكبر من صفر.",mvRcErr_expiry_requires_batch_no:"تاريخ الصلاحية يحتاج رقم دفعة.",mvRcErr_expiry_mismatch:"هذه الدفعة لها تاريخ صلاحية مختلف.",mvRcErr_batch_inactive:"هذه الدفعة غير نشطة.",mvRcErr_item_warehouse_not_found:"الصنف غير موجود في هذا المستودع.",mvRcErr_item_warehouse_inactive:"هذا الصنف غير نشط في المستودع.",mvRcErr_not_authorized:"لا تملك صلاحية تسجيل الحركات.",mvChooseReceipt:"بضاعة واردة",mvChooseIssue:"بضاعة صادرة",mvIsQty:"الكمية المصروفة",mvIsBatch:"رقم الدفعة",mvIsBatchPh:"اتركه فارغاً للدفعة الافتراضية",mvIsBatchNote:"يشير إلى دفعة موجودة (مطابقة تامة).",mvIsPost:"تسجيل الصرف",mvIsSaving:"جاري التسجيل…",mvIsOk:"تم الصرف بنجاح",mvIsOver:"تنبيه: الكمية أكبر من المتاح",mvIsReq:"المطلوب",mvIsErrGeneric:"تعذّر تسجيل الصرف. حاول مجدداً.",mvIsErr_would_break_reserved:"المتاح غير كافٍ (جزء منه محجوز).",mvIsErr_qty_must_be_positive:"الكمية يجب أن تكون أكبر من صفر.",mvIsErr_default_batch_missing:"لا توجد دفعة افتراضية لهذا الصنف.",mvIsErr_batch_not_found:"رقم الدفعة غير موجود لهذا الصنف.",mvIsErr_batch_inactive:"هذه الدفعة غير نشطة.",mvIsErr_item_warehouse_not_found:"الصنف غير موجود في هذا المستودع.",mvIsErr_item_warehouse_inactive:"هذا الصنف غير نشط في المستودع.",mvIsErr_not_authorized:"لا تملك صلاحية تسجيل الحركات.",mvChooseDisposal:"بضاعة تالفة / غير صالحة",mvChooseReturn:"مرتجع من صرف",mvRtLinked:"مربوط بصرف",mvRtUnlinked:"غير مربوط",mvRtIssue:"الصرف الأصلي",mvRtQty:"الكمية المرتجعة",mvRtIssued:"مصروف",mvRtReturned:"مرتجع",mvRtRemain:"قابل للإرجاع",mvRtNoIssues:"لا توجد حركات صرف قابلة للإرجاع لهذا الصنف.",mvRtPickItemFirst:"اختر الصنف أولاً.",mvRtUnlinkedHint:"استخدمه فقط عند عدم وجود صرف أصلي لربطه.",mvRtPost:"تسجيل الإرجاع",mvRtOk:"تم تسجيل الإرجاع بنجاح",mvRtErrRef:"الرجاء اختيار الصرف الأصلي.",mvRtErrNote:"الملاحظة إلزامية للإرجاع غير المربوط.",mvRtErrGeneric:"تعذّر تسجيل الإرجاع. حاول مجدداً.",mvRtErr_return_exceeds_issued:"الكمية أكبر من المتبقي القابل للإرجاع.",mvRtErr_linked_return_batch_not_allowed:"الإرجاع المربوط لا يقبل تحديد دفعة.",mvRtErr_return_note_required:"الملاحظة إلزامية للإرجاع غير المربوط.",mvRtErr_issue_movement_not_found:"حركة الصرف الأصلية غير موجودة.",mvRtErr_ref_not_an_issue:"الحركة المشار إليها ليست صرفاً.",mvRtErr_issue_iw_mismatch:"الصرف يخص صنفاً/مستودعاً مختلفاً.",mvRtErr_batch_not_found:"رقم الدفعة غير موجود.",mvRtErr_batch_inactive:"هذه الدفعة غير نشطة.",mvRtErr_default_batch_missing:"لا توجد دفعة افتراضية لهذا الصنف.",mvRtErr_item_warehouse_not_found:"الصنف غير موجود في هذا المستودع.",mvRtErr_item_warehouse_inactive:"هذا الصنف غير نشط في المستودع.",mvChooseAdjust:"تصحيح رصيد",mvDpQty:"الكمية المتلَفة",mvDpReason:"السبب",mvDpReasonSel:"اختر السبب",mvDpR_storage_damage:"تلف تخزين",mvDpR_expired:"منتهي الصلاحية",mvDpR_broken:"مكسور",mvDpR_unfit_for_use:"غير صالح للاستخدام",mvDpR_other:"أخرى",mvDpPost:"تسجيل الإتلاف",mvDpOk:"تم تسجيل الإتلاف بنجاح",mvDpErrReason:"الرجاء اختيار سبب.",mvDpErrNote:"الملاحظة إلزامية للإتلاف.",mvDpErrGeneric:"تعذّر تسجيل الإتلاف. حاول مجدداً.",mvDpErr_invalid_reason_category:"الرجاء اختيار سبب صحيح.",mvDpErr_disposal_note_required:"الملاحظة إلزامية للإتلاف.",mvDpErr_would_break_reserved:"المتاح غير كافٍ (جزء منه محجوز).",mvDpErr_default_batch_missing:"لا توجد دفعة افتراضية لهذا الصنف.",mvDpErr_batch_not_found:"رقم الدفعة غير موجود.",mvDpErr_batch_inactive:"هذه الدفعة غير نشطة.",mvDpErr_item_warehouse_not_found:"الصنف غير موجود في هذا المستودع.",mvDpErr_item_warehouse_inactive:"هذا الصنف غير نشط في المستودع.",mvAjInc:"زيادة",mvAjDec:"نقص",mvAjDir:"الاتجاه",mvAjQty:"الكمية",mvAjReason:"السبب",mvAjR_periodic_count:"جرد دوري",mvAjR_data_entry_correction:"تصحيح إدخال",mvAjR_unexplained_variance:"فرق غير مفسّر",mvAjR_system_reconciliation:"تسوية نظام",mvAjR_other:"أخرى",mvAjNoteOtherHint:"الملاحظة إلزامية عند اختيار (أخرى).",mvAjPost:"تسجيل التسوية",mvAjOk:"تمت التسوية بنجاح",mvAjErrDir:"اختر زيادة أو نقص.",mvAjErrReason:"الرجاء اختيار سبب.",mvAjErrNoteOther:"الملاحظة إلزامية عند اختيار (أخرى).",mvAjErrGeneric:"تعذّرت التسوية. حاول مجدداً.",mvAjErr_invalid_direction:"اختر زيادة أو نقص.",mvAjErr_invalid_reason_category:"الرجاء اختيار سبب صحيح.",mvAjErr_note_required_for_other:"الملاحظة إلزامية عند اختيار (أخرى).",mvAjErr_would_break_reserved:"هذا النقص سيكسر حجوزات قائمة.",mvAjErr_default_batch_missing:"لا توجد دفعة افتراضية لهذا الصنف.",mvAjErr_batch_not_found:"رقم الدفعة غير موجود.",mvAjErr_batch_inactive:"هذه الدفعة غير نشطة.",mvAjErr_item_warehouse_not_found:"الصنف غير موجود في هذا المستودع.",mvAjErr_item_warehouse_inactive:"هذا الصنف غير نشط في المستودع.",mvT_OPENING_BALANCE:"رصيد افتتاحي",mvT_RECEIPT:"استلام",mvT_ISSUE:"صرف",mvT_RETURN:"إرجاع",mvT_TRANSFER_IN:"تحويل وارد",mvT_TRANSFER_OUT:"تحويل صادر",mvT_DISPOSAL:"إتلاف",mvT_ADJUSTMENT:"تسوية",
   invEye:"المستودع",invH1:"المخزون",invP:"الأرصدة الحيّة في كل المستودعات.",invLoading:"جاري تحميل المخزون…",invNoMatch:"ما في أصناف تطابق هذه الفلاتر.",invSearchPh:"ابحث بالكود أو الاسم…",invAllWh:"كل المستودعات",invAllCat:"كل التصنيفات",invLow:"مخزون منخفض",invNoShelfF:"بلا رف",invItems:"صنف",invCode:"الكود",invName:"الاسم",invCat:"التصنيف",invType:"النوع",invUnit:"الوحدة",invOnHand:"المتوفّر",invReserved:"محجوز",invAvail:"المتاح",invMin:"الحد الأدنى",invWh:"المستودع",invShelf:"الرف",invStatus:"الحالة",invNoShelf:"بلا رف",invActive:"نشط",invInactive:"معطّل",invSetShelf:"تعيين رف",invChangeShelf:"تغيير الرف",invNoShelvesWh:"ما في أرفف بهذا المستودع",invPickShelf:"اختر رفاً من فضلك.",invShelfErr:"تعذّر تحديث الرف:",
   navIc:{dashboard:"▦",assets:"📦",manage:"📥",all:"📋",reports:"📊",staffdir:"👷",open:"⚙",archive:"🗂",media:"◫",settings:"⚙️"},
   reqEye:"طلب جديد",reqH1:"طلب خدمة",reqP:"يُرجى تعبئة التفاصيل وإرسال الطلب؛ ليصل مباشرةً إلى قسم التشغيل والصيانة.",
@@ -5175,11 +5191,22 @@ let mvModal=null;   // null | 'chooser' | 'receipt' | 'issue' (future: transfer,
 /* ---- Issue state (separate from receipt; matches admin_issue signature) ---- */
 let mvIs={ iw:null, iwLabel:'', wh:'', onHand:'', available:'', unit:'', qty:'', batch_no:'', note:'' };
 let mvIsPickOpen=false, mvIsPickQuery='', mvIsSubmitting=false, mvIsErr='';
+/* ---- Disposal state (admin_disposal) ---- */
+let mvDp={ iw:null, iwLabel:'', wh:'', onHand:'', available:'', unit:'', qty:'', reason:'', batch_no:'', note:'' };
+let mvDpPickOpen=false, mvDpPickQuery='', mvDpSubmitting=false, mvDpErr='';
+/* ---- Adjustment state (admin_adjustment) ---- */
+let mvAj={ iw:null, iwLabel:'', wh:'', onHand:'', available:'', unit:'', qty:'', direction:'', reason:'', batch_no:'', note:'' };
+let mvAjPickOpen=false, mvAjPickQuery='', mvAjSubmitting=false, mvAjErr='';
+/* ---- Return state (admin_return): linked (default) + unlinked ---- */
+let mvRt={ mode:'linked', iw:null, iwLabel:'', wh:'', onHand:'', available:'', unit:'',
+           ref:null, refLabel:'', refRemaining:'', qty:'', batch_no:'', note:'' };
+let mvRtPickOpen=false, mvRtPickQuery='', mvRtSubmitting=false, mvRtErr='';
+let mvRtIssues=null, mvRtIssuesLoading=false, mvRtIssuesSeq=0;   // returnable issues for the chosen item (seq guards stale async)
 function mvOpenChooser(){ mvModal='chooser'; mvRender(); }
 let mvRc={ iw:null, iwLabel:'', wh:'', onHand:'', available:'', unit:'', qty:'', batch_no:'', expiry:'', note:'' };
 let mvRcPickOpen=false, mvRcPickQuery='', mvRcSubmitting=false, mvRcErr='';
 function mvOpenNew(kind){ mvModal=kind; mvRcErr=''; if(kind==='receipt'){ mvRc={ iw:null, iwLabel:'', wh:'', onHand:'', available:'', unit:'', qty:'', batch_no:'', expiry:'', note:'' }; mvRcPickOpen=false; mvRcPickQuery=''; mvRcSubmitting=false; if(mvItemList===null){ mvEnsureItems().then(mvRender); } } mvRender(); }
-function mvCloseModal(){ if(mvRcSubmitting || mvIsSubmitting) return; mvModal=null; mvRender(); }
+function mvCloseModal(){ if(mvRcSubmitting || mvIsSubmitting || mvDpSubmitting || mvAjSubmitting || mvRtSubmitting) return; mvModal=null; mvRender(); }
 function mvRcClearItem(){ mvRc={...mvRc, iw:null, iwLabel:'', wh:'', onHand:'', available:'', unit:''}; mvRcErr=''; mvRender(); }
 function mvIsClearItem(){ mvIs={...mvIs, iw:null, iwLabel:'', wh:'', onHand:'', available:'', unit:''}; mvIsErr=''; mvRender(); }
 function mvRcTogglePick(){ mvRcPickOpen=!mvRcPickOpen; mvRcErr=''; mvRender(); }
@@ -5267,6 +5294,106 @@ async function mvSubmitIssue(){
   invLoaded=false; dashLoaded=false; mvItemList=null;
   toast(t('mvIsOk'));
   mvPage=0; mvLoaded=false; loadMovements(true);
+}
+/* ---- Disposal (admin_disposal) ---- */
+function mvOpenDisposal(){ mvModal='disposal'; mvDpErr=''; mvDp={ iw:null, iwLabel:'', wh:'', onHand:'', available:'', unit:'', qty:'', reason:'', batch_no:'', note:'' }; mvDpPickOpen=false; mvDpPickQuery=''; mvDpSubmitting=false; if(mvItemList===null){ mvEnsureItems().then(mvRender); } mvRender(); }
+function mvDpTogglePick(){ mvDpPickOpen=!mvDpPickOpen; mvDpErr=''; mvRender(); }
+function mvDpPickSearch(v){ mvDpPickQuery=v; mvRender(); }
+function mvDpPickItem(r){ const nm=L==='ar'?(r.name_ar||r.name_en):(r.name_en||r.name_ar); mvDp.iw=r.item_warehouse_id; mvDp.iwLabel=(r.item_code||'')+' · '+(nm||''); mvDp.wh=L==='ar'?(r.warehouse_name_ar||r.warehouse_code):(r.warehouse_name_en||r.warehouse_code); mvDp.onHand=r.on_hand; mvDp.available=r.available; mvDp.unit=L==='ar'?(r.unit_name_ar||''):(r.unit_name_en||''); mvDpPickOpen=false; mvDpPickQuery=''; mvDpErr=''; mvRender(); }
+function mvDpClearItem(){ mvDp={...mvDp, iw:null, iwLabel:'', wh:'', onHand:'', available:'', unit:''}; mvDpErr=''; mvRender(); }
+function mvDpSet(k,v){ mvDp[k]=v; mvDpErr=''; }
+function mvDpSetReason(v){ mvDp.reason=v; mvDpErr=''; mvRender(); }
+async function mvSubmitDisposal(){
+  if(mvDpSubmitting) return; mvDpErr='';
+  if(!mvDp.iw){ mvDpErr=t('mvRcErrItem'); mvRender(); return; }
+  const q=Number(mvDp.qty);
+  if(!mvDp.qty || isNaN(q) || q<=0){ mvDpErr=t('mvRcErrQty'); mvRender(); return; }
+  if(!mvDp.reason){ mvDpErr=t('mvDpErrReason'); mvRender(); return; }
+  if(!(mvDp.note||'').trim()){ mvDpErr=t('mvDpErrNote'); mvRender(); return; }   // note always required
+  mvDpSubmitting=true; mvRender();
+  const res=await mvRpc('admin_disposal', { p_item_warehouse_id: mvDp.iw, p_qty: q, p_reason_category: mvDp.reason, p_note: (mvDp.note||'').trim(), p_batch_no: (mvDp.batch_no||'').trim()||null });
+  if(res && res.ok===false){ mvDpSubmitting=false; mvDpErr=(t('mvDpErr_'+res.error)||t('mvIsErr_'+res.error)||t('mvDpErrGeneric')); mvRender(); return; }
+  mvDpSubmitting=false; mvModal=null; invLoaded=false; dashLoaded=false; mvItemList=null;
+  toast(t('mvDpOk')); mvPage=0; mvLoaded=false; loadMovements(true);
+}
+/* ---- Adjustment (admin_adjustment) — most sensitive, built last in the batch ---- */
+function mvOpenAdjustment(){ mvModal='adjustment'; mvAjErr=''; mvAj={ iw:null, iwLabel:'', wh:'', onHand:'', available:'', unit:'', qty:'', direction:'', reason:'', batch_no:'', note:'' }; mvAjPickOpen=false; mvAjPickQuery=''; mvAjSubmitting=false; if(mvItemList===null){ mvEnsureItems().then(mvRender); } mvRender(); }
+function mvAjTogglePick(){ mvAjPickOpen=!mvAjPickOpen; mvAjErr=''; mvRender(); }
+function mvAjPickSearch(v){ mvAjPickQuery=v; mvRender(); }
+function mvAjPickItem(r){ const nm=L==='ar'?(r.name_ar||r.name_en):(r.name_en||r.name_ar); mvAj.iw=r.item_warehouse_id; mvAj.iwLabel=(r.item_code||'')+' · '+(nm||''); mvAj.wh=L==='ar'?(r.warehouse_name_ar||r.warehouse_code):(r.warehouse_name_en||r.warehouse_code); mvAj.onHand=r.on_hand; mvAj.available=r.available; mvAj.unit=L==='ar'?(r.unit_name_ar||''):(r.unit_name_en||''); mvAjPickOpen=false; mvAjPickQuery=''; mvAjErr=''; mvRender(); }
+function mvAjClearItem(){ mvAj={...mvAj, iw:null, iwLabel:'', wh:'', onHand:'', available:'', unit:''}; mvAjErr=''; mvRender(); }
+function mvAjSet(k,v){ mvAj[k]=v; mvAjErr=''; }
+function mvAjSetDir(v){ mvAj.direction=v; mvAjErr=''; mvRender(); }
+function mvAjSetReason(v){ mvAj.reason=v; mvAjErr=''; mvRender(); }
+async function mvSubmitAdjustment(){
+  if(mvAjSubmitting) return; mvAjErr='';
+  if(!mvAj.iw){ mvAjErr=t('mvRcErrItem'); mvRender(); return; }
+  const q=Number(mvAj.qty);
+  if(!mvAj.qty || isNaN(q) || q<=0){ mvAjErr=t('mvRcErrQty'); mvRender(); return; }
+  if(!mvAj.direction){ mvAjErr=t('mvAjErrDir'); mvRender(); return; }
+  if(!mvAj.reason){ mvAjErr=t('mvAjErrReason'); mvRender(); return; }
+  if(mvAj.reason==='other' && !(mvAj.note||'').trim()){ mvAjErr=t('mvAjErrNoteOther'); mvRender(); return; }
+  mvAjSubmitting=true; mvRender();
+  const res=await mvRpc('admin_adjustment', { p_item_warehouse_id: mvAj.iw, p_qty: q, p_direction: mvAj.direction, p_reason_category: mvAj.reason, p_note: (mvAj.note||'').trim()||null, p_batch_no: (mvAj.batch_no||'').trim()||null });
+  if(res && res.ok===false){ mvAjSubmitting=false; mvAjErr=(t('mvAjErr_'+res.error)||t('mvIsErr_'+res.error)||t('mvAjErrGeneric')); mvRender(); return; }
+  mvAjSubmitting=false; mvModal=null; invLoaded=false; dashLoaded=false; mvItemList=null;
+  toast(t('mvAjOk')); mvPage=0; mvLoaded=false; loadMovements(true);
+}
+/* ---- Return (admin_return): linked default + unlinked ---- */
+function mvOpenReturn(){ mvModal='return'; mvRtErr=''; mvRt={ mode:'linked', iw:null, iwLabel:'', wh:'', onHand:'', available:'', unit:'', ref:null, refLabel:'', refRemaining:'', qty:'', batch_no:'', note:'' }; mvRtPickOpen=false; mvRtPickQuery=''; mvRtSubmitting=false; mvRtIssues=null; if(mvItemList===null){ mvEnsureItems().then(mvRender); } mvRender(); }
+async function mvRtSetMode(m){
+  mvRt.mode=m; mvRt.ref=null; mvRt.refLabel=''; mvRt.refRemaining=''; mvRt.qty=''; mvRt.batch_no=''; mvRtErr='';
+  // switching INTO linked with an item already chosen → load its returnable issues
+  if(m==='linked' && mvRt.iw){ mvRtLoadIssues(); } else { mvRender(); }
+}
+function mvRtTogglePick(){ mvRtPickOpen=!mvRtPickOpen; mvRtErr=''; mvRender(); }
+function mvRtPickSearch(v){ mvRtPickQuery=v; mvRender(); }
+async function mvRtLoadIssues(){
+  // load returnable issues for the currently chosen item; guard against stale
+  // responses (fast item switching) with a monotonic sequence token.
+  if(!mvRt.iw){ mvRtIssues=null; mvRtIssuesLoading=false; mvRender(); return; }
+  const seq = ++mvRtIssuesSeq;
+  const iwAtCall = mvRt.iw;
+  mvRtIssues=null; mvRtIssuesLoading=true; mvRender();
+  const res=await mvRpc('returnable_issues', { p_item_warehouse_id: iwAtCall });
+  // ignore if a newer load started, or the item changed under us
+  if(seq !== mvRtIssuesSeq || mvRt.iw !== iwAtCall) return;
+  mvRtIssuesLoading=false;
+  mvRtIssues = (res && Array.isArray(res)) ? res : [];
+  mvRender();
+}
+async function mvRtPickItem(r){
+  const nm=L==='ar'?(r.name_ar||r.name_en):(r.name_en||r.name_ar);
+  mvRt.iw=r.item_warehouse_id; mvRt.iwLabel=(r.item_code||'')+' · '+(nm||'');
+  mvRt.wh=L==='ar'?(r.warehouse_name_ar||r.warehouse_code):(r.warehouse_name_en||r.warehouse_code);
+  mvRt.onHand=r.on_hand; mvRt.available=r.available; mvRt.unit=L==='ar'?(r.unit_name_ar||''):(r.unit_name_en||'');
+  mvRt.ref=null; mvRt.refLabel=''; mvRt.refRemaining=''; mvRtPickOpen=false; mvRtPickQuery=''; mvRtErr='';
+  // in linked mode, fetch returnable issues for this item (guarded helper)
+  if(mvRt.mode==='linked'){ mvRtLoadIssues(); } else { mvRender(); }
+}
+function mvRtClearItem(){ mvRt={...mvRt, iw:null, iwLabel:'', wh:'', onHand:'', available:'', unit:'', ref:null, refLabel:'', refRemaining:''}; mvRtIssues=null; mvRtErr=''; mvRender(); }
+function mvRtPickRef(id, label, remaining){ mvRt.ref=id; mvRt.refLabel=label; mvRt.refRemaining=remaining; mvRtErr=''; mvRender(); }
+function mvRtSet(k,v){ mvRt[k]=v; mvRtErr=''; }
+async function mvSubmitReturn(){
+  if(mvRtSubmitting) return; mvRtErr='';
+  if(!mvRt.iw){ mvRtErr=t('mvRcErrItem'); mvRender(); return; }
+  const q=Number(mvRt.qty);
+  if(!mvRt.qty || isNaN(q) || q<=0){ mvRtErr=t('mvRcErrQty'); mvRender(); return; }
+  let args;
+  if(mvRt.mode==='linked'){
+    if(!mvRt.ref){ mvRtErr=t('mvRtErrRef'); mvRender(); return; }
+    // linked: batch_no MUST be null (linked_return_batch_not_allowed)
+    args={ p_item_warehouse_id: mvRt.iw, p_qty: q, p_ref_issue_movement_id: mvRt.ref, p_note: (mvRt.note||'').trim()||null, p_batch_no: null };
+  } else {
+    // unlinked: note required
+    if(!(mvRt.note||'').trim()){ mvRtErr=t('mvRtErrNote'); mvRender(); return; }
+    args={ p_item_warehouse_id: mvRt.iw, p_qty: q, p_ref_issue_movement_id: null, p_note: (mvRt.note||'').trim(), p_batch_no: (mvRt.batch_no||'').trim()||null };
+  }
+  mvRtSubmitting=true; mvRender();
+  const res=await mvRpc('admin_return', args);
+  if(res && res.ok===false){ mvRtSubmitting=false; mvRtErr=(t('mvRtErr_'+res.error)||t('mvIsErr_'+res.error)||t('mvRtErrGeneric')); mvRender(); return; }
+  mvRtSubmitting=false; mvModal=null; invLoaded=false; dashLoaded=false; mvItemList=null;
+  toast(t('mvRtOk')); mvPage=0; mvLoaded=false; loadMovements(true);
 }
 function dashIsAsset(){ return invIsAsset(); }
 function dashRender(){ if(dashIsAsset()) renderAsset(); else render(); }
@@ -5507,7 +5634,7 @@ function viewMovements(){
       </table></div>
       ${pager}
     </div>
-    ${mvModal==='chooser'?mvChooserModal():''}${mvModal==='receipt'?mvReceiptModal():''}${mvModal==='issue'?mvIssueModal():''}`;
+    ${mvModal==='chooser'?mvChooserModal():''}${mvModal==='receipt'?mvReceiptModal():''}${mvModal==='issue'?mvIssueModal():''}${mvModal==='disposal'?mvDisposalModal():''}${mvModal==='adjustment'?mvAdjustmentModal():''}${mvModal==='return'?mvReturnModal():''}`;
 }
 
 function mvReceiptModal(){
@@ -5568,6 +5695,9 @@ function mvChooserModal(){
         <div class="mv-choose">
           <button class="mv-choose-btn" onclick="mvOpenNew('receipt')"><span class="mc-ic">📥</span><span class="mc-lb">${t('mvT_RECEIPT')}</span><span class="mc-sub">${t('mvChooseReceipt')}</span></button>
           <button class="mv-choose-btn" onclick="mvOpenIssue()"><span class="mc-ic">📤</span><span class="mc-lb">${t('mvT_ISSUE')}</span><span class="mc-sub">${t('mvChooseIssue')}</span></button>
+          <button class="mv-choose-btn" onclick="mvOpenReturn()"><span class="mc-ic">↩️</span><span class="mc-lb">${t('mvT_RETURN')}</span><span class="mc-sub">${t('mvChooseReturn')}</span></button>
+          <button class="mv-choose-btn" onclick="mvOpenDisposal()"><span class="mc-ic">🗑️</span><span class="mc-lb">${t('mvT_DISPOSAL')}</span><span class="mc-sub">${t('mvChooseDisposal')}</span></button>
+          <button class="mv-choose-btn" onclick="mvOpenAdjustment()"><span class="mc-ic">⚖️</span><span class="mc-lb">${t('mvT_ADJUSTMENT')}</span><span class="mc-sub">${t('mvChooseAdjust')}</span></button>
         </div>
       </div>
     </div>`;
@@ -5620,6 +5750,165 @@ function mvIssueModal(){
       <div class="mv-modal-foot">
         <button class="rc-cancel" onclick="mvCloseModal()" ${busy?'disabled':''}>${t('mvRcCancel')}</button>
         <button class="rc-save" onclick="mvSubmitIssue()" ${busy?'disabled':''}>${busy?t('mvIsSaving'):t('mvIsPost')}</button>
+      </div>
+    </div>`;
+}
+
+// shared: item picker dropdown for a modal (pass state prefix + callbacks)
+function mvModalPicker(open, query, searchFn, pickFn){
+  if(!open) return '';
+  const q=(query||'').trim().toLowerCase();
+  let list=(mvItemList||[]);
+  if(q) list=list.filter(x=>((x.item_code||'').toLowerCase().includes(q)||(x.name_ar||'').toLowerCase().includes(q)||(x.name_en||'').toLowerCase().includes(q)));
+  list=list.slice(0,30);
+  const inner=(mvItemList===null)?`<div class="mv-pick-load">${t('mvLoading')}</div>`
+    :(list.length?list.map(x=>{const nm=L==='ar'?(x.name_ar||x.name_en):(x.name_en||x.name_ar);const wh=L==='ar'?(x.warehouse_name_ar||x.warehouse_code):(x.warehouse_name_en||x.warehouse_code);return `<div class="mv-pick-row" onclick='${pickFn}(${JSON.stringify(x).replace(/'/g,"&#39;")})'><span class="mv-pick-code">${esc(x.item_code||'')}</span> ${esc(nm||'')} <span class="mv-pick-wh">${esc(wh||'')}</span></div>`;}).join(''):`<div class="mv-pick-load">${t('mvNoItems')}</div>`);
+  return `<div class="mv-pick-dd" style="position:static;width:100%;box-shadow:none;margin-top:6px"><input class="mv-pick-search" placeholder="${t('mvItemPh')}" value="${esc(query)}" oninput="${searchFn}(this.value)" autofocus/><div class="mv-pick-list">${inner}</div></div>`;
+}
+function mvModalInfo(r){
+  if(!r.iw) return '';
+  return `<div class="rc-info">
+    <div><span>${t('mvRcWh')}</span><b>${esc(r.wh||'')}</b></div>
+    <div><span>${t('mvRcOnHand')}</span><b>${fmtNum(r.onHand)}</b></div>
+    <div><span>${t('mvRcAvail')}</span><b>${fmtNum(r.available)}</b></div>
+    <div><span>${t('mvRcUnit')}</span><b>${esc(r.unit||'—')}</b></div>
+  </div>`;
+}
+
+function mvDisposalModal(){
+  const r=mvDp; const busy=mvDpSubmitting;
+  const dd=mvModalPicker(mvDpPickOpen, mvDpPickQuery, 'mvDpPickSearch', 'mvDpPickItem');
+  const itemField = r.iw ? `<div class="rc-chip">${esc(r.iwLabel)} <span class="mv-chip-x" onclick="mvDpClearItem()">×</span></div>`
+    : `<button class="mv-pick-btn" style="width:100%;text-align:start" onclick="mvDpTogglePick()">${t('mvRcSelItem')} ▾</button>${dd}`;
+  const REASONS=['storage_damage','expired','broken','unfit_for_use','other'];
+  let ro=`<option value="">${t('mvDpReasonSel')}</option>`;
+  REASONS.forEach(x=>{ ro+=`<option value="${x}" ${r.reason===x?'selected':''}>${t('mvDpR_'+x)}</option>`; });
+  const overWarn=(r.iw && r.qty && !isNaN(Number(r.qty)) && Number(r.qty)>Number(r.available))?`<div class="rc-hint">${t('mvIsOver')}: ${t('mvRcAvail')} ${fmtNum(r.available)} — ${t('mvIsReq')} ${fmtNum(Number(r.qty))}</div>`:'';
+  const err=mvDpErr?`<div class="rc-err">${esc(mvDpErr)}</div>`:'';
+  return `<div class="mv-scrim" onclick="mvCloseModal()"></div>
+    <div class="mv-modal">
+      <div class="mv-modal-head"><h2>${t('mvT_DISPOSAL')} — ${t('mvNew')}</h2><button class="mv-modal-x" onclick="mvCloseModal()" ${busy?'disabled':''}>×</button></div>
+      <div class="mv-modal-body">
+        <label class="rc-lbl">${t('mvRcItem')} *</label>${itemField}${mvModalInfo(r)}
+        <label class="rc-lbl">${t('mvDpQty')} *</label>
+        <input class="rc-in" type="number" min="0" step="any" value="${esc(r.qty)}" oninput="mvDpSet('qty',this.value)" ${busy?'disabled':''}/>${overWarn}
+        <label class="rc-lbl">${t('mvDpReason')} *</label>
+        <select class="rc-in" onchange="mvDpSetReason(this.value)" ${busy?'disabled':''}>${ro}</select>
+        <label class="rc-lbl">${t('mvIsBatch')}</label>
+        <input class="rc-in" type="text" value="${esc(r.batch_no)}" placeholder="${t('mvIsBatchPh')}" oninput="mvDpSet('batch_no',this.value)" ${busy?'disabled':''}/>
+        <label class="rc-lbl">${t('mvRcNote')} *</label>
+        <textarea class="rc-in" rows="2" oninput="mvDpSet('note',this.value)" ${busy?'disabled':''}>${esc(r.note)}</textarea>
+        ${err}
+      </div>
+      <div class="mv-modal-foot">
+        <button class="rc-cancel" onclick="mvCloseModal()" ${busy?'disabled':''}>${t('mvRcCancel')}</button>
+        <button class="rc-save" onclick="mvSubmitDisposal()" ${busy?'disabled':''}>${busy?t('mvIsSaving'):t('mvDpPost')}</button>
+      </div>
+    </div>`;
+}
+
+function mvAdjustmentModal(){
+  const r=mvAj; const busy=mvAjSubmitting;
+  const dd=mvModalPicker(mvAjPickOpen, mvAjPickQuery, 'mvAjPickSearch', 'mvAjPickItem');
+  const itemField = r.iw ? `<div class="rc-chip">${esc(r.iwLabel)} <span class="mv-chip-x" onclick="mvAjClearItem()">×</span></div>`
+    : `<button class="mv-pick-btn" style="width:100%;text-align:start" onclick="mvAjTogglePick()">${t('mvRcSelItem')} ▾</button>${dd}`;
+  // direction toggle
+  const dir=`<div class="aj-dir">
+    <button class="aj-dir-btn ${r.direction==='increase'?'on inc':''}" onclick="mvAjSetDir('increase')" ${busy?'disabled':''}>▲ ${t('mvAjInc')}</button>
+    <button class="aj-dir-btn ${r.direction==='decrease'?'on dec':''}" onclick="mvAjSetDir('decrease')" ${busy?'disabled':''}>▼ ${t('mvAjDec')}</button>
+  </div>`;
+  const REASONS=['periodic_count','data_entry_correction','unexplained_variance','system_reconciliation','other'];
+  let ro=`<option value="">${t('mvDpReasonSel')}</option>`;
+  REASONS.forEach(x=>{ ro+=`<option value="${x}" ${r.reason===x?'selected':''}>${t('mvAjR_'+x)}</option>`; });
+  const noteReq = r.reason==='other';
+  const err=mvAjErr?`<div class="rc-err">${esc(mvAjErr)}</div>`:'';
+  return `<div class="mv-scrim" onclick="mvCloseModal()"></div>
+    <div class="mv-modal">
+      <div class="mv-modal-head"><h2>${t('mvT_ADJUSTMENT')} — ${t('mvNew')}</h2><button class="mv-modal-x" onclick="mvCloseModal()" ${busy?'disabled':''}>×</button></div>
+      <div class="mv-modal-body">
+        <label class="rc-lbl">${t('mvRcItem')} *</label>${itemField}${mvModalInfo(r)}
+        <label class="rc-lbl">${t('mvAjDir')} *</label>${dir}
+        <label class="rc-lbl">${t('mvAjQty')} *</label>
+        <input class="rc-in" type="number" min="0" step="any" value="${esc(r.qty)}" oninput="mvAjSet('qty',this.value)" ${busy?'disabled':''}/>
+        <label class="rc-lbl">${t('mvAjReason')} *</label>
+        <select class="rc-in" onchange="mvAjSetReason(this.value)" ${busy?'disabled':''}>${ro}</select>
+        <label class="rc-lbl">${t('mvIsBatch')}</label>
+        <input class="rc-in" type="text" value="${esc(r.batch_no)}" placeholder="${t('mvIsBatchPh')}" oninput="mvAjSet('batch_no',this.value)" ${busy?'disabled':''}/>
+        <label class="rc-lbl">${t('mvRcNote')}${noteReq?' *':''}</label>
+        <textarea class="rc-in" rows="2" oninput="mvAjSet('note',this.value)" ${busy?'disabled':''}>${esc(r.note)}</textarea>
+        ${noteReq?`<div class="rc-hint2">${t('mvAjNoteOtherHint')}</div>`:''}
+        ${err}
+      </div>
+      <div class="mv-modal-foot">
+        <button class="rc-cancel" onclick="mvCloseModal()" ${busy?'disabled':''}>${t('mvRcCancel')}</button>
+        <button class="rc-save" onclick="mvSubmitAdjustment()" ${busy?'disabled':''}>${busy?t('mvIsSaving'):t('mvAjPost')}</button>
+      </div>
+    </div>`;
+}
+
+function mvReturnModal(){
+  const r=mvRt; const busy=mvRtSubmitting;
+  const dd=mvModalPicker(mvRtPickOpen, mvRtPickQuery, 'mvRtPickSearch', 'mvRtPickItem');
+  const itemField = r.iw ? `<div class="rc-chip">${esc(r.iwLabel)} <span class="mv-chip-x" onclick="mvRtClearItem()">×</span></div>`
+    : `<button class="mv-pick-btn" style="width:100%;text-align:start" onclick="mvRtTogglePick()">${t('mvRcSelItem')} ▾</button>${dd}`;
+  // mode toggle: linked (default) / unlinked
+  const modeTabs=`<div class="rt-mode">
+    <button class="rt-mode-btn ${r.mode==='linked'?'on':''}" onclick="mvRtSetMode('linked')" ${busy?'disabled':''}>${t('mvRtLinked')}</button>
+    <button class="rt-mode-btn ${r.mode==='unlinked'?'on':''}" onclick="mvRtSetMode('unlinked')" ${busy?'disabled':''}>${t('mvRtUnlinked')}</button>
+  </div>`;
+
+  let body='';
+  if(r.mode==='linked'){
+    // linked: after item chosen, show returnable ISSUE list to pick from
+    let issuePick='';
+    if(r.iw){
+      if(mvRtIssuesLoading){ issuePick=`<div class="mv-pick-load">${t('mvLoading')}</div>`; }
+      else if(!mvRtIssues || mvRtIssues.length===0){ issuePick=`<div class="rt-none">${t('mvRtNoIssues')}</div>`; }
+      else if(r.ref){
+        issuePick=`<div class="rc-chip">${esc(r.refLabel)} <span class="mv-chip-x" onclick="mvRtPickRef(null,'','')">×</span></div>`;
+      } else {
+        issuePick=`<div class="rt-issues">`+mvRtIssues.map(x=>{
+          const dt=new Date(x.created_at); const dstr=dt.toLocaleDateString(L==='ar'?'ar':'en-GB',{day:'2-digit',month:'short',year:'2-digit'});
+          const lbl=`${dstr} · ${t('mvRtIssued')} ${fmtNum(x.qty_issued)} · ${t('mvRtRemain')} ${fmtNum(x.qty_returnable)}`;
+          return `<div class="rt-issue-row" onclick="mvRtPickRef('${x.issue_movement_id}', '${esc(lbl).replace(/'/g,"\\'")}', ${Number(x.qty_returnable)})">
+            <div class="rt-ir-date">${dstr}</div>
+            <div class="rt-ir-nums"><span>${t('mvRtIssued')}: ${fmtNum(x.qty_issued)}</span><span>${t('mvRtReturned')}: ${fmtNum(x.qty_returned)}</span><span class="rt-ir-rem">${t('mvRtRemain')}: ${fmtNum(x.qty_returnable)}</span></div>
+          </div>`;
+        }).join('')+`</div>`;
+      }
+    } else { issuePick=`<div class="rt-hint">${t('mvRtPickItemFirst')}</div>`; }
+    const overRef=(r.ref && r.qty && !isNaN(Number(r.qty)) && Number(r.qty)>Number(r.refRemaining))
+      ? `<div class="rc-hint">${t('mvIsOver')}: ${t('mvRtRemain')} ${fmtNum(r.refRemaining)} — ${t('mvIsReq')} ${fmtNum(Number(r.qty))}</div>` : '';
+    body=`
+      <label class="rc-lbl">${t('mvRtIssue')} *</label>${issuePick}
+      <label class="rc-lbl">${t('mvRtQty')} *</label>
+      <input class="rc-in" type="number" min="0" step="any" value="${esc(r.qty)}" oninput="mvRtSet('qty',this.value)" ${busy?'disabled':''}/>${overRef}
+      <label class="rc-lbl">${t('mvRcNote')}</label>
+      <textarea class="rc-in" rows="2" oninput="mvRtSet('note',this.value)" ${busy?'disabled':''}>${esc(r.note)}</textarea>`;
+  } else {
+    // unlinked: qty + optional batch + REQUIRED note
+    body=`
+      <label class="rc-lbl">${t('mvRtQty')} *</label>
+      <input class="rc-in" type="number" min="0" step="any" value="${esc(r.qty)}" oninput="mvRtSet('qty',this.value)" ${busy?'disabled':''}/>
+      <label class="rc-lbl">${t('mvIsBatch')}</label>
+      <input class="rc-in" type="text" value="${esc(r.batch_no)}" placeholder="${t('mvIsBatchPh')}" oninput="mvRtSet('batch_no',this.value)" ${busy?'disabled':''}/>
+      <label class="rc-lbl">${t('mvRcNote')} *</label>
+      <textarea class="rc-in" rows="2" oninput="mvRtSet('note',this.value)" ${busy?'disabled':''}>${esc(r.note)}</textarea>
+      <div class="rc-hint2">${t('mvRtUnlinkedHint')}</div>`;
+  }
+  const err=mvRtErr?`<div class="rc-err">${esc(mvRtErr)}</div>`:'';
+  return `<div class="mv-scrim" onclick="mvCloseModal()"></div>
+    <div class="mv-modal">
+      <div class="mv-modal-head"><h2>${t('mvT_RETURN')} — ${t('mvNew')}</h2><button class="mv-modal-x" onclick="mvCloseModal()" ${busy?'disabled':''}>×</button></div>
+      <div class="mv-modal-body">
+        ${modeTabs}
+        <label class="rc-lbl">${t('mvRcItem')} *</label>${itemField}${mvModalInfo(r)}
+        ${body}
+        ${err}
+      </div>
+      <div class="mv-modal-foot">
+        <button class="rc-cancel" onclick="mvCloseModal()" ${busy?'disabled':''}>${t('mvRcCancel')}</button>
+        <button class="rc-save" onclick="mvSubmitReturn()" ${busy?'disabled':''}>${busy?t('mvIsSaving'):t('mvRtPost')}</button>
       </div>
     </div>`;
 }
