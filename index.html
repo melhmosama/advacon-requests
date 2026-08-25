@@ -5297,12 +5297,8 @@ let whmAddShelfOpen=false, whmAddShelfName='', whmAddShelfBusy=false, whmAddShel
 let whmUnQuery='';                                  // unassigned search
 let whmAssign={};                                   // { item_warehouse_id: chosen_shelf_id }
 let whmAssignBusy=null;
-/* ---- Add Item to warehouse (pkg8) ---- */
-let whmAddItemOpen=false, whmAiMode='existing';   // 'existing' | 'new'
+/* ---- reference_lists cache (shared: used by Receive Stock item picker) ---- */
 let whmAiRef=null, whmAiRefLoading=false;          // reference_lists cache (categories/types/units/items)
-let whmAiExisting={ item_id:'', shelf_id:'', opening_qty:'', min_level:'' };
-let whmAiNew={ name_ar:'', name_en:'', category_id:'', item_type_id:'', base_unit_id:'', shelf_id:'', opening_qty:'', min_level:'', notes:'' };
-let whmAiErr='', whmAiBusy=false, whmAiPickOpen=false, whmAiPickQuery='';
 /* ---- Receive Stock (whmRcv) — unified "goods in" via admin_receive_stock ---- */
 let whmRcvOpen=false, whmRcvBusy=false, whmRcvErr='';
 let whmRcv={ item_id:'', qty:'', shelf_id:'', min_level:'', batch_no:'', expiry_date:'', note:'' };
@@ -5512,69 +5508,6 @@ async function whmLoadRef(){
   whmAiRef=(res && typeof res==='object' && !Array.isArray(res))?res:{categories:[],item_types:[],units:[],items:[]};
   whmRender();
 }
-function whmToggleAddItem(){
-  whmAddItemOpen=!whmAddItemOpen; whmAiErr='';
-  if(whmAddItemOpen){
-    whmAiMode='existing';
-    whmAiExisting={ item_id:'', shelf_id:'', opening_qty:'', min_level:'' };
-    whmAiNew={ name_ar:'', name_en:'', category_id:'', item_type_id:'', base_unit_id:'', shelf_id:'', opening_qty:'', min_level:'', notes:'' };
-    whmAiPickOpen=false; whmAiPickQuery='';
-    whmLoadRef();                 // load dropdown data
-    if(whmShelves===null) whmLoadShelves();
-  }
-  whmRender();
-}
-function whmAiSetMode(m){ whmAiMode=m; whmAiErr=''; whmAiPickOpen=false; whmRender(); }
-function whmAiSetE(k,v){ whmAiExisting[k]=v; whmAiErr=''; if(k==='item_id'){ whmRender(); } }
-function whmAiSetN(k,v){ whmAiNew[k]=v; whmAiErr=''; }
-function whmAiTogglePick(){ whmAiPickOpen=!whmAiPickOpen; whmRender(); }
-function whmAiPickSearch(v){ whmAiPickQuery=v; whmRender(); }
-function whmAiPickItem(id){ whmAiExisting.item_id=id; whmAiPickOpen=false; whmAiPickQuery=''; whmAiErr=''; whmRender(); }
-// items already in THIS warehouse (to exclude from existing-item picker)
-function whmAiItemsInWh(){
-  const set=new Set();
-  (Array.isArray(whmItems)?whmItems:[]).forEach(r=>{ if(r.item_warehouse_id) set.add(r.item_id||r.item_master_id); });
-  return set;
-}
-async function whmAiSubmit(){
-  if(whmAiBusy) return; whmAiErr='';
-  const isNew = whmAiMode==='new';
-  let res;
-  if(isNew){
-    const a=whmAiNew;
-    if(!(a.name_ar||'').trim()){ whmAiErr=t('whmErr_name_ar_required'); whmRender(); return; }
-    if(!a.category_id){ whmAiErr=t('whmAiErrCat'); whmRender(); return; }
-    if(!a.item_type_id){ whmAiErr=t('whmAiErrType'); whmRender(); return; }
-    if(!a.base_unit_id){ whmAiErr=t('whmAiErrUnit'); whmRender(); return; }
-    if(!a.shelf_id){ whmAiErr=t('whmAiErrShelf'); whmRender(); return; }
-    const oq=(a.opening_qty===''||a.opening_qty==null)?null:Number(a.opening_qty);
-    if(oq!==null && (isNaN(oq)||oq<0)){ whmAiErr=t('whmAiErrQty'); whmRender(); return; }
-    const ml=(a.min_level===''||a.min_level==null)?null:Number(a.min_level);
-    if(ml!==null && (isNaN(ml)||ml<0)){ whmAiErr=t('whmErr_invalid_min_level'); whmRender(); return; }
-    whmAiBusy=true; whmRender();
-    res=await whmRpc('admin_create_and_add_item_to_warehouse', {
-      p_category_id:a.category_id, p_item_type_id:a.item_type_id, p_base_unit_id:a.base_unit_id,
-      p_name_ar:(a.name_ar||'').trim(), p_name_en:(a.name_en||'').trim()||null, p_notes:(a.notes||'').trim()||null,
-      p_warehouse_id:whDetailId, p_shelf_id:a.shelf_id, p_opening_qty:oq, p_min_level:ml });
-  } else {
-    const a=whmAiExisting;
-    if(!a.item_id){ whmAiErr=t('whmAiErrItem'); whmRender(); return; }
-    if(!a.shelf_id){ whmAiErr=t('whmAiErrShelf'); whmRender(); return; }
-    const oq=(a.opening_qty===''||a.opening_qty==null)?null:Number(a.opening_qty);
-    if(oq!==null && (isNaN(oq)||oq<0)){ whmAiErr=t('whmAiErrQty'); whmRender(); return; }
-    const ml=(a.min_level===''||a.min_level==null)?null:Number(a.min_level);
-    if(ml!==null && (isNaN(ml)||ml<0)){ whmAiErr=t('whmErr_invalid_min_level'); whmRender(); return; }
-    whmAiBusy=true; whmRender();
-    res=await whmRpc('add_item_to_warehouse', {
-      p_item_id:a.item_id, p_warehouse_id:whDetailId, p_shelf_id:a.shelf_id,
-      p_opening_qty:oq, p_min_level:ml });
-  }
-  if(res && res.ok===false){ whmAiBusy=false; whmAiErr=(t('whmErr_'+res.error)||t('whmAiErrGeneric')); whmRender(); return; }
-  whmAiBusy=false; whmAddItemOpen=false;
-  toast(t('whmAiAdded'));
-  invLoaded=false; dashLoaded=false; whmLoaded=false;   // inventory + dashboard + warehouse card
-  whmItems=null; whmLoadItems();                         // refresh detail tabs
-}
 /* ---- Stock Movements state + context-aware helpers ---- */
 let mvData=null, mvTotal=0, mvLoaded=false, mvLoading=false;
 let mvPage=0;                       // 0-based page
@@ -5641,53 +5574,8 @@ let mvRt={ mode:'linked', iw:null, iwLabel:'', wh:'', onHand:'', available:'', u
 let mvRtPickOpen=false, mvRtPickQuery='', mvRtSubmitting=false, mvRtErr='';
 let mvRtIssues=null, mvRtIssuesLoading=false, mvRtIssuesSeq=0;   // returnable issues for the chosen item (seq guards stale async)
 function mvOpenChooser(){ mvModal='chooser'; mvRender(); }
-let mvRc={ iw:null, iwLabel:'', wh:'', onHand:'', available:'', unit:'', qty:'', batch_no:'', expiry:'', note:'' };
-let mvRcPickOpen=false, mvRcPickQuery='', mvRcSubmitting=false, mvRcErr='';
-function mvOpenNew(kind){ mvModal=kind; mvRcErr=''; if(kind==='receipt'){ mvRc={ iw:null, iwLabel:'', wh:'', onHand:'', available:'', unit:'', qty:'', batch_no:'', expiry:'', note:'' }; mvRcPickOpen=false; mvRcPickQuery=''; mvRcSubmitting=false; if(mvItemList===null){ mvEnsureItems().then(mvRender); } } mvRender(); }
-function mvCloseModal(){ if(mvRcSubmitting || mvIsSubmitting || mvDpSubmitting || mvAjSubmitting || mvRtSubmitting) return; mvModal=null; mvRender(); }
-function mvRcClearItem(){ mvRc={...mvRc, iw:null, iwLabel:'', wh:'', onHand:'', available:'', unit:''}; mvRcErr=''; mvRender(); }
+function mvCloseModal(){ if(mvIsSubmitting || mvDpSubmitting || mvAjSubmitting || mvRtSubmitting) return; mvModal=null; mvRender(); }
 function mvIsClearItem(){ mvIs={...mvIs, iw:null, iwLabel:'', wh:'', onHand:'', available:'', unit:''}; mvIsErr=''; mvRender(); }
-function mvRcTogglePick(){ mvRcPickOpen=!mvRcPickOpen; mvRcErr=''; mvRender(); }
-function mvRcPickSearch(v){ mvRcPickQuery=v; mvRender(); }
-function mvRcPickItem(r){
-  const nm=L==='ar'?(r.name_ar||r.name_en):(r.name_en||r.name_ar);
-  mvRc.iw=r.item_warehouse_id;
-  mvRc.iwLabel=(r.item_code||'')+' · '+(nm||'');
-  mvRc.wh=L==='ar'?(r.warehouse_name_ar||r.warehouse_code):(r.warehouse_name_en||r.warehouse_code);
-  mvRc.onHand=r.on_hand; mvRc.available=r.available;
-  mvRc.unit=L==='ar'?(r.unit_name_ar||''):(r.unit_name_en||'');
-  mvRcPickOpen=false; mvRcPickQuery=''; mvRcErr='';
-  mvRender();
-}
-function mvRcSet(k,v){ mvRc[k]=v; mvRcErr=''; /* no render — keep input focus while typing */ }
-async function mvSubmitReceipt(){
-  if(mvRcSubmitting) return;
-  mvRcErr='';
-  // client-side validation (mirror the RPC so we fail fast with a clear message)
-  if(!mvRc.iw){ mvRcErr=t('mvRcErrItem'); mvRender(); return; }
-  const q=Number(mvRc.qty);
-  if(!mvRc.qty || isNaN(q) || q<=0){ mvRcErr=t('mvRcErrQty'); mvRender(); return; }
-  const batch=(mvRc.batch_no||'').trim();
-  if(mvRc.expiry && !batch){ mvRcErr=t('mvRcErrExpiry'); mvRender(); return; }
-  mvRcSubmitting=true; mvRender();
-  const res=await mvRpc('admin_receipt', {
-    p_item_warehouse_id: mvRc.iw,
-    p_qty: q,
-    p_batch_no: batch||null,
-    p_expiry_date: mvRc.expiry||null,
-    p_note: (mvRc.note||'').trim()||null
-  });
-  if(res && res.ok===false){
-    mvRcSubmitting=false;
-    mvRcErr=(t('mvRcErr_'+res.error)||t('mvRcErrGeneric'));
-    mvRender(); return;
-  }
-  // success → invalidate caches so Inventory/Dashboard refetch, refresh Movements now
-  mvRcSubmitting=false; mvModal=null;
-  invLoaded=false; dashLoaded=false; mvItemList=null;   // stale on-hand in the picker
-  toast(t('mvRcOk'));
-  mvPage=0; mvLoaded=false; loadMovements(true);
-}
 /* ---- Issue: open, pick, set, submit (mirrors admin_issue) ---- */
 function mvOpenIssue(){
   mvModal='issue'; mvIsErr='';
@@ -6094,61 +5982,7 @@ function viewMovements(){
       </table></div>
       ${pager}
     </div>
-    ${mvModal==='chooser'?mvChooserModal():''}${mvModal==='receipt'?mvReceiptModal():''}${mvModal==='issue'?mvIssueModal():''}${mvModal==='disposal'?mvDisposalModal():''}${mvModal==='adjustment'?mvAdjustmentModal():''}${mvModal==='return'?mvReturnModal():''}`;
-}
-
-function mvReceiptModal(){
-  const r=mvRc;
-  // item picker dropdown
-  let dd='';
-  if(mvRcPickOpen){
-    const q=(mvRcPickQuery||'').trim().toLowerCase();
-    let list=(mvItemList||[]);
-    if(q) list=list.filter(x=>((x.item_code||'').toLowerCase().includes(q)||(x.name_ar||'').toLowerCase().includes(q)||(x.name_en||'').toLowerCase().includes(q)));
-    list=list.slice(0,30);
-    const inner=(mvItemList===null)?`<div class="mv-pick-load">${t('mvLoading')}</div>`
-      :(list.length?list.map(x=>{const nm=L==='ar'?(x.name_ar||x.name_en):(x.name_en||x.name_ar);const wh=L==='ar'?(x.warehouse_name_ar||x.warehouse_code):(x.warehouse_name_en||x.warehouse_code);return `<div class="mv-pick-row" onclick='mvRcPickItem(${JSON.stringify(x).replace(/'/g,"&#39;")})'><span class="mv-pick-code">${esc(x.item_code||'')}</span> ${esc(nm||'')} <span class="mv-pick-wh">${esc(wh||'')}</span></div>`;}).join(''):`<div class="mv-pick-load">${t('mvNoItems')}</div>`);
-    dd=`<div class="mv-pick-dd" style="position:static;width:100%;box-shadow:none;margin-top:6px"><input class="mv-pick-search" placeholder="${t('mvItemPh')}" value="${esc(mvRcPickQuery)}" oninput="mvRcPickSearch(this.value)" autofocus/><div class="mv-pick-list">${inner}</div></div>`;
-  }
-  const itemField = r.iw
-    ? `<div class="rc-chip">${esc(r.iwLabel)} <span class="mv-chip-x" onclick="mvRcClearItem()">×</span></div>`
-    : `<button class="mv-pick-btn" style="width:100%;text-align:start" onclick="mvRcTogglePick()">${t('mvRcSelItem')} ▾</button>${dd}`;
-  // read-only stock info once an item is chosen
-  const info = r.iw ? `<div class="rc-info">
-      <div><span>${t('mvRcWh')}</span><b>${esc(r.wh||'')}</b></div>
-      <div><span>${t('mvRcOnHand')}</span><b>${fmtNum(r.onHand)}</b></div>
-      <div><span>${t('mvRcAvail')}</span><b>${fmtNum(r.available)}</b></div>
-      <div><span>${t('mvRcUnit')}</span><b>${esc(r.unit||'—')}</b></div>
-    </div>` : '';
-  const err = mvRcErr ? `<div class="rc-err">${esc(mvRcErr)}</div>` : '';
-  const busy = mvRcSubmitting;
-  return `<div class="mv-scrim" onclick="mvCloseModal()"></div>
-    <div class="mv-modal">
-      <div class="mv-modal-head"><h2>${t('mvT_RECEIPT')} — ${t('mvNew')}</h2><button class="mv-modal-x" onclick="mvCloseModal()" ${busy?'disabled':''}>×</button></div>
-      <div class="mv-modal-body">
-        <label class="rc-lbl">${t('mvRcItem')} *</label>
-        ${itemField}
-        ${info}
-        <label class="rc-lbl">${t('mvRcQty')} *</label>
-        <input class="rc-in" type="number" min="0" step="any" value="${esc(r.qty)}" oninput="mvRcSet('qty',this.value)" ${busy?'disabled':''}/>
-        <div class="rc-batchbox">
-          <div class="rc-batchbox-head">📅 ${t('mvRcBatchBoxTitle')}</div>
-          <div class="rc-batchbox-sub">${t('mvRcBatchBoxSub')}</div>
-          <label class="rc-lbl">${t('mvRcBatch')}</label>
-          <input class="rc-in" type="text" value="${esc(r.batch_no)}" placeholder="${t('mvRcBatchPh')}" oninput="mvRcSet('batch_no',this.value)" ${busy?'disabled':''}/>
-          <label class="rc-lbl">${t('mvRcExpiry')}</label>
-          <input class="rc-in" type="date" value="${esc(r.expiry)}" oninput="mvRcSet('expiry',this.value)" ${busy?'disabled':''}/>
-          ${(r.expiry && !(r.batch_no||'').trim())?`<div class="rc-hint">${t('mvRcErrExpiry')}</div>`:''}
-        </div>
-        <label class="rc-lbl">${t('mvRcNote')}</label>
-        <textarea class="rc-in" rows="2" oninput="mvRcSet('note',this.value)" ${busy?'disabled':''}>${esc(r.note)}</textarea>
-        ${err}
-      </div>
-      <div class="mv-modal-foot">
-        <button class="rc-cancel" onclick="mvCloseModal()" ${busy?'disabled':''}>${t('mvRcCancel')}</button>
-        <button class="rc-save" onclick="mvSubmitReceipt()" ${busy?'disabled':''}>${busy?t('mvRcSaving'):t('mvRcPost')}</button>
-      </div>
-    </div>`;
+    ${mvModal==='chooser'?mvChooserModal():''}${mvModal==='issue'?mvIssueModal():''}${mvModal==='disposal'?mvDisposalModal():''}${mvModal==='adjustment'?mvAdjustmentModal():''}${mvModal==='return'?mvReturnModal():''}`;
 }
 
 function mvChooserModal(){
@@ -6157,7 +5991,6 @@ function mvChooserModal(){
       <div class="mv-modal-head"><h2>${t('mvNew')}</h2><button class="mv-modal-x" onclick="mvCloseModal()">×</button></div>
       <div class="mv-modal-body">
         <div class="mv-choose">
-          <button class="mv-choose-btn" onclick="mvOpenNew('receipt')"><span class="mc-ic">📥</span><span class="mc-lb">${t('mvT_RECEIPT')}</span><span class="mc-sub">${t('mvChooseReceipt')}</span></button>
           <button class="mv-choose-btn" onclick="mvOpenIssue()"><span class="mc-ic">📤</span><span class="mc-lb">${t('mvT_ISSUE')}</span><span class="mc-sub">${t('mvChooseIssue')}</span></button>
           <button class="mv-choose-btn" onclick="mvOpenReturn()"><span class="mc-ic">↩️</span><span class="mc-lb">${t('mvT_RETURN')}</span><span class="mc-sub">${t('mvChooseReturn')}</span></button>
           <button class="mv-choose-btn" onclick="mvOpenDisposal()"><span class="mc-ic">🗑️</span><span class="mc-lb">${t('mvT_DISPOSAL')}</span><span class="mc-sub">${t('mvChooseDisposal')}</span></button>
@@ -6643,98 +6476,6 @@ function whmDetailPage(isAdmin){
 }
 
 // gate: warehouse must have at least one shelf + items loaded before adding
-async function whmTryAddItem(){
-  if(whmShelves===null) await whmLoadShelves();
-  if(!Array.isArray(whmShelves) || whmShelves.length===0){
-    if(confirm(t('whmAiNoShelfConfirm'))){ whmSetDetailTab('shelves'); whmToggleAddShelf(); }
-    return;
-  }
-  if(whmItems===null) await whmLoadItems();   // needed so existing-item picker excludes in-wh items
-  whmToggleAddItem();
-}
-
-function whmAddItemModal(isAdmin){
-  const busy=whmAiBusy;
-  const ref=whmAiRef||{categories:[],item_types:[],units:[],items:[]};
-  const loading=whmAiRefLoading || whmAiRef===null;
-  // shelf options (mandatory) — from whmShelves
-  const shelfOpts = sid => `<option value="">${t('whmAiShelfSel')}</option>`+
-    (Array.isArray(whmShelves)?whmShelves:[]).map(sh=>`<option value="${sh.shelf_id}" ${sid===sh.shelf_id?'selected':''}>${esc(sh.shelf_name)}</option>`).join('');
-  const modeTabs=`<div class="rt-mode">
-    <button class="rt-mode-btn ${whmAiMode==='existing'?'on':''}" onclick="whmAiSetMode('existing')" ${busy?'disabled':''}>${t('whmAiExisting')}</button>
-    <button class="rt-mode-btn ${whmAiMode==='new'?'on':''}" onclick="whmAiSetMode('new')" ${busy?'disabled':''}>${t('whmAiNew')}</button>
-  </div>`;
-
-  let body='';
-  if(loading){ body=`<div class="empty">${t('whmLoading')}</div>`; }
-  else if(whmAiMode==='existing'){
-    // item picker — exclude items already in this warehouse
-    const inWh=whmAiItemsInWh();
-    const all=(ref.items||[]).filter(it=>!inWh.has(it.id));
-    const q=(whmAiPickQuery||'').trim().toLowerCase();
-    const list=(q?all.filter(it=>((it.code||'').toLowerCase().includes(q)||(it.name_ar||'').toLowerCase().includes(q)||(it.name_en||'').toLowerCase().includes(q))):all).slice(0,30);
-    const chosen=whmAiExisting.item_id?(ref.items||[]).find(it=>it.id===whmAiExisting.item_id):null;
-    let picker;
-    if(chosen){
-      const cnm=L==='ar'?(chosen.name_ar||chosen.name_en):(chosen.name_en||chosen.name_ar);
-      picker=`<div class="rc-chip">${esc(chosen.code||'')} · ${esc(cnm||'')} <span class="mv-chip-x" onclick="whmAiSetE('item_id','')">×</span></div>`;
-    } else if(whmAiPickOpen){
-      const inner=list.length?list.map(it=>{const nm=L==='ar'?(it.name_ar||it.name_en):(it.name_en||it.name_ar);return `<div class="mv-pick-row" onclick="whmAiPickItem('${it.id}')"><span class="mv-pick-code">${esc(it.code||'')}</span> ${esc(nm||'')}</div>`;}).join(''):`<div class="mv-pick-load">${t('mvNoItems')}</div>`;
-      picker=`<button class="mv-pick-btn" style="width:100%;text-align:start" onclick="whmAiTogglePick()">${t('whmAiPickItem')} ▾</button>
-        <div class="mv-pick-dd" style="position:static;width:100%;box-shadow:none;margin-top:6px"><input class="mv-pick-search" placeholder="${t('mvItemPh')}" value="${esc(whmAiPickQuery)}" oninput="whmAiPickSearch(this.value)" autofocus/><div class="mv-pick-list">${inner}</div></div>`;
-    } else {
-      picker=`<button class="mv-pick-btn" style="width:100%;text-align:start" onclick="whmAiTogglePick()">${t('whmAiPickItem')} ▾</button>`;
-    }
-    body=`
-      <label class="rc-lbl">${t('whmAiItem')} *</label>${picker}
-      <label class="rc-lbl">${t('whmAiShelf')} *</label>
-      <select class="rc-in" onchange="whmAiSetE('shelf_id',this.value)" ${busy?'disabled':''}>${shelfOpts(whmAiExisting.shelf_id)}</select>
-      <label class="rc-lbl">${t('whmAiOpening')}</label>
-      <input class="rc-in" type="number" min="0" step="any" value="${esc(whmAiExisting.opening_qty)}" oninput="whmAiSetE('opening_qty',this.value)" ${busy?'disabled':''}/>
-      <label class="rc-lbl">${t('whmAiMin')}</label>
-      <input class="rc-in" type="number" min="0" step="any" value="${esc(whmAiExisting.min_level)}" oninput="whmAiSetE('min_level',this.value)" ${busy?'disabled':''}/>`;
-  } else {
-    // new item
-    const a=whmAiNew;
-    const catOpts=`<option value="">${t('whmAiCatSel')}</option>`+(ref.categories||[]).map(c=>`<option value="${c.id}" ${a.category_id===c.id?'selected':''}>${esc(L==='ar'?c.name_ar:(c.name_en||c.name_ar))}</option>`).join('');
-    const typeOpts=`<option value="">${t('whmAiTypeSel')}</option>`+(ref.item_types||[]).map(x=>`<option value="${x.id}" ${a.item_type_id===x.id?'selected':''}>${esc(L==='ar'?x.name_ar:(x.name_en||x.name_ar))}</option>`).join('');
-    const unitOpts=`<option value="">${t('whmAiUnitSel')}</option>`+(ref.units||[]).map(u=>`<option value="${u.id}" ${a.base_unit_id===u.id?'selected':''}>${esc(L==='ar'?u.name_ar:(u.name_en||u.name_ar))}</option>`).join('');
-    body=`
-      <label class="rc-lbl">${t('whmAiNameAr')} *</label>
-      <input class="rc-in" type="text" value="${esc(a.name_ar)}" oninput="whmAiSetN('name_ar',this.value)" ${busy?'disabled':''}/>
-      <label class="rc-lbl">${t('whmAiNameEn')}</label>
-      <input class="rc-in" type="text" value="${esc(a.name_en)}" oninput="whmAiSetN('name_en',this.value)" ${busy?'disabled':''}/>
-      <label class="rc-lbl">${t('whmAiCat')} *</label>
-      <select class="rc-in" onchange="whmAiSetN('category_id',this.value)" ${busy?'disabled':''}>${catOpts}</select>
-      <label class="rc-lbl">${t('whmAiType')} *</label>
-      <select class="rc-in" onchange="whmAiSetN('item_type_id',this.value)" ${busy?'disabled':''}>${typeOpts}</select>
-      <label class="rc-lbl">${t('whmAiUnit')} *</label>
-      <select class="rc-in" onchange="whmAiSetN('base_unit_id',this.value)" ${busy?'disabled':''}>${unitOpts}</select>
-      <label class="rc-lbl">${t('whmAiShelf')} *</label>
-      <select class="rc-in" onchange="whmAiSetN('shelf_id',this.value)" ${busy?'disabled':''}>${shelfOpts(a.shelf_id)}</select>
-      <label class="rc-lbl">${t('whmAiOpening')}</label>
-      <input class="rc-in" type="number" min="0" step="any" value="${esc(a.opening_qty)}" oninput="whmAiSetN('opening_qty',this.value)" ${busy?'disabled':''}/>
-      <label class="rc-lbl">${t('whmAiMin')}</label>
-      <input class="rc-in" type="number" min="0" step="any" value="${esc(a.min_level)}" oninput="whmAiSetN('min_level',this.value)" ${busy?'disabled':''}/>
-      <label class="rc-lbl">${t('mvRcNote')}</label>
-      <textarea class="rc-in" rows="2" oninput="whmAiSetN('notes',this.value)" ${busy?'disabled':''}>${esc(a.notes)}</textarea>`;
-  }
-  const err=whmAiErr?`<div class="rc-err">${esc(whmAiErr)}</div>`:'';
-  return `<div class="mv-scrim" onclick="${busy?'':'whmToggleAddItem()'}"></div>
-    <div class="mv-modal">
-      <div class="mv-modal-head"><h2>${t('whmAiBtn')}</h2><button class="mv-modal-x" onclick="whmToggleAddItem()" ${busy?'disabled':''}>×</button></div>
-      <div class="mv-modal-body">
-        ${modeTabs}
-        ${body}
-        ${err}
-      </div>
-      <div class="mv-modal-foot">
-        <button class="rc-cancel" onclick="whmToggleAddItem()" ${busy?'disabled':''}>${t('mvRcCancel')}</button>
-        <button class="rc-save" onclick="whmAiSubmit()" ${busy?'disabled':''}>${busy?t('mvIsSaving'):t('whmAiSave')}</button>
-      </div>
-    </div>`;
-}
-
 function whmReceiveModal(isAdmin){
   const busy=whmRcvBusy;
   const ref=whmAiRef||{categories:[],item_types:[],units:[],items:[]};
