@@ -1425,6 +1425,20 @@ textarea.rc-in{resize:vertical}
 .mrb-pending{background:#FFF3E0;color:#B45309;border:1px solid #FED7AA}
 .mrb-issued{background:#E7F6EC;color:#137333;border:1px solid #A7E3BE}
 .mrb-closed{background:#F1F3F4;color:#5F6368;border:1px solid #DADCE0}
+.mrb-allocated{background:#E8F0FE;color:#1A56DB;border:1px solid #A9C7FF}
+.mrp-recv-btn{background:#1A56DB;color:#fff}
+.stfmat-box{margin:14px 0;border-radius:12px;padding:12px 14px;border:1px solid #A9C7FF;background:#F3F7FF}
+.stfmat-box.stfmat-issued{border-color:#A7E3BE;background:#F1FBF4}
+.stfmat-head{font-weight:700;color:#16314c;margin-bottom:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.stfmat-status{font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;background:#1A56DB;color:#fff}
+.stfmat-issued .stfmat-status{background:#137333}
+.stfmat-line{padding:8px 0;border-top:1px solid rgba(0,0,0,.06)}
+.stfmat-line:first-of-type{border-top:none}
+.stfmat-nm{font-weight:600;font-size:14px;margin-bottom:4px}
+.stfmat-src{display:flex;justify-content:space-between;gap:10px;font-size:13px;color:#3c4a57;padding:2px 0}
+.stfmat-from b{color:#16314c}
+.stfmat-qty{font-weight:700;color:#1A56DB;white-space:nowrap}
+.stfmat-issued .stfmat-qty{color:#137333}
 .mc-mrbadge{margin:-2px 0 8px}
 .mrp-btn{background:#FFF3E0;color:#B45309;border:1px solid #FED7AA}
 .mrp-modal{max-width:640px;width:100%}
@@ -1662,6 +1676,25 @@ async function admReloadRequests(){
 let adminActionBusy=false;
 // A7: shared wiring — route an admin state action through admin_task_action RPC.
 // action ∈ on_hold|needs_review|needs_update|cancel|return_to_technician|return_to_acceptance
+// When the action is 'cancel', route through the atomic task+materials
+// cancel contract so a linked material request is cancelled in the same
+// transaction (pending→logical ends, allocated→reservations released,
+// issued→blocked with material_return_required). All other actions use
+// admin_task_action unchanged.
+async function admActionOrCancel(id,action,note,okMsgKey){
+  if(action!=='cancel') return admTaskAction(id,action,note,okMsgKey);
+  if(adminActionBusy)return false;
+  adminActionBusy=true;
+  try{
+    const res=await admRpc('admin_cancel_task_with_materials',{p_task_id:id,p_note:note||null});
+    if(res&&res.ok===true){await admReloadRequests();finishModal(fmtID(id)+' '+t(okMsgKey||'savedToast'));return true;}
+    // clear, translated message for the issued case
+    const e=(res&&res.error)||'';
+    if(e==='material_return_required'){toast(t('material_return_required'));}
+    else{toast(admOpError(res));if(e==='session'){admSessionGone();}}
+    return false;
+  }finally{adminActionBusy=false;}
+}
 async function admTaskAction(id,action,note,okMsgKey){
   if(adminActionBusy)return false;
   adminActionBusy=true;
@@ -2153,7 +2186,7 @@ const T={
   acceptTitle:"Accept request",editTitle:"Edit task",edit:"Edit",reopen:"Reopen",confirmReopenQ:"Reopen this completed task?",
   confirmCloseTitle:"Close this task?",confirmCloseMsg:"It will be marked Complete with today as the closing date, and move out of Open Tasks.",confirmCloseYes:"Close as Complete",
   durReq:"Duration is required to schedule the task",
-  addImages:"Add photos (optional)",addImagesHint:"Attach photos to explain better — take a photo or pick from your gallery.",uploading:"Uploading…",photo:"photo",photos:"photos",viewImages:"Photos",reqPhone:"Mobile number",reqPhonePh:"e.g. 0500000000",waitUpload:"Please wait — photo uploading…",sending:"Sending…",shareReq:"Share request number",shareHint:"Share the image on WhatsApp or save it to your phone.",imgSaved:"Image saved",addFiles:"Add attachment (optional)",chooseEye:"Service Portal",chooseH1:"How can we help?",chooseP:"Choose what you would like to do.",chooseNew:"New request",chooseNewSub:"Submit a service request",chooseTrack:"Track a request",chooseTrackSub:"Check the status of requests",backChoose:"Back",addFilesHint:"Attach a PDF or Office document if needed (max 20 MB).",fileRejected:"The selected file type is not supported or exceeds the maximum allowed size (20 MB).",trkEye:"Track",trkH1:"Track Requests",trkP:"Enter your request number to check its status.",trkPending:"Awaiting approval",trkProg:"In progress",trkSearchPh:"0042",trkNone:"No active requests.",trkSearching:"Searching…",trkWaiting:"Awaiting approval",trkInProg:"In progress",stfEye:"Staff",stfH1:"My Tasks",stfPick:"Select your name to view your assigned tasks.",stfNoNames:"No team members yet.",stfChange:"Change name",stfMyTasks:"Your Task List",stfNoTasks:"No tasks assigned to you right now.",stfOpen:"Open",stfBackList:"Back to list",stfDone:"Mark as done",stfDoneYes:"Yes, done",stfConfirmTitle:"Confirm completion",stfConfirmMsg:"Have you finished this task? It will be sent to the manager for confirmation.",stfDoneToast:"Sent to manager for confirmation",stfPendBadge:"Pending confirmation",stfPendMsg:"Done — awaiting manager confirmation.",stfPendMsg2:"Pending confirmation",pendBadge:"Awaiting confirmation",confirmDone:"Confirm",returnTask:"Return",returnedToast:"returned to In Progress",savedToast:"Updated",mgrNotePh:"Reason / note for the technician (optional)",stOverdue:"Overdue",stOnHold:"On Hold",stNeedsReview:"Needs Review",stNeedsUpdate:"Needs Update",stComplete:"Completed",stCancelled:"Cancelled",stRejected:"Rejected",mrBadge:"Materials",mrBadgeTitle:"This task has a material request",mrItemsWord:"items",mrSecTitle:"Material Request",mrLoading:"Loading materials…",mrLoadErr:"Could not load the material request.",mrRequested:"Requested",mrApproved:"Approved",mrAvail:"Available",mrClosed:"closed",mrNoStock:"No stock available in any warehouse.",mrStatus_pending:"Pending",mrStatus_issued:"Issued",mrStatus_rejected:"Rejected",mrStatus_cancelled:"Cancelled",mrProcess:"Process materials",mrApprovedQty:"Approved qty",mrDistribute:"Distribute across warehouses:",mrAllocated:"Allocated",mrDecideHint:"Enter an approved quantity to distribute.",mrApproveIssue:"Approve & Issue",mrReject:"Reject",mrRejectQ:"Reject this material request?",mrRejectPh:"Reason (optional)",mrRejectConfirm:"Confirm reject",mrIssuedToast:"Materials issued",mrRejectedToast:"Material request rejected",trkNoSearch:"No request found with that number."},
+  addImages:"Add photos (optional)",addImagesHint:"Attach photos to explain better — take a photo or pick from your gallery.",uploading:"Uploading…",photo:"photo",photos:"photos",viewImages:"Photos",reqPhone:"Mobile number",reqPhonePh:"e.g. 0500000000",waitUpload:"Please wait — photo uploading…",sending:"Sending…",shareReq:"Share request number",shareHint:"Share the image on WhatsApp or save it to your phone.",imgSaved:"Image saved",addFiles:"Add attachment (optional)",chooseEye:"Service Portal",chooseH1:"How can we help?",chooseP:"Choose what you would like to do.",chooseNew:"New request",chooseNewSub:"Submit a service request",chooseTrack:"Track a request",chooseTrackSub:"Check the status of requests",backChoose:"Back",addFilesHint:"Attach a PDF or Office document if needed (max 20 MB).",fileRejected:"The selected file type is not supported or exceeds the maximum allowed size (20 MB).",trkEye:"Track",trkH1:"Track Requests",trkP:"Enter your request number to check its status.",trkPending:"Awaiting approval",trkProg:"In progress",trkSearchPh:"0042",trkNone:"No active requests.",trkSearching:"Searching…",trkWaiting:"Awaiting approval",trkInProg:"In progress",stfEye:"Staff",stfH1:"My Tasks",stfPick:"Select your name to view your assigned tasks.",stfNoNames:"No team members yet.",stfChange:"Change name",stfMyTasks:"Your Task List",stfNoTasks:"No tasks assigned to you right now.",stfOpen:"Open",stfBackList:"Back to list",stfDone:"Mark as done",stfDoneYes:"Yes, done",stfConfirmTitle:"Confirm completion",stfConfirmMsg:"Have you finished this task? It will be sent to the manager for confirmation.",stfDoneToast:"Sent to manager for confirmation",stfPendBadge:"Pending confirmation",stfPendMsg:"Done — awaiting manager confirmation.",stfPendMsg2:"Pending confirmation",pendBadge:"Awaiting confirmation",confirmDone:"Confirm",returnTask:"Return",returnedToast:"returned to In Progress",savedToast:"Updated",mgrNotePh:"Reason / note for the technician (optional)",stOverdue:"Overdue",stOnHold:"On Hold",stNeedsReview:"Needs Review",stNeedsUpdate:"Needs Update",stComplete:"Completed",stCancelled:"Cancelled",stRejected:"Rejected",mrBadge:"Materials",mrBadgeTitle:"This task has a material request",mrItemsWord:"items",mrSecTitle:"Material Request",mrLoading:"Loading materials…",mrLoadErr:"Could not load the material request.",mrRequested:"Requested",mrApproved:"Approved",mrAvail:"Available",mrClosed:"closed",mrNoStock:"No stock available in any warehouse.",mrStatus_pending:"Pending",mrStatus_issued:"Issued",mrStatus_rejected:"Rejected",mrStatus_cancelled:"Cancelled",mrProcess:"Process materials",mrApprovedQty:"Approved qty",mrDistribute:"Distribute across warehouses:",mrAllocated:"Allocated",mrDecideHint:"Enter an approved quantity to distribute.",mrApproveIssue:"Approve & Issue",mrReject:"Reject",mrRejectQ:"Reject this material request?",mrRejectPh:"Reason (optional)",mrRejectConfirm:"Confirm reject",mrIssuedToast:"Materials issued",mrRejectedToast:"Material request rejected",mrPreparedToast:"Materials prepared — reserved",mrReceivedToast:"Materials received & issued",mrPrepare:"Prepare",mrPrepareBtn:"Prepare materials",mrReceive:"Received",mrStatus_allocated:"Prepared",material_return_required:"Materials already issued — a Return is required first",mrTechTitle:"Materials for this task",mrTechFrom:"From",mrTechShelf:"Shelf",mrTechQty:"Qty",mrTechStatusAllocated:"Ready to collect",mrTechStatusIssued:"Received",trkNoSearch:"No request found with that number."},
  ar:{co:"شركة المفاهيم المتقدمة للمقاولات المحدودة",sys:"طلبات خدمة التشغيل والصيانة",
   weOpen:"⤢ افتح",weFile1:"ملف",weFileN:"ملفات",wpClose:"إغلاق",wpOpenTask:"افتح المهمة",wpInfo:"معلومات المهمة",wpTimeline:"الخط الزمني",wpPrio:"الأولوية",wpBy:"مقدّم الطلب",wpRec:"تاريخ الاستلام",wpSched:"موعد البدء",wpDone:"تاريخ الإنجاز",wpEvRec:"وصل الطلب",wpEvSched:"جُدول العمل",wpEvStart:"بدأ العمل",wpEvSub:"أُرسل للتأكيد",wpEvDone:"اكتمل",wpEvClosed:"أُغلق",wpReason:"السبب",wpMgr:"ملاحظة المدير",wpCloseNote:"ملاحظة الإغلاق",weReqImg:"صور مقدّم الطلب",weReqDoc:"ملفات مقدّم الطلب",weTecImg:"صور الفني",weTecDoc:"ملفات الفني",weNoneG:"ما في مرفقات",wpNotFound:"المهمة مش موجودة بالقائمة الحالية",wzBtn:"تحميل ZIP",wzHint:"بيصدّر كل المهام المطابقة للفلاتر الحالية",wzTitle:"جاري تجهيز الحزمة",wzTasks:"المهام",wzFiles:"الملفات",wzFailed:"فشلت",wzCancel:"إلغاء",wzCancelled:"تم إلغاء التصدير",wzZipping:"جاري الضغط…",wzDone:"ملف تم تصديره",wzErr:"تعذّر إنشاء الحزمة",wzNoLib:"مكتبة الضغط ما حمّلت",wzFailHdr:"هذه الملفات تعذّر تحميلها. الباقي كامل داخل الحزمة.",weAllC:"كل التصنيفات",weAllT:"كل الفنيين",weAllS:"كل الحالات",weReset:"مسح الفلاتر",weResults:"نتيجة",weKImages:"إجمالي الصور",weKDocs:"إجمالي الملفات",weKClaim:"صور البلاغ",weKProof:"صور الإثبات",mgrRole:"مدير القسم",mgrNone:"بيانات التواصل مع مدير القسم غير محددة حاليًا.",weNoRes:"لا توجد نتائج مطابقة.",weRowsL:"صفوف",weCID:"رقم الطلب",weCTtl:"عنوان الطلب",weCCI:"صور البلاغ",weCEI:"صور الإثبات",weCTI:"إجمالي الصور",weCCD:"ملفات البلاغ",weCED:"ملفات الإثبات",weCTD:"إجمالي الملفات",weCCrt:"تاريخ الإنشاء",weCUpd:"آخر تحديث",weCAct:"إجراءات",weCOpen:"فتح",weTitle:"استوديو الصور والملفات",weSub:"كل الصور والملفات، مهمة بمهمة",weGal:"معرض",weTime:"زمني",weTbl:"جدول",weSoon:"قريباً",weSoonT:"بمرحلة لاحقة",weSearch:"بحث",wePh:"ابحث برقم المهمة أو العنوان أو مقدّم الطلب أو الفني...",weAllP:"كل المشاريع",weFrom:"من",weTo:"إلى",weProj:"المشروع",weCat:"التصنيف",weTech:"الفني",weStat:"الحالة",weSReq:"مقدّم الطلب",weSTech:"الفني",weKFile:"ملفات",weClaim:"شكوى",weProof:"إثبات",wePrev:"تعذّر عرض الصورة",weDoc:"مستند",weShow:"يعرض",wePrevP:"‹ السابق",weNextP:"التالي ›",weNoneT:"ما في إثباتات تطابق هذه الفلاتر",weNoneS:"امسح فلتر أو وسّع التواريخ.",nav:{dashboard:"لوحة المعلومات",assets:"الأصول",manage:"إدارة الطلبات",all:"جميع الطلبات",reports:"لوحة المعلومات والتقارير",staffdir:"دليل الموظفين",open:"المهام المفتوحة",archive:"الملغية / المحذوفة",media:"استوديو الصور والملفات",settings:"الإعدادات"},
   am_title:"أصول الشركة",as_eye:"أصول الشركة",as_h1:"الأصول",as_p:"إدارة كل أصول الشركة.",as_back:"الأصول",am_subtitle:"إدارة أصول الشركة",am_soon:"قريباً",am_warehouses:"المستودعات",am_fleet:"المركبات",am_equipment:"المعدّات",am_other:"أصول أخرى",am_login_title:"دخول الأصول",am_login_sub:"أصول الشركة",am_signin:"دخول",am_back:"رجوع",am_logout:"خروج",am_wh_sys:"إدارة المستودعات",awh_dashboard:"لوحة المعلومات",awh_inventory:"المخزون",awh_catalog:"الأصناف",awh_movements:"الحركات",awh_materialreq:"طلبات المواد",awh_shelves:"المستودعات والأرفف",awh_batches:"الدفعات والصلاحية",awh_reports:"التقارير",invOutF:"نافد",dashEye:"نظام المستودعات",dashH1:"لوحة المعلومات",dashAllWh:"كل المستودعات",dashLoading:"جاري تحميل اللوحة…",dashNone:"لا توجد بيانات.",dashTotalItems:"إجمالي الأصناف",dashOnHand:"إجمالي الكمية",dashAvailable:"المتاح",dashReserved:"المحجوز",dashLow:"مخزون منخفض",dashOut:"نافد المخزون",dashNoShelf:"بدون رف",dashExpiring:"دفعات قرب الانتهاء",dashPending:"طلبات مواد معلّقة",dashActionNeeded:"يحتاج إجراء",dashCatTitle:"التوزيع حسب التصنيف",dashCatCat:"التصنيف",dashCatItems:"الأصناف",dashCatOpen:"فتح في المخزون",dashNoCat:"لا توجد تصنيفات.",dashRecent:"آخر الحركات",dashNoMv:"لا توجد حركات بعد.",dashCDate:"التاريخ",dashCType:"النوع",dashCItem:"الصنف",dashCQty:"الكمية",dashCWh:"المستودع",dashCActor:"بواسطة",mvEye:"نظام المستودعات",mvH1:"حركات المخزون",mvLoading:"جاري تحميل الحركات…",mvNone:"لا توجد حركات مطابقة.",mvAllWh:"كل المستودعات",mvAllTypes:"كل الأنواع",mvFrom:"من",mvTo:"إلى",mvItem:"الصنف",mvItemPick:"تصفية حسب الصنف",mvItemPh:"ابحث بالكود أو الاسم…",mvNoItems:"لا توجد أصناف.",mvNew:"حركة جديدة",mvSoonHint:"في المرحلة التالية",mvOf:"من",mvPrev:"السابق",mvNext:"التالي",mvRcSelItem:"اختر الصنف",mvRcItem:"الصنف",mvRcWh:"المستودع",mvRcOnHand:"الرصيد الحالي",mvRcAvail:"المتاح",mvRcUnit:"الوحدة",mvRcQty:"الكمية المستلمة",mvRcBatch:"رقم الدفعة",mvRcBatchPh:"اتركه فارغاً للدفعة الافتراضية",mvRcExpiry:"تاريخ الصلاحية",mvRcBatchBoxTitle:"بيانات الدفعة والصلاحية",whmH1:"المستودعات والأرفف",catH1:"الأصناف",whBcRoot:"نظام المستودعات",whBcAllWh:"كل المستودعات",catSubtitle:"كتالوج الأصناف الرئيسي",catLoading:"جاري تحميل الكتالوج…",catNew:"صنف جديد",catNewTitle:"تعريف صنف جديد",catCreate:"إنشاء الصنف",catCreated:"تم إنشاء الصنف",catCode:"الكود",catName:"الاسم",catCategory:"التصنيف",catType:"النوع",catUnit:"الوحدة",catWhCount:"المستودعات",catStatus:"الحالة",catActive:"نشط",catInactive:"معطّل",catAll:"الكل",catSearchPh:"بحث بالكود أو الاسم…",catResults:"صنف",catNoRows:"لا أصناف مطابقة.",catErrGeneric:"تعذّر إنشاء الصنف. حاول مجدداً.",rcvBtn:"إدخال بضاعة",rcvTitle:"إدخال بضاعة",rcvDefineNew:"تعريف صنف جديد",rcvExisting:"موجود في هذا المستودع",rcvFirstTime:"أول إدخال لهذا الصنف هنا",rcvLoadItemsFailed:"تعذّر تحميل أصناف هذا المستودع. حاول مجدداً.",whmLoading:"جاري تحميل المستودعات…",whmNone:"لا توجد مستودعات بعد.",whmNew:"مستودع جديد",whmNewTitle:"مستودع جديد",whmCode:"الكود",whmCodeHint:"٣–١٢ خانة: حروف وأرقام وشرطة (مثل SAK، RYD-1).",whmNameAr:"الاسم (عربي)",whmNameEn:"الاسم (إنجليزي)",whmCreate:"إنشاء المستودع",whmCreated:"تم إنشاء المستودع",whmManage:"إدارة",whmView:"عرض",whmOpenBtn:"فتح",whmClose:"إغلاق",whmActivate:"تفعيل المستودع",whmDeactivate:"تعطيل المستودع",whmActive:"نشط",whmInactive:"معطّل",whmOpen:"مفتوح",whmClosed2:"مغلق",whmItems:"الأصناف",whmShelves:"الأرفف",whmReserved:"محجوز",whmOpened:"تم فتح المستودع",whmClosed:"تم إغلاق المستودع",whmActivated:"تم تفعيل المستودع",whmDeactivated:"تم تعطيل المستودع",whmConfirmDeact:"تعطيل هذا المستودع؟ يجب أن يكون مغلقاً وفارغاً (لا رصيد ولا حجوزات).",whmDetailSoon:"تفاصيل المستودع قريباً.",whmTabOverview:"نظرة عامة",whmTabShelves:"الأرفف",whmTabUnassigned:"أصناف بلا رف",whmStatusActive:"الحالة",whmStatusOpen:"التشغيل",whmAddShelf:"إضافة رف",whmShelfName:"اسم الرف",whmShelfNameReq:"اسم الرف إلزامي.",whmShelfAdded:"تم إضافة الرف",whmShelfItems:"صنف",whmNoShelves:"لا توجد أرفف بعد. أضف رفاً لبدء التنظيم.",whmAddShelfFirst:"أضف رفاً أولاً",whmUnassignedNone:"كل أصناف هذا المستودع على أرفف.",whmUnSearchPh:"بحث بالكود أو الاسم…",whmPickShelf:"اختر رفاً…",whmAssign:"تعيين",whmAssigned:"تم تعيين الرف",whmAiBtn:"إضافة صنف",whmAiExisting:"صنف موجود",whmAiNew:"صنف جديد",whmAiItem:"الصنف",whmAiPickItem:"اختر صنفاً…",whmAiShelf:"الرف",whmAiShelfSel:"اختر رفاً…",whmAiOpening:"الرصيد الافتتاحي",whmAiMin:"الحد الأدنى",whmAiNameAr:"الاسم (عربي)",whmAiNameEn:"الاسم (إنجليزي)",whmAiCat:"التصنيف",whmAiCatSel:"اختر التصنيف…",whmAiType:"نوع الصنف",whmAiTypeSel:"اختر النوع…",whmAiUnit:"الوحدة",whmAiUnitSel:"اختر الوحدة…",whmAiSave:"حفظ",whmAiAdded:"تم إضافة الصنف للمستودع",whmAiNoShelfConfirm:"هذا المستودع مالوش أرفف بعد. تضيف رفاً أولاً؟",whmAiErrItem:"الرجاء اختيار صنف.",whmAiErrShelf:"الرجاء اختيار رف.",whmAiErrCat:"الرجاء اختيار التصنيف.",whmAiErrType:"الرجاء اختيار نوع الصنف.",whmAiErrUnit:"الرجاء اختيار الوحدة.",whmAiErrQty:"الرصيد الافتتاحي لا يكون سالباً.",whmAiErrGeneric:"تعذّر إضافة الصنف. حاول مجدداً.",whmErr_item_already_in_warehouse:"الصنف موجود في هذا المستودع مسبقاً.",whmErr_invalid_opening_balance:"الرصيد الافتتاحي غير صحيح.",whmErr_invalid_min_level:"الحد الأدنى غير صحيح.",whmErr_item_not_found:"الصنف غير موجود.",whmErr_item_inactive:"الصنف غير نشط.",whmErr_category_not_found:"التصنيف غير موجود.",whmErr_category_inactive:"التصنيف غير نشط.",whmErr_item_type_not_found:"نوع الصنف غير موجود.",whmErr_item_type_inactive:"نوع الصنف غير نشط.",whmErr_unit_not_found:"الوحدة غير موجودة.",whmErr_unit_inactive:"الوحدة غير نشطة.",whmErr_sequence_not_found:"تسلسل كود التصنيف غير موجود.",whmPickShelfFirst:"اختر رفاً أولاً.",whmErr_shelf_required:"الرجاء اختيار رف.",whmErr_shelf_not_found:"الرف غير موجود.",whmErr_shelf_inactive:"هذا الرف غير نشط.",whmErr_shelf_wrong_warehouse:"هذا الرف يخص مستودعاً آخر.",whmErr_item_warehouse_not_found:"الصنف غير موجود.",whmErr_shelf_name_required:"اسم الرف إلزامي.",whmErr_duplicate_shelf_name:"يوجد رف بنفس الاسم.",whmErr_warehouse_required:"المستودع مطلوب.",whmErrCode:"الكود ٣–١٢ خانة: حروف وأرقام وشرطة.",whmErrNameAr:"الاسم بالعربي إلزامي.",whmErrGeneric:"فشل الإجراء. حاول مجدداً.",whmErr_invalid_warehouse_code:"كود المستودع غير صحيح.",whmErr_name_ar_required:"الاسم بالعربي إلزامي.",whmErr_duplicate_warehouse_code:"هذا الكود مستخدم مسبقاً.",whmErr_warehouse_not_found:"المستودع غير موجود.",whmErr_warehouse_inactive:"المستودع معطّل — فعّله أولاً.",whmErr_warehouse_must_be_closed_first:"أغلق المستودع قبل تعطيله.",whmErr_warehouse_has_stock:"لا يمكن التعطيل: المستودع فيه رصيد.",whmErr_warehouse_has_reservations:"لا يمكن التعطيل: المستودع فيه حجوزات نشطة.",whmErr_not_authorized:"لا تملك الصلاحية.",mvRcBatchBoxSub:"للمواد التي لها تاريخ انتهاء (أسمدة، مبيدات، بذور، مواد كيميائية). اتركها فارغة للمواد العادية.",mvRcNote:"ملاحظة",mvRcPost:"تسجيل الاستلام",mvRcSaving:"جاري التسجيل…",mvRcCancel:"إلغاء",mvRcOk:"تم تسجيل الاستلام بنجاح",mvRcErrItem:"الرجاء اختيار صنف.",mvRcErrQty:"أدخل كمية أكبر من صفر.",mvRcErrExpiry:"تاريخ الصلاحية يحتاج رقم دفعة.",mvRcErrGeneric:"تعذّر تسجيل الاستلام. حاول مجدداً.",mvRcErr_qty_must_be_positive:"الكمية يجب أن تكون أكبر من صفر.",mvRcErr_expiry_requires_batch_no:"تاريخ الصلاحية يحتاج رقم دفعة.",mvRcErr_expiry_mismatch:"هذه الدفعة لها تاريخ صلاحية مختلف.",mvRcErr_batch_inactive:"هذه الدفعة غير نشطة.",mvRcErr_item_warehouse_not_found:"الصنف غير موجود في هذا المستودع.",mvRcErr_item_warehouse_inactive:"هذا الصنف غير نشط في المستودع.",mvRcErr_not_authorized:"لا تملك صلاحية تسجيل الحركات.",mvChooseReceipt:"بضاعة واردة",mvChooseIssue:"بضاعة صادرة",mvIsQty:"الكمية المصروفة",mvIsBatch:"رقم الدفعة",mvIsBatchPh:"اتركه فارغاً للدفعة الافتراضية",mvIsBatchNote:"يشير إلى دفعة موجودة (مطابقة تامة).",mvIsPost:"تسجيل الصرف",mvIsSaving:"جاري التسجيل…",mvIsOk:"تم الصرف بنجاح",mvIsOver:"تنبيه: الكمية أكبر من المتاح",mvIsReq:"المطلوب",mvIsErrGeneric:"تعذّر تسجيل الصرف. حاول مجدداً.",mvIsErr_would_break_reserved:"المتاح غير كافٍ (جزء منه محجوز).",mvIsErr_qty_must_be_positive:"الكمية يجب أن تكون أكبر من صفر.",mvIsErr_default_batch_missing:"لا توجد دفعة افتراضية لهذا الصنف.",mvIsErr_batch_not_found:"رقم الدفعة غير موجود لهذا الصنف.",mvIsErr_batch_inactive:"هذه الدفعة غير نشطة.",mvIsErr_item_warehouse_not_found:"الصنف غير موجود في هذا المستودع.",mvIsErr_item_warehouse_inactive:"هذا الصنف غير نشط في المستودع.",mvIsErr_not_authorized:"لا تملك صلاحية تسجيل الحركات.",mvChooseDisposal:"بضاعة تالفة / غير صالحة",mvChooseReturn:"مرتجع من صرف",mvRtLinked:"مربوط بصرف",mvRtUnlinked:"غير مربوط",mvRtIssue:"الصرف الأصلي",mvRtQty:"الكمية المرتجعة",mvRtIssued:"مصروف",mvRtReturned:"مرتجع",mvRtRemain:"قابل للإرجاع",mvRtNoIssues:"لا توجد حركات صرف قابلة للإرجاع لهذا الصنف.",mvRtPickItemFirst:"اختر الصنف أولاً.",mvRtUnlinkedHint:"استخدمه فقط عند عدم وجود صرف أصلي لربطه.",mvRtPost:"تسجيل الإرجاع",mvRtOk:"تم تسجيل الإرجاع بنجاح",mvRtErrRef:"الرجاء اختيار الصرف الأصلي.",mvRtErrNote:"الملاحظة إلزامية للإرجاع غير المربوط.",mvRtErrGeneric:"تعذّر تسجيل الإرجاع. حاول مجدداً.",mvRtErr_return_exceeds_issued:"الكمية أكبر من المتبقي القابل للإرجاع.",mvRtErr_linked_return_batch_not_allowed:"الإرجاع المربوط لا يقبل تحديد دفعة.",mvRtErr_return_note_required:"الملاحظة إلزامية للإرجاع غير المربوط.",mvRtErr_issue_movement_not_found:"حركة الصرف الأصلية غير موجودة.",mvRtErr_ref_not_an_issue:"الحركة المشار إليها ليست صرفاً.",mvRtErr_issue_iw_mismatch:"الصرف يخص صنفاً/مستودعاً مختلفاً.",mvRtErr_batch_not_found:"رقم الدفعة غير موجود.",mvRtErr_batch_inactive:"هذه الدفعة غير نشطة.",mvRtErr_default_batch_missing:"لا توجد دفعة افتراضية لهذا الصنف.",mvRtErr_item_warehouse_not_found:"الصنف غير موجود في هذا المستودع.",mvRtErr_item_warehouse_inactive:"هذا الصنف غير نشط في المستودع.",mvChooseAdjust:"تصحيح رصيد",mvChooseTransfer:"تحويل",mvChooseTransferSub:"نقل بضاعة بين المستودعات",mvTfNeedTwo:"يتطلب مستودعين مفتوحين على الأقل",mvTfSrc:"من مستودع",mvTfSelSrc:"اختر المستودع المصدر…",mvTfDest:"إلى مستودع",mvTfSelDest:"اختر الوجهة…",mvTfQty:"الكمية المحوّلة",mvTfPost:"تنفيذ التحويل",mvTfOk:"تم التحويل بنجاح",mvTfInDest:"الصنف موجود بالوجهة",mvTfFirstDest:"أول إدخال بالوجهة",mvTfNoShelfWarn:"أضف رفاً لمستودع الوجهة أولاً",mvTfErrSrc:"اختر المستودع المصدر.",mvTfErrItem:"اختر صنفاً.",mvTfErrDest:"اختر مستودع الوجهة.",mvTfErrNoShelf:"الوجهة بلا أرفف — أضف رفاً أولاً.",mvTfErrShelvesLoading:"جاري تحميل أرفف الوجهة — حاول مجدداً.",mvTfErrGeneric:"تعذّر تنفيذ التحويل. حاول مجدداً.",mvTfErr_same_warehouse:"المصدر والوجهة يجب أن يختلفا.",mvTfErr_source_warehouse_not_open:"المستودع المصدر مغلق.",mvTfErr_destination_warehouse_not_open:"مستودع الوجهة مغلق.",mvTfErr_source_warehouse_inactive:"المستودع المصدر معطّل.",mvTfErr_destination_warehouse_inactive:"مستودع الوجهة معطّل.",mvTfErr_qty_must_be_positive:"الكمية يجب أن تكون أكبر من صفر.",mvTfErr_would_break_reserved:"المتاح غير كافٍ (جزء منه محجوز).",mvTfErr_source_batch_not_found:"الدفعة غير موجودة بالمصدر.",mvTfErr_source_batch_inactive:"دفعة المصدر غير نشطة.",mvTfErr_source_default_batch_missing:"لا توجد دفعة افتراضية بالمصدر.",mvTfErr_destination_expiry_mismatch:"دفعة الوجهة لها تاريخ صلاحية مختلف.",mvTfErr_shelf_not_found:"الرف غير موجود.",mvTfErr_shelf_wrong_warehouse:"هذا الرف يخص مستودعاً آخر.",mvDpQty:"الكمية المتلَفة",mvDpReason:"السبب",mvDpReasonSel:"اختر السبب",mvDpR_storage_damage:"تلف تخزين",mvDpR_expired:"منتهي الصلاحية",mvDpR_broken:"مكسور",mvDpR_unfit_for_use:"غير صالح للاستخدام",mvDpR_other:"أخرى",mvDpPost:"تسجيل الإتلاف",mvDpOk:"تم تسجيل الإتلاف بنجاح",mvDpErrReason:"الرجاء اختيار سبب.",mvDpErrNote:"الملاحظة إلزامية للإتلاف.",mvDpErrGeneric:"تعذّر تسجيل الإتلاف. حاول مجدداً.",mvDpErr_invalid_reason_category:"الرجاء اختيار سبب صحيح.",mvDpErr_disposal_note_required:"الملاحظة إلزامية للإتلاف.",mvDpErr_would_break_reserved:"المتاح غير كافٍ (جزء منه محجوز).",mvDpErr_default_batch_missing:"لا توجد دفعة افتراضية لهذا الصنف.",mvDpErr_batch_not_found:"رقم الدفعة غير موجود.",mvDpErr_batch_inactive:"هذه الدفعة غير نشطة.",mvDpErr_item_warehouse_not_found:"الصنف غير موجود في هذا المستودع.",mvDpErr_item_warehouse_inactive:"هذا الصنف غير نشط في المستودع.",mvAjInc:"زيادة",mvAjDec:"نقص",mvAjDir:"الاتجاه",mvAjQty:"الكمية",mvAjReason:"السبب",mvAjR_periodic_count:"جرد دوري",mvAjR_data_entry_correction:"تصحيح إدخال",mvAjR_unexplained_variance:"فرق غير مفسّر",mvAjR_system_reconciliation:"تسوية نظام",mvAjR_other:"أخرى",mvAjNoteOtherHint:"الملاحظة إلزامية عند اختيار (أخرى).",mvAjPost:"تسجيل التسوية",mvAjOk:"تمت التسوية بنجاح",mvAjErrDir:"اختر زيادة أو نقص.",mvAjErrReason:"الرجاء اختيار سبب.",mvAjErrNoteOther:"الملاحظة إلزامية عند اختيار (أخرى).",mvAjErrGeneric:"تعذّرت التسوية. حاول مجدداً.",mvAjErr_invalid_direction:"اختر زيادة أو نقص.",mvAjErr_invalid_reason_category:"الرجاء اختيار سبب صحيح.",mvAjErr_note_required_for_other:"الملاحظة إلزامية عند اختيار (أخرى).",mvAjErr_would_break_reserved:"هذا النقص سيكسر حجوزات قائمة.",mvAjErr_default_batch_missing:"لا توجد دفعة افتراضية لهذا الصنف.",mvAjErr_batch_not_found:"رقم الدفعة غير موجود.",mvAjErr_batch_inactive:"هذه الدفعة غير نشطة.",mvAjErr_item_warehouse_not_found:"الصنف غير موجود في هذا المستودع.",mvAjErr_item_warehouse_inactive:"هذا الصنف غير نشط في المستودع.",mvT_OPENING_BALANCE:"رصيد افتتاحي",mvT_RECEIPT:"استلام",mvT_ISSUE:"صرف",mvT_RETURN:"إرجاع",mvT_TRANSFER_IN:"تحويل وارد",mvT_TRANSFER_OUT:"تحويل صادر",mvT_DISPOSAL:"إتلاف",mvT_ADJUSTMENT:"تسوية",
@@ -2185,7 +2218,7 @@ const T={
   acceptTitle:"قبول الطلب",editTitle:"تعديل المهمة",edit:"تعديل",reopen:"إعادة فتح",confirmReopenQ:"إعادة فتح هذه المهمة المكتملة؟",
   confirmCloseTitle:"إقفال هذه المهمة؟",confirmCloseMsg:"سيتم اعتماد المهمة كمكتملة، وتسجيل تاريخ اليوم تاريخًا للإقفال، وستخرج من قائمة المهام المفتوحة.",confirmCloseYes:"إقفال كمكتملة",
   durReq:"يلزم إدخال المدة لجدولة المهمة",
-  addImages:"إضافة صور (اختياري)",addImagesHint:"يمكنكم إرفاق صور للتوضيح، سواء بالتقاط صورة أو اختيارها من المعرض.",uploading:"جارٍ الرفع…",photo:"صورة",photos:"صور",viewImages:"الصور",reqPhone:"رقم الجوال",reqPhonePh:"مثال: 0500000000",waitUpload:"يُرجى الانتظار — جارٍ رفع الصورة…",sending:"جارٍ الإرسال…",shareReq:"مشاركة رقم الطلب",shareHint:"شارك الصورة على واتساب أو احفظها على جهازك.",imgSaved:"تم حفظ الصورة",addFiles:"إضافة مرفق (اختياري)",chooseEye:"بوابة الخدمات",chooseH1:"كيف يمكننا مساعدتك؟",chooseP:"اختر ما ترغب بالقيام به.",chooseNew:"طلب جديد",chooseNewSub:"تقديم طلب خدمة",chooseTrack:"تتبّع طلب",chooseTrackSub:"الاطلاع على حالة الطلبات",backChoose:"رجوع",addFilesHint:"يمكنك إرفاق ملف PDF أو Office عند الحاجة (الحد 20 ميجا).",fileRejected:"نوع الملف غير مدعوم أو حجمه يتجاوز الحد المسموح (20 ميجا).",trkEye:"تتبّع",trkH1:"تتبّع الطلبات",trkP:"أدخل رقم طلبك لمعرفة حالته.",trkPending:"بانتظار الموافقة",trkProg:"قيد التنفيذ",trkSearchPh:"0042",trkNone:"لا توجد طلبات جارية.",trkSearching:"جارٍ البحث…",trkWaiting:"بانتظار الموافقة",trkInProg:"قيد التنفيذ",stfEye:"الموظفون",stfH1:"مهامي",stfPick:"اختر اسمك لعرض المهام المسندة إليك.",stfNoNames:"لا يوجد أعضاء فريق بعد.",stfChange:"تغيير الاسم",stfMyTasks:"قائمة المهام الخاصة بك",stfNoTasks:"لا توجد مهام مسندة إليك حالياً.",stfOpen:"فتح",stfBackList:"العودة للقائمة",stfDone:"تم الإنجاز",stfDoneYes:"نعم، تم",stfConfirmTitle:"تأكيد الإنجاز",stfConfirmMsg:"هل أنجزت هذه المهمة؟ سيتم إرسالها إلى المسؤول للتأكيد.",stfDoneToast:"تم الإرسال إلى المسؤول للتأكيد",stfPendBadge:"بانتظار التأكيد",stfPendMsg:"تم الإنجاز — بانتظار تأكيد المسؤول.",stfPendMsg2:"بانتظار التأكيد",pendBadge:"بانتظار التأكيد",confirmDone:"تأكيد",returnTask:"إرجاع",returnedToast:"أُعيدت إلى قيد التنفيذ",savedToast:"تم التحديث",mgrNotePh:"سبب / ملاحظة للفني (اختياري)",stOverdue:"متأخرة",stOnHold:"معلّقة",stNeedsReview:"بحاجة مراجعة",stNeedsUpdate:"بحاجة تحديث",stComplete:"مكتمل",stCancelled:"ملغي",stRejected:"مرفوض",mrBadge:"مواد",mrBadgeTitle:"هذا الطلب يحتوي طلب مواد",mrItemsWord:"أصناف",mrSecTitle:"طلب المواد",mrLoading:"جارٍ تحميل المواد…",mrLoadErr:"تعذّر تحميل طلب المواد.",mrRequested:"المطلوب",mrApproved:"المعتمد",mrAvail:"المتاح",mrClosed:"مغلق",mrNoStock:"لا يوجد رصيد في أي مستودع.",mrStatus_pending:"معلّق",mrStatus_issued:"مصروف",mrStatus_rejected:"مرفوض",mrStatus_cancelled:"ملغي",mrProcess:"معالجة المواد",mrApprovedQty:"الكمية المعتمدة",mrDistribute:"وزّع على المستودعات:",mrAllocated:"المخصّص",mrDecideHint:"أدخل الكمية المعتمدة لتوزيعها.",mrApproveIssue:"اعتماد وصرف",mrReject:"رفض",mrRejectQ:"رفض طلب المواد هذا؟",mrRejectPh:"السبب (اختياري)",mrRejectConfirm:"تأكيد الرفض",mrIssuedToast:"تم صرف المواد",mrRejectedToast:"تم رفض طلب المواد",trkNoSearch:"لا يوجد طلب بهذا الرقم."}
+  addImages:"إضافة صور (اختياري)",addImagesHint:"يمكنكم إرفاق صور للتوضيح، سواء بالتقاط صورة أو اختيارها من المعرض.",uploading:"جارٍ الرفع…",photo:"صورة",photos:"صور",viewImages:"الصور",reqPhone:"رقم الجوال",reqPhonePh:"مثال: 0500000000",waitUpload:"يُرجى الانتظار — جارٍ رفع الصورة…",sending:"جارٍ الإرسال…",shareReq:"مشاركة رقم الطلب",shareHint:"شارك الصورة على واتساب أو احفظها على جهازك.",imgSaved:"تم حفظ الصورة",addFiles:"إضافة مرفق (اختياري)",chooseEye:"بوابة الخدمات",chooseH1:"كيف يمكننا مساعدتك؟",chooseP:"اختر ما ترغب بالقيام به.",chooseNew:"طلب جديد",chooseNewSub:"تقديم طلب خدمة",chooseTrack:"تتبّع طلب",chooseTrackSub:"الاطلاع على حالة الطلبات",backChoose:"رجوع",addFilesHint:"يمكنك إرفاق ملف PDF أو Office عند الحاجة (الحد 20 ميجا).",fileRejected:"نوع الملف غير مدعوم أو حجمه يتجاوز الحد المسموح (20 ميجا).",trkEye:"تتبّع",trkH1:"تتبّع الطلبات",trkP:"أدخل رقم طلبك لمعرفة حالته.",trkPending:"بانتظار الموافقة",trkProg:"قيد التنفيذ",trkSearchPh:"0042",trkNone:"لا توجد طلبات جارية.",trkSearching:"جارٍ البحث…",trkWaiting:"بانتظار الموافقة",trkInProg:"قيد التنفيذ",stfEye:"الموظفون",stfH1:"مهامي",stfPick:"اختر اسمك لعرض المهام المسندة إليك.",stfNoNames:"لا يوجد أعضاء فريق بعد.",stfChange:"تغيير الاسم",stfMyTasks:"قائمة المهام الخاصة بك",stfNoTasks:"لا توجد مهام مسندة إليك حالياً.",stfOpen:"فتح",stfBackList:"العودة للقائمة",stfDone:"تم الإنجاز",stfDoneYes:"نعم، تم",stfConfirmTitle:"تأكيد الإنجاز",stfConfirmMsg:"هل أنجزت هذه المهمة؟ سيتم إرسالها إلى المسؤول للتأكيد.",stfDoneToast:"تم الإرسال إلى المسؤول للتأكيد",stfPendBadge:"بانتظار التأكيد",stfPendMsg:"تم الإنجاز — بانتظار تأكيد المسؤول.",stfPendMsg2:"بانتظار التأكيد",pendBadge:"بانتظار التأكيد",confirmDone:"تأكيد",returnTask:"إرجاع",returnedToast:"أُعيدت إلى قيد التنفيذ",savedToast:"تم التحديث",mgrNotePh:"سبب / ملاحظة للفني (اختياري)",stOverdue:"متأخرة",stOnHold:"معلّقة",stNeedsReview:"بحاجة مراجعة",stNeedsUpdate:"بحاجة تحديث",stComplete:"مكتمل",stCancelled:"ملغي",stRejected:"مرفوض",mrBadge:"مواد",mrBadgeTitle:"هذا الطلب يحتوي طلب مواد",mrItemsWord:"أصناف",mrSecTitle:"طلب المواد",mrLoading:"جارٍ تحميل المواد…",mrLoadErr:"تعذّر تحميل طلب المواد.",mrRequested:"المطلوب",mrApproved:"المعتمد",mrAvail:"المتاح",mrClosed:"مغلق",mrNoStock:"لا يوجد رصيد في أي مستودع.",mrStatus_pending:"معلّق",mrStatus_issued:"مصروف",mrStatus_rejected:"مرفوض",mrStatus_cancelled:"ملغي",mrProcess:"معالجة المواد",mrApprovedQty:"الكمية المعتمدة",mrDistribute:"وزّع على المستودعات:",mrAllocated:"المخصّص",mrDecideHint:"أدخل الكمية المعتمدة لتوزيعها.",mrApproveIssue:"اعتماد وصرف",mrReject:"رفض",mrRejectQ:"رفض طلب المواد هذا؟",mrRejectPh:"السبب (اختياري)",mrRejectConfirm:"تأكيد الرفض",mrIssuedToast:"تم صرف المواد",mrRejectedToast:"تم رفض طلب المواد",mrPreparedToast:"تم تجهيز المواد — محجوزة",mrReceivedToast:"تم استلام المواد وصرفها",mrPrepare:"تجهيز",mrPrepareBtn:"تجهيز المواد",mrReceive:"تم الاستلام",mrStatus_allocated:"مجهّزة",material_return_required:"المواد مصروفة — يلزم إرجاع أولاً",mrTechTitle:"مواد هذه المهمة",mrTechFrom:"من",mrTechShelf:"رف",mrTechQty:"الكمية",mrTechStatusAllocated:"جاهزة للاستلام",mrTechStatusIssued:"مستلمة",trkNoSearch:"لا يوجد طلب بهذا الرقم."}
 };
 let L='en';
 function t(k){return T[L][k];}
@@ -3893,6 +3926,7 @@ let mrProc=null;   // {taskId, det, loading, err, edit:{line_id:{approved, alloc
 
 // admRpc collapses PG errors to http_<code>; this reads the JSON error body on
 // non-2xx so codes like approved_qty_mismatch / insufficient_stock survive.
+let mrIssuing=false;
 async function mrRpc(fn,args){
   const okSess=await admEnsureSession();
   if(!okSess)return {ok:false,error:'session'};
@@ -4003,17 +4037,31 @@ function mrBuildDecisions(){
   });
   return decisions;
 }
-async function mrDoApprove(){
+async function mrDoApprove(){   // now: PREPARE (allocate) — reserves, does not issue
   if(!mrAllLinesOk()||mrProc.busy)return;
   mrProc.busy=true; renderModal();
   try{
-    const res=await mrRpc('approve_material_request',
+    const res=await mrRpc('allocate_material_request',
       {p_mr_id:mrProc.det.mr_id, p_decisions:mrBuildDecisions()});
     if(res===null || (res&&res.ok!==false && !res.error)){
-      toast(t('mrIssuedToast')); mrCloseProc(); await admReloadRequests(); return;
+      toast(t('mrPreparedToast')); mrCloseProc(); await admReloadRequests(); return;
     }
     mrProc.err=(res&&res.error)||'fail'; mrProc.busy=false; renderModal();
   }catch(e){ mrProc.err='network'; mrProc.busy=false; renderModal(); }
+}
+// Receive (issue) — storekeeper/admin marks the prepared materials as handed over.
+async function mrDoIssue(taskId){
+  if(mrIssuing)return;
+  mrIssuing=true;
+  const b=state.mrBadges&&state.mrBadges[String(taskId)];
+  if(!b||!b.mr_id){ mrIssuing=false; return; }
+  try{
+    const res=await mrRpc('issue_allocated_material_request',{p_mr_id:b.mr_id});
+    if(res===null || (res&&res.ok!==false && !res.error)){
+      toast(t('mrReceivedToast')); await admReloadRequests();
+    }else{ toast(mrApproveErr(res)); }
+  }catch(e){ toast(t('connErr')); }
+  finally{ mrIssuing=false; }
 }
 function mrDoReject(){ mrProc.rejecting=true; renderModal(); }
 async function mrConfirmReject(){
@@ -4050,15 +4098,19 @@ function mrCardBadge(taskId){
   const b=state.mrBadges&&state.mrBadges[String(taskId)];
   if(!b) return '';
   const st=b.status||'pending';
-  const cls = st==='pending'?'mrb-pending' : st==='issued'?'mrb-issued' : 'mrb-closed';
+  const cls = st==='pending'?'mrb-pending' : st==='allocated'?'mrb-allocated' : st==='issued'?'mrb-issued' : 'mrb-closed';
   const n=b.lines_count||0;
   return `<span class="mr-badge ${cls}" title="${t('mrBadgeTitle')}">📦 ${t('mrBadge')} · ${n} ${t('mrItemsWord')}</span>`;
 }
-// Process button — only for pending material requests.
+// Material action button — prepare pending requests; issue allocated requests.
 function mrProcBtn(taskId){
   const b=state.mrBadges&&state.mrBadges[String(taskId)];
-  if(!b || b.status!=='pending') return '';
-  return `<button class="btn sm mrp-btn" onclick="openMaterialProc(${taskId})">📦 ${t('mrProcess')}</button>`;
+  if(!b) return '';
+  if(b.status==='pending')
+    return `<button class="btn sm mrp-btn" onclick="openMaterialProc(${taskId})">📦 ${t('mrPrepare')}</button>`;
+  if(b.status==='allocated')
+    return `<button class="btn sm mrp-recv-btn" onclick="mrDoIssue(${taskId})">📥 ${t('mrReceive')}</button>`;
+  return '';
 }
 
 function taskRow(r){
@@ -4943,7 +4995,7 @@ function askStatusComment(id,status,action){
 async function doStatusComment(id,action){
   const el=document.getElementById('sc_reason');
   const reason=el?(el.value||'').trim():'';
-  await admTaskAction(id,action,reason||null,'savedToast');
+  await admActionOrCancel(id,action,reason||null,'savedToast');
 }
 async function saveTaskForm(mode,id){
   clearDirty();
@@ -5010,7 +5062,7 @@ async function saveTaskForm(mode,id){
         }
         // fields saved (or not applicable) → now handle the status change
         if(STATUS_COMMENT_SET.includes(status)){askStatusComment(id,status,action);return;}
-        await admTaskAction(id,action,null,'savedToast');
+        await admActionOrCancel(id,action,null,'savedToast');
         return;
       }
       // Note: Complete IS mapped ('complete') and IS in STATUS_COMMENT_SET, so it takes the
@@ -5126,7 +5178,7 @@ function renderModal(){
           <div class="mrp-ft">
             <button class="btn sec" ${P.busy?'disabled':''} onclick="mrCloseProc()">${t('cancel')}</button>
             <button class="btn danger" ${P.busy?'disabled':''} onclick="mrDoReject()">✕ ${t('mrReject')}</button>
-            <button class="btn green" id="mr_approve_btn" ${(!allOk||P.busy)?'disabled':''} onclick="mrDoApprove()">${P.busy?t('sending'):'✓ '+t('mrApproveIssue')}</button>
+            <button class="btn green" id="mr_approve_btn" ${(!allOk||P.busy)?'disabled':''} onclick="mrDoApprove()">${P.busy?t('sending'):'📦 '+t('mrPrepareBtn')}</button>
           </div>`;
       }
     }
@@ -5634,7 +5686,7 @@ function viewStaff(){
     <div class="stf-list">${cards}</div>
   </div>`;
 }
-let staffCodeInput='';let staffLoginErr=false;
+let staffCodeInput='';let staffLoginErr=false;let stfMat=null;
 let _stfCodeT=null;function softStaffCode(){staffLoginErr=false;clearTimeout(_stfCodeT);_stfCodeT=setTimeout(()=>{const v=document.getElementById('stfCode');const pos=v?v.selectionStart:null;render();const n=document.getElementById('stfCode');if(n){n.focus();if(pos!=null)try{n.setSelectionRange(pos,pos);}catch(e){}}},200);}
 async function doStaffLogin(){
   const code=(staffCodeInput||'').trim();
@@ -5672,8 +5724,41 @@ async function loadStaffTasks(){
     }
   }catch(e){ if(typeof toast==='function'){toast(L==='ar'?'تعذّر تحديث المهام':'Could not refresh tasks');} }
 }
+function stfMaterialsHtml(){
+  // rendered from stfMat state (loaded on task open); empty until loaded / when none
+  if(!stfMat || !stfMat.has_materials || !(stfMat.lines||[]).length) return '';
+  const statusLbl = stfMat.status==='issued' ? t('mrTechStatusIssued') : t('mrTechStatusAllocated');
+  const statusCls = stfMat.status==='issued' ? 'stfmat-issued' : 'stfmat-alloc';
+  const lines=(stfMat.lines||[]).map(ln=>{
+    const nm = L==='ar'?(ln.name_ar||ln.name_en||''):(ln.name_en||ln.name_ar||'');
+    const un = L==='ar'?(ln.unit_ar||ln.unit_en||''):(ln.unit_en||ln.unit_ar||'');
+    const srcs=(ln.sources||[]).map(sc=>{
+      const wh = L==='ar'?(sc.warehouse_name_ar||sc.warehouse_name_en||''):(sc.warehouse_name_en||sc.warehouse_name_ar||'');
+      const shelf = sc.shelf_name?` · ${t('mrTechShelf')} ${esc(sc.shelf_name)}`:'';
+      return `<div class="stfmat-src"><span class="stfmat-from">${t('mrTechFrom')}: <b>${esc(wh)}</b>${shelf}</span><span class="stfmat-qty">${sc.qty} ${esc(un)}</span></div>`;
+    }).join('');
+    return `<div class="stfmat-line"><div class="stfmat-nm">📦 ${esc(nm)}</div>${srcs}</div>`;
+  }).join('');
+  return `<div class="stfmat-box ${statusCls}">
+    <div class="stfmat-head">${t('mrTechTitle')} <span class="stfmat-status">${statusLbl}</span></div>
+    ${lines}
+  </div>`;
+}
+async function stfLoadMaterials(taskId){
+  stfMat=null;
+  const sess=stfGetSession();
+  if(!sess||!sess.token)return;
+  try{
+    const res=await sbRpc('staff_task_materials',{p_token:sess.token, p_request_id:taskId});
+    if(res && typeof res==='object') stfMat=res;
+  }catch(e){ stfMat=null; }
+  // re-render only the materials block if the task detail is still open
+  const box=document.getElementById('stf_materials');
+  if(box) box.innerHTML=stfMaterialsHtml();
+}
 function openStaffTask(id){
-  staffModal=id;closeoutPhotos=[];closeoutFiles=[];coUploading=0;render();
+  staffModal=id;closeoutPhotos=[];closeoutFiles=[];coUploading=0;stfMat=null;render();
+  stfLoadMaterials(id);   // fetch prepared materials for this task (read-only)
   // No Start button: if this task is due to run (accepted, Not Started, its time arrived,
   // not locked), start it automatically so the technician can close it out directly.
   const r=state.requests.find(x=>x.id===id);
@@ -5724,6 +5809,7 @@ function staffDetail(id){
       ${r.notes?`<div class="stf-note"><span>${t('noteLabel')}</span><p>${esc(r.notes)}</p></div>`:''}
       ${gal}
       ${pdfList}
+      <div id="stf_materials">${stfMaterialsHtml()}</div>
       ${locked?lockBlock
             :pend?`<div class="stf-pend-msg">⏳ ${t('stfPendMsg')}</div>`
             :isFuture?`<div class="stf-future-block">🔒 ${t('futureLockMsg')}</div>`
