@@ -1380,6 +1380,40 @@ textarea.rc-in{resize:vertical}
 .side-nav button.soon{opacity:.45;cursor:default}
 .side-nav button.soon:hover{background:none;color:var(--grey)}
 @media(max-width:560px){.asset-grid{grid-template-columns:1fr}}
+/* ── Material Picker (visitor New Request) ── */
+.mp-section{margin-top:18px;padding-top:16px;border-top:1px dashed var(--grid)}
+.mp-section-lbl{font-size:14px;font-weight:700;color:var(--navy);margin-bottom:10px}
+.mp-add-btn{display:inline-flex;align-items:center;gap:6px}
+.mp-hint{display:block;margin-top:6px;font-size:12px;color:var(--grey)}
+.mp-sum{border:1px solid #A7E3BE;background:#F3FBF6;border-radius:12px;padding:12px 14px}
+.mp-sum-head{font-weight:700;color:#137333;margin-bottom:8px}
+.mp-sum-n{color:#5F6368;font-weight:600}
+.mp-sum-row{display:flex;justify-content:space-between;gap:12px;padding:4px 0;font-size:14px;border-top:1px solid #E4F3EA}
+.mp-sum-row:first-of-type{border-top:none}
+.mp-edit-btn{margin-top:10px}
+.mp-bg{position:fixed;inset:0;background:rgba(10,20,35,.55);display:flex;align-items:center;justify-content:center;z-index:9999;padding:16px}
+.mp-panel{background:#fff;border-radius:16px;width:100%;max-width:560px;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.3);overflow:hidden}
+.mp-head{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--grid)}
+.mp-head h3{margin:0;font-size:17px;color:var(--navy)}
+.mp-x{background:none;border:none;font-size:20px;cursor:pointer;color:var(--grey);line-height:1}
+.mp-search-wrap{padding:12px 18px 6px}
+.mp-search{width:100%;padding:9px 12px;border:1.5px solid #C9CDD2;border-radius:10px;font-size:14px;box-sizing:border-box}
+.mp-list{overflow:auto;padding:6px 18px;flex:1}
+.mp-row{display:grid;grid-template-columns:1fr auto;grid-template-areas:"main qty" "warn warn";gap:6px 12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--head)}
+.mp-row-main{grid-area:main}
+.mp-row-nm{font-weight:600;font-size:14px}
+.mp-row-nm i{font-weight:400;color:#80868B;font-size:12px}
+.mp-row-av{font-size:12px;color:#5F6368}
+.mp-row-av b{color:#137333}
+.mp-row-qty{grid-area:qty;display:flex;align-items:center;gap:6px}
+.mp-step{width:30px;height:30px;border:1.5px solid #C9CDD2;background:#F7F8FA;border-radius:8px;font-size:18px;cursor:pointer;line-height:1;color:var(--navy)}
+.mp-qin{width:64px;padding:6px;border:1.5px solid #C9CDD2;border-radius:8px;font-size:14px;text-align:center}
+.mp-row-warn{grid-area:warn;font-size:12px;color:#C5221F;min-height:0}
+.mp-row-bad .mp-qin{border-color:#C5221F;background:#FCE8E6}
+.mp-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px;border-top:1px solid var(--grid);flex-wrap:wrap}
+.mp-count-lbl{font-size:13px;color:#5F6368}
+.mp-foot-btns{display:flex;gap:8px;margin-inline-start:auto}
+.mp-note{padding:28px 18px;text-align:center;color:var(--grey);font-size:14px}
 /* ── Material Requests: badge + processing modal ── */
 .mr-badge{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap;vertical-align:middle}
 .mrb-pending{background:#FFF3E0;color:#B45309;border:1px solid #FED7AA}
@@ -1528,6 +1562,22 @@ async function admRpcAnon(fn,args){
       headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'},
       body:JSON.stringify(args||{})});
     if(!res.ok)return {ok:false,error:'http_'+res.status};
+    return await res.json();
+  }catch(e){return {ok:false,error:'network'};}
+}
+// Like admRpcAnon but reads the JSON error body on non-2xx so backend codes
+// (material_insufficient_available, invalid_material_lines…) survive for a
+// clear visitor message instead of a generic http_400.
+async function submitReqRpc(fn,args){
+  try{
+    const res=await fetch(SB_URL+'/rest/v1/rpc/'+fn,{method:'POST',
+      headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'},
+      body:JSON.stringify(args||{})});
+    if(!res.ok){
+      let code='http_'+res.status;
+      try{ const b=await res.json(); code=b.message||b.error||b.details||code; }catch(e){}
+      return {ok:false,error:code};
+    }
     return await res.json();
   }catch(e){return {ok:false,error:'network'};}
 }
@@ -2090,7 +2140,7 @@ const T={
   chartsCfg:"Dashboard widgets",chartsCfgHint:"Choose what appears on the dashboard.",
   sProjects:"Projects",sCats:"Service Types",sEmps:"Team Members",sStaff:"Staff Directory",stfCodeLab:"Code",stfLoginH1:"Request Execution & Tracking Portal – Team Members",stfLoginP:"Enter your 3-digit code to view your tasks.",stfLoginBtn:"Enter",stfBadCode:"Invalid code. Try again.",stfThrottled:"Too many attempts. Wait a moment and try again.",stfNetErr:"Connection problem. Try again.",stfLockedHint:"This task is paused by the manager. You can't work on it until the manager reactivates it.",stfMgrNote:"Manager note",statusComment:"Status Comment",statusCommentPh:"Optional comment for this status change",statusCommentTitle:"Status change",statusCommentMsg:"Changing status to",confirmStatusBtn:"Confirm",optional:"optional",stfRejectReason:"Reason",cancelReasonLbl:"Cancellation reason",stfLogout:"Log out",reqByLbl:"Requested by",reqPhoneLbl:"Phone",startDateTime:"Start Date & Time (optional)",startDateTimeHint:"Leave empty to start now. Set a future time for a scheduled task.",taskStartLbl:"Scheduled start",futureTaskMsg:"Future task — scheduled to start on",futureLockMsg:"This task hasn't started yet. You can begin work once its start time arrives.",readyMsg:"This task is ready to start.",badgeFuture:"Future",badgeReady:"Ready",startTaskBtn:"Start Task",taskStarted:"Task started",badDur:"Duration must be a positive number",badDate:"Invalid start date/time",schedPast:"Scheduled time must be in the future",stfWelcome:"Welcome,",staffNeedName:"Enter a name",codeExists:"Code already used",delStaffQ:"Delete this staff member?",editStaffTitle:"Edit staff member",confirmDeclineQ:"Decline this request?",confirmDoneQ:"Confirm this task as completed?",confirmReturnQ:"Return this task to the technician?",closeoutFiles:"Attach files (optional)",coComment:"Comment (optional)",coCommentPh:"Add a short note about the work done…",coNoteLbl:"Technician comment",closeoutOptional:"Photos & files are optional.",closeoutPhoto:"Close-out photo (optional)",closeoutHint:"Optionally attach a photo of the completed work.",recentDone:"Recently Completed",recentDoneHint:"stays here 8h then archived",returnAccept:"Return to Acceptance",confirmReturnAcceptQ:"Return this task to the acceptance list?",returnToTech:"Return to Technician",confirmReturnTechQ:"Return this task to the assigned technician?",completedAt:"Completed at",repTitle:"Reports",repDaily:"Daily Report",repDay:"Day",repEye:"Operations",ddTitle:"Today's Live Dashboard",ddLive:"Live",ddRequested:"Requested",ddAccepted:"Accepted",ddInProgress:"In Progress",ddDaily:"Daily Tasks",ddOngoing:"Ongoing Tasks",ddClosed:"Closed",ddScheduled:"Scheduled",ddRejected:"Rejected",ddPending:"Pending Acceptance",dd_requested:"Requested Today",dd_pending:"Pending Acceptance Today",dd_accepted:"Accepted Today",dd_inprogress:"In Progress (accepted today)",dd_daily:"Daily Tasks (started today)",dd_ongoing:"Ongoing Tasks (from earlier days)",dd_scheduled:"Scheduled / Not started",dd_closed:"Closed Today",dd_rejected:"Rejected Today",ddHint:"Each count reflects an event that happened today (by its own time). Requested = submitted today, Pending = submitted today & still incoming.",repPageP:"Detailed task log and downloadable daily / period reports.",repDailyTitle:"Daily Report",repDailyHint:"Pick a day and download its PDF (summary) + Excel (full data). Counts events by their timestamp that day.",repPeriodTitle:"Period Report",repPeriodHint:"Requests received in the period, classified by current status (Completed / Rejected / In Progress / Other). Source: All Requests.",repTableTitle:"Detailed Task Log",colReceived:"Received",colAccepted:"Accepted",colClosed:"Closed",colDuration:"Completion",noDate:"No date",repMonthly:"Requests per month — since project start (live)",repDailyChart:"Today's activity breakdown",statsTitle:"Project Statistics — All Time",naTitle:"Needs Attention",naOverdue:"Overdue",naStalePending:"Pending >24h",naLongRunning:"Running >7 days",repFrom:"From",repTo:"To",repGen:"Generate Report",repHint:"Generates a PDF (summary) and Excel (full data) for the selected period — files download to your device.",repGenerating:"Generating report…",repPickDates:"Please select both dates",repExcelErr:"Excel export failed (check connection)",repPopup:"Please allow pop-ups to view the PDF",staffDirEye:"Team",staffDirH1:"Staff Directory",staffDirP:"Manage employees, login codes, and phone numbers shown on tracking.",staffAddNew:"Add new staff member",stfInactiveTag:"inactive",trkContactMgr:"Please contact the manager",rtDeactivated:"Template disabled — it has generated tasks, so its history is kept",stfInactiveLogin:"Your account is inactive. Please contact administration.",stfDeactivateQ:"Deactivate this technician?",stfDeactivateMsg:"He will be hidden from assignment lists and cannot log in. His history is kept and he can be reactivated later.",stfDeactivate:"Deactivate",stfReactivate:"Reactivate",sPris:"Priorities",addNew:"Add new…",add:"Add",addNameAr:"Arabic name",addNameEn:"English name",
   deptName:"Maintenance, Operation & Technical Support Department",thanksH:"Thank you",thanksMsg:"Your request has been received and will be followed up.",thanksContact:"For follow-up, contact the Maintenance, Operation & Technical Support Manager",thanksNew:"Submit another request",
-  fillReq:"Please fill in the required fields",submitted:"Request submitted",acceptedToast:"start date set to today",declinedToast:"declined",exported:"requests exported",added:"Added",exists:"Already in the list",connErr:"Connection error",closedToast:"closed",restoredToast:"restored",
+  fillReq:"Please fill in the required fields",mpSectionTitle:"Materials (optional)",mpAdd:"Add materials",mpOptionalHint:"Only if this request needs materials from the warehouse.",mpTitle:"Request materials",mpLoading:"Loading materials…",mpLoadErr:"Could not load materials. Try again.",mpEmpty:"No materials available to request right now.",mpNoMatch:"No item matches your search.",mpSearchPh:"Search by name or code",mpAvail:"Available",mpSelected:"Selected",mpConfirm:"Confirm materials",mpMaxOnly:"Only {n} available",mpReqTitle:"Requested materials",mpEdit:"Edit materials",submitted:"Request submitted",acceptedToast:"start date set to today",declinedToast:"declined",exported:"requests exported",added:"Added",exists:"Already in the list",connErr:"Connection error",closedToast:"closed",restoredToast:"restored",
   exitAdmin:"Exit",navVisitor:"Visitor Page",navTech:"Technician Page",navAssetPortal:"Asset Portal",enter:"Enter",page:"Page",of:"of",
   confirmRejTitle:"Reject request?",confirmRejMsg:"This moves it to the archive as Rejected (number kept). You can restore it anytime.",confirmRejYes:"Reject",rejReasonLbl:"Reason (optional)",rejReasonPh:"Why is this request being rejected?",rejectedToast:"rejected",rejectedBadge:"Rejected",rejectTask:"Reject",cancel:"Cancel",
   addTaskTitle:"Add a task",save:"Save",lang:"العربية",
@@ -2122,7 +2172,7 @@ const T={
   chartsCfg:"عناصر لوحة المعلومات",chartsCfgHint:"حدِّد العناصر التي تظهر على لوحة المعلومات.",
   sProjects:"المشاريع",sCats:"أنواع الخدمات",sEmps:"أعضاء الفريق",sStaff:"دليل الموظفين",stfCodeLab:"الرمز",stfLoginH1:"بوابة تنفيذ ومتابعة الطلبات – أعضاء الفريق",stfLoginP:"أدخل رمزك المكوّن من 3 أرقام لعرض مهامك.",stfLoginBtn:"دخول",stfBadCode:"رمز غير صحيح. حاول مرة أخرى.",stfThrottled:"محاولات كثيرة. انتظر لحظة وحاول مجدداً.",stfNetErr:"مشكلة بالاتصال. حاول مرة أخرى.",stfLockedHint:"هذه المهمة موقوفة من المدير. لا يمكنك العمل عليها حتى يعيد المدير تفعيلها.",stfMgrNote:"ملاحظة المدير",statusComment:"تعليق تغيير الحالة",statusCommentPh:"تعليق اختياري لتغيير الحالة",statusCommentTitle:"تغيير الحالة",statusCommentMsg:"تغيير الحالة إلى",confirmStatusBtn:"تأكيد",optional:"اختياري",stfRejectReason:"السبب",cancelReasonLbl:"سبب الإلغاء",stfLogout:"تسجيل خروج",reqByLbl:"مقدّم الطلب",reqPhoneLbl:"الهاتف",startDateTime:"تاريخ ووقت البدء (اختياري)",startDateTimeHint:"اتركه فارغاً ليبدأ الآن. حدّد وقتاً مستقبلياً لمهمة مجدولة.",taskStartLbl:"موعد البدء",futureTaskMsg:"مهمة مستقبلية — مجدولة للبدء في",futureLockMsg:"هذه المهمة لم تبدأ بعد. تقدر تبدأ العمل عند حلول موعد بدايتها.",readyMsg:"المهمة جاهزة للبدء.",badgeFuture:"مستقبلية",badgeReady:"جاهزة",startTaskBtn:"ابدأ المهمة",taskStarted:"بدأت المهمة",badDur:"المدة يجب أن تكون رقماً موجباً",badDate:"تاريخ/وقت بدء غير صالح",schedPast:"وقت الجدولة يجب أن يكون في المستقبل",stfWelcome:"أهلاً وسهلاً،",staffNeedName:"أدخل الاسم",codeExists:"الرمز مستخدم مسبقاً",delStaffQ:"حذف هذا الموظف؟",editStaffTitle:"تعديل بيانات الموظف",confirmDeclineQ:"رفض هذا الطلب؟",confirmDoneQ:"تأكيد إنجاز هذه المهمة؟",confirmReturnQ:"إرجاع المهمة إلى الفني؟",closeoutFiles:"إرفاق ملفات (اختياري)",coComment:"تعليق (اختياري)",coCommentPh:"أضف ملاحظة مختصرة عن العمل المنجز…",coNoteLbl:"تعليق الفني",closeoutOptional:"الصور والملفات اختيارية.",closeoutPhoto:"صورة الإنجاز (اختياري)",closeoutHint:"يمكنك إرفاق صورة للعمل بعد إنجازه.",recentDone:"المهام المكتملة حديثاً",recentDoneHint:"تبقى هنا 8 ساعات ثم تُؤرشف",returnAccept:"إرجاع إلى قائمة القبول",confirmReturnAcceptQ:"إرجاع المهمة إلى قائمة القبول؟",returnToTech:"إرجاع للفني",confirmReturnTechQ:"إرجاع المهمة إلى الفني المسؤول؟",completedAt:"وقت الإنجاز",repTitle:"التقارير",repDaily:"تقرير يومي",repDay:"اليوم",repEye:"العمليات",ddTitle:"لوحة اليوم المباشرة",ddLive:"مباشر",ddRequested:"طُلبت",ddAccepted:"قُبلت",ddInProgress:"تحت العمل",ddDaily:"مهام اليوم",ddOngoing:"مهام مستمرة",ddClosed:"أُغلقت",ddScheduled:"مجدولة / لم تبدأ",ddRejected:"رُفضت",ddPending:"بانتظار القبول",dd_requested:"طُلبت اليوم",dd_pending:"بانتظار القبول اليوم",dd_accepted:"قُبلت اليوم",dd_inprogress:"تحت العمل (قُبلت اليوم)",dd_daily:"مهام اليوم (بدأت اليوم)",dd_ongoing:"مهام مستمرة (من أيام سابقة)",dd_scheduled:"مجدولة / لم تبدأ",dd_closed:"أُغلقت اليوم",dd_rejected:"رُفضت اليوم",ddHint:"كل رقم يعكس حدثاً صار اليوم (بوقته). طُلبت = قُدّمت اليوم، بانتظار القبول = قُدّمت اليوم ولسا واردة.",repPageP:"سجل المهام التفصيلي وتقارير يومية/فترة قابلة للتحميل.",repDailyTitle:"التقرير اليومي",repDailyHint:"اختر يوماً ونزّل ملف PDF (ملخّص) + Excel (تفصيلي). يحسب الأحداث حسب توقيتها في ذلك اليوم.",repPeriodTitle:"تقرير الفترة",repPeriodHint:"الطلبات المستقبَلة خلال الفترة، مصنّفة حسب حالتها الحالية (مكتمل / مرفوض / تحت المعالجة / أخرى). المصدر: جميع الطلبات.",repTableTitle:"سجل المهام التفصيلي",colReceived:"الاستقبال",colAccepted:"القبول",colClosed:"الإغلاق",colDuration:"مدة الإنجاز",noDate:"بدون تاريخ",repMonthly:"عدد الطلبات شهرياً — منذ بداية المشروع (مباشر)",repDailyChart:"توزيع نشاط اليوم",statsTitle:"إحصائيات المشروع — منذ البداية",naTitle:"تحتاج انتباه",naOverdue:"متأخرة",naStalePending:"معلّقة >24 ساعة",naLongRunning:"شغّالة >7 أيام",repFrom:"من",repTo:"إلى",repGen:"إنشاء التقرير",repHint:"يُنشئ ملف PDF (ملخّص) وملف Excel (بيانات كاملة) للفترة المختارة — تُحمّل الملفات على جهازك.",repGenerating:"جارٍ إنشاء التقرير…",repPickDates:"يُرجى اختيار التاريخين",repExcelErr:"فشل تصدير Excel (تحقق من الاتصال)",repPopup:"يُرجى السماح بالنوافذ المنبثقة لعرض الـPDF",staffDirEye:"الفريق",staffDirH1:"دليل الموظفين",staffDirP:"إدارة الموظفين ورموز الدخول وأرقام الجوال الظاهرة في صفحة التتبّع.",staffAddNew:"إضافة موظف جديد",stfInactiveTag:"معطّل",trkContactMgr:"يرجى التواصل مع المدير",rtDeactivated:"تم تعطيل القالب — لأنه ولّد مهام، فسجلّه محفوظ",stfInactiveLogin:"حسابك معطّل، يُرجى التواصل مع الإدارة.",stfDeactivateQ:"تعطيل هذا الفني؟",stfDeactivateMsg:"سيختفي من قوائم الإسناد ولن يستطيع تسجيل الدخول. سجلّه محفوظ ويمكن إعادة تفعيله لاحقاً.",stfDeactivate:"تعطيل",stfReactivate:"إعادة تفعيل",sPris:"الأولويات",addNew:"إضافة جديد…",add:"إضافة",addNameAr:"الاسم بالعربي",addNameEn:"الاسم بالإنجليزي",
   deptName:"قسم الصيانة والتشغيل والدعم الفني",thanksH:"شكراً جزيلاً",thanksMsg:"تم استلام طلبكم بنجاح، وستتم متابعته من قِبل القسم المختص.",thanksContact:"للاستفسار أو المتابعة، يُرجى التواصل مع مدير قسم الصيانة والتشغيل والدعم الفني",thanksNew:"تقديم طلب آخر",
-  fillReq:"الرجاء تعبئة الحقول المطلوبة",submitted:"تم إرسال الطلب",acceptedToast:"تم القبول، وحُدِّد تاريخ البدء بتاريخ اليوم",declinedToast:"تم الرفض",exported:"طلب تم تصديره",added:"تمت الإضافة بنجاح",exists:"العنصر موجود بالفعل في القائمة",connErr:"تعذَّر الاتصال بالخادم",closedToast:"تم الإقفال",restoredToast:"تم الإرجاع",
+  fillReq:"الرجاء تعبئة الحقول المطلوبة",mpSectionTitle:"المواد (اختياري)",mpAdd:"إضافة مواد",mpOptionalHint:"فقط إذا كان الطلب يحتاج مواد من المستودع.",mpTitle:"طلب مواد",mpLoading:"جارٍ تحميل المواد…",mpLoadErr:"تعذّر تحميل المواد. حاول مجدداً.",mpEmpty:"لا توجد مواد متاحة للطلب حالياً.",mpNoMatch:"لا يوجد صنف مطابق لبحثك.",mpSearchPh:"ابحث بالاسم أو الكود",mpAvail:"المتاح",mpSelected:"المحدّد",mpConfirm:"تأكيد المواد",mpMaxOnly:"المتاح {n} فقط",mpReqTitle:"المواد المطلوبة",mpEdit:"تعديل المواد",submitted:"تم إرسال الطلب",acceptedToast:"تم القبول، وحُدِّد تاريخ البدء بتاريخ اليوم",declinedToast:"تم الرفض",exported:"طلب تم تصديره",added:"تمت الإضافة بنجاح",exists:"العنصر موجود بالفعل في القائمة",connErr:"تعذَّر الاتصال بالخادم",closedToast:"تم الإقفال",restoredToast:"تم الإرجاع",
   exitAdmin:"خروج",navVisitor:"صفحة الزائر",navTech:"صفحة الفني",navAssetPortal:"بوابة الأصول",enter:"دخول",page:"صفحة",of:"من",
   confirmRejTitle:"رفض الطلب؟",confirmRejMsg:"سيُنقل إلى الأرشيف كمرفوض مع الاحتفاظ برقمه، ويمكن إرجاعه في أي وقت.",confirmRejYes:"رفض",rejReasonLbl:"السبب (اختياري)",rejReasonPh:"لماذا يُرفض هذا الطلب؟",rejectedToast:"رُفض",rejectedBadge:"مرفوض",rejectTask:"رفض",cancel:"إلغاء",
   addTaskTitle:"إضافة مهمة",save:"حفظ",lang:"English",
@@ -3359,6 +3409,224 @@ function weeClear(){
 let reqImages=[]; // array of {url, name}
 let reqFiles=[];  // array of {url, name} — PDF files
 let uploadingCount=0; // attachments currently uploading
+
+// ══════════════════════════════════════════════════════════════════════
+//  Material Picker (visitor "New Request" page) — INDEPENDENT overlay.
+//  Does NOT use the admin modal/renderModal system (visitor render returns
+//  early before renderModal). Self-contained: own DOM node, own show/hide.
+//  Loads materials_available_list() ON OPEN (not per render). Confirming the
+//  cart does NO write / NO reservation — it only saves locally to
+//  reqMaterials, which is sent to create_request_with_materials at Submit.
+// ══════════════════════════════════════════════════════════════════════
+let reqMaterials=[];      // [{item_id, code, name_ar, name_en, unit_ar, unit_en, available, qty}]
+let mpList=null;          // fetched available materials (loaded on open)
+let mpLoading=false;
+let mpErr='';
+let mpSearch='';
+// working edit map while the picker is open: item_id → qty(string)
+let mpDraft={};
+
+function mpName(m){ return L==='ar' ? (m.name_ar||m.name_en||'') : (m.name_en||m.name_ar||''); }
+function mpUnit(m){ return L==='ar' ? (m.unit_name_ar||m.unit_name_en||'') : (m.unit_name_en||m.unit_name_ar||''); }
+
+// ── open / close ──────────────────────────────────────────────────────
+async function openMaterialPicker(){
+  // seed draft from the current cart so prior choices show up editable
+  mpDraft={};
+  reqMaterials.forEach(r=>{ mpDraft[r.item_id]=String(r.qty); });
+  mpSearch=''; mpErr='';
+  mpLoading=true; mpList=null;
+  mpRender();                    // show overlay in loading state
+  try{
+    const res=await admRpcAnon('materials_available_list',{});
+    if(Array.isArray(res)){
+      // only items with available_to_request > 0
+      mpList=res.filter(m=>Number(m.available_to_request)>0);
+    }else{
+      mpErr=(res&&res.error)||'load';
+    }
+  }catch(e){ mpErr='load'; }
+  mpLoading=false;
+  mpRender();
+}
+function closeMaterialPicker(){
+  const el=document.getElementById('matpicker');
+  if(el) el.remove();
+  mpDraft={};
+}
+
+// ── draft edits (in-place, no full re-render → keep input focus) ───────
+function mpSetQty(itemId,val){
+  mpDraft[itemId]=val;
+  mpRefreshRow(itemId);
+}
+function mpStep(itemId,delta){
+  const m=(mpList||[]).find(x=>x.item_id===itemId);
+  if(!m)return;
+  const cur=Number(mpDraft[itemId]||0);
+  let n=cur+delta;
+  if(n<0)n=0;
+  if(n>Number(m.available_to_request)) n=Number(m.available_to_request);  // clamp to available_to_request
+  mpDraft[itemId]=String(n);
+  // stepper changes the field value too → refresh the row fully
+  const inp=document.getElementById('mpq_'+itemId);
+  if(inp) inp.value=mpDraft[itemId];
+  mpRefreshRow(itemId);
+}
+function mpRowState(m){
+  const raw=mpDraft[m.item_id];
+  const q=(raw===''||raw==null)?0:Number(raw);
+  const max=Number(m.available_to_request);
+  const bad = isNaN(q) || q<0 || q>max;
+  return {q, max, bad};
+}
+function mpRefreshRow(itemId){
+  const m=(mpList||[]).find(x=>x.item_id===itemId);
+  if(!m)return;
+  const st=mpRowState(m);
+  const row=document.getElementById('mprow_'+itemId);
+  if(row) row.classList.toggle('mp-row-bad', st.bad);
+  const warn=document.getElementById('mpwarn_'+itemId);
+  if(warn) warn.textContent = st.bad ? (t('mpMaxOnly').replace('{n}', String(st.max))) : '';
+  mpRefreshFooter();
+}
+function mpDraftCount(){
+  let n=0;
+  for(const k in mpDraft){ const q=Number(mpDraft[k]); if(!isNaN(q)&&q>0)n++; }
+  return n;
+}
+function mpAnyBad(){
+  return (mpList||[]).some(m=>mpRowState(m).bad);
+}
+function mpRefreshFooter(){
+  const btn=document.getElementById('mp_confirm');
+  if(btn) btn.disabled = mpAnyBad();
+  const cnt=document.getElementById('mp_count');
+  if(cnt) cnt.textContent = mpDraftCount();
+}
+
+// ── confirm → save to reqMaterials (LOCAL only, no RPC/reservation) ────
+function confirmMaterials(){
+  if(mpAnyBad())return;
+  const cart=[];
+  (mpList||[]).forEach(m=>{
+    const q=Number(mpDraft[m.item_id]||0);
+    if(q>0){
+      cart.push({item_id:m.item_id, code:m.item_code,
+        name_ar:m.name_ar, name_en:m.name_en,
+        unit_ar:m.unit_name_ar, unit_en:m.unit_name_en,
+        available:Number(m.available_to_request), qty:q});
+    }
+  });
+  reqMaterials=cart;
+  closeMaterialPicker();
+  mpRenderSummary();     // refresh the in-form summary block
+}
+
+// ── search ────────────────────────────────────────────────────────────
+function mpOnSearch(v){
+  mpSearch=v;
+  mpRenderListBody();    // re-render only the list body (keeps search focus via re-inject value)
+}
+function mpFiltered(){
+  const q=(mpSearch||'').trim().toLowerCase();
+  let arr=mpList||[];
+  if(q){
+    arr=arr.filter(m=>{
+      return (m.item_code||'').toLowerCase().includes(q)
+        || (m.name_ar||'').toLowerCase().includes(q)
+        || (m.name_en||'').toLowerCase().includes(q);
+    });
+  }
+  return arr;
+}
+
+// ── render: overlay shell ─────────────────────────────────────────────
+function mpRender(){
+  let el=document.getElementById('matpicker');
+  if(!el){ el=document.createElement('div'); el.id='matpicker'; document.body.appendChild(el); }
+  let body;
+  if(mpLoading){
+    body=`<div class="mp-note">${t('mpLoading')}</div>`;
+  }else if(mpErr){
+    body=`<div class="mp-note">${t('mpLoadErr')}</div>`;
+  }else if(!mpList||mpList.length===0){
+    body=`<div class="mp-note">${t('mpEmpty')}</div>`;
+  }else{
+    body=`<div class="mp-search-wrap">
+        <input id="mp_search" class="mp-search" placeholder="${t('mpSearchPh')}"
+          value="${esc(mpSearch)}" oninput="mpOnSearch(this.value)"/>
+      </div>
+      <div class="mp-list" id="mp_list">${mpListBodyHtml()}</div>`;
+  }
+  const footer = (!mpLoading && !mpErr && mpList && mpList.length>0)
+    ? `<div class="mp-foot">
+         <span class="mp-count-lbl">${t('mpSelected')}: <b id="mp_count">${mpDraftCount()}</b></span>
+         <div class="mp-foot-btns">
+           <button class="btn sec" onclick="closeMaterialPicker()">${t('cancel')}</button>
+           <button class="btn" id="mp_confirm" ${mpAnyBad()?'disabled':''} onclick="confirmMaterials()">${t('mpConfirm')}</button>
+         </div>
+       </div>`
+    : `<div class="mp-foot"><div class="mp-foot-btns"><button class="btn sec" onclick="closeMaterialPicker()">${t('close')}</button></div></div>`;
+  el.innerHTML=`<div class="mp-bg" onclick="if(event.target===this)closeMaterialPicker()">
+    <div class="mp-panel">
+      <div class="mp-head"><h3>📦 ${t('mpTitle')}</h3>
+        <button class="mp-x" onclick="closeMaterialPicker()" aria-label="${t('close')}">✕</button></div>
+      ${body}
+      ${footer}
+    </div></div>`;
+}
+function mpListBodyHtml(){
+  const arr=mpFiltered();
+  if(arr.length===0) return `<div class="mp-note">${t('mpNoMatch')}</div>`;
+  return arr.map(m=>{
+    const st=mpRowState(m);
+    const nm=mpName(m), un=mpUnit(m);
+    const val=(mpDraft[m.item_id]!=null)?mpDraft[m.item_id]:'';
+    return `<div class="mp-row ${st.bad?'mp-row-bad':''}" id="mprow_${m.item_id}">
+      <div class="mp-row-main">
+        <div class="mp-row-nm">${esc(nm)}${m.item_code?` <i>(${esc(m.item_code)})</i>`:''}</div>
+        <div class="mp-row-av">${t('mpAvail')}: <b>${m.available_to_request}</b> ${esc(un)}</div>
+      </div>
+      <div class="mp-row-qty">
+        <button class="mp-step" onclick="mpStep('${m.item_id}',-1)">−</button>
+        <input id="mpq_${m.item_id}" class="mp-qin" type="number" min="0" max="${esc(String(m.available_to_request))}"
+          step="any" value="${esc(String(val))}" placeholder="0"
+          oninput="mpSetQty('${m.item_id}',this.value)"/>
+        <button class="mp-step" onclick="mpStep('${m.item_id}',1)">+</button>
+      </div>
+      <div class="mp-row-warn" id="mpwarn_${m.item_id}">${st.bad?t('mpMaxOnly').replace('{n}',String(st.max)):''}</div>
+    </div>`;
+  }).join('');
+}
+function mpRenderListBody(){
+  const box=document.getElementById('mp_list');
+  if(box) box.innerHTML=mpListBodyHtml();
+  mpRefreshFooter();
+}
+
+// ── in-form summary block (shown inside viewRequest) ──────────────────
+function mpSummaryHtml(){
+  if(!reqMaterials || reqMaterials.length===0){
+    return `<button type="button" class="btn sec mp-add-btn" onclick="openMaterialPicker()">➕ ${t('mpAdd')}</button>
+      <span class="mp-hint">${t('mpOptionalHint')}</span>`;
+  }
+  const rows=reqMaterials.map(r=>{
+    const nm=L==='ar'?(r.name_ar||r.name_en):(r.name_en||r.name_ar);
+    const un=L==='ar'?(r.unit_ar||r.unit_en):(r.unit_en||r.unit_ar);
+    return `<div class="mp-sum-row"><span>${esc(nm)}</span><b>${r.qty} ${esc(un||'')}</b></div>`;
+  }).join('');
+  return `<div class="mp-sum">
+      <div class="mp-sum-head">✓ ${t('mpReqTitle')} <span class="mp-sum-n">(${reqMaterials.length})</span></div>
+      ${rows}
+      <button type="button" class="btn sec sm mp-edit-btn" onclick="openMaterialPicker()">✎ ${t('mpEdit')}</button>
+    </div>`;
+}
+function mpRenderSummary(){
+  const box=document.getElementById('mp_summary');
+  if(box) box.innerHTML=mpSummaryHtml();
+}
+
 function setSubmitState(){const b=document.getElementById('submitBtn');if(!b)return;if(uploadingCount>0){b.disabled=true;b.classList.add('loading');b.textContent=t('waitUpload');}else{b.disabled=false;b.classList.remove('loading');b.innerHTML=t('submit')+' →';}}
 async function handleReqImages(input){
   const files=Array.from(input.files||[]);
@@ -3448,24 +3716,52 @@ function viewRequest(){
       <div class="field"><label>${t('dateReq')}</label><input type="date" value="${today()}" readonly disabled style="background:var(--lgray);color:var(--grey)"/><span class="hint">${t('autoToday')}</span></div>
       <div class="field full"><label>${t('addImages')}</label><div class="img-upload"><label class="img-btn">📷 ${t('addImages')}<input type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.jpg,.jpeg,.png,.webp,.heic,.heif" multiple style="display:none" onchange="handleReqImages(this)"/></label><span class="hint">${t('addImagesHint')}</span><div class="img-previews" id="img-previews"></div></div></div>
       <div class="field full"><label>${t('addFiles')}</label><div class="img-upload"><label class="img-btn file-btn">📄 ${t('addFiles')}<input type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation" multiple style="display:none" onchange="handleReqFiles(this)"/></label><span class="hint">${t('addFilesHint')}</span><div class="file-previews" id="file-previews"></div></div></div>
-    </div><div class="btnrow" style="justify-content:center;margin-top:18px"><button class="btn btn-lg" id="submitBtn" onclick="submitReq()">${t('submit')} →</button></div>
+    </div>
+    <div class="mp-section">
+      <div class="mp-section-lbl">📦 ${t('mpSectionTitle')}</div>
+      <div id="mp_summary">${mpSummaryHtml()}</div>
+    </div>
+    <div class="btnrow" style="justify-content:center;margin-top:18px"><button class="btn btn-lg" id="submitBtn" onclick="submitReq()">${t('submit')} →</button></div>
   </div>`;
+}
+// Map wrapper/backend error codes to a clear visitor message.
+function submitReqErr(res){
+  const e=(res&&res.error)||'';
+  const ar=(L==='ar');
+  if(e.indexOf('insufficient_available')>=0)
+    return ar?'تغيّرت الكميات المتاحة. افتح المواد وحدّث الكميات.':'Available quantities changed. Open materials and update.';
+  if(e==='material_request_already_exists')
+    return ar?'يوجد طلب مواد قائم لهذا الطلب.':'A material request already exists for this task.';
+  if(e==='invalid_material_lines')
+    return ar?'بيانات المواد غير صحيحة.':'Material data is invalid.';
+  return admOpError(res);   // fall back to the generic mapper
 }
 async function submitReq(){
   if(uploadingCount>0){toast(t('waitUpload'));return;}
   const req=document.getElementById('f_req').value.trim(),phone=document.getElementById('f_phone').value.trim(),proj=document.getElementById('f_proj').value,cat=document.getElementById('f_cat').value,title=document.getElementById('f_title').value.trim();
   if(!req||!phone||!proj||!cat||!title){toast(t('fillReq'));return;}
   const btn=document.getElementById('submitBtn');if(btn){btn.disabled=true;btn.classList.add('loading');btn.textContent=t('sending');}
-  // Batch B: visitor submit via create_request RPC (server forces all admin fields).
+  // Visitor submit via the ATOMIC wrapper: creates the service request AND
+  // (if any) the material request in ONE transaction. Materials fail →
+  // whole thing rolls back, no orphan service request.
   const imagesJson=JSON.stringify(reqImages.map(x=>x.url));
   const filesJson=JSON.stringify(reqFiles.map(x=>({url:x.url,name:x.name})));
+  const materialLines = reqMaterials.length
+    ? reqMaterials.map(r=>({item_id:r.item_id, requested_qty:Number(r.qty)}))
+    : null;   // null → plain service request (pkg17 rule)
   let id=null;
   try{
-    const res=await admRpcAnon('create_request',{p_requested_by:req,p_phone:phone,p_project:proj,p_category:cat,p_title:title,p_priority:document.getElementById('f_pri').value||'Medium',p_images:imagesJson,p_files:filesJson});
+    const res=await submitReqRpc('create_request_with_materials',{
+      p_requested_by:req, p_phone:phone, p_project:proj, p_category:cat,
+      p_priority:document.getElementById('f_pri').value||'Medium', p_title:title,
+      p_images:imagesJson, p_files:filesJson,
+      p_lines:materialLines, p_submitter_name:req, p_mr_note:null});
     if(res&&res.ok===true){id=res.task_id;}
-    else{toast(admOpError(res));if(btn){btn.disabled=false;btn.classList.remove('loading');btn.innerHTML=t('submit')+' →';}return;}
+    else{toast(submitReqErr(res));if(btn){btn.disabled=false;btn.classList.remove('loading');btn.innerHTML=t('submit')+' →';}return;}
   }catch(e){toast(t('connErr'));if(btn){btn.disabled=false;btn.classList.remove('loading');btn.innerHTML=t('submit')+' →';}return;}
-  thanksInfo={id,project:proj,category:cat,received:today()};reqImages=[];reqFiles=[];uploadingCount=0;state.route='thanks';render();
+  thanksInfo={id,project:proj,category:cat,received:today()};
+  reqImages=[];reqFiles=[];reqMaterials=[];mpList=null;mpDraft={};uploadingCount=0;
+  state.route='thanks';render();
 }
 async function shareRequest(){
   if(!thanksInfo)return;
