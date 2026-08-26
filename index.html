@@ -7754,14 +7754,6 @@ function viewWhDashboard(){
     ${card(t('dashExpiring'), n(k.expiring_soon),'k-amber')}
   </div>`;
 
-  // Pending Material Requests — standalone action card
-  const pending=k.pending_requests||0;
-  const pendCard=`<div class="pend-card ${pending>0?'has':''}">
-    <div class="pend-ic">📝</div>
-    <div class="pend-body"><div class="pend-v">${n(pending)}</div><div class="pend-l">${t('dashPending')}</div></div>
-    ${pending>0?`<div class="pend-tag">${t('dashActionNeeded')}</div>`:''}
-  </div>`;
-
   // Category breakdown panel — table + inline bars, follows the warehouse filter
   const cats=Array.isArray(dashData.category_breakdown)?dashData.category_breakdown:[];
   const maxOnHand=cats.reduce((mx,c)=>Math.max(mx,Number(c.on_hand)||0),0)||1;
@@ -7828,7 +7820,6 @@ function viewWhDashboard(){
     </div>
     ${row1}
     ${row2}
-    ${pendCard}
     ${catPanel}
     ${mvPanel}`;
 }
@@ -8489,13 +8480,14 @@ function aprEditSet(k,v){
   if(k==='dest_wh'){ aprEdit.dest_shelf=''; if(v) aprLoadShelves(v); }
   aprRender();
 }
+function aprEditSetQuiet(k,v){ aprEdit[k]=v; aprErr=''; /* no render — keep focus for text/number fields */ }
 function aprCancelEdit(){ aprEditId=null; aprEdit={}; aprRender(); }
 
 /* the inline edit panel shown on a pending card (admin) */
 function aprEditPanel(r){
   const tp=r.movement_type; const e=aprEdit;
   const err=aprErr?`<div class="rc-err">${esc(aprErr)}</div>`:'';
-  let fields=`<label class="apr-l">${t('aprQty')}<input type="number" min="0" step="any" value="${esc(e.qty)}" oninput="aprEditSet('qty',this.value)"/></label>`;
+  let fields=`<label class="apr-l">${t('aprQty')}<input type="number" min="0" step="any" value="${esc(e.qty)}" oninput="aprEditSetQuiet('qty',this.value)"/></label>`;
   if(tp==='ADJUSTMENT'){
     fields+=`<label class="apr-l">${t('mvAjDir')}<select onchange="aprEditSet('direction',this.value)">
       <option value="increase" ${e.direction==='increase'?'selected':''}>${t('mvAjInc')}</option>
@@ -8509,8 +8501,8 @@ function aprEditPanel(r){
     shs.forEach(s=>{ so+=`<option value="${s.shelf_id}" ${e.shelf_id===s.shelf_id?'selected':''}>${esc(s.shelf_name||s.name||'')}</option>`; });
     fields+=`<label class="apr-l">${t('whmShelfName')}<select onchange="aprEditSet('shelf_id',this.value)" ${e.clear_shelf?'disabled':''}>${so}</select></label>`;
     fields+=`<label class="apr-ck"><input type="checkbox" ${e.clear_shelf?'checked':''} onchange="aprEditSet('clear_shelf',this.checked)"/> ${t('aprNoShelf')}</label>`;
-    fields+=`<label class="apr-l">${t('mvRcBatch')}<input value="${esc(e.batch_no)}" oninput="aprEditSet('batch_no',this.value)" placeholder="${t('mvRcBatchPh')}"/></label>`;
-    fields+=`<label class="apr-l">${t('mvRcExpiry')}<input type="date" value="${esc(e.expiry)}" oninput="aprEditSet('expiry',this.value)"/></label>`;
+    fields+=`<label class="apr-l">${t('mvRcBatch')}<input value="${esc(e.batch_no)}" oninput="aprEditSetQuiet('batch_no',this.value)" placeholder="${t('mvRcBatchPh')}"/></label>`;
+    fields+=`<label class="apr-l">${t('mvRcExpiry')}<input type="date" value="${esc(e.expiry)}" oninput="aprEditSetQuiet('expiry',this.value)"/></label>`;
   }
   if(tp==='TRANSFER'){
     const whs=(aprWh||[]).filter(w=>w.is_active && w.is_open && w.warehouse_id!==r.orig_warehouse_id);
@@ -8524,7 +8516,7 @@ function aprEditPanel(r){
   }
   // RETURN: qty + note only (ref locked — shown read-only)
   if(tp==='RETURN' && r.orig_ref_movement_id){ fields+=`<div class="apr-locked">🔒 ${t('aprRefLocked')}</div>`; }
-  fields+=`<label class="apr-l">${t('mvRcNote')}<input value="${esc(e.note)}" oninput="aprEditSet('note',this.value)"/></label>`;
+  fields+=`<label class="apr-l">${t('mvRcNote')}<input value="${esc(e.note)}" oninput="aprEditSetQuiet('note',this.value)"/></label>`;
   return `<div class="apr-edit">
     <div class="apr-edit-hd">${t('aprAdminChanges')}</div>
     <div class="apr-edit-grid">${fields}</div>
@@ -8622,6 +8614,7 @@ function aprOpenReq(tp){
   aprRender();
 }
 function aprReqSet(k,v){ aprReq[k]=v; if(k==='dest_wh'){ aprReq.dest_shelf=''; if(v) aprLoadShelves(v); } aprRender(); }
+function aprReqSetQuiet(k,v){ aprReq[k]=v; aprErr=''; /* no render — keep focus for text/number fields */ }
 function aprTogglePick(){ aprPickOpen=!aprPickOpen; aprRender(); }
 function aprPickSearch(v){ aprPickQuery=v; aprRender(); }
 function aprPickItem(x){
@@ -8639,19 +8632,23 @@ function aprClearItem(){ aprReq.iw=null; aprReq.iwLabel=''; aprReq.item_id=''; a
 
 /* the chooser modal — 6 movement types */
 function aprChooserModal(){
-  const opt=(tp,sub)=>`<button class="mv-choose" onclick="aprOpenReq('${tp}')"><span class="mv-choose-t">${aprTypeLabel(tp)}</span><span class="mv-choose-s">${sub}</span></button>`;
+  const ICO={RECEIPT:'📥',ISSUE:'📤',RETURN:'↩️',DISPOSAL:'🗑️',ADJUSTMENT:'⚖️',TRANSFER:'🔄'};
+  const opt=(tp,sub)=>`<button class="mv-choose-btn" onclick="aprOpenReq('${tp}')"><span class="mc-ic">${ICO[tp]||''}</span><span class="mc-lb">${aprTypeLabel(tp)}</span><span class="mc-sub">${sub}</span></button>`;
   const twoWh=(aprWh||[]).filter(w=>w.is_active && w.is_open).length>=2;
+  const transferBtn=twoWh
+    ? opt('TRANSFER',t('mvChooseTransferSub'))
+    : `<button class="mv-choose-btn is-disabled" disabled><span class="mc-ic">🔄</span><span class="mc-lb">${aprTypeLabel('TRANSFER')}</span><span class="mc-sub mc-sub-warn">${t('mvTfNeedTwo')}</span></button>`;
   return `<div class="mv-scrim" onclick="aprCloseModal()"></div>
-    <div class="mv-modal">
+    <div class="mv-modal" style="width:400px">
       <div class="mv-modal-head"><h2>${t('aprNewReq')}</h2><button class="mv-modal-x" onclick="aprCloseModal()">×</button></div>
       <div class="mv-modal-body">
-        <div class="mv-choose-grid">
+        <div class="mv-choose">
           ${opt('RECEIPT',t('mvChooseReceipt'))}
           ${opt('ISSUE',t('mvChooseIssue'))}
           ${opt('RETURN',t('mvChooseReturn'))}
           ${opt('DISPOSAL',t('mvChooseDisposal'))}
           ${opt('ADJUSTMENT',t('mvChooseAdjust'))}
-          ${twoWh?opt('TRANSFER',t('mvChooseTransferSub')):''}
+          ${transferBtn}
         </div>
       </div></div>`;
 }
@@ -8712,7 +8709,7 @@ function aprReqModal(tp){
     }
     returnBlock=`${modeTabs}${issuePick}`;
   }
-  let fields=`<label class="apr-l">${t('aprQty')}<input type="number" min="0" step="any" value="${esc(r.qty)}" oninput="aprReqSet('qty',this.value)"/></label>`;
+  let fields=`<label class="apr-l">${t('aprQty')}<input type="number" min="0" step="any" value="${esc(r.qty)}" oninput="aprReqSetQuiet('qty',this.value)"/></label>`;
   if(tp==='ADJUSTMENT'){
     fields+=`<label class="apr-l">${t('mvAjDir')}<select onchange="aprReqSet('direction',this.value)">
       <option value="increase" ${r.direction==='increase'?'selected':''}>${t('mvAjInc')}</option>
@@ -8721,8 +8718,8 @@ function aprReqModal(tp){
   }
   if(tp==='DISPOSAL'){ fields+=aprReqReasonSelect('DISPOSAL',r.reason); }
   if(tp==='RECEIPT'){
-    fields+=`<label class="apr-l">${t('mvRcBatch')}<input value="${esc(r.batch_no)}" oninput="aprReqSet('batch_no',this.value)" placeholder="${t('mvRcBatchPh')}"/></label>`;
-    fields+=`<label class="apr-l">${t('mvRcExpiry')}<input type="date" value="${esc(r.expiry)}" oninput="aprReqSet('expiry',this.value)"/></label>`;
+    fields+=`<label class="apr-l">${t('mvRcBatch')}<input value="${esc(r.batch_no)}" oninput="aprReqSetQuiet('batch_no',this.value)" placeholder="${t('mvRcBatchPh')}"/></label>`;
+    fields+=`<label class="apr-l">${t('mvRcExpiry')}<input type="date" value="${esc(r.expiry)}" oninput="aprReqSetQuiet('expiry',this.value)"/></label>`;
   }
   if(tp==='TRANSFER'){
     const whs=(aprWh||[]).filter(w=>w.is_active && w.is_open && w.warehouse_id!==r.warehouse_id);
@@ -8735,7 +8732,7 @@ function aprReqModal(tp){
     fields+=`<label class="apr-l">${t('mvTfDest')} — ${t('whmShelfName')}<select onchange="aprReqSet('dest_shelf',this.value)">${so}</select></label>`;
   }
   const noteReq = (tp==='DISPOSAL' || (tp==='RETURN' && r.mode==='unlinked'))?' *':'';
-  fields+=`<label class="apr-l">${t('mvRcNote')}${noteReq}<input value="${esc(r.note)}" oninput="aprReqSet('note',this.value)"/></label>`;
+  fields+=`<label class="apr-l">${t('mvRcNote')}${noteReq}<input value="${esc(r.note)}" oninput="aprReqSetQuiet('note',this.value)"/></label>`;
   const err=aprErr?`<div class="rc-err">${esc(aprErr)}</div>`:'';
   return `<div class="mv-scrim" onclick="aprCloseModal()"></div>
     <div class="mv-modal">
