@@ -9098,13 +9098,13 @@ function repPeriodRange(){
 /* preset → { compare, sections[] } — controls which sections show */
 const REP_PRESETS={
   full:      { compare:true,  sections:'all' },
-  daily:     { compare:true,  sections:['summary','attention','movement_summary','movement_register','observations'] },
-  weekly:    { compare:true,  sections:['summary','attention','movement_summary','comparison','warehouse_summary','observations','movement_register'] },
+  daily:     { compare:true,  sections:['summary','movement_summary','movement_register','observations'] },
+  weekly:    { compare:true,  sections:['summary','movement_summary','comparison','warehouse_summary','observations','movement_register'] },
   monthly:   { compare:true,  sections:'all' },
   inventory: { compare:false, sections:['summary','warehouse_summary','inventory_health','item_summary','exceptions'] },
   movement:  { compare:true,  sections:['summary','movement_summary','comparison','movement_register'] },
-  expiry:    { compare:false, sections:['summary','attention','batches_summary'] },
-  approvals: { compare:false, sections:['summary','attention','movement_approvals_summary','material_requests_summary'] }
+  expiry:    { compare:false, sections:['summary','batches_summary'] },
+  approvals: { compare:false, sections:['summary','movement_approvals_summary','material_requests_summary'] }
 };
 function repSectionOn(key){
   const pr=REP_PRESETS[repState.preset]||REP_PRESETS.full;
@@ -9287,6 +9287,7 @@ function repExecSummary(s){
 
 /* Attention Required */
 function repAttention(alerts){
+  return ''; // Attention Required section removed from all reports (user request)
   if(!repSectionOn('attention')) return '';
   if(!alerts || !alerts.length) return `<div class="rep-sec"><h3>${t('repAttention')}</h3><div class="rep-empty rep-ok">${t('repNoAlerts')}</div></div>`;
   const rows=alerts.map(a=>{
@@ -9566,7 +9567,6 @@ function repPreview(){
   return `<div class="rep-preview">
     ${header}
     ${repExecSummary(d.summary)}
-    ${repAttention(d.attention)}
     ${repObservations(d.observations)}
     ${repMovementSummary(d.movement_summary, d.comparison)}
     ${repWarehouseSummary(d.warehouse_summary)}
