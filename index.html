@@ -1566,6 +1566,86 @@ textarea.rc-in{resize:vertical}
 .bat-badge.bat-soon{background:#fef3e2;color:#b7791f}
 .bat-badge.bat-ok{background:#e6f4ea;color:#1e7e34}
 .bat-badge.bat-none{background:var(--pale);color:var(--grey)}
+
+/* ===== REPORTS MODULE (PHASE C) ===== */
+.rep-form{background:var(--white);border:1px solid var(--grid);border-radius:12px;padding:16px 18px;margin-bottom:18px;box-shadow:var(--shadow)}
+.rep-field{margin-bottom:14px}
+.rep-field>label{display:block;font-size:12px;font-weight:700;color:var(--grey);margin-bottom:7px;text-transform:uppercase;letter-spacing:.3px}
+.rep-chips{display:flex;flex-wrap:wrap;gap:7px}
+.rep-chip{border:1px solid var(--grid);background:var(--pale);color:var(--txt);border-radius:20px;padding:7px 15px;font-size:13px;font-weight:600;cursor:pointer;transition:.15s}
+.rep-chip:hover{border-color:var(--accent)}
+.rep-chip.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+.rep-custom{display:flex;gap:16px;margin-top:10px;flex-wrap:wrap}
+.rep-custom label{font-size:13px;color:var(--txt);display:flex;align-items:center;gap:6px}
+.rep-custom input{border:1px solid var(--grid);border-radius:8px;padding:6px 10px;font-size:13px}
+.rep-whrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.rep-sel{border:1px solid var(--grid);border-radius:8px;padding:8px 12px;font-size:13px;background:#fff;color:var(--txt);min-width:180px}
+.rep-actions{display:flex;gap:12px;align-items:center;margin-top:6px}
+.rep-gen{background:var(--navy);color:#fff;border:none;border-radius:9px;padding:11px 28px;font-size:14px;font-weight:700;cursor:pointer;transition:.15s}
+.rep-gen:hover{background:var(--med)}
+.rep-more{background:none;border:none;color:var(--accent);font-size:13px;font-weight:600;cursor:pointer;padding:6px}
+.rep-morebox{margin-top:12px;padding-top:12px;border-top:1px dashed var(--grid)}
+.rep-check{font-size:13px;color:var(--txt);display:flex;align-items:center;gap:8px;cursor:pointer}
+.rep-hint-box,.rep-loading,.rep-err,.rep-empty{padding:26px;text-align:center;color:var(--grey);font-size:14px;background:var(--white);border:1px solid var(--grid);border-radius:12px}
+.rep-err{color:var(--red);border-color:var(--red)}
+.rep-loading{color:var(--accent)}
+.rep-empty{padding:16px;font-size:13px}
+.rep-ok{color:var(--green)}
+.rep-empty-inline{color:var(--grey);font-size:13px}
+/* preview */
+.rep-preview{background:var(--white);border:1px solid var(--grid);border-radius:12px;padding:0;box-shadow:var(--shadow);overflow:hidden}
+.rep-preview-head{background:var(--navy);color:#fff;padding:20px 24px;display:flex;flex-wrap:wrap;gap:16px;justify-content:space-between;align-items:flex-start}
+.rph-brand{font-size:12px;letter-spacing:2px;opacity:.75;font-weight:700}
+.rph-title h2{margin:4px 0 2px;font-size:20px}
+.rph-preset{font-size:12px;opacity:.85}
+.rph-meta{font-size:12.5px;line-height:1.9;text-align:start}
+.rph-meta span{opacity:.7}
+.rph-export{display:flex;gap:8px;flex-wrap:wrap}
+.rep-exp{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:7px;padding:7px 13px;font-size:12px;font-weight:600;cursor:not-allowed;opacity:.6}
+.rep-sec{padding:18px 24px;border-bottom:1px solid var(--grid)}
+.rep-sec:last-child{border-bottom:none}
+.rep-sec>h3{margin:0 0 14px;font-size:15px;color:var(--navy);font-weight:700}
+.rep-hint{font-size:11px;color:var(--grey);font-weight:500}
+.rep-kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:11px}
+.rep-kpi{background:var(--pale);border:1px solid var(--grid);border-radius:10px;padding:13px;text-align:center}
+.rep-kpi .rk-val{font-size:22px;font-weight:800;color:var(--navy)}
+.rep-kpi .rk-lbl{font-size:11.5px;color:var(--grey);margin-top:3px}
+.rep-kpi.crit{background:#fbeceb;border-color:var(--red)}.rep-kpi.crit .rk-val{color:var(--red)}
+.rep-kpi.warn{background:#fbf3e6;border-color:var(--amber)}.rep-kpi.warn .rk-val{color:var(--amber)}
+.rep-kpi.ok{background:#eaf5ef;border-color:var(--green)}.rep-kpi.ok .rk-val{color:var(--green)}
+.rep-kpi.info{background:#eaf0f7;border-color:var(--accent)}.rep-kpi.info .rk-val{color:var(--accent)}
+.rep-alert{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:9px;margin-bottom:8px;font-size:13.5px;border:1px solid}
+.rep-alert.crit{background:#fbeceb;border-color:var(--red);color:var(--red)}
+.rep-alert.warn{background:#fbf3e6;border-color:var(--amber);color:#8a5d1e}
+.rep-alert.info{background:#eaf0f7;border-color:var(--accent);color:var(--med)}
+.rep-alert .ra-msg{flex:1}
+.rep-alert .ra-cnt{font-weight:800}
+.rep-obs{margin:0;padding-inline-start:20px;font-size:13.5px;color:var(--txt);line-height:2}
+.rep-tbl{width:100%;border-collapse:collapse;font-size:13px}
+.rep-tbl th{background:var(--pale);color:var(--grey);font-size:11.5px;text-transform:uppercase;letter-spacing:.3px;padding:8px 10px;text-align:start;border-bottom:2px solid var(--grid)}
+.rep-tbl td{padding:8px 10px;border-bottom:1px solid var(--grid);color:var(--txt);text-align:start}
+.rep-tbl tr:last-child td{border-bottom:none}
+.rep-tbl .rep-total td{font-weight:800;background:var(--pale);color:var(--navy)}
+.rep-chg.up{color:var(--green)}.rep-chg.down{color:var(--red)}
+.rep-cmpnote{font-size:11.5px;color:var(--grey);margin-top:8px;font-style:italic}
+.rep-c-crit{color:var(--red);font-weight:700}.rep-c-warn{color:var(--amber);font-weight:700}.rep-c-ok{color:var(--green);font-weight:700}
+.rep-scroll{overflow-x:auto}
+.rep-tbl-items,.rep-tbl-reg{min-width:760px}
+.rep-thumb{width:34px;height:34px;border-radius:6px;object-fit:cover;cursor:pointer;border:1px solid var(--grid)}
+.rep-thumb-none{display:flex;align-items:center;justify-content:center;background:var(--pale);font-size:16px}
+.rep-thumb-sm{width:26px;height:26px;border-radius:5px;object-fit:cover;cursor:pointer;vertical-align:middle}
+.rep-itname{color:var(--grey);font-size:12px}
+.rep-inline{display:flex;gap:22px;flex-wrap:wrap;font-size:13px;color:var(--txt);margin-bottom:10px}
+.rep-note-sm,.rep-cmpnote{font-size:11.5px;color:var(--grey)}
+.rep-note-sm{margin-top:8px}
+.rep-regcard{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 16px;background:var(--pale);border:1px solid var(--grid);border-radius:10px;font-size:14px;font-weight:600;color:var(--txt);flex-wrap:wrap}
+.rep-regbtn{background:var(--navy);color:#fff;border:none;border-radius:8px;padding:9px 18px;font-size:13px;font-weight:700;cursor:pointer}
+.rep-regbtn:hover{background:var(--med)}
+.rep-q-neg{color:var(--red);font-weight:700}.rep-q-pos{color:var(--green);font-weight:700}
+.rep-mvtype{font-size:11px;padding:2px 8px;border-radius:12px;background:var(--pale);border:1px solid var(--grid);white-space:nowrap}
+.rep-pager{display:flex;align-items:center;justify-content:center;gap:16px;margin-top:12px;font-size:13px;color:var(--grey)}
+.rep-pbtn{border:1px solid var(--grid);background:#fff;border-radius:7px;padding:7px 16px;font-size:13px;cursor:pointer;color:var(--txt)}
+.rep-pbtn:disabled{opacity:.4;cursor:default}
 </style></head>
 <body class="notranslate"><div id="gate"></div><div class="app" id="app" style="display:none"></div><div class="toast" id="toast"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -2252,6 +2332,7 @@ const T={
  en:{co:"ADVANCED CONCEPTS CONTRACTING CO. LTD.",sys:"O&M Service Requests",
   weOpen:"⤢ Open",weFile1:"file",weFileN:"files",wpClose:"Close",wpOpenTask:"Open task",wpInfo:"Task information",wpTimeline:"Timeline",wpPrio:"Priority",wpBy:"Requested by",wpRec:"Received",wpSched:"Scheduled start",wpDone:"Completed",wpEvRec:"Request received",wpEvSched:"Work scheduled",wpEvStart:"Work started",wpEvSub:"Submitted for confirmation",wpEvDone:"Completed",wpEvClosed:"Closed",wpReason:"Reason",wpMgr:"Manager note",wpCloseNote:"Closeout note",weReqImg:"Requester photos",weReqDoc:"Requester documents",weTecImg:"Technician photos",weTecDoc:"Technician documents",weNoneG:"Nothing attached",wpNotFound:"That task is not in the current list",wzBtn:"Download ZIP",wzHint:"Exports every task matching the current filters",wzTitle:"Building the ZIP",wzTasks:"Tasks",wzFiles:"Files",wzFailed:"failed",wzCancel:"Cancel",wzCancelled:"Export cancelled",wzZipping:"Compressing…",wzDone:"files exported",wzErr:"The ZIP could not be created",wzNoLib:"The ZIP library did not load",wzFailHdr:"These files could not be downloaded. Everything else is in the package.",weAllC:"All categories",weAllT:"All technicians",weAllS:"All statuses",weReset:"Reset filters",weResults:"results",weKImages:"Total images",weKDocs:"Total documents",weKClaim:"Complaint",weKProof:"Evidence",mgrRole:"Department Manager",mgrNone:"Department Manager contact is not currently configured.",weNoRes:"No matching records found.",weRowsL:"Rows",weCID:"Request ID",weCTtl:"Request title",weCCI:"Complaint images",weCEI:"Evidence images",weCTI:"Total images",weCCD:"Complaint documents",weCED:"Evidence documents",weCTD:"Total documents",weCCrt:"Created",weCUpd:"Last updated",weCAct:"Actions",weCOpen:"Open",weTitle:"Image & Document Studio",weSub:"Every image and document, task by task",weGal:"Gallery",weTime:"Timeline",weTbl:"Table",weSoon:"SOON",weSoonT:"Coming in a later phase",weSearch:"Search",wePh:"Search by ID, title, requester or technician...",weAllP:"All projects",weFrom:"From",weTo:"To",weProj:"Project",weCat:"Category",weTech:"Technician",weStat:"Status",weSReq:"Requester",weSTech:"Technician",weKFile:"Files",weClaim:"COMPLAINT",weProof:"EVIDENCE",wePrev:"Preview unavailable",weDoc:"Document",weShow:"Showing",wePrevP:"‹ Previous",weNextP:"Next ›",weNoneT:"No evidence matches these filters",weNoneS:"Clear a filter or widen the dates.",nav:{dashboard:"Dashboard",assets:"Assets",manage:"Manage Requests",all:"All Requests",reports:"Dashboard & Reports",staffdir:"Staff Directory",open:"Open Tasks",archive:"Archived / Declined",media:"Image & Document Studio",settings:"Settings"},
   am_title:"Company Assets",as_eye:"COMPANY ASSETS",as_h1:"Assets",as_p:"Manage all company assets.",as_back:"Assets",am_subtitle:"إدارة أصول الشركة",am_soon:"Soon",am_warehouses:"Warehouses",am_fleet:"Fleet & Vehicles",am_equipment:"Equipment",am_other:"Other Assets",am_login_title:"Asset access · دخول الأصول",am_login_sub:"Company Assets · أصول الشركة",am_signin:"Sign in · دخول",am_back:"Back",am_logout:"Log out",am_wh_sys:"Warehouse Management",awh_dashboard:"Dashboard",awh_inventory:"Inventory",awh_catalog:"Items",awh_movements:"Movements",awh_materialreq:"Movement Approvals",awh_shelves:"Warehouses & Shelves",awh_batches:"Batches & Expiry",awh_reports:"Reports",invOutF:"Out of Stock",dashEye:"WAREHOUSE SYSTEM",dashH1:"Dashboard",dashAllWh:"All warehouses",dashLoading:"Loading dashboard…",dashNone:"No data available.",dashTotalItems:"Total Items",dashOnHand:"Total On Hand",dashAvailable:"Available",dashReserved:"Reserved",dashLow:"Low Stock",dashOut:"Out of Stock",dashNoShelf:"Without Shelf",dashExpiring:"Expiring Batches",dashPending:"Pending Material Requests",dashActionNeeded:"Action needed",dashCatTitle:"Category Distribution",dashCatCat:"Category",dashCatItems:"Items",dashCatOpen:"Open in Inventory",dashNoCat:"No categories to show.",dashRecent:"Recent Movements",dashNoMv:"No movements yet.",dashCDate:"Date",dashCType:"Type",dashCItem:"Item",dashCQty:"Qty",dashCWh:"Warehouse",dashCActor:"By",mvEye:"WAREHOUSE SYSTEM",mvH1:"Stock Movements",mvLoading:"Loading movements…",mvNone:"No movements match these filters.",mvAllWh:"All warehouses",mvAllTypes:"All types",mvFrom:"From",mvTo:"To",mvItem:"Item",mvItemPick:"Filter by item",mvItemPh:"Search by code or name…",mvNoItems:"No items found.",mvNew:"New Movement",mvSoonHint:"Coming in the next phase",mvOf:"of",mvPrev:"Prev",mvNext:"Next",mvRcSelItem:"Select item",mvRcItem:"Item",mvRcWh:"Warehouse",mvRcOnHand:"On hand",mvRcAvail:"Available",mvRcUnit:"Unit",mvRcQty:"Quantity received",mvRcBatch:"Batch no.",mvRcBatchPh:"Leave empty for default batch",mvRcExpiry:"Expiry date",mvRcBatchBoxTitle:"Batch & expiry data",whmH1:"Warehouses & Shelves",catH1:"Items",whBcRoot:"Warehouse System",whBcAllWh:"All warehouses",catSubtitle:"Central item catalog",catLoading:"Loading catalog…",catNew:"New Item",catNewTitle:"New Item",catCreate:"Create Item",catCreated:"Item created",catCode:"Code",catName:"Name",catCategory:"Category",catType:"Type",catUnit:"Unit",catWhCount:"Warehouses",catStatus:"Status",catActive:"Active",catInactive:"Inactive",catAll:"All",catSearchPh:"Search by code or name…",catResults:"items",catNoRows:"No items match.",catErrGeneric:"Could not create the item. Please try again.",catImgLbl:"Photo",catImgRequired:"A photo is required.",catImgErr:"Image upload failed. Try again.",rcvBtn:"Receive Stock",rcvTitle:"Receive Stock",rcvDefineNew:"Define a new item",rcvExisting:"Already in this warehouse",rcvFirstTime:"First receipt of this item here",rcvLoadItemsFailed:"Could not load this warehouse items. Please try again.",whmLoading:"Loading warehouses…",whmNone:"No warehouses yet.",whmNew:"New Warehouse",whmNewTitle:"New Warehouse",whmCode:"Code",whmCodeHint:"3–12 chars: letters, digits, hyphen (e.g. SAK, RYD-1).",whmNameAr:"Name (Arabic)",whmNameEn:"Name (English)",whmCreate:"Create Warehouse",whmCreated:"Warehouse created",whmManage:"Manage",whmView:"View",whmOpenBtn:"Open",whmClose:"Close",whmActivate:"Activate Warehouse",whmDeactivate:"Deactivate Warehouse",whmActive:"Active",whmInactive:"Inactive",whmOpen:"Open",whmClosed2:"Closed",whmItems:"Items",whmShelves:"Shelves",whmReserved:"Reserved",whmOpened:"Warehouse opened",whmClosed:"Warehouse closed",whmActivated:"Warehouse activated",whmDeactivated:"Warehouse deactivated",whmConfirmDeact:"Deactivate this warehouse? It must be closed and empty (no stock, no reservations).",whmDetailSoon:"Warehouse details coming next.",whmTabOverview:"Overview",whmTabShelves:"Shelves",whmTabUnassigned:"Unassigned Items",whmStatusActive:"Status",whmStatusOpen:"Operational",whmAddShelf:"Add Shelf",whmShelfName:"Shelf name",whmShelfNameReq:"Shelf name is required.",whmShelfAdded:"Shelf added",whmShelfItems:"items",whmNoShelves:"No shelves yet. Add one to start organizing.",whmAddShelfFirst:"Add a shelf first",whmUnassignedNone:"All items in this warehouse have a shelf.",whmUnSearchPh:"Search by code or name…",whmPickShelf:"Choose shelf…",whmAssign:"Assign",whmAssigned:"Shelf assigned",whmAiBtn:"Add Item",whmAiExisting:"Existing item",whmAiNew:"New item",whmAiItem:"Item",whmAiPickItem:"Choose an item…",whmAiShelf:"Shelf",whmAiShelfSel:"Choose shelf…",whmAiOpening:"Opening quantity",whmAiMin:"Minimum level",whmAiNameAr:"Name (Arabic)",whmAiNameEn:"Name (English)",whmAiCat:"Category",whmAiCatSel:"Choose category…",whmAiType:"Item type",whmAiTypeSel:"Choose type…",whmAiUnit:"Unit",whmAiUnitSel:"Choose unit…",whmAiSave:"Save",whmAiAdded:"Item added to warehouse",whmAiNoShelfConfirm:"This warehouse has no shelves yet. Add a shelf first?",whmAiErrItem:"Please choose an item.",whmAiErrShelf:"Please choose a shelf.",whmAiErrCat:"Please choose a category.",whmAiErrType:"Please choose an item type.",whmAiErrUnit:"Please choose a unit.",whmAiErrQty:"Opening quantity can't be negative.",whmAiErrGeneric:"Could not add the item. Please try again.",whmErr_item_already_in_warehouse:"This item is already in this warehouse.",whmErr_invalid_opening_balance:"Opening quantity is invalid.",whmErr_invalid_min_level:"Minimum level is invalid.",whmErr_item_not_found:"Item not found.",whmErr_item_inactive:"That item is inactive.",whmErr_category_not_found:"Category not found.",whmErr_category_inactive:"That category is inactive.",whmErr_item_type_not_found:"Item type not found.",whmErr_item_type_inactive:"That item type is inactive.",whmErr_unit_not_found:"Unit not found.",whmErr_unit_inactive:"That unit is inactive.",whmErr_sequence_not_found:"Category code sequence missing.",whmPickShelfFirst:"Choose a shelf first.",whmErr_shelf_required:"Please choose a shelf.",whmErr_shelf_not_found:"Shelf not found.",whmErr_shelf_inactive:"That shelf is inactive.",whmErr_shelf_wrong_warehouse:"That shelf belongs to another warehouse.",whmErr_item_warehouse_not_found:"Item not found.",whmErr_shelf_name_required:"Shelf name is required.",whmErr_duplicate_shelf_name:"A shelf with this name already exists.",whmErr_warehouse_required:"Warehouse is required.",whmErrCode:"Code must be 3–12 chars: letters, digits, hyphen.",whmErrNameAr:"Arabic name is required.",whmErrGeneric:"Action failed. Please try again.",whmErr_invalid_warehouse_code:"Invalid warehouse code.",whmErr_name_ar_required:"Arabic name is required.",whmErr_duplicate_warehouse_code:"This code is already used.",whmErr_warehouse_not_found:"Warehouse not found.",whmErr_warehouse_inactive:"Warehouse is inactive — activate it first.",whmErr_warehouse_must_be_closed_first:"Close the warehouse before deactivating.",whmErr_warehouse_has_stock:"Cannot deactivate: warehouse still has stock.",whmErr_warehouse_has_reservations:"Cannot deactivate: warehouse has active reservations.",whmErr_not_authorized:"You are not authorized.",mvRcBatchBoxSub:"For items that have an expiry date (fertilizers, pesticides, seeds, chemicals). Leave empty for regular items.",mvRcNote:"Note",mvRcPost:"Post Receipt",mvRcSaving:"Posting…",mvRcCancel:"Cancel",mvRcOk:"Receipt posted successfully",mvRcErrItem:"Please select an item.",mvRcErrQty:"Enter a quantity greater than zero.",mvRcErrExpiry:"Expiry date needs a batch number.",mvRcErrGeneric:"Could not post the receipt. Please try again.",mvRcErr_qty_must_be_positive:"Quantity must be greater than zero.",mvRcErr_expiry_requires_batch_no:"Expiry date needs a batch number.",mvRcErr_expiry_mismatch:"This batch already has a different expiry date.",mvRcErr_batch_inactive:"That batch is inactive.",mvRcErr_item_warehouse_not_found:"Item not found in this warehouse.",mvRcErr_item_warehouse_inactive:"This item is inactive in the warehouse.",mvRcErr_not_authorized:"You are not authorized to post movements.",mvChooseReceipt:"Stock coming in",mvChooseIssue:"Stock going out",mvIsQty:"Quantity to issue",mvIsBatch:"Batch no.",mvIsBatchPh:"Leave empty for default batch",mvIsBatchNote:"Refers to an existing batch (exact match).",mvIsPost:"Post Issue",mvIsSaving:"Posting…",mvIsOk:"Issue posted successfully",mvIsOver:"Warning: quantity exceeds available",mvIsReq:"requested",mvIsErrGeneric:"Could not post the issue. Please try again.",mvIsErr_would_break_reserved:"Not enough available stock (some is reserved).",mvIsErr_qty_must_be_positive:"Quantity must be greater than zero.",mvIsErr_default_batch_missing:"No default batch found for this item.",mvIsErr_batch_not_found:"That batch number was not found for this item.",mvIsErr_batch_inactive:"That batch is inactive.",mvIsErr_item_warehouse_not_found:"Item not found in this warehouse.",mvIsErr_item_warehouse_inactive:"This item is inactive in the warehouse.",mvIsErr_not_authorized:"You are not authorized to post movements.",mvChooseDisposal:"Damaged / unfit stock",mvChooseReturn:"Returned from an issue",mvRtLinked:"Linked to issue",mvRtUnlinked:"Unlinked",mvRtIssue:"Original issue",mvRtQty:"Quantity to return",mvRtIssued:"Issued",mvRtReturned:"Returned",mvRtRemain:"Returnable",mvRtNoIssues:"No returnable issues for this item.",mvRtPickItemFirst:"Select an item first.",mvRtUnlinkedHint:"Use only when there is no original issue to link to.",mvRtPost:"Post Return",mvRtOk:"Return posted successfully",mvRtErrRef:"Please select the original issue.",mvRtErrNote:"A note is required for an unlinked return.",mvRtErrGeneric:"Could not post the return. Please try again.",mvRtErr_return_exceeds_issued:"Quantity exceeds what remains returnable.",mvRtErr_linked_return_batch_not_allowed:"A linked return cannot specify a batch.",mvRtErr_return_note_required:"A note is required for an unlinked return.",mvRtErr_issue_movement_not_found:"The original issue was not found.",mvRtErr_ref_not_an_issue:"The referenced movement is not an issue.",mvRtErr_issue_iw_mismatch:"The issue belongs to a different item/warehouse.",mvRtErr_batch_not_found:"That batch number was not found.",mvRtErr_batch_inactive:"That batch is inactive.",mvRtErr_default_batch_missing:"No default batch found for this item.",mvRtErr_item_warehouse_not_found:"Item not found in this warehouse.",mvRtErr_item_warehouse_inactive:"This item is inactive in the warehouse.",mvChooseAdjust:"Correct a stock count",mvChooseTransfer:"Transfer",mvChooseTransferSub:"Move stock between warehouses",mvTfNeedTwo:"Needs 2+ open warehouses",mvTfSrc:"From warehouse",mvTfSelSrc:"Choose source warehouse…",mvTfDest:"To warehouse",mvTfSelDest:"Choose destination…",mvTfQty:"Quantity to transfer",mvTfPost:"Post Transfer",mvTfOk:"Transfer posted successfully",mvTfInDest:"Item already at destination",mvTfFirstDest:"First time at destination",mvTfNoShelfWarn:"Add a shelf to the destination warehouse first",mvTfErrSrc:"Choose a source warehouse.",mvTfErrItem:"Choose an item.",mvTfErrDest:"Choose a destination warehouse.",mvTfErrNoShelf:"The destination has no shelves — add one first.",mvTfErrShelvesLoading:"Still loading destination shelves — try again.",mvTfErrGeneric:"Could not post the transfer. Please try again.",mvTfErr_same_warehouse:"Source and destination must differ.",mvTfErr_source_warehouse_not_open:"The source warehouse is closed.",mvTfErr_destination_warehouse_not_open:"The destination warehouse is closed.",mvTfErr_source_warehouse_inactive:"The source warehouse is inactive.",mvTfErr_destination_warehouse_inactive:"The destination warehouse is inactive.",mvTfErr_qty_must_be_positive:"Quantity must be greater than zero.",mvTfErr_would_break_reserved:"Not enough available stock (some is reserved).",mvTfErr_source_batch_not_found:"That batch was not found at the source.",mvTfErr_source_batch_inactive:"That source batch is inactive.",mvTfErr_source_default_batch_missing:"No default batch at the source.",mvTfErr_destination_expiry_mismatch:"The destination batch has a different expiry date.",mvTfErr_shelf_not_found:"Shelf not found.",mvTfErr_shelf_wrong_warehouse:"That shelf belongs to another warehouse.",mvDpQty:"Quantity to dispose",mvDpReason:"Reason",mvDpReasonSel:"Select a reason",mvDpR_storage_damage:"Storage damage",mvDpR_expired:"Expired",mvDpR_broken:"Broken",mvDpR_unfit_for_use:"Unfit for use",mvDpR_other:"Other",mvDpPost:"Post Disposal",mvDpOk:"Disposal posted successfully",mvDpErrReason:"Please select a reason.",mvDpErrNote:"A note is required for disposal.",mvDpErrGeneric:"Could not post the disposal. Please try again.",mvDpErr_invalid_reason_category:"Please select a valid reason.",mvDpErr_disposal_note_required:"A note is required for disposal.",mvDpErr_would_break_reserved:"Not enough available stock (some is reserved).",mvDpErr_default_batch_missing:"No default batch found for this item.",mvDpErr_batch_not_found:"That batch number was not found.",mvDpErr_batch_inactive:"That batch is inactive.",mvDpErr_item_warehouse_not_found:"Item not found in this warehouse.",mvDpErr_item_warehouse_inactive:"This item is inactive in the warehouse.",mvAjInc:"Increase",mvAjDec:"Decrease",mvAjDir:"Direction",mvAjQty:"Quantity",mvAjReason:"Reason",mvAjR_periodic_count:"Periodic count",mvAjR_data_entry_correction:"Data entry correction",mvAjR_unexplained_variance:"Unexplained variance",mvAjR_system_reconciliation:"System reconciliation",mvAjR_other:"Other",mvAjNoteOtherHint:"A note is required when reason is Other.",mvAjPost:"Post Adjustment",mvAjOk:"Adjustment posted successfully",mvAjErrDir:"Please choose increase or decrease.",mvAjErrReason:"Please select a reason.",mvAjErrNoteOther:"A note is required when reason is Other.",mvAjErrGeneric:"Could not post the adjustment. Please try again.",mvAjErr_invalid_direction:"Please choose increase or decrease.",mvAjErr_invalid_reason_category:"Please select a valid reason.",mvAjErr_note_required_for_other:"A note is required when reason is Other.",mvAjErr_would_break_reserved:"This decrease would break existing reservations.",mvAjErr_default_batch_missing:"No default batch found for this item.",mvAjErr_batch_not_found:"That batch number was not found.",mvAjErr_batch_inactive:"That batch is inactive.",mvAjErr_item_warehouse_not_found:"Item not found in this warehouse.",mvAjErr_item_warehouse_inactive:"This item is inactive in the warehouse.",mvT_OPENING_BALANCE:"Opening",mvT_RECEIPT:"Receipt",mvT_ISSUE:"Issue",mvT_RETURN:"Return",mvT_TRANSFER_IN:"Transfer In",mvT_TRANSFER_OUT:"Transfer Out",mvT_DISPOSAL:"Disposal",mvT_ADJUSTMENT:"Adjustment",batLoading:"Loading batches…",batNone:"No batches to show.",batAllWh:"All warehouses",batStExpired:"Expired",batStSoon:"Expiring soon",batStOk:"Valid",batStNoExpiry:"No expiry",batFAll:"All",batFExpired:"Expired",batFSoon:"Expiring soon",batFOk:"Valid",batFNoExpiry:"No expiry",batDaysLeft:"in",batDaysExpired:"expired",batDaysUnit:"days",batErrGeneric:"Could not load batches. Please try again.",batErr_not_authorized:"You are not authorized.",batErr_invalid_expiry_status:"Invalid filter.",batErr_generic:"Could not load batches. Please try again.",
+  repPeriod:"Period",repWarehouses:"Warehouses",repPreset:"Report Type",repGenerate:"Generate Report",repGenerating:"Generating report…",repMoreFilters:"More Filters",repCompare:"Compare with previous period",repAllWh:"All Active Warehouses",repOneWh:"Single Warehouse",repPToday:"Today",repPYesterday:"Yesterday",repPWeek:"This Week",repPLastWeek:"Last Week",repPMonth:"This Month",repPLastMonth:"Last Month",repPCustom:"Custom",repFrom:"From",repTo:"To",repPickDates:"Please select both dates",repBadRange:"The start date must be on or before the end date.",repRepFull:"Full Operational Report",repRepDaily:"Daily Operations",repRepWeekly:"Weekly Operations",repRepMonthly:"Monthly Management Report",repRepInventory:"Inventory Status",repRepMovement:"Movement Activity",repRepExpiry:"Expiry & Risk",repRepApprovals:"Pending Approvals",repStartHint:"Choose a period and warehouse, then Generate Report.",repReportTitle:"Warehouse Operations Report",repScope:"Scope",repGenerated:"Generated",repExportPdf:"Export PDF",repExportExcel:"Export Excel",repPrint:"Print",repSoon:"Coming soon",repExecSummary:"Executive Summary",repActiveWh:"Active Warehouses",repDistinctItems:"Distinct Items",repWithStock:"Items in Stock",repOutStock:"Out of Stock",repLowStock:"Low Stock",repNoShelf:"Without Shelf",repTotalMv:"Total Movements",repPendingAppr:"Pending Approvals",repAttention:"Attention Required",repNoAlerts:"No alerts — everything looks healthy.",repObservations:"Management Observations",repMovementSummary:"Movement Summary",repMvType:"Movement Type",repCount:"Count",repPrevCount:"Previous",repChange:"Change",repCompareVs:"Compared with",repMvTotal:"Total",repWarehouseSummary:"Warehouse Summary",repWh:"Warehouse",repItems:"Items",repExpired:"Expired",repInventoryHealth:"Inventory Health",repHealthy:"Healthy",repReserved:"With Reservations",repNoImage:"Without Photo",repNoMove90:"No Movement 90d",repMultiWh:"In Multiple Warehouses",repItemSummary:"Item Summary",repCode:"Code",repItem:"Item",repUnit:"Unit",repOpening:"Opening",repClosing:"Closing",repStatus:"Status",repNoItems:"No items in scope.",repBatchesSummary:"Batches / Expiry Summary",repCurrentExpiry:"Current Expiry Risk",repExp30:"Expiring ≤30d",repExp60:"Expiring ≤60d",repExp90:"Expiring ≤90d",repNoExpiry:"No Expiry",repNoBatches:"No batches to report.",repApprovalsSummary:"Movement Approvals Summary",repApPending:"Pending",repApApproved:"Approved",repApRejected:"Rejected",repApCancelled:"Cancelled",repApModified:"Admin-Modified",repApTurnaround:"Avg Turnaround",repApOldest:"Oldest Pending",repMaterialSummary:"Material Requests Summary",repMrPending:"Pending",repMrAllocated:"Allocated",repMrIssued:"Issued",repMrRejected:"Rejected",repMrCancelled:"Cancelled",repMrShort:"Lines Short-Approved",repMrPendingNote:"Pending material requests are company-wide (not yet assigned to a warehouse).",repExceptions:"Exceptions",repNoExceptions:"No exceptions found.",repResOverHand:"Reserved > On-Hand",repAuditSummary:"Audit Summary",repAuditEvents:"Total Events",repAuditActors:"Distinct Users",repAuditAction:"Action",repNoAudit:"No audit events in this period.",repMovementRegister:"Detailed Movement Register",repMovements:"movements",repViewRegister:"View Detailed Register",repNoMovements:"No movements in this period.",repDate:"Date",repQty:"Qty",repBatch:"Batch",repActor:"By",repNote:"Note",repLoading:"Loading…",repErrGeneric:"Could not generate the report. Please try again.",repErr_invalid_report_period:"Invalid period: the start must be before the end.",repErr_not_authorized:"You are not authorized to view reports.",repErr_generic:"Could not generate the report. Please try again.",repAlert_expired_batches:"Expired batches",repAlert_out_of_stock:"Items out of stock",repAlert_expiring_30:"Batches expiring within 30 days",repAlert_low_stock:"Items low on stock",repAlert_pending_approvals:"Pending movement approvals",repAlert_allocated_not_issued:"Allocated material not yet issued",repAlert_material_pending:"Pending material requests",repAlert_items_without_shelf:"Items without a shelf",repAlert_long_pending_approval:"Oldest pending approval (days)",repObs_expired_batches:"Expired batches on hand",repObs_out_of_stock:"Items out of stock",repObs_expiring_30:"Batches expiring within 30 days",repObs_low_stock:"Items below minimum level",repObs_pending_approvals:"Movement approvals pending",repObs_allocated_not_issued:"Allocated material awaiting issue",repObs_material_pending:"Material requests pending",repObs_items_without_shelf:"Items without a shelf",repObs_total_movements:"Total movements in period",repObs_top_issue_warehouse:"Most issue activity",repErr_invalid_movement_type:"Invalid movement type filter.",
   aprNewReq:"Request a movement",aprSubmitReq:"Submit request",aprReqFiled:"Request submitted",aprReqHint:"Choose the item, quantity and details. An admin will review and approve.",aprLoading:"Loading requests…",aprNone:"No requests here.",aprQty:"Quantity",aprReqBy:"Requested by",aprBy:"by",aprFinalVals:"Approved",aprRejReason:"Reason",aprRejPh:"Why is this rejected?",aprAdminChanges:"Review & adjust",aprApproveReview:"Review",aprApproveExec:"Approve & execute",aprApproved:"Approved and executed",aprReject:"Reject",aprRejected:"Request rejected",aprCancel:"Cancel request",aprCancelled:"Request cancelled",aprWorking:"Working…",aprNoShelf:"Receive without a shelf",aprRefLocked:"Linked to the original issue — reference can't be changed.",aprErrGeneric:"Action failed. Please try again.",aprF_pending:"Pending",aprF_approved:"Approved",aprF_rejected:"Rejected",aprF_cancelled:"Cancelled",aprF_all:"All",aprS_pending:"Pending",aprS_approved:"Approved",aprS_rejected:"Rejected",aprS_cancelled:"Cancelled",aprErr_not_authorized:"You are not authorized.",aprErr_unauthorized:"You are not authorized.",aprErr_qty_must_be_positive:"Quantity must be greater than zero.",aprErr_reject_reason_required:"A reason is required to reject.",aprErr_approval_not_found:"Request not found.",aprErr_approval_not_pending:"This request is no longer pending.",aprErr_wrong_movement_type:"Movement type mismatch.",aprErr_cannot_approve_own_request:"You cannot approve your own request.",aprErr_not_your_request:"This is not your request.",aprErr_shelf_wrong_warehouse:"That shelf belongs to another warehouse.",aprErr_item_warehouse_not_found:"Item not found in this warehouse.",aprErr_item_not_found:"Item not found.",aprErr_warehouse_not_found:"Warehouse not found.",aprErr_would_break_reserved:"Not enough available stock (some is reserved).",aprErr_return_exceeds_issued:"Quantity exceeds what remains returnable.",aprErr_disposal_note_required:"A note is required for disposal.",aprErr_invalid_reason_category:"Please select a valid reason.",aprErr_invalid_direction:"Please choose increase or decrease.",
   invEye:"WAREHOUSE",invH1:"Inventory",invP:"Live stock across all warehouses.",invLoading:"Loading inventory…",invNoMatch:"No items match these filters.",invSearchPh:"Search by code or name…",invAllWh:"All warehouses",invAllCat:"All categories",invLow:"Low stock",invNoShelfF:"No shelf",invItems:"items",invCode:"Code",invName:"Name",invCat:"Category",invType:"Type",invUnit:"Unit",invOnHand:"On Hand",invReserved:"Reserved",invAvail:"Available",invMin:"Min Level",invWh:"Warehouse",invShelf:"Shelf",invStatus:"Status",invNoShelf:"No shelf",invActive:"Active",invInactive:"Inactive",invSetShelf:"Set Shelf",invChangeShelf:"Change Shelf",invNoShelvesWh:"No shelves in this warehouse",invPickShelf:"Please choose a shelf.",invShelfErr:"Could not update the shelf:",invNoImg:"No image",invAddImg:"📷 Add photo",invChangeImg:"📷 Change photo",invImgUploading:"Uploading…",invImgErr:"Could not update the image:",
   navIc:{dashboard:"▦",assets:"📦",manage:"📥",all:"📋",reports:"📊",staffdir:"👷",open:"⚙",archive:"🗂",media:"◫",settings:"⚙️"},
@@ -2285,6 +2366,7 @@ const T={
  ar:{co:"شركة المفاهيم المتقدمة للمقاولات المحدودة",sys:"طلبات خدمة التشغيل والصيانة",
   weOpen:"⤢ افتح",weFile1:"ملف",weFileN:"ملفات",wpClose:"إغلاق",wpOpenTask:"افتح المهمة",wpInfo:"معلومات المهمة",wpTimeline:"الخط الزمني",wpPrio:"الأولوية",wpBy:"مقدّم الطلب",wpRec:"تاريخ الاستلام",wpSched:"موعد البدء",wpDone:"تاريخ الإنجاز",wpEvRec:"وصل الطلب",wpEvSched:"جُدول العمل",wpEvStart:"بدأ العمل",wpEvSub:"أُرسل للتأكيد",wpEvDone:"اكتمل",wpEvClosed:"أُغلق",wpReason:"السبب",wpMgr:"ملاحظة المدير",wpCloseNote:"ملاحظة الإغلاق",weReqImg:"صور مقدّم الطلب",weReqDoc:"ملفات مقدّم الطلب",weTecImg:"صور الفني",weTecDoc:"ملفات الفني",weNoneG:"ما في مرفقات",wpNotFound:"المهمة مش موجودة بالقائمة الحالية",wzBtn:"تحميل ZIP",wzHint:"بيصدّر كل المهام المطابقة للفلاتر الحالية",wzTitle:"جاري تجهيز الحزمة",wzTasks:"المهام",wzFiles:"الملفات",wzFailed:"فشلت",wzCancel:"إلغاء",wzCancelled:"تم إلغاء التصدير",wzZipping:"جاري الضغط…",wzDone:"ملف تم تصديره",wzErr:"تعذّر إنشاء الحزمة",wzNoLib:"مكتبة الضغط ما حمّلت",wzFailHdr:"هذه الملفات تعذّر تحميلها. الباقي كامل داخل الحزمة.",weAllC:"كل التصنيفات",weAllT:"كل الفنيين",weAllS:"كل الحالات",weReset:"مسح الفلاتر",weResults:"نتيجة",weKImages:"إجمالي الصور",weKDocs:"إجمالي الملفات",weKClaim:"صور البلاغ",weKProof:"صور الإثبات",mgrRole:"مدير القسم",mgrNone:"بيانات التواصل مع مدير القسم غير محددة حاليًا.",weNoRes:"لا توجد نتائج مطابقة.",weRowsL:"صفوف",weCID:"رقم الطلب",weCTtl:"عنوان الطلب",weCCI:"صور البلاغ",weCEI:"صور الإثبات",weCTI:"إجمالي الصور",weCCD:"ملفات البلاغ",weCED:"ملفات الإثبات",weCTD:"إجمالي الملفات",weCCrt:"تاريخ الإنشاء",weCUpd:"آخر تحديث",weCAct:"إجراءات",weCOpen:"فتح",weTitle:"استوديو الصور والملفات",weSub:"كل الصور والملفات، مهمة بمهمة",weGal:"معرض",weTime:"زمني",weTbl:"جدول",weSoon:"قريباً",weSoonT:"بمرحلة لاحقة",weSearch:"بحث",wePh:"ابحث برقم المهمة أو العنوان أو مقدّم الطلب أو الفني...",weAllP:"كل المشاريع",weFrom:"من",weTo:"إلى",weProj:"المشروع",weCat:"التصنيف",weTech:"الفني",weStat:"الحالة",weSReq:"مقدّم الطلب",weSTech:"الفني",weKFile:"ملفات",weClaim:"شكوى",weProof:"إثبات",wePrev:"تعذّر عرض الصورة",weDoc:"مستند",weShow:"يعرض",wePrevP:"‹ السابق",weNextP:"التالي ›",weNoneT:"ما في إثباتات تطابق هذه الفلاتر",weNoneS:"امسح فلتر أو وسّع التواريخ.",nav:{dashboard:"لوحة المعلومات",assets:"الأصول",manage:"إدارة الطلبات",all:"جميع الطلبات",reports:"لوحة المعلومات والتقارير",staffdir:"دليل الموظفين",open:"المهام المفتوحة",archive:"الملغية / المحذوفة",media:"استوديو الصور والملفات",settings:"الإعدادات"},
   am_title:"أصول الشركة",as_eye:"أصول الشركة",as_h1:"الأصول",as_p:"إدارة كل أصول الشركة.",as_back:"الأصول",am_subtitle:"إدارة أصول الشركة",am_soon:"قريباً",am_warehouses:"المستودعات",am_fleet:"المركبات",am_equipment:"المعدّات",am_other:"أصول أخرى",am_login_title:"دخول الأصول",am_login_sub:"أصول الشركة",am_signin:"دخول",am_back:"رجوع",am_logout:"خروج",am_wh_sys:"إدارة المستودعات",awh_dashboard:"لوحة المعلومات",awh_inventory:"المخزون",awh_catalog:"الأصناف",awh_movements:"الحركات",awh_materialreq:"موافقة الحركات",awh_shelves:"المستودعات والأرفف",awh_batches:"الدفعات والصلاحية",awh_reports:"التقارير",invOutF:"نافد",dashEye:"نظام المستودعات",dashH1:"لوحة المعلومات",dashAllWh:"كل المستودعات",dashLoading:"جاري تحميل اللوحة…",dashNone:"لا توجد بيانات.",dashTotalItems:"إجمالي الأصناف",dashOnHand:"إجمالي الكمية",dashAvailable:"المتاح",dashReserved:"المحجوز",dashLow:"مخزون منخفض",dashOut:"نافد المخزون",dashNoShelf:"بدون رف",dashExpiring:"دفعات قرب الانتهاء",dashPending:"طلبات مواد معلّقة",dashActionNeeded:"يحتاج إجراء",dashCatTitle:"التوزيع حسب التصنيف",dashCatCat:"التصنيف",dashCatItems:"الأصناف",dashCatOpen:"فتح في المخزون",dashNoCat:"لا توجد تصنيفات.",dashRecent:"آخر الحركات",dashNoMv:"لا توجد حركات بعد.",dashCDate:"التاريخ",dashCType:"النوع",dashCItem:"الصنف",dashCQty:"الكمية",dashCWh:"المستودع",dashCActor:"بواسطة",mvEye:"نظام المستودعات",mvH1:"حركات المخزون",mvLoading:"جاري تحميل الحركات…",mvNone:"لا توجد حركات مطابقة.",mvAllWh:"كل المستودعات",mvAllTypes:"كل الأنواع",mvFrom:"من",mvTo:"إلى",mvItem:"الصنف",mvItemPick:"تصفية حسب الصنف",mvItemPh:"ابحث بالكود أو الاسم…",mvNoItems:"لا توجد أصناف.",mvNew:"حركة جديدة",mvSoonHint:"في المرحلة التالية",mvOf:"من",mvPrev:"السابق",mvNext:"التالي",mvRcSelItem:"اختر الصنف",mvRcItem:"الصنف",mvRcWh:"المستودع",mvRcOnHand:"الرصيد الحالي",mvRcAvail:"المتاح",mvRcUnit:"الوحدة",mvRcQty:"الكمية المستلمة",mvRcBatch:"رقم الدفعة",mvRcBatchPh:"اتركه فارغاً للدفعة الافتراضية",mvRcExpiry:"تاريخ الصلاحية",mvRcBatchBoxTitle:"بيانات الدفعة والصلاحية",whmH1:"المستودعات والأرفف",catH1:"الأصناف",whBcRoot:"نظام المستودعات",whBcAllWh:"كل المستودعات",catSubtitle:"كتالوج الأصناف الرئيسي",catLoading:"جاري تحميل الكتالوج…",catNew:"صنف جديد",catNewTitle:"تعريف صنف جديد",catCreate:"إنشاء الصنف",catCreated:"تم إنشاء الصنف",catCode:"الكود",catName:"الاسم",catCategory:"التصنيف",catType:"النوع",catUnit:"الوحدة",catWhCount:"المستودعات",catStatus:"الحالة",catActive:"نشط",catInactive:"معطّل",catAll:"الكل",catSearchPh:"بحث بالكود أو الاسم…",catResults:"صنف",catNoRows:"لا أصناف مطابقة.",catErrGeneric:"تعذّر إنشاء الصنف. حاول مجدداً.",catImgLbl:"صورة",catImgRequired:"الصورة إلزامية.",catImgErr:"فشل رفع الصورة. حاول مجدداً.",rcvBtn:"إدخال بضاعة",rcvTitle:"إدخال بضاعة",rcvDefineNew:"تعريف صنف جديد",rcvExisting:"موجود في هذا المستودع",rcvFirstTime:"أول إدخال لهذا الصنف هنا",rcvLoadItemsFailed:"تعذّر تحميل أصناف هذا المستودع. حاول مجدداً.",whmLoading:"جاري تحميل المستودعات…",whmNone:"لا توجد مستودعات بعد.",whmNew:"مستودع جديد",whmNewTitle:"مستودع جديد",whmCode:"الكود",whmCodeHint:"٣–١٢ خانة: حروف وأرقام وشرطة (مثل SAK، RYD-1).",whmNameAr:"الاسم (عربي)",whmNameEn:"الاسم (إنجليزي)",whmCreate:"إنشاء المستودع",whmCreated:"تم إنشاء المستودع",whmManage:"إدارة",whmView:"عرض",whmOpenBtn:"فتح",whmClose:"إغلاق",whmActivate:"تفعيل المستودع",whmDeactivate:"تعطيل المستودع",whmActive:"نشط",whmInactive:"معطّل",whmOpen:"مفتوح",whmClosed2:"مغلق",whmItems:"الأصناف",whmShelves:"الأرفف",whmReserved:"محجوز",whmOpened:"تم فتح المستودع",whmClosed:"تم إغلاق المستودع",whmActivated:"تم تفعيل المستودع",whmDeactivated:"تم تعطيل المستودع",whmConfirmDeact:"تعطيل هذا المستودع؟ يجب أن يكون مغلقاً وفارغاً (لا رصيد ولا حجوزات).",whmDetailSoon:"تفاصيل المستودع قريباً.",whmTabOverview:"نظرة عامة",whmTabShelves:"الأرفف",whmTabUnassigned:"أصناف بلا رف",whmStatusActive:"الحالة",whmStatusOpen:"التشغيل",whmAddShelf:"إضافة رف",whmShelfName:"اسم الرف",whmShelfNameReq:"اسم الرف إلزامي.",whmShelfAdded:"تم إضافة الرف",whmShelfItems:"صنف",whmNoShelves:"لا توجد أرفف بعد. أضف رفاً لبدء التنظيم.",whmAddShelfFirst:"أضف رفاً أولاً",whmUnassignedNone:"كل أصناف هذا المستودع على أرفف.",whmUnSearchPh:"بحث بالكود أو الاسم…",whmPickShelf:"اختر رفاً…",whmAssign:"تعيين",whmAssigned:"تم تعيين الرف",whmAiBtn:"إضافة صنف",whmAiExisting:"صنف موجود",whmAiNew:"صنف جديد",whmAiItem:"الصنف",whmAiPickItem:"اختر صنفاً…",whmAiShelf:"الرف",whmAiShelfSel:"اختر رفاً…",whmAiOpening:"الرصيد الافتتاحي",whmAiMin:"الحد الأدنى",whmAiNameAr:"الاسم (عربي)",whmAiNameEn:"الاسم (إنجليزي)",whmAiCat:"التصنيف",whmAiCatSel:"اختر التصنيف…",whmAiType:"نوع الصنف",whmAiTypeSel:"اختر النوع…",whmAiUnit:"الوحدة",whmAiUnitSel:"اختر الوحدة…",whmAiSave:"حفظ",whmAiAdded:"تم إضافة الصنف للمستودع",whmAiNoShelfConfirm:"هذا المستودع مالوش أرفف بعد. تضيف رفاً أولاً؟",whmAiErrItem:"الرجاء اختيار صنف.",whmAiErrShelf:"الرجاء اختيار رف.",whmAiErrCat:"الرجاء اختيار التصنيف.",whmAiErrType:"الرجاء اختيار نوع الصنف.",whmAiErrUnit:"الرجاء اختيار الوحدة.",whmAiErrQty:"الرصيد الافتتاحي لا يكون سالباً.",whmAiErrGeneric:"تعذّر إضافة الصنف. حاول مجدداً.",whmErr_item_already_in_warehouse:"الصنف موجود في هذا المستودع مسبقاً.",whmErr_invalid_opening_balance:"الرصيد الافتتاحي غير صحيح.",whmErr_invalid_min_level:"الحد الأدنى غير صحيح.",whmErr_item_not_found:"الصنف غير موجود.",whmErr_item_inactive:"الصنف غير نشط.",whmErr_category_not_found:"التصنيف غير موجود.",whmErr_category_inactive:"التصنيف غير نشط.",whmErr_item_type_not_found:"نوع الصنف غير موجود.",whmErr_item_type_inactive:"نوع الصنف غير نشط.",whmErr_unit_not_found:"الوحدة غير موجودة.",whmErr_unit_inactive:"الوحدة غير نشطة.",whmErr_sequence_not_found:"تسلسل كود التصنيف غير موجود.",whmPickShelfFirst:"اختر رفاً أولاً.",whmErr_shelf_required:"الرجاء اختيار رف.",whmErr_shelf_not_found:"الرف غير موجود.",whmErr_shelf_inactive:"هذا الرف غير نشط.",whmErr_shelf_wrong_warehouse:"هذا الرف يخص مستودعاً آخر.",whmErr_item_warehouse_not_found:"الصنف غير موجود.",whmErr_shelf_name_required:"اسم الرف إلزامي.",whmErr_duplicate_shelf_name:"يوجد رف بنفس الاسم.",whmErr_warehouse_required:"المستودع مطلوب.",whmErrCode:"الكود ٣–١٢ خانة: حروف وأرقام وشرطة.",whmErrNameAr:"الاسم بالعربي إلزامي.",whmErrGeneric:"فشل الإجراء. حاول مجدداً.",whmErr_invalid_warehouse_code:"كود المستودع غير صحيح.",whmErr_name_ar_required:"الاسم بالعربي إلزامي.",whmErr_duplicate_warehouse_code:"هذا الكود مستخدم مسبقاً.",whmErr_warehouse_not_found:"المستودع غير موجود.",whmErr_warehouse_inactive:"المستودع معطّل — فعّله أولاً.",whmErr_warehouse_must_be_closed_first:"أغلق المستودع قبل تعطيله.",whmErr_warehouse_has_stock:"لا يمكن التعطيل: المستودع فيه رصيد.",whmErr_warehouse_has_reservations:"لا يمكن التعطيل: المستودع فيه حجوزات نشطة.",whmErr_not_authorized:"لا تملك الصلاحية.",mvRcBatchBoxSub:"للمواد التي لها تاريخ انتهاء (أسمدة، مبيدات، بذور، مواد كيميائية). اتركها فارغة للمواد العادية.",mvRcNote:"ملاحظة",mvRcPost:"تسجيل الاستلام",mvRcSaving:"جاري التسجيل…",mvRcCancel:"إلغاء",mvRcOk:"تم تسجيل الاستلام بنجاح",mvRcErrItem:"الرجاء اختيار صنف.",mvRcErrQty:"أدخل كمية أكبر من صفر.",mvRcErrExpiry:"تاريخ الصلاحية يحتاج رقم دفعة.",mvRcErrGeneric:"تعذّر تسجيل الاستلام. حاول مجدداً.",mvRcErr_qty_must_be_positive:"الكمية يجب أن تكون أكبر من صفر.",mvRcErr_expiry_requires_batch_no:"تاريخ الصلاحية يحتاج رقم دفعة.",mvRcErr_expiry_mismatch:"هذه الدفعة لها تاريخ صلاحية مختلف.",mvRcErr_batch_inactive:"هذه الدفعة غير نشطة.",mvRcErr_item_warehouse_not_found:"الصنف غير موجود في هذا المستودع.",mvRcErr_item_warehouse_inactive:"هذا الصنف غير نشط في المستودع.",mvRcErr_not_authorized:"لا تملك صلاحية تسجيل الحركات.",mvChooseReceipt:"بضاعة واردة",mvChooseIssue:"بضاعة صادرة",mvIsQty:"الكمية المصروفة",mvIsBatch:"رقم الدفعة",mvIsBatchPh:"اتركه فارغاً للدفعة الافتراضية",mvIsBatchNote:"يشير إلى دفعة موجودة (مطابقة تامة).",mvIsPost:"تسجيل الصرف",mvIsSaving:"جاري التسجيل…",mvIsOk:"تم الصرف بنجاح",mvIsOver:"تنبيه: الكمية أكبر من المتاح",mvIsReq:"المطلوب",mvIsErrGeneric:"تعذّر تسجيل الصرف. حاول مجدداً.",mvIsErr_would_break_reserved:"المتاح غير كافٍ (جزء منه محجوز).",mvIsErr_qty_must_be_positive:"الكمية يجب أن تكون أكبر من صفر.",mvIsErr_default_batch_missing:"لا توجد دفعة افتراضية لهذا الصنف.",mvIsErr_batch_not_found:"رقم الدفعة غير موجود لهذا الصنف.",mvIsErr_batch_inactive:"هذه الدفعة غير نشطة.",mvIsErr_item_warehouse_not_found:"الصنف غير موجود في هذا المستودع.",mvIsErr_item_warehouse_inactive:"هذا الصنف غير نشط في المستودع.",mvIsErr_not_authorized:"لا تملك صلاحية تسجيل الحركات.",mvChooseDisposal:"بضاعة تالفة / غير صالحة",mvChooseReturn:"مرتجع من صرف",mvRtLinked:"مربوط بصرف",mvRtUnlinked:"غير مربوط",mvRtIssue:"الصرف الأصلي",mvRtQty:"الكمية المرتجعة",mvRtIssued:"مصروف",mvRtReturned:"مرتجع",mvRtRemain:"قابل للإرجاع",mvRtNoIssues:"لا توجد حركات صرف قابلة للإرجاع لهذا الصنف.",mvRtPickItemFirst:"اختر الصنف أولاً.",mvRtUnlinkedHint:"استخدمه فقط عند عدم وجود صرف أصلي لربطه.",mvRtPost:"تسجيل الإرجاع",mvRtOk:"تم تسجيل الإرجاع بنجاح",mvRtErrRef:"الرجاء اختيار الصرف الأصلي.",mvRtErrNote:"الملاحظة إلزامية للإرجاع غير المربوط.",mvRtErrGeneric:"تعذّر تسجيل الإرجاع. حاول مجدداً.",mvRtErr_return_exceeds_issued:"الكمية أكبر من المتبقي القابل للإرجاع.",mvRtErr_linked_return_batch_not_allowed:"الإرجاع المربوط لا يقبل تحديد دفعة.",mvRtErr_return_note_required:"الملاحظة إلزامية للإرجاع غير المربوط.",mvRtErr_issue_movement_not_found:"حركة الصرف الأصلية غير موجودة.",mvRtErr_ref_not_an_issue:"الحركة المشار إليها ليست صرفاً.",mvRtErr_issue_iw_mismatch:"الصرف يخص صنفاً/مستودعاً مختلفاً.",mvRtErr_batch_not_found:"رقم الدفعة غير موجود.",mvRtErr_batch_inactive:"هذه الدفعة غير نشطة.",mvRtErr_default_batch_missing:"لا توجد دفعة افتراضية لهذا الصنف.",mvRtErr_item_warehouse_not_found:"الصنف غير موجود في هذا المستودع.",mvRtErr_item_warehouse_inactive:"هذا الصنف غير نشط في المستودع.",mvChooseAdjust:"تصحيح رصيد",mvChooseTransfer:"تحويل",mvChooseTransferSub:"نقل بضاعة بين المستودعات",mvTfNeedTwo:"يتطلب مستودعين مفتوحين على الأقل",mvTfSrc:"من مستودع",mvTfSelSrc:"اختر المستودع المصدر…",mvTfDest:"إلى مستودع",mvTfSelDest:"اختر الوجهة…",mvTfQty:"الكمية المحوّلة",mvTfPost:"تنفيذ التحويل",mvTfOk:"تم التحويل بنجاح",mvTfInDest:"الصنف موجود بالوجهة",mvTfFirstDest:"أول إدخال بالوجهة",mvTfNoShelfWarn:"أضف رفاً لمستودع الوجهة أولاً",mvTfErrSrc:"اختر المستودع المصدر.",mvTfErrItem:"اختر صنفاً.",mvTfErrDest:"اختر مستودع الوجهة.",mvTfErrNoShelf:"الوجهة بلا أرفف — أضف رفاً أولاً.",mvTfErrShelvesLoading:"جاري تحميل أرفف الوجهة — حاول مجدداً.",mvTfErrGeneric:"تعذّر تنفيذ التحويل. حاول مجدداً.",mvTfErr_same_warehouse:"المصدر والوجهة يجب أن يختلفا.",mvTfErr_source_warehouse_not_open:"المستودع المصدر مغلق.",mvTfErr_destination_warehouse_not_open:"مستودع الوجهة مغلق.",mvTfErr_source_warehouse_inactive:"المستودع المصدر معطّل.",mvTfErr_destination_warehouse_inactive:"مستودع الوجهة معطّل.",mvTfErr_qty_must_be_positive:"الكمية يجب أن تكون أكبر من صفر.",mvTfErr_would_break_reserved:"المتاح غير كافٍ (جزء منه محجوز).",mvTfErr_source_batch_not_found:"الدفعة غير موجودة بالمصدر.",mvTfErr_source_batch_inactive:"دفعة المصدر غير نشطة.",mvTfErr_source_default_batch_missing:"لا توجد دفعة افتراضية بالمصدر.",mvTfErr_destination_expiry_mismatch:"دفعة الوجهة لها تاريخ صلاحية مختلف.",mvTfErr_shelf_not_found:"الرف غير موجود.",mvTfErr_shelf_wrong_warehouse:"هذا الرف يخص مستودعاً آخر.",mvDpQty:"الكمية المتلَفة",mvDpReason:"السبب",mvDpReasonSel:"اختر السبب",mvDpR_storage_damage:"تلف تخزين",mvDpR_expired:"منتهي الصلاحية",mvDpR_broken:"مكسور",mvDpR_unfit_for_use:"غير صالح للاستخدام",mvDpR_other:"أخرى",mvDpPost:"تسجيل الإتلاف",mvDpOk:"تم تسجيل الإتلاف بنجاح",mvDpErrReason:"الرجاء اختيار سبب.",mvDpErrNote:"الملاحظة إلزامية للإتلاف.",mvDpErrGeneric:"تعذّر تسجيل الإتلاف. حاول مجدداً.",mvDpErr_invalid_reason_category:"الرجاء اختيار سبب صحيح.",mvDpErr_disposal_note_required:"الملاحظة إلزامية للإتلاف.",mvDpErr_would_break_reserved:"المتاح غير كافٍ (جزء منه محجوز).",mvDpErr_default_batch_missing:"لا توجد دفعة افتراضية لهذا الصنف.",mvDpErr_batch_not_found:"رقم الدفعة غير موجود.",mvDpErr_batch_inactive:"هذه الدفعة غير نشطة.",mvDpErr_item_warehouse_not_found:"الصنف غير موجود في هذا المستودع.",mvDpErr_item_warehouse_inactive:"هذا الصنف غير نشط في المستودع.",mvAjInc:"زيادة",mvAjDec:"نقص",mvAjDir:"الاتجاه",mvAjQty:"الكمية",mvAjReason:"السبب",mvAjR_periodic_count:"جرد دوري",mvAjR_data_entry_correction:"تصحيح إدخال",mvAjR_unexplained_variance:"فرق غير مفسّر",mvAjR_system_reconciliation:"تسوية نظام",mvAjR_other:"أخرى",mvAjNoteOtherHint:"الملاحظة إلزامية عند اختيار (أخرى).",mvAjPost:"تسجيل التسوية",mvAjOk:"تمت التسوية بنجاح",mvAjErrDir:"اختر زيادة أو نقص.",mvAjErrReason:"الرجاء اختيار سبب.",mvAjErrNoteOther:"الملاحظة إلزامية عند اختيار (أخرى).",mvAjErrGeneric:"تعذّرت التسوية. حاول مجدداً.",mvAjErr_invalid_direction:"اختر زيادة أو نقص.",mvAjErr_invalid_reason_category:"الرجاء اختيار سبب صحيح.",mvAjErr_note_required_for_other:"الملاحظة إلزامية عند اختيار (أخرى).",mvAjErr_would_break_reserved:"هذا النقص سيكسر حجوزات قائمة.",mvAjErr_default_batch_missing:"لا توجد دفعة افتراضية لهذا الصنف.",mvAjErr_batch_not_found:"رقم الدفعة غير موجود.",mvAjErr_batch_inactive:"هذه الدفعة غير نشطة.",mvAjErr_item_warehouse_not_found:"الصنف غير موجود في هذا المستودع.",mvAjErr_item_warehouse_inactive:"هذا الصنف غير نشط في المستودع.",mvT_OPENING_BALANCE:"رصيد افتتاحي",mvT_RECEIPT:"استلام",mvT_ISSUE:"صرف",mvT_RETURN:"إرجاع",mvT_TRANSFER_IN:"تحويل وارد",mvT_TRANSFER_OUT:"تحويل صادر",mvT_DISPOSAL:"إتلاف",mvT_ADJUSTMENT:"تسوية",batLoading:"جاري تحميل الدفعات…",batNone:"لا توجد دفعات للعرض.",batAllWh:"كل المستودعات",batStExpired:"منتهية",batStSoon:"قرب الانتهاء",batStOk:"سارية",batStNoExpiry:"بلا صلاحية",batFAll:"الكل",batFExpired:"منتهية",batFSoon:"قرب الانتهاء",batFOk:"سارية",batFNoExpiry:"بلا صلاحية",batDaysLeft:"خلال",batDaysExpired:"انتهت منذ",batDaysUnit:"يوم",batErrGeneric:"تعذّر تحميل الدفعات. حاول مجدداً.",batErr_not_authorized:"لا تملك الصلاحية.",batErr_invalid_expiry_status:"فلتر غير صحيح.",batErr_generic:"تعذّر تحميل الدفعات. حاول مجدداً.",
+  repPeriod:"الفترة",repWarehouses:"المستودعات",repPreset:"نوع التقرير",repGenerate:"توليد التقرير",repGenerating:"جاري توليد التقرير…",repMoreFilters:"فلاتر إضافية",repCompare:"مقارنة بالفترة السابقة",repAllWh:"كل المستودعات النشطة",repOneWh:"مستودع واحد",repPToday:"اليوم",repPYesterday:"أمس",repPWeek:"هذا الأسبوع",repPLastWeek:"الأسبوع الماضي",repPMonth:"هذا الشهر",repPLastMonth:"الشهر الماضي",repPCustom:"مخصّص",repFrom:"من",repTo:"إلى",repPickDates:"الرجاء اختيار التاريخين",repBadRange:"تاريخ البداية يجب أن يسبق تاريخ النهاية أو يساويه.",repRepFull:"تقرير تشغيلي شامل",repRepDaily:"العمليات اليومية",repRepWeekly:"العمليات الأسبوعية",repRepMonthly:"تقرير إداري شهري",repRepInventory:"حالة المخزون",repRepMovement:"نشاط الحركات",repRepExpiry:"الصلاحية والمخاطر",repRepApprovals:"الموافقات المعلّقة",repStartHint:"اختر الفترة والمستودع ثم اضغط توليد التقرير.",repReportTitle:"تقرير عمليات المستودعات",repScope:"النطاق",repGenerated:"تاريخ التوليد",repExportPdf:"تصدير PDF",repExportExcel:"تصدير Excel",repPrint:"طباعة",repSoon:"قريباً",repExecSummary:"الملخص التنفيذي",repActiveWh:"المستودعات النشطة",repDistinctItems:"عدد الأصناف",repWithStock:"أصناف بها رصيد",repOutStock:"نافد المخزون",repLowStock:"مخزون منخفض",repNoShelf:"بدون رف",repTotalMv:"إجمالي الحركات",repPendingAppr:"موافقات معلّقة",repAttention:"يتطلب انتباهاً",repNoAlerts:"لا تنبيهات — كل شيء سليم.",repObservations:"ملاحظات الإدارة",repMovementSummary:"ملخص الحركات",repMvType:"نوع الحركة",repCount:"العدد",repPrevCount:"السابق",repChange:"التغيّر",repCompareVs:"مقارنة مع",repMvTotal:"الإجمالي",repWarehouseSummary:"ملخص المستودعات",repWh:"المستودع",repItems:"الأصناف",repExpired:"منتهية",repInventoryHealth:"صحة المخزون",repHealthy:"سليم",repReserved:"عليها حجوزات",repNoImage:"بدون صورة",repNoMove90:"بلا حركة ٩٠ يوم",repMultiWh:"في أكثر من مستودع",repItemSummary:"ملخص الأصناف",repCode:"الكود",repItem:"الصنف",repUnit:"الوحدة",repOpening:"افتتاحي",repClosing:"ختامي",repStatus:"الحالة",repNoItems:"لا أصناف في النطاق.",repBatchesSummary:"ملخص الدفعات / الصلاحية",repCurrentExpiry:"مخاطر الصلاحية الحالية",repExp30:"تنتهي ≤٣٠ يوم",repExp60:"تنتهي ≤٦٠ يوم",repExp90:"تنتهي ≤٩٠ يوم",repNoExpiry:"بلا صلاحية",repNoBatches:"لا دفعات للعرض.",repApprovalsSummary:"ملخص موافقات الحركات",repApPending:"معلّقة",repApApproved:"معتمدة",repApRejected:"مرفوضة",repApCancelled:"ملغاة",repApModified:"عدّلها المدير",repApTurnaround:"متوسط زمن المعالجة",repApOldest:"أقدم معلّقة",repMaterialSummary:"ملخص طلبات المواد",repMrPending:"معلّقة",repMrAllocated:"مجهّزة",repMrIssued:"مصروفة",repMrRejected:"مرفوضة",repMrCancelled:"ملغاة",repMrShort:"بنود اعتُمدت جزئياً",repMrPendingNote:"طلبات المواد المعلّقة على مستوى الشركة (لم تُسند لمستودع بعد).",repExceptions:"استثناءات",repNoExceptions:"لا استثناءات.",repResOverHand:"محجوز > الرصيد",repAuditSummary:"ملخص سجل التدقيق",repAuditEvents:"إجمالي الأحداث",repAuditActors:"عدد المستخدمين",repAuditAction:"الإجراء",repNoAudit:"لا أحداث تدقيق بهذه الفترة.",repMovementRegister:"سجل الحركات التفصيلي",repMovements:"حركة",repViewRegister:"عرض السجل التفصيلي",repNoMovements:"لا حركات بهذه الفترة.",repDate:"التاريخ",repQty:"الكمية",repBatch:"الدفعة",repActor:"بواسطة",repNote:"ملاحظة",repLoading:"جاري التحميل…",repErrGeneric:"تعذّر توليد التقرير. حاول مجدداً.",repErr_invalid_report_period:"فترة غير صحيحة: البداية يجب أن تسبق النهاية.",repErr_not_authorized:"لا تملك صلاحية عرض التقارير.",repErr_generic:"تعذّر توليد التقرير. حاول مجدداً.",repAlert_expired_batches:"دفعات منتهية",repAlert_out_of_stock:"أصناف نافدة",repAlert_expiring_30:"دفعات تنتهي خلال ٣٠ يوم",repAlert_low_stock:"أصناف مخزونها منخفض",repAlert_pending_approvals:"موافقات حركات معلّقة",repAlert_allocated_not_issued:"مواد مجهّزة لم تُصرف",repAlert_material_pending:"طلبات مواد معلّقة",repAlert_items_without_shelf:"أصناف بلا رف",repAlert_long_pending_approval:"أقدم موافقة معلّقة (أيام)",repObs_expired_batches:"دفعات منتهية بالمخزون",repObs_out_of_stock:"أصناف نافدة",repObs_expiring_30:"دفعات تنتهي خلال ٣٠ يوم",repObs_low_stock:"أصناف تحت الحد الأدنى",repObs_pending_approvals:"موافقات حركات معلّقة",repObs_allocated_not_issued:"مواد مجهّزة تنتظر الصرف",repObs_material_pending:"طلبات مواد معلّقة",repObs_items_without_shelf:"أصناف بلا رف",repObs_total_movements:"إجمالي الحركات بالفترة",repObs_top_issue_warehouse:"الأكثر نشاطاً بالصرف",repErr_invalid_movement_type:"فلتر نوع حركة غير صحيح.",
   aprNewReq:"طلب حركة",aprSubmitReq:"إرسال الطلب",aprReqFiled:"تم إرسال الطلب",aprReqHint:"اختر الصنف والكمية والتفاصيل. سيراجع الأدمن الطلب ويوافق عليه.",aprLoading:"جاري تحميل الطلبات…",aprNone:"لا توجد طلبات هنا.",aprQty:"الكمية",aprReqBy:"مقدّم الطلب",aprBy:"بواسطة",aprFinalVals:"المعتمد",aprRejReason:"السبب",aprRejPh:"سبب الرفض؟",aprAdminChanges:"مراجعة وتعديل",aprApproveReview:"مراجعة",aprApproveExec:"موافقة وتنفيذ",aprApproved:"تمت الموافقة والتنفيذ",aprReject:"رفض",aprRejected:"تم رفض الطلب",aprCancel:"إلغاء الطلب",aprCancelled:"تم إلغاء الطلب",aprWorking:"جاري التنفيذ…",aprNoShelf:"استلام بدون رف",aprRefLocked:"مربوط بالصرف الأصلي — لا يمكن تغيير المرجع.",aprErrGeneric:"فشل الإجراء. حاول مجدداً.",aprF_pending:"معلّقة",aprF_approved:"معتمدة",aprF_rejected:"مرفوضة",aprF_cancelled:"ملغاة",aprF_all:"الكل",aprS_pending:"معلّق",aprS_approved:"معتمد",aprS_rejected:"مرفوض",aprS_cancelled:"ملغى",aprErr_not_authorized:"لا تملك الصلاحية.",aprErr_unauthorized:"لا تملك الصلاحية.",aprErr_qty_must_be_positive:"الكمية يجب أن تكون أكبر من صفر.",aprErr_reject_reason_required:"سبب الرفض إلزامي.",aprErr_approval_not_found:"الطلب غير موجود.",aprErr_approval_not_pending:"هذا الطلب لم يعد معلّقاً.",aprErr_wrong_movement_type:"نوع الحركة غير مطابق.",aprErr_cannot_approve_own_request:"لا يمكنك الموافقة على طلبك.",aprErr_not_your_request:"هذا ليس طلبك.",aprErr_shelf_wrong_warehouse:"هذا الرف يخص مستودعاً آخر.",aprErr_item_warehouse_not_found:"الصنف غير موجود في هذا المستودع.",aprErr_item_not_found:"الصنف غير موجود.",aprErr_warehouse_not_found:"المستودع غير موجود.",aprErr_would_break_reserved:"المتاح غير كافٍ (جزء منه محجوز).",aprErr_return_exceeds_issued:"الكمية أكبر من المتبقي القابل للإرجاع.",aprErr_disposal_note_required:"الملاحظة إلزامية للإتلاف.",aprErr_invalid_reason_category:"الرجاء اختيار سبب صحيح.",aprErr_invalid_direction:"اختر زيادة أو نقص.",
   invEye:"المستودع",invH1:"المخزون",invP:"الأرصدة الحيّة في كل المستودعات.",invLoading:"جاري تحميل المخزون…",invNoMatch:"ما في أصناف تطابق هذه الفلاتر.",invSearchPh:"ابحث بالكود أو الاسم…",invAllWh:"كل المستودعات",invAllCat:"كل التصنيفات",invLow:"مخزون منخفض",invNoShelfF:"بلا رف",invItems:"صنف",invCode:"الكود",invName:"الاسم",invCat:"التصنيف",invType:"النوع",invUnit:"الوحدة",invOnHand:"المتوفّر",invReserved:"محجوز",invAvail:"المتاح",invMin:"الحد الأدنى",invWh:"المستودع",invShelf:"الرف",invStatus:"الحالة",invNoShelf:"بلا رف",invActive:"نشط",invInactive:"معطّل",invSetShelf:"تعيين رف",invChangeShelf:"تغيير الرف",invNoShelvesWh:"ما في أرفف بهذا المستودع",invPickShelf:"اختر رفاً من فضلك.",invShelfErr:"تعذّر تحديث الرف:",invNoImg:"بلا صورة",invAddImg:"📷 إضافة صورة",invChangeImg:"📷 تغيير الصورة",invImgUploading:"جاري الرفع…",invImgErr:"تعذّر تحديث الصورة:",
   navIc:{dashboard:"▦",assets:"📦",manage:"📥",all:"📋",reports:"📊",staffdir:"👷",open:"⚙",archive:"🗂",media:"◫",settings:"⚙️"},
@@ -6794,7 +6876,7 @@ const WH_SUBNAV=[
   { key:'materialreq',ic:'📝', live:true  },
   { key:'shelves',    ic:'🗄', live:true  },
   { key:'batches',    ic:'⏳', live:true  },
-  { key:'reports',    ic:'📈', live:false }
+  { key:'reports',    ic:'📈', live:true  }
 ];
 // current active sub-tab, per portal
 function whGetSub(){ return dashIsAsset() ? assetSub : whSub; }
@@ -6843,6 +6925,7 @@ function whSubContent(){
   if(active==='shelves') return viewWarehouses();
   if(active==='materialreq') return viewApprovals();
   if(active==='batches') return viewBatches();
+  if(active==='reports') return viewWhReports();
   return `<div class="empty">${t('am_soon')}</div>`;
 }
 
@@ -8927,6 +9010,587 @@ function viewBatches(){
   else { body=`<div class="bat-list">`+batList.map(batCard).join('')+`</div>`; }
   return `<div class="phead"><div class="eyebrow">${t('dashEye')}</div><h1>${t('awh_batches')}</h1></div>
     <div class="bat-controls">${whSel}${chipBar}</div>
+    ${body}`;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   REPORTS MODULE (PHASE C) — Period → Warehouse → Generate → Preview.
+   Backend: warehouse_report (one call) + warehouse_report_movements
+   (lazy, only when register opened/paged). NO KPI recompute in JS.
+   ─────────────────────────────────────────────────────────────────── */
+let repState = {
+  period:'today', from:null, to:null,      // period preset + custom dates
+  whMode:'all', whId:'',                    // 'all' or one warehouse id
+  preset:'full',                            // report preset
+  compare:true,
+  showFilters:false,                        // More Filters toggle
+  loading:false, data:null, error:null,     // main report
+  wh:null,                                  // warehouses_list cache
+  // detailed register (lazy)
+  regOpen:false, regLoading:false, regData:null, regError:null,
+  regType:'', regLimit:100, regOffset:0
+};
+
+function repRpc(fn,args){ return dashIsAsset() ? assetRpc(fn,args) : admRpc(fn,args); }
+function repRender(){ if(dashIsAsset()) renderAsset(); else render(); }
+
+async function repEnsureWh(){
+  if(repState.wh!==null) return;
+  const res=await repRpc('warehouses_list', {});
+  repState.wh=(res && Array.isArray(res))?res:[];
+}
+
+/* ── period preset → [from, to) timestamps (Riyadh-day aligned, ISO) ── */
+function repPeriodRange(){
+  // All boundaries are Riyadh-day-aligned, returned as ISO strings ("YYYY-MM-DDT00:00:00+03:00").
+  // Half-open [from, to): "to" is the START of the day AFTER the last included day.
+  // Single reference: today's Riyadh calendar date. Everything derives from it via
+  // explicit calendar math on a UTC-noon anchor (no local getDay, no new Date()/Date.now() mix).
+  const p=repState.period;
+
+  // today's Riyadh date as YYYY-MM-DD (the ONE time reference)
+  const todayYmd=new Date(Date.now()).toLocaleDateString('en-CA',{timeZone:'Asia/Riyadh'});
+  // ymd -> ISO Riyadh midnight
+  const iso=(ymd)=>ymd+'T00:00:00+03:00';
+  // add n days to a YYYY-MM-DD (calendar-safe via UTC noon to avoid any DST/local drift)
+  const addDays=(ymd,n)=>{
+    const d=new Date(ymd+'T12:00:00Z'); d.setUTCDate(d.getUTCDate()+n);
+    return d.toISOString().slice(0,10);
+  };
+  // day-of-week of a YYYY-MM-DD computed from the UTC-noon anchor (stable, tz-independent). 0=Sun..6=Sat
+  const dow=(ymd)=>new Date(ymd+'T12:00:00Z').getUTCDay();
+  // first day of the month for a YYYY-MM-DD
+  const firstOfMonth=(ymd)=>ymd.slice(0,8)+'01';
+  // first day of the month n months before the month of ymd
+  const firstOfMonthBack=(ymd,back)=>{
+    let y=+ymd.slice(0,4), m=+ymd.slice(5,7)-1; // 0-based month
+    m-=back; while(m<0){ m+=12; y-=1; }
+    return `${y}-${String(m+1).padStart(2,'0')}-01`;
+  };
+
+  if(p==='custom'){
+    if(!repState.from || !repState.to) return null;
+    if(repState.to < repState.from) return null; // guard: inverted custom range
+    // inclusive custom: push "to" to the start of the day AFTER the chosen end date
+    return { from: iso(repState.from), to: iso(addDays(repState.to,1)) };
+  }
+  if(p==='today')     return { from: iso(todayYmd),            to: iso(addDays(todayYmd,1)) };
+  if(p==='yesterday') return { from: iso(addDays(todayYmd,-1)),to: iso(todayYmd) };
+  if(p==='week'){ // week starts Saturday (Riyadh convention); includes today
+    const backToSat=(dow(todayYmd)+1)%7;  // days since the most recent Saturday
+    return { from: iso(addDays(todayYmd,-backToSat)), to: iso(addDays(todayYmd,1)) };
+  }
+  if(p==='lastweek'){
+    const backToSat=(dow(todayYmd)+1)%7;
+    const thisSat=addDays(todayYmd,-backToSat);
+    return { from: iso(addDays(thisSat,-7)), to: iso(thisSat) };
+  }
+  if(p==='month'){ // 1st of this month → tomorrow (includes today)
+    return { from: iso(firstOfMonth(todayYmd)), to: iso(addDays(todayYmd,1)) };
+  }
+  if(p==='lastmonth'){ // full previous calendar month
+    return { from: iso(firstOfMonthBack(todayYmd,1)), to: iso(firstOfMonth(todayYmd)) };
+  }
+  return { from: iso(todayYmd), to: iso(addDays(todayYmd,1)) };
+}
+
+/* preset → { compare, sections[] } — controls which sections show */
+const REP_PRESETS={
+  full:      { compare:true,  sections:'all' },
+  daily:     { compare:true,  sections:['summary','attention','movement_summary','movement_register','observations'] },
+  weekly:    { compare:true,  sections:['summary','attention','movement_summary','comparison','warehouse_summary','observations','movement_register'] },
+  monthly:   { compare:true,  sections:'all' },
+  inventory: { compare:false, sections:['summary','warehouse_summary','inventory_health','item_summary','exceptions'] },
+  movement:  { compare:true,  sections:['summary','movement_summary','comparison','movement_register'] },
+  expiry:    { compare:false, sections:['summary','attention','batches_summary'] },
+  approvals: { compare:false, sections:['summary','attention','movement_approvals_summary','material_requests_summary'] }
+};
+function repSectionOn(key){
+  const pr=REP_PRESETS[repState.preset]||REP_PRESETS.full;
+  if(pr.sections==='all') return true;
+  return pr.sections.includes(key);
+}
+
+/* ── setters (no reload; just re-render the form) ── */
+function repSetPeriod(p){ repState.period=p; repState.data=null; repRender(); }
+function repSetCustom(which,val){ repState[which]=val; } // no render (keep focus)
+function repSetWhMode(m){ repState.whMode=m; if(m==='all') repState.whId=''; repState.data=null; repRender(); }
+function repSetWh(v){ repState.whId=v; repState.data=null; }
+function repSetPreset(p){ repState.preset=p; const pr=REP_PRESETS[p]||REP_PRESETS.full; repState.compare=pr.compare; repState.data=null; repRender(); }
+function repToggleFilters(){ repState.showFilters=!repState.showFilters; repRender(); }
+function repSetCompare(v){ repState.compare=v; }
+
+/* scope → uuid[] or null */
+function repScopeIds(){
+  if(repState.whMode==='all') return null;
+  return repState.whId ? [repState.whId] : null;
+}
+
+/* ── GENERATE: single warehouse_report call ── */
+async function repGenerate(){
+  // custom-range client checks (missing vs inverted) before building the range
+  if(repState.period==='custom'){
+    if(!repState.from || !repState.to){ toast(t('repPickDates')); return; }
+    if(repState.to < repState.from){ toast(t('repBadRange')); return; }
+  }
+  const range=repPeriodRange();
+  if(!range){ toast(t('repPickDates')); return; }
+  const from=range.from, to=range.to;  // repPeriodRange already returns half-open [from,to)
+  repState.loading=true; repState.error=null; repState.data=null;
+  repState.regOpen=false; repState.regData=null; repState.regOffset=0;
+  repRender();
+  const res=await repRpc('warehouse_report', {
+    p_warehouse_ids: repScopeIds(),
+    p_from: from, p_to: to,
+    p_compare: repState.compare
+  });
+  repState.loading=false;
+  if(res && res.ok===false){
+    repState.error=res.error||'generic';
+    repRender(); return;
+  }
+  repState.data=res; repState.lastFrom=from; repState.lastTo=to;
+  repRender();
+}
+
+/* ── DETAILED REGISTER (lazy) ── */
+async function repOpenRegister(){
+  repState.regOpen=true; repState.regOffset=0; repState.regType='';
+  await repLoadRegister();
+}
+async function repLoadRegister(){
+  repState.regLoading=true; repState.regError=null; repRender();
+  const res=await repRpc('warehouse_report_movements', {
+    p_warehouse_ids: repScopeIds(),
+    p_from: repState.lastFrom, p_to: repState.lastTo,
+    p_movement_type: repState.regType||null,
+    p_item_id: null,
+    p_limit: repState.regLimit, p_offset: repState.regOffset
+  });
+  repState.regLoading=false;
+  if(res && res.ok===false){ repState.regError=res.error||'generic'; repRender(); return; }
+  repState.regData=res; repRender();
+}
+function repRegPage(dir){
+  const d=repState.regData; if(!d) return;
+  const no=repState.regOffset + dir*repState.regLimit;
+  if(no<0 || no>=(d.total_count||0)) return;
+  repState.regOffset=no; repLoadRegister();
+}
+function repRegType(v){ repState.regType=v; repState.regOffset=0; repLoadRegister(); }
+
+
+/* ═══════════════════════ RENDER LAYER ═══════════════════════ */
+
+/* localized name helper for warehouses */
+function repWhName(w){ return L==='ar'?(w.name_ar||w.code):(w.name_en||w.code); }
+function repFmtDT(iso){
+  if(!iso) return '—';
+  const dt=new Date(iso);
+  // timestamps (generated_at, movement created_at) shown in Riyadh time
+  return dt.toLocaleDateString(L==='ar'?'ar':'en-GB',{day:'2-digit',month:'short',year:'numeric',timeZone:'Asia/Riyadh'})
+    +' '+dt.toLocaleTimeString(L==='ar'?'ar':'en-GB',{hour:'2-digit',minute:'2-digit',timeZone:'Asia/Riyadh'});
+}
+function repFmtDate(iso){
+  if(!iso) return '—';
+  // format in Riyadh time so a +03:00 midnight never renders as the previous day
+  return new Date(iso).toLocaleDateString(L==='ar'?'ar':'en-GB',{day:'2-digit',month:'short',year:'numeric',timeZone:'Asia/Riyadh'});
+}
+/* DISPLAY-ONLY: backend uses half-open [from,to); the header shows the last INCLUDED day
+   (to − 1 day). Single-day ranges collapse to one date. Never affects what is sent.
+   All math is done on the Riyadh calendar date STRING (no local-tz Date drift). */
+function repRiyadhYmd(iso){ // ISO -> 'YYYY-MM-DD' as seen in Riyadh
+  return new Date(iso).toLocaleDateString('en-CA',{timeZone:'Asia/Riyadh'});
+}
+function repYmdMinus1(ymd){ // subtract one calendar day via UTC-noon anchor (drift-free)
+  const d=new Date(ymd+'T12:00:00Z'); d.setUTCDate(d.getUTCDate()-1);
+  return d.toISOString().slice(0,10);
+}
+function repFmtYmd(ymd){ // 'YYYY-MM-DD' -> localized label (anchor at Riyadh noon so the day is stable)
+  return new Date(ymd+'T12:00:00+03:00').toLocaleDateString(L==='ar'?'ar':'en-GB',{day:'2-digit',month:'short',year:'numeric',timeZone:'Asia/Riyadh'});
+}
+function repFmtRange(fromIso,toIso){
+  if(!fromIso||!toIso) return '—';
+  const fromYmd=repRiyadhYmd(fromIso);
+  const lastIncl=repYmdMinus1(repRiyadhYmd(toIso));
+  if(fromYmd===lastIncl) return repFmtYmd(fromYmd);
+  return repFmtYmd(fromYmd)+' → '+repFmtYmd(lastIncl);
+}
+
+/* the control form (always visible) */
+function repForm(){
+  const periods=[['today','repPToday'],['yesterday','repPYesterday'],['week','repPWeek'],
+    ['lastweek','repPLastWeek'],['month','repPMonth'],['lastmonth','repPLastMonth'],['custom','repPCustom']];
+  const chipBar=periods.map(([k,lbl])=>
+    `<button class="rep-chip ${repState.period===k?'on':''}" onclick="repSetPeriod('${k}')">${t(lbl)}</button>`).join('');
+  // custom date inputs (only when custom)
+  let custom='';
+  if(repState.period==='custom'){
+    custom=`<div class="rep-custom">
+      <label>${t('repFrom')} <input type="date" value="${repState.from||''}" onchange="repSetCustom('from',this.value)"/></label>
+      <label>${t('repTo')} <input type="date" value="${repState.to||''}" onchange="repSetCustom('to',this.value)"/></label>
+    </div>`;
+  }
+  // warehouse: All vs one
+  let whOpts=`<option value="">${t('repAllWh')}</option>`;
+  (repState.wh||[]).forEach(w=>{ whOpts+=`<option value="${w.warehouse_id}" ${repState.whId===w.warehouse_id?'selected':''}>${esc(repWhName(w))}</option>`; });
+  const whBlock=`<div class="rep-whrow">
+    <button class="rep-chip ${repState.whMode==='all'?'on':''}" onclick="repSetWhMode('all')">${t('repAllWh')}</button>
+    <button class="rep-chip ${repState.whMode==='one'?'on':''}" onclick="repSetWhMode('one')">${t('repOneWh')}</button>
+    ${repState.whMode==='one'?`<select class="rep-sel" onchange="repSetWh(this.value)">${whOpts}</select>`:''}
+  </div>`;
+  // preset
+  const presets=[['full','repRepFull'],['daily','repRepDaily'],['weekly','repRepWeekly'],
+    ['monthly','repRepMonthly'],['inventory','repRepInventory'],['movement','repRepMovement'],
+    ['expiry','repRepExpiry'],['approvals','repRepApprovals']];
+  let presetOpts=presets.map(([k,lbl])=>`<option value="${k}" ${repState.preset===k?'selected':''}>${t(lbl)}</option>`).join('');
+  const presetBlock=`<div class="rep-field"><label>${t('repPreset')}</label><select class="rep-sel" onchange="repSetPreset(this.value)">${presetOpts}</select></div>`;
+  // More Filters (advanced, hidden by default)
+  const moreBtn=`<button class="rep-more" onclick="repToggleFilters()">${repState.showFilters?'▾':'▸'} ${t('repMoreFilters')}</button>`;
+  let moreBox='';
+  if(repState.showFilters){
+    moreBox=`<div class="rep-morebox">
+      <label class="rep-check"><input type="checkbox" ${repState.compare?'checked':''} onchange="repSetCompare(this.checked)"/> ${t('repCompare')}</label>
+    </div>`;
+  }
+  return `<div class="rep-form">
+    <div class="rep-field"><label>${t('repPeriod')}</label><div class="rep-chips">${chipBar}</div>${custom}</div>
+    <div class="rep-field"><label>${t('repWarehouses')}</label>${whBlock}</div>
+    ${presetBlock}
+    <div class="rep-actions">
+      <button class="rep-gen" onclick="repGenerate()">${t('repGenerate')}</button>
+      ${moreBtn}
+    </div>
+    ${moreBox}
+  </div>`;
+}
+
+/* KPI tile */
+function repKpi(val,lbl,tone){ return `<div class="rep-kpi ${tone||''}"><div class="rk-val">${fmtNum(val)}</div><div class="rk-lbl">${lbl}</div></div>`; }
+
+/* Executive Summary */
+function repExecSummary(s){
+  if(!s) return '';
+  return `<div class="rep-sec"><h3>${t('repExecSummary')}</h3>
+    <div class="rep-kpis">
+      ${repKpi(s.active_warehouses,t('repActiveWh'))}
+      ${repKpi(s.distinct_items,t('repDistinctItems'))}
+      ${repKpi(s.items_with_stock,t('repWithStock'))}
+      ${repKpi(s.out_of_stock,t('repOutStock'),(s.out_of_stock>0?'crit':''))}
+      ${repKpi(s.low_stock,t('repLowStock'),(s.low_stock>0?'warn':''))}
+      ${repKpi(s.items_without_shelf,t('repNoShelf'),(s.items_without_shelf>0?'info':''))}
+      ${repKpi(s.total_movements,t('repTotalMv'))}
+      ${repKpi(s.pending_approvals,t('repPendingAppr'),(s.pending_approvals>0?'warn':''))}
+    </div></div>`;
+}
+
+/* Attention Required */
+function repAttention(alerts){
+  if(!repSectionOn('attention')) return '';
+  if(!alerts || !alerts.length) return `<div class="rep-sec"><h3>${t('repAttention')}</h3><div class="rep-empty rep-ok">${t('repNoAlerts')}</div></div>`;
+  const rows=alerts.map(a=>{
+    const tone=a.severity==='critical'?'crit':(a.severity==='warning'?'warn':'info');
+    const ic=a.severity==='critical'?'🔴':(a.severity==='warning'?'🟠':'🔵');
+    return `<div class="rep-alert ${tone}">${ic} <span class="ra-msg">${t('repAlert_'+a.code)||a.code}</span> <span class="ra-cnt">${fmtNum(a.count)}</span></div>`;
+  }).join('');
+  return `<div class="rep-sec"><h3>${t('repAttention')}</h3>${rows}</div>`;
+}
+
+/* Observations */
+function repObservations(obs){
+  if(!repSectionOn('observations')) return '';
+  if(!obs || !obs.length) return '';
+  const rows=obs.map(o=>{
+    let txt=t('repObs_'+o.code)||o.code;
+    let extra='';
+    if(o.code==='top_issue_warehouse'){ const wn=L==='ar'?(o.warehouse_name_ar||o.warehouse_code):(o.warehouse_name_en||o.warehouse_code); extra=` — ${esc(wn||'')}`; }
+    return `<li>${txt}: <b>${fmtNum(o.value)}</b>${extra}</li>`;
+  }).join('');
+  return `<div class="rep-sec"><h3>${t('repObservations')}</h3><ul class="rep-obs">${rows}</ul></div>`;
+}
+
+/* Movement Summary + Comparison */
+function repMovementSummary(ms,cmp){
+  if(!repSectionOn('movement_summary')) return '';
+  if(!ms) return '';
+  const rowsData=[
+    ['receipts','mvT_RECEIPT'],['issues','mvT_ISSUE'],['returns','mvT_RETURN'],
+    ['transfers_in','mvT_TRANSFER_IN'],['transfers_out','mvT_TRANSFER_OUT'],
+    ['disposals','mvT_DISPOSAL'],['adjustments','mvT_ADJUSTMENT']
+  ];
+  const showCmp=repSectionOn('comparison') && cmp;
+  const head=`<tr><th>${t('repMvType')}</th><th>${t('repCount')}</th>${showCmp?`<th>${t('repPrevCount')}</th><th>${t('repChange')}</th>`:''}</tr>`;
+  const body=rowsData.map(([k,lbl])=>{
+    const cur=Number(ms[k]||0);
+    let cmpCells='';
+    if(showCmp){
+      const prev=Number(cmp['prev_'+k]||0);
+      const diff=cur-prev;
+      const arrow=diff>0?'▲':(diff<0?'▼':'—');
+      const cls=diff>0?'up':(diff<0?'down':'');
+      cmpCells=`<td>${fmtNum(prev)}</td><td class="rep-chg ${cls}">${arrow} ${fmtNum(Math.abs(diff))}</td>`;
+    }
+    return `<tr><td>${t(lbl)}</td><td>${fmtNum(cur)}</td>${cmpCells}</tr>`;
+  }).join('');
+  const totalRow=`<tr class="rep-total"><td>${t('repTotalMv')}</td><td>${fmtNum(ms.total_movements)}</td>${showCmp?`<td>${fmtNum(cmp.prev_total_movements)}</td><td></td>`:''}</tr>`;
+  let cmpNote='';
+  if(showCmp){ cmpNote=`<div class="rep-cmpnote">${t('repCompareVs')}: ${repFmtRange(cmp.prev_from, cmp.prev_to)}</div>`; }
+  return `<div class="rep-sec"><h3>${t('repMovementSummary')}</h3>
+    <table class="rep-tbl">${head}${body}${totalRow}</table>${cmpNote}</div>`;
+}
+
+/* Warehouse Summary (dynamic rows) */
+function repWarehouseSummary(ws){
+  if(!repSectionOn('warehouse_summary')) return '';
+  if(!ws || !ws.length) return '';
+  const head=`<tr><th>${t('repWh')}</th><th>${t('repItems')}</th><th>${t('repOutStock')}</th><th>${t('repLowStock')}</th>
+    <th>${t('mvT_RECEIPT')}</th><th>${t('mvT_ISSUE')}</th><th>${t('repMvTotal')}</th><th>${t('repExpired')}</th></tr>`;
+  const body=ws.map(w=>{
+    const wn=L==='ar'?(w.warehouse_name_ar||w.warehouse_code):(w.warehouse_name_en||w.warehouse_code);
+    return `<tr><td>${esc(wn||'')}</td><td>${fmtNum(w.item_lines)}</td>
+      <td class="${w.out_of_stock>0?'rep-c-crit':''}">${fmtNum(w.out_of_stock)}</td>
+      <td class="${w.low_stock>0?'rep-c-warn':''}">${fmtNum(w.low_stock)}</td>
+      <td>${fmtNum(w.receipts)}</td><td>${fmtNum(w.issues)}</td><td>${fmtNum(w.total_movements)}</td>
+      <td class="${w.expired_batches>0?'rep-c-crit':''}">${fmtNum(w.expired_batches)}</td></tr>`;
+  }).join('');
+  return `<div class="rep-sec"><h3>${t('repWarehouseSummary')}</h3><table class="rep-tbl">${head}${body}</table></div>`;
+}
+
+/* Inventory Health */
+function repInventoryHealth(h){
+  if(!repSectionOn('inventory_health')) return '';
+  if(!h) return '';
+  return `<div class="rep-sec"><h3>${t('repInventoryHealth')}</h3>
+    <div class="rep-kpis">
+      ${repKpi(h.healthy,t('repHealthy'),'ok')}
+      ${repKpi(h.low_stock,t('repLowStock'),(h.low_stock>0?'warn':''))}
+      ${repKpi(h.out_of_stock,t('repOutStock'),(h.out_of_stock>0?'crit':''))}
+      ${repKpi(h.with_reservations,t('repReserved'))}
+      ${repKpi(h.without_shelf,t('repNoShelf'),(h.without_shelf>0?'info':''))}
+      ${repKpi(h.without_image,t('repNoImage'),'info')}
+      ${repKpi(h.no_move_90,t('repNoMove90'),(h.no_move_90>0?'warn':''))}
+      ${repKpi(h.items_multi_warehouse,t('repMultiWh'))}
+    </div></div>`;
+}
+
+/* Item Summary (opening/closing per item — item-level ONLY, no grand totals) */
+function repItemSummary(items){
+  if(!repSectionOn('item_summary')) return '';
+  if(!items || !items.length) return `<div class="rep-sec"><h3>${t('repItemSummary')}</h3><div class="rep-empty">${t('repNoItems')}</div></div>`;
+  const head=`<tr><th></th><th>${t('repCode')}</th><th>${t('repItem')}</th><th>${t('repWh')}</th><th>${t('repUnit')}</th>
+    <th>${t('repOpening')}</th><th>${t('mvT_RECEIPT')}</th><th>${t('mvT_ISSUE')}</th><th>${t('repClosing')}</th><th>${t('repStatus')}</th></tr>`;
+  const body=items.map(it=>{
+    const nm=L==='ar'?(it.name_ar||it.name_en):(it.name_en||it.name_ar);
+    const wn=L==='ar'?(it.warehouse_name_ar||it.warehouse_code):(it.warehouse_name_en||it.warehouse_code);
+    const un=L==='ar'?(it.unit_name_ar||it.unit_name_en):(it.unit_name_en||it.unit_name_ar);
+    const img=it.image_url?`<img class="rep-thumb" src="${esc(it.image_url)}" onclick="openLightbox('${esc(it.image_url)}')" alt=""/>`:`<div class="rep-thumb rep-thumb-none">📦</div>`;
+    const st=it.stock_status;
+    const stCls=st==='out'?'rep-c-crit':(st==='low'?'rep-c-warn':'rep-c-ok');
+    const stLbl=st==='out'?t('repOutStock'):(st==='low'?t('repLowStock'):t('repHealthy'));
+    return `<tr><td>${img}</td><td>${esc(it.item_code||'')}</td><td>${esc(nm||'')}</td><td>${esc(wn||'')}</td><td>${esc(un||'')}</td>
+      <td>${fmtNum(it.opening)}</td><td>${fmtNum(it.receipts)}</td><td>${fmtNum(it.issues)}</td>
+      <td><b>${fmtNum(it.closing)}</b></td><td class="${stCls}">${stLbl}</td></tr>`;
+  }).join('');
+  return `<div class="rep-sec"><h3>${t('repItemSummary')}</h3><div class="rep-scroll"><table class="rep-tbl rep-tbl-items">${head}${body}</table></div></div>`;
+}
+
+/* Batches / Expiry Summary */
+function repBatchesSummary(b){
+  if(!repSectionOn('batches_summary')) return '';
+  if(!b) return '';
+  const empty=(Number(b.total_real_batches)||0)===0;
+  if(empty) return `<div class="rep-sec"><h3>${t('repBatchesSummary')}</h3><div class="rep-empty">${t('repNoBatches')}</div></div>`;
+  return `<div class="rep-sec"><h3>${t('repBatchesSummary')} <span class="rep-hint">(${t('repCurrentExpiry')})</span></h3>
+    <div class="rep-kpis">
+      ${repKpi(b.expired,t('repExpired'),(b.expired>0?'crit':''))}
+      ${repKpi(b.expiring_30,t('repExp30'),(b.expiring_30>0?'warn':''))}
+      ${repKpi(b.expiring_60,t('repExp60'),(b.expiring_60>0?'warn':''))}
+      ${repKpi(b.expiring_90,t('repExp90'))}
+      ${repKpi(b.healthy,t('repHealthy'),'ok')}
+      ${repKpi(b.no_expiry,t('repNoExpiry'))}
+    </div></div>`;
+}
+
+/* Movement Approvals Summary */
+function repApprovalsSummary(a){
+  if(!repSectionOn('movement_approvals_summary')) return '';
+  if(!a) return '';
+  return `<div class="rep-sec"><h3>${t('repApprovalsSummary')}</h3>
+    <div class="rep-kpis">
+      ${repKpi(a.pending,t('repApPending'),(a.pending>0?'warn':''))}
+      ${repKpi(a.approved,t('repApApproved'),'ok')}
+      ${repKpi(a.rejected,t('repApRejected'))}
+      ${repKpi(a.cancelled,t('repApCancelled'))}
+      ${repKpi(a.admin_modified,t('repApModified'),'info')}
+    </div>
+    <div class="rep-inline">
+      <span>${t('repApTurnaround')}: <b>${a.avg_turnaround_hours==null?'—':fmtNum(a.avg_turnaround_hours)+'h'}</b></span>
+      <span>${t('repApOldest')}: <b>${a.oldest_pending_days==null?'—':fmtNum(a.oldest_pending_days)+' '+t('batDaysUnit')}</b></span>
+    </div></div>`;
+}
+
+/* Material Requests Summary */
+function repMaterialSummary(m){
+  if(!repSectionOn('material_requests_summary')) return '';
+  if(!m) return '';
+  return `<div class="rep-sec"><h3>${t('repMaterialSummary')}</h3>
+    <div class="rep-kpis">
+      ${repKpi(m.pending,t('repMrPending'),(m.pending>0?'warn':''))}
+      ${repKpi(m.allocated,t('repMrAllocated'),(m.allocated>0?'warn':''))}
+      ${repKpi(m.issued,t('repMrIssued'),'ok')}
+      ${repKpi(m.rejected,t('repMrRejected'))}
+      ${repKpi(m.cancelled,t('repMrCancelled'))}
+      ${repKpi(m.lines_short_approved,t('repMrShort'),(m.lines_short_approved>0?'info':''))}
+    </div>
+    <div class="rep-note-sm">${t('repMrPendingNote')}</div></div>`;
+}
+
+/* Exceptions */
+function repExceptions(e){
+  if(!repSectionOn('exceptions')) return '';
+  if(!e) return '';
+  const any=['out_of_stock','low_stock','without_shelf','without_image','no_move_90','reserved_over_hand'].some(k=>Number(e[k])>0);
+  if(!any) return `<div class="rep-sec"><h3>${t('repExceptions')}</h3><div class="rep-empty rep-ok">${t('repNoExceptions')}</div></div>`;
+  return `<div class="rep-sec"><h3>${t('repExceptions')}</h3>
+    <div class="rep-kpis">
+      ${repKpi(e.out_of_stock,t('repOutStock'),(e.out_of_stock>0?'crit':''))}
+      ${repKpi(e.low_stock,t('repLowStock'),(e.low_stock>0?'warn':''))}
+      ${repKpi(e.without_shelf,t('repNoShelf'),(e.without_shelf>0?'info':''))}
+      ${repKpi(e.without_image,t('repNoImage'),'info')}
+      ${repKpi(e.no_move_90,t('repNoMove90'),(e.no_move_90>0?'warn':''))}
+      ${repKpi(e.reserved_over_hand,t('repResOverHand'),(e.reserved_over_hand>0?'crit':''))}
+    </div></div>`;
+}
+
+/* Audit Summary */
+function repAuditSummary(a){
+  if(!repSectionOn('audit_summary')) return '';
+  if(!a) return '';
+  if((Number(a.total_events)||0)===0) return `<div class="rep-sec"><h3>${t('repAuditSummary')}</h3><div class="rep-empty">${t('repNoAudit')}</div></div>`;
+  const by=a.by_action||{};
+  const rows=Object.keys(by).map(k=>`<tr><td>${esc(k)}</td><td>${fmtNum(by[k])}</td></tr>`).join('');
+  return `<div class="rep-sec"><h3>${t('repAuditSummary')}</h3>
+    <div class="rep-inline"><span>${t('repAuditEvents')}: <b>${fmtNum(a.total_events)}</b></span><span>${t('repAuditActors')}: <b>${fmtNum(a.distinct_actors)}</b></span></div>
+    ${rows?`<table class="rep-tbl"><tr><th>${t('repAuditAction')}</th><th>${t('repCount')}</th></tr>${rows}</table>`:''}</div>`;
+}
+
+/* Movement Register card (stub) + detailed (lazy) */
+function repRegisterCard(reg){
+  if(!repSectionOn('movement_register')) return '';
+  if(!reg) return '';
+  const n=Number(reg.total_rows||0);
+  if(!repState.regOpen){
+    return `<div class="rep-sec"><h3>${t('repMovementRegister')}</h3>
+      <div class="rep-regcard">
+        <span>${fmtNum(n)} ${t('repMovements')}</span>
+        ${n>0?`<button class="rep-regbtn" onclick="repOpenRegister()">${t('repViewRegister')}</button>`:`<span class="rep-empty-inline">${t('repNoMovements')}</span>`}
+      </div></div>`;
+  }
+  // opened → detailed table
+  let inner='';
+  if(repState.regLoading){ inner=`<div class="rep-loading">${t('repLoading')}</div>`; }
+  else if(repState.regError){ inner=`<div class="rep-err">${t('repErr_'+repState.regError)||t('repErrGeneric')}</div>`; }
+  else if(repState.regData){
+    const d=repState.regData;
+    const mvs=d.movements||[];
+    // type filter chips
+    const types=['','RECEIPT','ISSUE','RETURN','TRANSFER_IN','TRANSFER_OUT','DISPOSAL','ADJUSTMENT'];
+    const typeSel=`<select class="rep-sel" onchange="repRegType(this.value)">
+      <option value="">${t('mvAllTypes')}</option>
+      ${types.slice(1).map(tp=>`<option value="${tp}" ${repState.regType===tp?'selected':''}>${t('mvT_'+tp)}</option>`).join('')}
+    </select>`;
+    if(!mvs.length){ inner=`${typeSel}<div class="rep-empty">${t('repNoMovements')}</div>`; }
+    else {
+      const isAdm=!dashIsAsset();
+      const head=`<tr><th>${t('repDate')}</th><th>${t('repMvType')}</th><th>${t('repItem')}</th><th>${t('repWh')}</th><th>${t('repQty')}</th><th>${t('repBatch')}</th>${isAdm?`<th>${t('repActor')}</th>`:''}<th>${t('repNote')}</th></tr>`;
+      const rows=mvs.map(m=>{
+        const nm=L==='ar'?(m.item_name_ar||m.item_name_en):(m.item_name_en||m.item_name_ar);
+        const wn=L==='ar'?(m.warehouse_name_ar||m.warehouse_code):(m.warehouse_name_en||m.warehouse_code);
+        const un=L==='ar'?(m.unit_name_ar||m.unit_name_en):(m.unit_name_en||m.unit_name_ar);
+        const q=Number(m.qty); const qCls=q<0?'rep-q-neg':'rep-q-pos';
+        const img=m.image_url?`<img class="rep-thumb-sm" src="${esc(m.image_url)}" onclick="openLightbox('${esc(m.image_url)}')" alt=""/>`:'';
+        return `<tr>
+          <td>${repFmtDT(m.created_at)}</td>
+          <td><span class="rep-mvtype rep-mv-${esc(m.movement_type)}">${t('mvT_'+m.movement_type)||m.movement_type}</span></td>
+          <td>${img} ${esc(m.item_code||'')} <span class="rep-itname">${esc(nm||'')}</span></td>
+          <td>${esc(wn||'')}</td>
+          <td class="${qCls}">${fmtNum(q)} ${esc(un||'')}</td>
+          <td>${esc(m.batch_no||'—')}</td>
+          ${isAdm?`<td>${esc(m.actor_email||'—')}</td>`:''}
+          <td>${esc(m.note||'')}</td>
+        </tr>`;
+      }).join('');
+      // pagination
+      const total=Number(d.total_count||0);
+      const from=repState.regOffset+1, to=Math.min(repState.regOffset+repState.regLimit,total);
+      const pager=`<div class="rep-pager">
+        <button class="rep-pbtn" ${repState.regOffset<=0?'disabled':''} onclick="repRegPage(-1)">${t('mvPrev')}</button>
+        <span>${fmtNum(from)}–${fmtNum(to)} ${t('mvOf')} ${fmtNum(total)}</span>
+        <button class="rep-pbtn" ${!d.has_more?'disabled':''} onclick="repRegPage(1)">${t('mvNext')}</button>
+      </div>`;
+      inner=`${typeSel}<div class="rep-scroll"><table class="rep-tbl rep-tbl-reg">${head}${rows}</table></div>${pager}`;
+    }
+  }
+  return `<div class="rep-sec"><h3>${t('repMovementRegister')}</h3>${inner}</div>`;
+}
+
+/* the preview (all sections, gated by preset) */
+function repPreview(){
+  const d=repState.data; if(!d) return '';
+  const m=d.meta||{};
+  // scope label
+  let scopeLbl;
+  if(m.is_all_warehouses){ scopeLbl=t('repAllWh'); }
+  else {
+    const w=(repState.wh||[]).find(x=>x.warehouse_id===repState.whId);
+    scopeLbl=w?repWhName(w):t('repOneWh');
+  }
+  const header=`<div class="rep-preview-head">
+    <div class="rph-title">
+      <div class="rph-brand">ADVACON</div>
+      <h2>${t('repReportTitle')}</h2>
+      <div class="rph-preset">${t('repRep'+({full:'Full',daily:'Daily',weekly:'Weekly',monthly:'Monthly',inventory:'Inventory',movement:'Movement',expiry:'Expiry',approvals:'Approvals'}[repState.preset]||'Full'))}</div>
+    </div>
+    <div class="rph-meta">
+      <div><span>${t('repPeriod')}:</span> ${repFmtRange(m.from, m.to)}</div>
+      <div><span>${t('repScope')}:</span> ${esc(scopeLbl)} ${m.is_all_warehouses?`(${fmtNum(m.scope_warehouse_count)})`:''}</div>
+      <div><span>${t('repGenerated')}:</span> ${repFmtDT(m.generated_at)}</div>
+    </div>
+    <div class="rph-export">
+      <button class="rep-exp" disabled title="${t('repSoon')}">${t('repExportPdf')}</button>
+      <button class="rep-exp" disabled title="${t('repSoon')}">${t('repExportExcel')}</button>
+      <button class="rep-exp" disabled title="${t('repSoon')}">${t('repPrint')}</button>
+    </div>
+  </div>`;
+  return `<div class="rep-preview">
+    ${header}
+    ${repExecSummary(d.summary)}
+    ${repAttention(d.attention)}
+    ${repObservations(d.observations)}
+    ${repMovementSummary(d.movement_summary, d.comparison)}
+    ${repWarehouseSummary(d.warehouse_summary)}
+    ${repInventoryHealth(d.inventory_health)}
+    ${repItemSummary(d.item_summary)}
+    ${repBatchesSummary(d.batches_summary)}
+    ${repApprovalsSummary(d.movement_approvals_summary)}
+    ${repMaterialSummary(d.material_requests_summary)}
+    ${repExceptions(d.exceptions)}
+    ${repAuditSummary(d.audit_summary)}
+    ${repRegisterCard(d.movement_register)}
+  </div>`;
+}
+
+/* main entry */
+function viewWhReports(){
+  if(repState.wh===null){ repEnsureWh().then(repRender); }
+  let body='';
+  if(repState.loading){ body=`<div class="rep-loading">${t('repGenerating')}</div>`; }
+  else if(repState.error){ body=`<div class="rep-err">${t('repErr_'+repState.error)||t('repErrGeneric')}</div>`; }
+  else if(repState.data){ body=repPreview(); }
+  else { body=`<div class="rep-hint-box">${t('repStartHint')}</div>`; }
+  return `<div class="phead"><div class="eyebrow">${t('dashEye')}</div><h1>${t('awh_reports')}</h1></div>
+    ${repForm()}
     ${body}`;
 }
 
