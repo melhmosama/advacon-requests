@@ -5783,8 +5783,14 @@ function viewTechTasks(){
   // exact same rich task card as the "Assigned to staff" board column (wcTaskCard).
   // ACTIVE tasks only (finished = Complete/Cancelled/Rejected are not shown). A technician
   // search narrows the columns. Everything derives from staffList()+state.requests (live).
-  const FINISHED=['Complete','Cancelled','Rejected'];
-  const isActive=(r)=>!FINISHED.includes(r.effStatus);
+  // "Active" here = tasks actually in a technician's hands, matching the board's
+  // "Assigned to staff" + "Periodic" + "Pending your confirmation" columns.
+  // Excludes Incoming (not yet accepted) and finished/cancelled/rejected/archived.
+  const isActive=(r)=>{
+    if(r.pendingConfirm && !r.archived) return true;                 // Pending your confirmation
+    return isAccepted(r) && !r.pendingConfirm                        // accepted & in progress
+      && r.effStatus!=='Complete' && r.effStatus!=='Cancelled' && r.status!=='Cancelled';
+  };
   const all=(state.requests||[]);
   const q=(state.ttSearch||'').trim().toLowerCase();
 
