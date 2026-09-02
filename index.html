@@ -1717,38 +1717,34 @@ textarea.rc-in{resize:vertical}
 .co-add-btn.co-dis{opacity:.5;cursor:not-allowed}
 .co-upl-note{color:var(--accent);font-size:12.5px;margin-top:8px}
 
-/* #3 Technician Tasks page */
+/* #3 Technician Tasks page — vertical accordion */
 .tt-kpis{display:flex;gap:10px;margin:0 0 14px;flex-wrap:wrap}
 .tt-kpi{background:var(--white);border:1px solid var(--grid);border-radius:12px;padding:10px 18px;min-width:96px;text-align:center}
 .tt-kpi b{display:block;font-size:22px;color:var(--navy);line-height:1.05;font-variant-numeric:tabular-nums}
 .tt-kpi span{font-size:11px;color:var(--grey)}
 .tt-kpi-act b{color:var(--med)}
 .tt-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 16px;flex-wrap:wrap}
-.tt-search{position:relative;display:flex;align-items:center;min-width:220px;flex:0 1 280px}
+.tt-search{position:relative;display:flex;align-items:center;min-width:220px;flex:0 1 340px}
 .tt-search-ic{position:absolute;inset-inline-start:11px;font-size:13px;opacity:.5;pointer-events:none}
 .tt-search input{width:100%;padding:9px 12px 9px 34px;border:1px solid var(--grid);border-radius:10px;font-size:13px;background:var(--white);font-family:inherit}
 .tt-search input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(62,110,158,.12)}
 html[dir=rtl] .tt-search input{padding:9px 34px 9px 12px}
-/* board of technician columns (mirrors the main board layout) */
-.tt-board{display:flex;gap:14px;overflow-x:auto;padding-bottom:10px;align-items:flex-start}
-.tt-col{flex:0 0 300px;max-width:300px;background:var(--head);border:1px solid var(--grid);border-radius:14px;display:flex;flex-direction:column;max-height:calc(100vh - 240px)}
-.tt-col.tt-inactive{opacity:.6}
-.tt-colhead{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--grid);position:sticky;top:0;background:var(--head);border-radius:14px 14px 0 0;z-index:1}
-.tt-who{display:flex;align-items:center;gap:10px;min-width:0}
-.tt-ava{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--med),var(--navy));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex:none;text-transform:uppercase}
-.tt-name{font-weight:700;color:var(--navy);font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.tt-off{font-size:10px;color:var(--grey);font-weight:400;border:1px solid var(--grid);border-radius:6px;padding:1px 5px;margin-inline-start:4px;white-space:nowrap}
-.tt-counts{display:flex;align-items:center;gap:4px;flex:none;font-variant-numeric:tabular-nums}
-.tt-c{font-size:13px;font-weight:700}
-.tt-c-act{color:var(--med)}
-.tt-c-tot{color:var(--grey)}
-.tt-c-sep{color:var(--grid);font-size:12px}
-.tt-colbody{padding:10px;display:flex;flex-direction:column;gap:10px;overflow-y:auto}
-.tt-colbody::-webkit-scrollbar{width:6px}
-.tt-colbody::-webkit-scrollbar-thumb{background:var(--grid);border-radius:3px}
-.tt-colbody .mcard{flex-shrink:0}
-.tt-cardacts{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
-.tt-empty{padding:22px 14px;color:var(--grey);font-size:12px;text-align:center}
+/* accordion list — one full-width row per technician, collapsed by default */
+.tt-acclist{display:flex;flex-direction:column;gap:10px}
+.tt-acc{background:var(--white);border:1px solid var(--grid);border-radius:12px;overflow:hidden;box-shadow:var(--shadow)}
+.tt-acc.tt-inactive{opacity:.6}
+.tt-acc.open{border-color:var(--accent)}
+.tt-acchead{width:100%;display:flex;align-items:center;gap:12px;padding:14px 16px;background:none;border:none;cursor:pointer;font-family:inherit;text-align:start}
+.tt-acchead:hover{background:var(--head)}
+.tt-acc.open .tt-acchead{background:var(--head);border-bottom:1px solid var(--grid)}
+.tt-chev{color:var(--med);font-size:13px;flex:none;width:14px}
+.tt-acchead .tt-ava{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--med),var(--navy));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;flex:none;text-transform:uppercase}
+.tt-acchead .tt-name{flex:1;font-weight:700;color:var(--navy);font-size:15px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tt-off{font-size:10px;color:var(--grey);font-weight:400;border:1px solid var(--grid);border-radius:6px;padding:1px 5px;margin-inline-start:6px;white-space:nowrap}
+.tt-count-pill{flex:none;min-width:28px;height:24px;padding:0 9px;border-radius:20px;background:#EAF2FA;color:var(--med);font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;font-variant-numeric:tabular-nums}
+.tt-accbody{padding:14px 16px;background:var(--lblue,#F7FAFC)}
+.tt-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;align-items:start}
+.tt-empty{padding:16px;color:var(--grey);font-size:13px;text-align:center}
 </style></head>
 <body class="notranslate"><div id="gate"></div><div class="app" id="app" style="display:none"></div><div class="toast" id="toast"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -5788,7 +5784,7 @@ function viewTechTasks(){
   // Overdue) still counts — it's still being worked on. Everything else is excluded:
   // Incoming, accepted-but-not-started, scheduled/future, pending-confirm, done, cancelled.
   const isActive=(r)=> r.status==='In Progress' && !r.archived;
-  const all=(state.requests||[]);
+  const all=(state.requests||[]).map(calc);   // MUST calc — effStatus/due/isFuture come from calc(); raw rows lack them
   const q=(state.ttSearch||'').trim().toLowerCase();
 
   const byTech={};
@@ -5800,30 +5796,34 @@ function viewTechTasks(){
     return (staffDisp(a.en)||'').localeCompare(staffDisp(b.en)||'','ar');
   });
 
-  const col=(disp,tasks,inactive)=>{
+  const openSet=state.ttOpen||{};   // which technicians are expanded (accordion)
+  // full-width collapsible ROW per technician (collapsed by default)
+  const row=(key,disp,tasks,inactive)=>{
     const active=tasks.filter(isActive);
     const shown=active.slice().sort((x,y)=>(y.id||0)-(x.id||0));
     const initial=(disp||'?').trim().charAt(0);
+    const isOpen=!!openSet[key];
     const body = shown.length
-      ? shown.map(wcTaskCard).join('')
+      ? `<div class="tt-cards">${shown.map(wcTaskCard).join('')}</div>`
       : `<div class="tt-empty">${t('ttNoActive')}</div>`;
-    return `<div class="tt-col${inactive?' tt-inactive':''}">
-      <div class="tt-colhead">
-        <div class="tt-who"><span class="tt-ava">${esc(initial)}</span>
-          <div class="tt-name">${esc(disp)}${inactive?` <span class="tt-off">${t('stfInactiveTag')}</span>`:''}</div></div>
-        <div class="tt-counts"><span class="tt-c tt-c-act">${active.length}</span></div>
-      </div>
-      <div class="tt-colbody">${body}</div>
+    return `<div class="tt-acc${inactive?' tt-inactive':''}${isOpen?' open':''}">
+      <button class="tt-acchead" onclick="ttToggle('${encodeURIComponent(key)}')">
+        <span class="tt-chev">${isOpen?'▾':'▸'}</span>
+        <span class="tt-ava">${esc(initial)}</span>
+        <span class="tt-name">${esc(disp)}${inactive?` <span class="tt-off">${t('stfInactiveTag')}</span>`:''}</span>
+        <span class="tt-count-pill">${active.length}</span>
+      </button>
+      ${isOpen?`<div class="tt-accbody">${body}</div>`:''}
     </div>`;
   };
 
   const known=new Set(staff.map(x=>x.en));
   const orphanNames=Object.keys(byTech).filter(n=>!known.has(n)).sort((a,b)=>a.localeCompare(b,'ar'));
-  let entries=staff.map(sm=>({disp:staffDisp(sm.en), tasks:byTech[sm.en]||[], inactive:!staffActive(sm)}))
-    .concat(orphanNames.map(n=>({disp:n, tasks:byTech[n], inactive:true})));
+  let entries=staff.map(sm=>({key:'s:'+sm.id, disp:staffDisp(sm.en), tasks:byTech[sm.en]||[], inactive:!staffActive(sm)}))
+    .concat(orphanNames.map(n=>({key:'o:'+n, disp:n, tasks:byTech[n], inactive:true})));
   if(q) entries=entries.filter(e=>(e.disp||'').toLowerCase().includes(q));
 
-  const cols=entries.map(e=>col(e.disp,e.tasks,e.inactive)).join('');
+  const rows=entries.map(e=>row(e.key,e.disp,e.tasks,e.inactive)).join('');
   const totalActive=all.filter(r=>(r.assignedTo||'').trim() && isActive(r)).length;
 
   return `<div class="phead"><div class="eyebrow">${t('staffDirEye')}</div><h1>${t('nav').techtasks||'Technician Tasks'}</h1><p>${t('ttSub')}</p></div>
@@ -5834,9 +5834,10 @@ function viewTechTasks(){
     <div class="tt-toolbar">
       <div class="tt-search"><span class="tt-search-ic">🔍</span><input type="text" placeholder="${t('ttSearchPh')}" value="${esc(state.ttSearch||'')}" oninput="ttSetSearch(this.value)"></div>
     </div>
-    ${entries.length?`<div class="tt-board">${cols}</div>`
+    ${entries.length?`<div class="tt-acclist">${rows}</div>`
       :`<div class="panel panel-pad"><div class="tt-empty">${q?t('ttNoMatch'):t('stfNoNames')}</div></div>`}`;
 }
+function ttToggle(key){ key=decodeURIComponent(key); state.ttOpen=state.ttOpen||{}; state.ttOpen[key]=!state.ttOpen[key]; render(); }
 function ttSetSearch(v){ state.ttSearch=v;
   // keep focus + caret while typing: patch grid only, don't full-render
   const host=document.getElementById('view'); if(!host){render();return;}
