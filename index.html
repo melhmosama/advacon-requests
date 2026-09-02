@@ -1718,32 +1718,47 @@ textarea.rc-in{resize:vertical}
 .co-upl-note{color:var(--accent);font-size:12.5px;margin-top:8px}
 
 /* #3 Technician Tasks page */
-.tt-kpis{display:flex;gap:12px;margin:0 0 16px}
-.tt-kpi{background:var(--white);border:1px solid var(--grid);border-radius:10px;padding:10px 16px;min-width:88px;text-align:center}
-.tt-kpi b{display:block;font-size:20px;color:var(--navy);line-height:1.1}
+.tt-kpis{display:flex;gap:10px;margin:0 0 14px;flex-wrap:wrap}
+.tt-kpi{background:var(--white);border:1px solid var(--grid);border-radius:12px;padding:10px 18px;min-width:96px;text-align:center}
+.tt-kpi b{display:block;font-size:22px;color:var(--navy);line-height:1.05;font-variant-numeric:tabular-nums}
 .tt-kpi span{font-size:11px;color:var(--grey)}
-.tt-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px}
-.tt-card{background:var(--white);border:1px solid var(--grid);border-radius:12px;overflow:hidden;box-shadow:var(--shadow);display:flex;flex-direction:column}
-.tt-card.tt-inactive{opacity:.62}
-.tt-head{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:11px 14px;background:var(--head);border-bottom:1px solid var(--grid)}
-.tt-name{font-weight:700;color:var(--navy);font-size:14px}
-.tt-off{font-size:10px;color:var(--grey);font-weight:400;border:1px solid var(--grid);border-radius:6px;padding:1px 5px;margin-inline-start:4px}
-.tt-counts{display:flex;gap:6px;flex:none}
-.tt-c{font-size:11px;padding:2px 7px;border-radius:20px;white-space:nowrap}
-.tt-c-act{background:#EAF2FA;color:var(--med)}
-.tt-c-tot{background:var(--lgray);color:var(--grey)}
-.tt-tasks{padding:6px;display:flex;flex-direction:column;gap:2px;flex:1}
-.tt-task{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;cursor:pointer;transition:background .12s}
+.tt-kpi-act b{color:var(--med)}
+.tt-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 16px;flex-wrap:wrap}
+.tt-seggrp{display:inline-flex;background:var(--lgray);border:1px solid var(--grid);border-radius:10px;padding:3px;gap:2px}
+.tt-seg{border:none;background:none;padding:7px 16px;border-radius:8px;font-size:13px;color:var(--grey);cursor:pointer;font-weight:600;transition:all .15s}
+.tt-seg:hover{color:var(--navy)}
+.tt-seg.on{background:var(--white);color:var(--navy);box-shadow:0 1px 3px rgba(10,16,22,.1)}
+.tt-search{position:relative;display:flex;align-items:center;min-width:220px;flex:0 1 280px}
+.tt-search-ic{position:absolute;inset-inline-start:11px;font-size:13px;opacity:.5;pointer-events:none}
+.tt-search input{width:100%;padding:9px 12px 9px 34px;border:1px solid var(--grid);border-radius:10px;font-size:13px;background:var(--white);font-family:inherit}
+.tt-search input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(62,110,158,.12)}
+html[dir=rtl] .tt-search input{padding:9px 34px 9px 12px}
+.tt-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px;align-items:start}
+.tt-card{background:var(--white);border:1px solid var(--grid);border-radius:14px;overflow:hidden;box-shadow:var(--shadow);display:flex;flex-direction:column}
+.tt-card.tt-inactive{opacity:.6}
+.tt-head{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--grid)}
+.tt-who{display:flex;align-items:center;gap:10px;min-width:0}
+.tt-ava{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--med),var(--navy));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex:none;text-transform:uppercase}
+.tt-name{font-weight:700;color:var(--navy);font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tt-off{font-size:10px;color:var(--grey);font-weight:400;border:1px solid var(--grid);border-radius:6px;padding:1px 5px;margin-inline-start:4px;white-space:nowrap}
+.tt-counts{display:flex;align-items:center;gap:4px;flex:none;font-variant-numeric:tabular-nums}
+.tt-c{font-size:13px;font-weight:700}
+.tt-c-act{color:var(--med)}
+.tt-c-tot{color:var(--grey)}
+.tt-c-sep{color:var(--grid);font-size:12px}
+.tt-tasks{padding:6px;display:flex;flex-direction:column;gap:1px;max-height:340px;overflow-y:auto}
+.tt-tasks::-webkit-scrollbar{width:6px}
+.tt-tasks::-webkit-scrollbar-thumb{background:var(--grid);border-radius:3px}
+.tt-task{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:9px;cursor:pointer;transition:background .12s}
 .tt-task:hover{background:var(--lgray)}
 .tt-task.tt-pend{background:#FFF7ED}
-.tt-tid{font-size:11px;color:var(--grey);font-variant-numeric:tabular-nums;flex:none;min-width:58px}
-.tt-title{flex:1;font-size:13px;color:var(--txt);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.tt-pendtag{font-size:10px;color:#C2620E}
-.tt-proj{font-size:11px;color:var(--grey);flex:none;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tt-task.tt-pend:hover{background:#FFEEDB}
+.tt-tid{font-size:10px;color:var(--grey);font-variant-numeric:tabular-nums;flex:none;min-width:52px}
+.tt-title{flex:1;font-size:13px;color:var(--txt);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.tt-pendtag{font-size:11px}
+.tt-proj{font-size:10px;color:var(--grey);flex:none;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:var(--lgray);padding:2px 7px;border-radius:20px}
 .tt-st{flex:none}
-.tt-empty{padding:12px 10px;color:var(--grey);font-size:12px;text-align:center}
-.tt-toggle{margin:0 8px 8px;padding:6px 10px;background:none;border:1px dashed var(--grid);border-radius:8px;color:var(--med);font-size:12px;cursor:pointer}
-.tt-toggle:hover{background:var(--lgray)}
+.tt-empty{padding:22px 14px;color:var(--grey);font-size:12px;text-align:center}
 </style></head>
 <body class="notranslate"><div id="gate"></div><div class="app" id="app" style="display:none"></div><div class="toast" id="toast"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -2451,7 +2466,7 @@ const T={
   byCat:"Requests by Category",bySt:"Requests by Status",byPri:"Requests by Priority",byProj:"Requests by Project",wlTeam:"Workload by Team",overTime:"Requests Over Time",topReq:"Top Requesters",alerts:"Needs Attention",dueIn:"due in",overdueBy:"overdue",noAlerts:"Nothing overdue or due soon.",noData:"No data yet",
   setEye:"Configuration",setH1:"Settings",setP:"Manage dropdown lists and dashboard widgets. Changes apply everywhere.",
   chartsCfg:"Dashboard widgets",chartsCfgHint:"Choose what appears on the dashboard.",
-  sProjects:"Projects",sCats:"Service Types",sEmps:"Team Members",sStaff:"Staff Directory",stfCodeLab:"Code",stfLoginH1:"Request Execution & Tracking Portal – Team Members",stfLoginP:"Enter your 3-digit code to view your tasks.",stfLoginBtn:"Enter",stfBadCode:"Invalid code. Try again.",stfThrottled:"Too many attempts. Wait a moment and try again.",stfNetErr:"Connection problem. Try again.",stfLockedHint:"This task is paused by the manager. You can't work on it until the manager reactivates it.",stfMgrNote:"Manager note",statusComment:"Status Comment",statusCommentPh:"Optional comment for this status change",statusCommentTitle:"Status change",statusCommentMsg:"Changing status to",confirmStatusBtn:"Confirm",optional:"optional",stfRejectReason:"Reason",cancelReasonLbl:"Cancellation reason",stfLogout:"Log out",reqByLbl:"Requested by",reqPhoneLbl:"Phone",startDateTime:"Start Date & Time (optional)",startDateTimeHint:"Leave empty to start now. Set a future time for a scheduled task.",taskStartLbl:"Scheduled start",futureTaskMsg:"Future task — scheduled to start on",futureLockMsg:"This task hasn't started yet. You can begin work once its start time arrives.",readyMsg:"This task is ready to start.",badgeFuture:"Future",badgeReady:"Ready",startTaskBtn:"Start Task",taskStarted:"Task started",badDur:"Duration must be a positive number",badDate:"Invalid start date/time",schedPast:"Scheduled time must be in the future",stfWelcome:"Welcome,",staffNeedName:"Enter a name",codeExists:"Code already used",delStaffQ:"Delete this staff member?",editStaffTitle:"Edit staff member",confirmDeclineQ:"Decline this request?",confirmDoneQ:"Confirm this task as completed?",confirmReturnQ:"Return this task to the technician?",closeoutFiles:"Attach files (optional)",coComment:"Comment (optional)",coCommentPh:"Add a short note about the work done…",coNoteLbl:"Technician comment",coEditBtn:"Edit closeout",coEditTitle:"Edit Closeout Details",coSaveBtn:"Save & keep pending",coSaved:"Closeout updated",coNotePh:"Completion note…",coImagesLbl:"Closeout photos",coFilesLbl:"Closeout files",coAddImages:"Add photos",coAddFiles:"Add files",coNoImages:"No photos",coNoFiles:"No files",coNotPending:"This task is no longer awaiting confirmation.",closeoutOptional:"Photos & files are optional.",closeoutPhoto:"Close-out photo (optional)",closeoutHint:"Optionally attach a photo of the completed work.",recentDone:"Recently Completed",recentDoneHint:"stays here 8h then archived",returnAccept:"Return to Acceptance",confirmReturnAcceptQ:"Return this task to the acceptance list?",returnToTech:"Return to Technician",confirmReturnTechQ:"Return this task to the assigned technician?",completedAt:"Completed at",repTitle:"Reports",repDaily:"Daily Report",repDay:"Day",repEye:"Operations",ddTitle:"Today's Live Dashboard",ddLive:"Live",ddRequested:"Requested",ddAccepted:"Accepted",ddInProgress:"In Progress",ddDaily:"Daily Tasks",ddOngoing:"Ongoing Tasks",ddClosed:"Closed",ddScheduled:"Scheduled",ddRejected:"Rejected",ddPending:"Pending Acceptance",dd_requested:"Requested Today",dd_pending:"Pending Acceptance Today",dd_accepted:"Accepted Today",dd_inprogress:"In Progress (accepted today)",dd_daily:"Daily Tasks (started today)",dd_ongoing:"Ongoing Tasks (from earlier days)",dd_scheduled:"Scheduled / Not started",dd_closed:"Closed Today",dd_rejected:"Rejected Today",ddHint:"Each count reflects an event that happened today (by its own time). Requested = submitted today, Pending = submitted today & still incoming.",repPageP:"Detailed task log and downloadable daily / period reports.",repDailyTitle:"Daily Report",repDailyHint:"Pick a day and download its PDF (summary) + Excel (full data). Counts events by their timestamp that day.",repPeriodTitle:"Period Report",repPeriodHint:"Requests received in the period, classified by current status (Completed / Rejected / In Progress / Other). Source: All Requests.",repTableTitle:"Detailed Task Log",colReceived:"Received",colAccepted:"Accepted",colClosed:"Closed",colDuration:"Completion",noDate:"No date",repMonthly:"Requests per month — since project start (live)",repDailyChart:"Today's activity breakdown",statsTitle:"Project Statistics — All Time",naTitle:"Needs Attention",naOverdue:"Overdue",naStalePending:"Pending >24h",naLongRunning:"Running >7 days",repFrom:"From",repTo:"To",repGen:"Generate Report",repHint:"Generates a PDF (summary) and Excel (full data) for the selected period — files download to your device.",repGenerating:"Generating report…",repPickDates:"Please select both dates",repExcelErr:"Excel export failed (check connection)",repPopup:"Please allow pop-ups to view the PDF",staffDirEye:"Team",staffDirH1:"Staff Directory",staffDirP:"Manage employees, login codes, and phone numbers shown on tracking.",ttSub:"Each technician and the tasks assigned to them — live from the Staff Directory.",ttActive:"active",ttTotal:"total",ttTechs:"technicians",ttNoActive:"No active tasks.",ttShowAll:"Show finished",ttShowActive:"Show active only",staffAddNew:"Add new staff member",stfInactiveTag:"inactive",trkContactMgr:"Please contact the manager",rtDeactivated:"Template disabled — it has generated tasks, so its history is kept",stfInactiveLogin:"Your account is inactive. Please contact administration.",stfDeactivateQ:"Deactivate this technician?",stfDeactivateMsg:"He will be hidden from assignment lists and cannot log in. His history is kept and he can be reactivated later.",stfDeactivate:"Deactivate",stfReactivate:"Reactivate",sPris:"Priorities",addNew:"Add new…",add:"Add",addNameAr:"Arabic name",dndHint:"Drag to reorder",addNameEn:"English name",
+  sProjects:"Projects",sCats:"Service Types",sEmps:"Team Members",sStaff:"Staff Directory",stfCodeLab:"Code",stfLoginH1:"Request Execution & Tracking Portal – Team Members",stfLoginP:"Enter your 3-digit code to view your tasks.",stfLoginBtn:"Enter",stfBadCode:"Invalid code. Try again.",stfThrottled:"Too many attempts. Wait a moment and try again.",stfNetErr:"Connection problem. Try again.",stfLockedHint:"This task is paused by the manager. You can't work on it until the manager reactivates it.",stfMgrNote:"Manager note",statusComment:"Status Comment",statusCommentPh:"Optional comment for this status change",statusCommentTitle:"Status change",statusCommentMsg:"Changing status to",confirmStatusBtn:"Confirm",optional:"optional",stfRejectReason:"Reason",cancelReasonLbl:"Cancellation reason",stfLogout:"Log out",reqByLbl:"Requested by",reqPhoneLbl:"Phone",startDateTime:"Start Date & Time (optional)",startDateTimeHint:"Leave empty to start now. Set a future time for a scheduled task.",taskStartLbl:"Scheduled start",futureTaskMsg:"Future task — scheduled to start on",futureLockMsg:"This task hasn't started yet. You can begin work once its start time arrives.",readyMsg:"This task is ready to start.",badgeFuture:"Future",badgeReady:"Ready",startTaskBtn:"Start Task",taskStarted:"Task started",badDur:"Duration must be a positive number",badDate:"Invalid start date/time",schedPast:"Scheduled time must be in the future",stfWelcome:"Welcome,",staffNeedName:"Enter a name",codeExists:"Code already used",delStaffQ:"Delete this staff member?",editStaffTitle:"Edit staff member",confirmDeclineQ:"Decline this request?",confirmDoneQ:"Confirm this task as completed?",confirmReturnQ:"Return this task to the technician?",closeoutFiles:"Attach files (optional)",coComment:"Comment (optional)",coCommentPh:"Add a short note about the work done…",coNoteLbl:"Technician comment",coEditBtn:"Edit closeout",coEditTitle:"Edit Closeout Details",coSaveBtn:"Save & keep pending",coSaved:"Closeout updated",coNotePh:"Completion note…",coImagesLbl:"Closeout photos",coFilesLbl:"Closeout files",coAddImages:"Add photos",coAddFiles:"Add files",coNoImages:"No photos",coNoFiles:"No files",coNotPending:"This task is no longer awaiting confirmation.",closeoutOptional:"Photos & files are optional.",closeoutPhoto:"Close-out photo (optional)",closeoutHint:"Optionally attach a photo of the completed work.",recentDone:"Recently Completed",recentDoneHint:"stays here 8h then archived",returnAccept:"Return to Acceptance",confirmReturnAcceptQ:"Return this task to the acceptance list?",returnToTech:"Return to Technician",confirmReturnTechQ:"Return this task to the assigned technician?",completedAt:"Completed at",repTitle:"Reports",repDaily:"Daily Report",repDay:"Day",repEye:"Operations",ddTitle:"Today's Live Dashboard",ddLive:"Live",ddRequested:"Requested",ddAccepted:"Accepted",ddInProgress:"In Progress",ddDaily:"Daily Tasks",ddOngoing:"Ongoing Tasks",ddClosed:"Closed",ddScheduled:"Scheduled",ddRejected:"Rejected",ddPending:"Pending Acceptance",dd_requested:"Requested Today",dd_pending:"Pending Acceptance Today",dd_accepted:"Accepted Today",dd_inprogress:"In Progress (accepted today)",dd_daily:"Daily Tasks (started today)",dd_ongoing:"Ongoing Tasks (from earlier days)",dd_scheduled:"Scheduled / Not started",dd_closed:"Closed Today",dd_rejected:"Rejected Today",ddHint:"Each count reflects an event that happened today (by its own time). Requested = submitted today, Pending = submitted today & still incoming.",repPageP:"Detailed task log and downloadable daily / period reports.",repDailyTitle:"Daily Report",repDailyHint:"Pick a day and download its PDF (summary) + Excel (full data). Counts events by their timestamp that day.",repPeriodTitle:"Period Report",repPeriodHint:"Requests received in the period, classified by current status (Completed / Rejected / In Progress / Other). Source: All Requests.",repTableTitle:"Detailed Task Log",colReceived:"Received",colAccepted:"Accepted",colClosed:"Closed",colDuration:"Completion",noDate:"No date",repMonthly:"Requests per month — since project start (live)",repDailyChart:"Today's activity breakdown",statsTitle:"Project Statistics — All Time",naTitle:"Needs Attention",naOverdue:"Overdue",naStalePending:"Pending >24h",naLongRunning:"Running >7 days",repFrom:"From",repTo:"To",repGen:"Generate Report",repHint:"Generates a PDF (summary) and Excel (full data) for the selected period — files download to your device.",repGenerating:"Generating report…",repPickDates:"Please select both dates",repExcelErr:"Excel export failed (check connection)",repPopup:"Please allow pop-ups to view the PDF",staffDirEye:"Team",staffDirH1:"Staff Directory",staffDirP:"Manage employees, login codes, and phone numbers shown on tracking.",ttSub:"Each technician and the tasks assigned to them — live from the Staff Directory.",ttActive:"active",ttTotal:"total",ttTechs:"technicians",ttNoActive:"No active tasks.",ttNoFinished:"No finished tasks.",ttNoTasks:"No tasks yet.",ttNoMatch:"No technician matches your search.",ttFActive:"Active",ttFAll:"All",ttFFinished:"Finished",ttSearchPh:"Search technician…",staffAddNew:"Add new staff member",stfInactiveTag:"inactive",trkContactMgr:"Please contact the manager",rtDeactivated:"Template disabled — it has generated tasks, so its history is kept",stfInactiveLogin:"Your account is inactive. Please contact administration.",stfDeactivateQ:"Deactivate this technician?",stfDeactivateMsg:"He will be hidden from assignment lists and cannot log in. His history is kept and he can be reactivated later.",stfDeactivate:"Deactivate",stfReactivate:"Reactivate",sPris:"Priorities",addNew:"Add new…",add:"Add",addNameAr:"Arabic name",dndHint:"Drag to reorder",addNameEn:"English name",
   deptName:"Maintenance, Operation & Technical Support Department",thanksH:"Thank you",thanksMsg:"Your request has been received and will be followed up.",thanksContact:"For follow-up, contact the Maintenance, Operation & Technical Support Manager",thanksNew:"Submit another request",
   fillReq:"Please fill in the required fields",mpSectionTitle:"Materials (optional)",mpAdd:"Add materials",mpOptionalHint:"Only if this request needs materials from the warehouse.",mpTitle:"Request materials",mpLoading:"Loading materials…",mpLoadErr:"Could not load materials. Try again.",mpEmpty:"No materials available to request right now.",mpNoMatch:"No item matches your search.",mpSearchPh:"Search by name or code",mpAvail:"Available",mpSelected:"Selected",mpConfirm:"Confirm materials",mpMaxOnly:"Only {n} available",mpReqTitle:"Requested materials",mpEdit:"Edit materials",mpAllCats:"All categories",mpNoCat:"Uncategorized",mpCatHint:"Choose a category",submitted:"Request submitted",acceptedToast:"start date set to today",declinedToast:"declined",exported:"requests exported",added:"Added",exists:"Already in the list",connErr:"Connection error",closedToast:"closed",restoredToast:"restored",
   exitAdmin:"Exit",navVisitor:"Visitor Page",navTech:"Technician Page",navAssetPortal:"Asset Portal",enter:"Enter",page:"Page",of:"of",
@@ -2485,7 +2500,7 @@ const T={
   byCat:"الطلبات حسب الفئة",bySt:"الطلبات حسب الحالة",byPri:"الطلبات حسب الأولوية",byProj:"الطلبات حسب المشروع",wlTeam:"توزيع العمل على الفريق",overTime:"الطلبات عبر الزمن",topReq:"الأكثر طلباً",alerts:"يحتاج انتباه",dueIn:"تستحق خلال",overdueBy:"متأخرة",noAlerts:"لا شيء متأخر أو قريب الاستحقاق.",noData:"لا توجد بيانات بعد",
   setEye:"الإعدادات",setH1:"الإعدادات",setP:"إدارة القوائم وعناصر لوحة المعلومات. تُطبَّق التغييرات مباشرةً في جميع أنحاء النظام.",
   chartsCfg:"عناصر لوحة المعلومات",chartsCfgHint:"حدِّد العناصر التي تظهر على لوحة المعلومات.",
-  sProjects:"المشاريع",sCats:"أنواع الخدمات",sEmps:"أعضاء الفريق",sStaff:"دليل الموظفين",stfCodeLab:"الرمز",stfLoginH1:"بوابة تنفيذ ومتابعة الطلبات – أعضاء الفريق",stfLoginP:"أدخل رمزك المكوّن من 3 أرقام لعرض مهامك.",stfLoginBtn:"دخول",stfBadCode:"رمز غير صحيح. حاول مرة أخرى.",stfThrottled:"محاولات كثيرة. انتظر لحظة وحاول مجدداً.",stfNetErr:"مشكلة بالاتصال. حاول مرة أخرى.",stfLockedHint:"هذه المهمة موقوفة من المدير. لا يمكنك العمل عليها حتى يعيد المدير تفعيلها.",stfMgrNote:"ملاحظة المدير",statusComment:"تعليق تغيير الحالة",statusCommentPh:"تعليق اختياري لتغيير الحالة",statusCommentTitle:"تغيير الحالة",statusCommentMsg:"تغيير الحالة إلى",confirmStatusBtn:"تأكيد",optional:"اختياري",stfRejectReason:"السبب",cancelReasonLbl:"سبب الإلغاء",stfLogout:"تسجيل خروج",reqByLbl:"مقدّم الطلب",reqPhoneLbl:"الهاتف",startDateTime:"تاريخ ووقت البدء (اختياري)",startDateTimeHint:"اتركه فارغاً ليبدأ الآن. حدّد وقتاً مستقبلياً لمهمة مجدولة.",taskStartLbl:"موعد البدء",futureTaskMsg:"مهمة مستقبلية — مجدولة للبدء في",futureLockMsg:"هذه المهمة لم تبدأ بعد. تقدر تبدأ العمل عند حلول موعد بدايتها.",readyMsg:"المهمة جاهزة للبدء.",badgeFuture:"مستقبلية",badgeReady:"جاهزة",startTaskBtn:"ابدأ المهمة",taskStarted:"بدأت المهمة",badDur:"المدة يجب أن تكون رقماً موجباً",badDate:"تاريخ/وقت بدء غير صالح",schedPast:"وقت الجدولة يجب أن يكون في المستقبل",stfWelcome:"أهلاً وسهلاً،",staffNeedName:"أدخل الاسم",codeExists:"الرمز مستخدم مسبقاً",delStaffQ:"حذف هذا الموظف؟",editStaffTitle:"تعديل بيانات الموظف",confirmDeclineQ:"رفض هذا الطلب؟",confirmDoneQ:"تأكيد إنجاز هذه المهمة؟",confirmReturnQ:"إرجاع المهمة إلى الفني؟",closeoutFiles:"إرفاق ملفات (اختياري)",coComment:"تعليق (اختياري)",coCommentPh:"أضف ملاحظة مختصرة عن العمل المنجز…",coNoteLbl:"تعليق الفني",coEditBtn:"تعديل الإغلاق",coEditTitle:"تعديل تفاصيل الإغلاق",coSaveBtn:"حفظ مع إبقاء الطلب معلّقاً",coSaved:"تم تحديث الإغلاق",coNotePh:"ملاحظة الإنجاز…",coImagesLbl:"صور الإغلاق",coFilesLbl:"ملفات الإغلاق",coAddImages:"إضافة صور",coAddFiles:"إضافة ملفات",coNoImages:"لا صور",coNoFiles:"لا ملفات",coNotPending:"هذا الطلب لم يعد بانتظار التأكيد.",closeoutOptional:"الصور والملفات اختيارية.",closeoutPhoto:"صورة الإنجاز (اختياري)",closeoutHint:"يمكنك إرفاق صورة للعمل بعد إنجازه.",recentDone:"المهام المكتملة حديثاً",recentDoneHint:"تبقى هنا 8 ساعات ثم تُؤرشف",returnAccept:"إرجاع إلى قائمة القبول",confirmReturnAcceptQ:"إرجاع المهمة إلى قائمة القبول؟",returnToTech:"إرجاع للفني",confirmReturnTechQ:"إرجاع المهمة إلى الفني المسؤول؟",completedAt:"وقت الإنجاز",repTitle:"التقارير",repDaily:"تقرير يومي",repDay:"اليوم",repEye:"العمليات",ddTitle:"لوحة اليوم المباشرة",ddLive:"مباشر",ddRequested:"طُلبت",ddAccepted:"قُبلت",ddInProgress:"تحت العمل",ddDaily:"مهام اليوم",ddOngoing:"مهام مستمرة",ddClosed:"أُغلقت",ddScheduled:"مجدولة / لم تبدأ",ddRejected:"رُفضت",ddPending:"بانتظار القبول",dd_requested:"طُلبت اليوم",dd_pending:"بانتظار القبول اليوم",dd_accepted:"قُبلت اليوم",dd_inprogress:"تحت العمل (قُبلت اليوم)",dd_daily:"مهام اليوم (بدأت اليوم)",dd_ongoing:"مهام مستمرة (من أيام سابقة)",dd_scheduled:"مجدولة / لم تبدأ",dd_closed:"أُغلقت اليوم",dd_rejected:"رُفضت اليوم",ddHint:"كل رقم يعكس حدثاً صار اليوم (بوقته). طُلبت = قُدّمت اليوم، بانتظار القبول = قُدّمت اليوم ولسا واردة.",repPageP:"سجل المهام التفصيلي وتقارير يومية/فترة قابلة للتحميل.",repDailyTitle:"التقرير اليومي",repDailyHint:"اختر يوماً ونزّل ملف PDF (ملخّص) + Excel (تفصيلي). يحسب الأحداث حسب توقيتها في ذلك اليوم.",repPeriodTitle:"تقرير الفترة",repPeriodHint:"الطلبات المستقبَلة خلال الفترة، مصنّفة حسب حالتها الحالية (مكتمل / مرفوض / تحت المعالجة / أخرى). المصدر: جميع الطلبات.",repTableTitle:"سجل المهام التفصيلي",colReceived:"الاستقبال",colAccepted:"القبول",colClosed:"الإغلاق",colDuration:"مدة الإنجاز",noDate:"بدون تاريخ",repMonthly:"عدد الطلبات شهرياً — منذ بداية المشروع (مباشر)",repDailyChart:"توزيع نشاط اليوم",statsTitle:"إحصائيات المشروع — منذ البداية",naTitle:"تحتاج انتباه",naOverdue:"متأخرة",naStalePending:"معلّقة >24 ساعة",naLongRunning:"شغّالة >7 أيام",repFrom:"من",repTo:"إلى",repGen:"إنشاء التقرير",repHint:"يُنشئ ملف PDF (ملخّص) وملف Excel (بيانات كاملة) للفترة المختارة — تُحمّل الملفات على جهازك.",repGenerating:"جارٍ إنشاء التقرير…",repPickDates:"يُرجى اختيار التاريخين",repExcelErr:"فشل تصدير Excel (تحقق من الاتصال)",repPopup:"يُرجى السماح بالنوافذ المنبثقة لعرض الـPDF",staffDirEye:"الفريق",staffDirH1:"دليل الموظفين",staffDirP:"إدارة الموظفين ورموز الدخول وأرقام الجوال الظاهرة في صفحة التتبّع.",ttSub:"كل فني والمهام المسندة إليه — مباشرة من دليل الموظفين.",ttActive:"نشطة",ttTotal:"إجمالي",ttTechs:"فنيين",ttNoActive:"لا مهام نشطة.",ttShowAll:"عرض المنتهية",ttShowActive:"النشطة فقط",staffAddNew:"إضافة موظف جديد",stfInactiveTag:"معطّل",trkContactMgr:"يرجى التواصل مع المدير",rtDeactivated:"تم تعطيل القالب — لأنه ولّد مهام، فسجلّه محفوظ",stfInactiveLogin:"حسابك معطّل، يُرجى التواصل مع الإدارة.",stfDeactivateQ:"تعطيل هذا الفني؟",stfDeactivateMsg:"سيختفي من قوائم الإسناد ولن يستطيع تسجيل الدخول. سجلّه محفوظ ويمكن إعادة تفعيله لاحقاً.",stfDeactivate:"تعطيل",stfReactivate:"إعادة تفعيل",sPris:"الأولويات",addNew:"إضافة جديد…",add:"إضافة",addNameAr:"الاسم بالعربي",dndHint:"اسحب لإعادة الترتيب",addNameEn:"الاسم بالإنجليزي",
+  sProjects:"المشاريع",sCats:"أنواع الخدمات",sEmps:"أعضاء الفريق",sStaff:"دليل الموظفين",stfCodeLab:"الرمز",stfLoginH1:"بوابة تنفيذ ومتابعة الطلبات – أعضاء الفريق",stfLoginP:"أدخل رمزك المكوّن من 3 أرقام لعرض مهامك.",stfLoginBtn:"دخول",stfBadCode:"رمز غير صحيح. حاول مرة أخرى.",stfThrottled:"محاولات كثيرة. انتظر لحظة وحاول مجدداً.",stfNetErr:"مشكلة بالاتصال. حاول مرة أخرى.",stfLockedHint:"هذه المهمة موقوفة من المدير. لا يمكنك العمل عليها حتى يعيد المدير تفعيلها.",stfMgrNote:"ملاحظة المدير",statusComment:"تعليق تغيير الحالة",statusCommentPh:"تعليق اختياري لتغيير الحالة",statusCommentTitle:"تغيير الحالة",statusCommentMsg:"تغيير الحالة إلى",confirmStatusBtn:"تأكيد",optional:"اختياري",stfRejectReason:"السبب",cancelReasonLbl:"سبب الإلغاء",stfLogout:"تسجيل خروج",reqByLbl:"مقدّم الطلب",reqPhoneLbl:"الهاتف",startDateTime:"تاريخ ووقت البدء (اختياري)",startDateTimeHint:"اتركه فارغاً ليبدأ الآن. حدّد وقتاً مستقبلياً لمهمة مجدولة.",taskStartLbl:"موعد البدء",futureTaskMsg:"مهمة مستقبلية — مجدولة للبدء في",futureLockMsg:"هذه المهمة لم تبدأ بعد. تقدر تبدأ العمل عند حلول موعد بدايتها.",readyMsg:"المهمة جاهزة للبدء.",badgeFuture:"مستقبلية",badgeReady:"جاهزة",startTaskBtn:"ابدأ المهمة",taskStarted:"بدأت المهمة",badDur:"المدة يجب أن تكون رقماً موجباً",badDate:"تاريخ/وقت بدء غير صالح",schedPast:"وقت الجدولة يجب أن يكون في المستقبل",stfWelcome:"أهلاً وسهلاً،",staffNeedName:"أدخل الاسم",codeExists:"الرمز مستخدم مسبقاً",delStaffQ:"حذف هذا الموظف؟",editStaffTitle:"تعديل بيانات الموظف",confirmDeclineQ:"رفض هذا الطلب؟",confirmDoneQ:"تأكيد إنجاز هذه المهمة؟",confirmReturnQ:"إرجاع المهمة إلى الفني؟",closeoutFiles:"إرفاق ملفات (اختياري)",coComment:"تعليق (اختياري)",coCommentPh:"أضف ملاحظة مختصرة عن العمل المنجز…",coNoteLbl:"تعليق الفني",coEditBtn:"تعديل الإغلاق",coEditTitle:"تعديل تفاصيل الإغلاق",coSaveBtn:"حفظ مع إبقاء الطلب معلّقاً",coSaved:"تم تحديث الإغلاق",coNotePh:"ملاحظة الإنجاز…",coImagesLbl:"صور الإغلاق",coFilesLbl:"ملفات الإغلاق",coAddImages:"إضافة صور",coAddFiles:"إضافة ملفات",coNoImages:"لا صور",coNoFiles:"لا ملفات",coNotPending:"هذا الطلب لم يعد بانتظار التأكيد.",closeoutOptional:"الصور والملفات اختيارية.",closeoutPhoto:"صورة الإنجاز (اختياري)",closeoutHint:"يمكنك إرفاق صورة للعمل بعد إنجازه.",recentDone:"المهام المكتملة حديثاً",recentDoneHint:"تبقى هنا 8 ساعات ثم تُؤرشف",returnAccept:"إرجاع إلى قائمة القبول",confirmReturnAcceptQ:"إرجاع المهمة إلى قائمة القبول؟",returnToTech:"إرجاع للفني",confirmReturnTechQ:"إرجاع المهمة إلى الفني المسؤول؟",completedAt:"وقت الإنجاز",repTitle:"التقارير",repDaily:"تقرير يومي",repDay:"اليوم",repEye:"العمليات",ddTitle:"لوحة اليوم المباشرة",ddLive:"مباشر",ddRequested:"طُلبت",ddAccepted:"قُبلت",ddInProgress:"تحت العمل",ddDaily:"مهام اليوم",ddOngoing:"مهام مستمرة",ddClosed:"أُغلقت",ddScheduled:"مجدولة / لم تبدأ",ddRejected:"رُفضت",ddPending:"بانتظار القبول",dd_requested:"طُلبت اليوم",dd_pending:"بانتظار القبول اليوم",dd_accepted:"قُبلت اليوم",dd_inprogress:"تحت العمل (قُبلت اليوم)",dd_daily:"مهام اليوم (بدأت اليوم)",dd_ongoing:"مهام مستمرة (من أيام سابقة)",dd_scheduled:"مجدولة / لم تبدأ",dd_closed:"أُغلقت اليوم",dd_rejected:"رُفضت اليوم",ddHint:"كل رقم يعكس حدثاً صار اليوم (بوقته). طُلبت = قُدّمت اليوم، بانتظار القبول = قُدّمت اليوم ولسا واردة.",repPageP:"سجل المهام التفصيلي وتقارير يومية/فترة قابلة للتحميل.",repDailyTitle:"التقرير اليومي",repDailyHint:"اختر يوماً ونزّل ملف PDF (ملخّص) + Excel (تفصيلي). يحسب الأحداث حسب توقيتها في ذلك اليوم.",repPeriodTitle:"تقرير الفترة",repPeriodHint:"الطلبات المستقبَلة خلال الفترة، مصنّفة حسب حالتها الحالية (مكتمل / مرفوض / تحت المعالجة / أخرى). المصدر: جميع الطلبات.",repTableTitle:"سجل المهام التفصيلي",colReceived:"الاستقبال",colAccepted:"القبول",colClosed:"الإغلاق",colDuration:"مدة الإنجاز",noDate:"بدون تاريخ",repMonthly:"عدد الطلبات شهرياً — منذ بداية المشروع (مباشر)",repDailyChart:"توزيع نشاط اليوم",statsTitle:"إحصائيات المشروع — منذ البداية",naTitle:"تحتاج انتباه",naOverdue:"متأخرة",naStalePending:"معلّقة >24 ساعة",naLongRunning:"شغّالة >7 أيام",repFrom:"من",repTo:"إلى",repGen:"إنشاء التقرير",repHint:"يُنشئ ملف PDF (ملخّص) وملف Excel (بيانات كاملة) للفترة المختارة — تُحمّل الملفات على جهازك.",repGenerating:"جارٍ إنشاء التقرير…",repPickDates:"يُرجى اختيار التاريخين",repExcelErr:"فشل تصدير Excel (تحقق من الاتصال)",repPopup:"يُرجى السماح بالنوافذ المنبثقة لعرض الـPDF",staffDirEye:"الفريق",staffDirH1:"دليل الموظفين",staffDirP:"إدارة الموظفين ورموز الدخول وأرقام الجوال الظاهرة في صفحة التتبّع.",ttSub:"كل فني والمهام المسندة إليه — مباشرة من دليل الموظفين.",ttActive:"نشطة",ttTotal:"إجمالي",ttTechs:"فنيين",ttNoActive:"لا مهام نشطة.",ttNoFinished:"لا مهام منتهية.",ttNoTasks:"لا مهام بعد.",ttNoMatch:"لا فني يطابق البحث.",ttFActive:"النشطة",ttFAll:"الكل",ttFFinished:"المنتهية",ttSearchPh:"ابحث عن فني…",staffAddNew:"إضافة موظف جديد",stfInactiveTag:"معطّل",trkContactMgr:"يرجى التواصل مع المدير",rtDeactivated:"تم تعطيل القالب — لأنه ولّد مهام، فسجلّه محفوظ",stfInactiveLogin:"حسابك معطّل، يُرجى التواصل مع الإدارة.",stfDeactivateQ:"تعطيل هذا الفني؟",stfDeactivateMsg:"سيختفي من قوائم الإسناد ولن يستطيع تسجيل الدخول. سجلّه محفوظ ويمكن إعادة تفعيله لاحقاً.",stfDeactivate:"تعطيل",stfReactivate:"إعادة تفعيل",sPris:"الأولويات",addNew:"إضافة جديد…",add:"إضافة",addNameAr:"الاسم بالعربي",dndHint:"اسحب لإعادة الترتيب",addNameEn:"الاسم بالإنجليزي",
   deptName:"قسم الصيانة والتشغيل والدعم الفني",thanksH:"شكراً جزيلاً",thanksMsg:"تم استلام طلبكم بنجاح، وستتم متابعته من قِبل القسم المختص.",thanksContact:"للاستفسار أو المتابعة، يُرجى التواصل مع مدير قسم الصيانة والتشغيل والدعم الفني",thanksNew:"تقديم طلب آخر",
   fillReq:"الرجاء تعبئة الحقول المطلوبة",mpSectionTitle:"المواد (اختياري)",mpAdd:"إضافة مواد",mpOptionalHint:"فقط إذا كان الطلب يحتاج مواد من المستودع.",mpTitle:"طلب مواد",mpLoading:"جارٍ تحميل المواد…",mpLoadErr:"تعذّر تحميل المواد. حاول مجدداً.",mpEmpty:"لا توجد مواد متاحة للطلب حالياً.",mpNoMatch:"لا يوجد صنف مطابق لبحثك.",mpSearchPh:"ابحث بالاسم أو الكود",mpAvail:"المتاح",mpSelected:"المحدّد",mpConfirm:"تأكيد المواد",mpMaxOnly:"المتاح {n} فقط",mpReqTitle:"المواد المطلوبة",mpEdit:"تعديل المواد",mpAllCats:"كل التصنيفات",mpNoCat:"بدون تصنيف",mpCatHint:"اختر تصنيفاً",submitted:"تم إرسال الطلب",acceptedToast:"تم القبول، وحُدِّد تاريخ البدء بتاريخ اليوم",declinedToast:"تم الرفض",exported:"طلب تم تصديره",added:"تمت الإضافة بنجاح",exists:"العنصر موجود بالفعل في القائمة",connErr:"تعذَّر الاتصال بالخادم",closedToast:"تم الإقفال",restoredToast:"تم الإرجاع",
   exitAdmin:"خروج",navVisitor:"صفحة الزائر",navTech:"صفحة الفني",navAssetPortal:"بوابة الأصول",enter:"دخول",page:"صفحة",of:"من",
@@ -5748,88 +5763,103 @@ function viewSettings(){
 /* ===== STAFF DIRECTORY (own page) ===== */
 function viewTechTasks(){
   // Live mirror of Staff Directory + each technician's tasks (assigned_to === staff.en).
-  // Active/important tasks shown by default; a per-tech toggle reveals finished ones.
-  // Everything derives from staffList() + state.requests, so renaming/adding/deactivating
-  // a technician (in Staff Directory) is reflected here automatically.
+  // A single global filter (active/all/finished) applies to every card. Everything derives
+  // from staffList() + state.requests, so rename/add/deactivate reflects automatically.
   const FINISHED=['Complete','Cancelled','Rejected'];
   const isFinished=(r)=>FINISHED.includes(r.effStatus);
   const all=(state.requests||[]);
+  const flt=state.ttFilter||'active';          // 'active' | 'all' | 'finished'
+  const q=(state.ttSearch||'').trim().toLowerCase();
+
   // group tasks by assigned technician name
   const byTech={};
   all.forEach(r=>{ const a=(r.assignedTo||'').trim(); if(!a)return; (byTech[a]=byTech[a]||[]).push(r); });
-  // active staff first (by display name), then inactive; unassigned "bucket" appended if any
+
+  // active staff first, then inactive; by display name
   const staff=staffList().slice().sort((a,b)=>{
     const aa=staffActive(a)?0:1, bb=staffActive(b)?0:1;
     if(aa!==bb)return aa-bb;
     return (staffDisp(a.en)||'').localeCompare(staffDisp(b.en)||'','ar');
   });
-  const openSet=state.ttOpen||{};   // which techs have "show all" expanded
 
   const sortTasks=(list)=>list.slice().sort((x,y)=>{
-    // active before finished, then by due date (soonest first), then id
     const fx=isFinished(x)?1:0, fy=isFinished(y)?1:0;
-    if(fx!==fy)return fx-fy;
+    if(fx!==fy)return fx-fy;                                   // active first
     const dx=x.due?new Date(x.due).getTime():8e15, dy=y.due?new Date(y.due).getTime():8e15;
-    if(dx!==dy)return dx-dy;
+    if(dx!==dy)return dx-dy;                                   // soonest due first
     return (y.id||0)-(x.id||0);
   });
+  const applyFilter=(tasks)=> flt==='all' ? tasks
+      : flt==='finished' ? tasks.filter(isFinished)
+      : tasks.filter(r=>!isFinished(r));                       // 'active' default
 
-  const taskLine=(r)=>`<div class="tt-task ${r.pendingConfirm?'tt-pend':''}" onclick="wpOpenTask(${r.id})">
+  const taskLine=(r)=>`<div class="tt-task ${r.pendingConfirm?'tt-pend':''}" onclick="wpOpenTask(${r.id})" title="${esc(r.title||'')}">
       <span class="tt-tid">${fmtID(r.id)}</span>
-      <span class="tt-title">${esc(r.title||'—')}${r.pendingConfirm?` <span class="tt-pendtag">⏳ ${t('pendBadge')}</span>`:''}</span>
-      <span class="tt-proj">${esc(r.project||'')}</span>
+      <span class="tt-title">${esc(r.title||'—')}${r.pendingConfirm?` <span class="tt-pendtag">⏳</span>`:''}</span>
+      ${r.project?`<span class="tt-proj">${esc(r.project)}</span>`:''}
       <span class="tt-st">${stBadge(r.effStatus)}</span>
     </div>`;
 
-  const card=(disp,tasks,key,inactive)=>{
-    const active=tasks.filter(r=>!isFinished(r));
-    const finished=tasks.filter(isFinished);
-    const expanded=!!openSet[key];
-    const shown=expanded?sortTasks(tasks):sortTasks(active);
+  const card=(disp,tasks,inactive)=>{
+    const active=tasks.filter(r=>!isFinished(r)).length;
+    const total=tasks.length;
+    const shown=sortTasks(applyFilter(tasks));
+    const emptyMsg = flt==='finished' ? t('ttNoFinished') : flt==='all' ? t('ttNoTasks') : t('ttNoActive');
     const body = shown.length
-      ? shown.map(taskLine).join('')
-      : `<div class="tt-empty">${t('ttNoActive')}</div>`;
-    const toggle = finished.length
-      ? `<button class="tt-toggle" onclick="ttToggle('${encodeURIComponent(key)}')">${expanded?t('ttShowActive'):t('ttShowAll')+' ('+finished.length+')'}</button>`
-      : '';
+      ? `<div class="tt-tasks">${shown.map(taskLine).join('')}</div>`
+      : `<div class="tt-empty">${emptyMsg}</div>`;
+    const initial=(disp||'?').trim().charAt(0);
     return `<div class="tt-card${inactive?' tt-inactive':''}">
       <div class="tt-head">
-        <div class="tt-name">${esc(disp)}${inactive?` <span class="tt-off">${t('stfInactiveTag')}</span>`:''}</div>
+        <div class="tt-who">
+          <span class="tt-ava">${esc(initial)}</span>
+          <div class="tt-name">${esc(disp)}${inactive?` <span class="tt-off">${t('stfInactiveTag')}</span>`:''}</div>
+        </div>
         <div class="tt-counts">
-          <span class="tt-c tt-c-act" title="${t('ttActive')}">${active.length} ${t('ttActive')}</span>
-          <span class="tt-c tt-c-tot" title="${t('ttTotal')}">${tasks.length} ${t('ttTotal')}</span>
+          <span class="tt-c tt-c-act" title="${t('ttActive')}">${active}</span>
+          <span class="tt-c-sep">/</span>
+          <span class="tt-c tt-c-tot" title="${t('ttTotal')}">${total}</span>
         </div>
       </div>
-      <div class="tt-tasks">${body}</div>
-      ${toggle}
+      ${body}
     </div>`;
   };
 
-  let cards=staff.map(sMember=>{
-    const disp=staffDisp(sMember.en);
-    const tasks=byTech[sMember.en]||[];
-    return card(disp,tasks,'s:'+sMember.id,!staffActive(sMember));
-  });
-
-  // tasks assigned to a name that is not in the current staff list (legacy/renamed) — surface them
+  // build the full card list (staff + orphan names), then filter by search
   const known=new Set(staff.map(x=>x.en));
-  const orphanNames=Object.keys(byTech).filter(n=>!known.has(n));
-  orphanNames.sort((a,b)=>a.localeCompare(b,'ar'));
-  const orphanCards=orphanNames.map(n=>card(n+ ' ', byTech[n], 'o:'+n, true));
+  const orphanNames=Object.keys(byTech).filter(n=>!known.has(n)).sort((a,b)=>a.localeCompare(b,'ar'));
+  let entries=staff.map(sm=>({disp:staffDisp(sm.en), tasks:byTech[sm.en]||[], inactive:!staffActive(sm)}))
+    .concat(orphanNames.map(n=>({disp:n, tasks:byTech[n], inactive:true})));
+  if(q) entries=entries.filter(e=>(e.disp||'').toLowerCase().includes(q));
+
+  const cards=entries.map(e=>card(e.disp,e.tasks,e.inactive)).join('');
 
   const totalTasks=all.filter(r=>(r.assignedTo||'').trim()).length;
   const totalActive=all.filter(r=>(r.assignedTo||'').trim() && !isFinished(r)).length;
+  const seg=(val,lab)=>`<button class="tt-seg${flt===val?' on':''}" onclick="ttSetFilter('${val}')">${lab}</button>`;
 
   return `<div class="phead"><div class="eyebrow">${t('staffDirEye')}</div><h1>${t('nav').techtasks||'Technician Tasks'}</h1><p>${t('ttSub')}</p></div>
     <div class="tt-kpis">
       <div class="tt-kpi"><b>${staff.filter(staffActive).length}</b><span>${t('ttTechs')}</span></div>
-      <div class="tt-kpi"><b>${totalActive}</b><span>${t('ttActive')}</span></div>
+      <div class="tt-kpi tt-kpi-act"><b>${totalActive}</b><span>${t('ttActive')}</span></div>
       <div class="tt-kpi"><b>${totalTasks}</b><span>${t('ttTotal')}</span></div>
     </div>
-    ${(cards.length+orphanCards.length)?`<div class="tt-grid">${cards.join('')}${orphanCards.join('')}</div>`
-      :`<div class="panel panel-pad"><div class="tt-empty">${t('stfNoNames')}</div></div>`}`;
+    <div class="tt-toolbar">
+      <div class="tt-seggrp">${seg('active',t('ttFActive'))}${seg('all',t('ttFAll'))}${seg('finished',t('ttFFinished'))}</div>
+      <div class="tt-search"><span class="tt-search-ic">🔍</span><input type="text" placeholder="${t('ttSearchPh')}" value="${esc(state.ttSearch||'')}" oninput="ttSetSearch(this.value)"></div>
+    </div>
+    ${entries.length?`<div class="tt-grid">${cards}</div>`
+      :`<div class="panel panel-pad"><div class="tt-empty">${q?t('ttNoMatch'):t('stfNoNames')}</div></div>`}`;
 }
-function ttToggle(key){ key=decodeURIComponent(key); state.ttOpen=state.ttOpen||{}; state.ttOpen[key]=!state.ttOpen[key]; render(); }
+function ttSetFilter(v){ state.ttFilter=v; render(); }
+function ttSetSearch(v){ state.ttSearch=v;
+  // keep focus + caret while typing: patch grid only, don't full-render
+  const host=document.getElementById('view'); if(!host){render();return;}
+  // lightweight: re-render whole view but restore focus to the search box
+  render();
+  const inp=document.querySelector('.tt-search input');
+  if(inp){ inp.focus(); const val=inp.value; inp.setSelectionRange(val.length,val.length); }
+}
 
 function viewStaffDir(){
   const rows=staffList().map(s=>`<div class="staff-row" style="${s.active===false?'opacity:.55;':''}">
