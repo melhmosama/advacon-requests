@@ -6393,7 +6393,7 @@ function staffDetail(id){
             :isFuture?`<div class="stf-future-block">🔒 ${t('futureLockMsg')}</div>`
             :effectivelyRunning?`<div class="stf-closeout">
                 <div class="co-block">
-                  <label class="img-btn co-btn">📷 ${t('closeoutPhoto')}<input type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.jpg,.jpeg,.png,.webp,.heic,.heif" multiple capture="environment" style="display:none" onchange="handleCloseout(this)"/></label>
+                  <label class="img-btn co-btn">📷 ${t('closeoutPhoto')}<input type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.jpg,.jpeg,.png,.webp,.heic,.heif" multiple style="display:none" onchange="handleCloseout(this)"/></label>
                   <div class="img-previews" id="co-previews">${closeoutPhotos.map((u,i)=>`<div class="img-prev"><img src="${esc(u)}"/><button type="button" onclick="removeCloseout('${esc(u)}','')">×</button></div>`).join('')}</div>
                 </div>
                 <div class="co-block">
