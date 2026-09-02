@@ -1733,10 +1733,11 @@ textarea.rc-in{resize:vertical}
 .tt-search input{width:100%;padding:9px 12px 9px 34px;border:1px solid var(--grid);border-radius:10px;font-size:13px;background:var(--white);font-family:inherit}
 .tt-search input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(62,110,158,.12)}
 html[dir=rtl] .tt-search input{padding:9px 34px 9px 12px}
-.tt-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px;align-items:start}
-.tt-card{background:var(--white);border:1px solid var(--grid);border-radius:14px;overflow:hidden;box-shadow:var(--shadow);display:flex;flex-direction:column}
-.tt-card.tt-inactive{opacity:.6}
-.tt-head{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--grid)}
+/* board of technician columns (mirrors the main board layout) */
+.tt-board{display:flex;gap:14px;overflow-x:auto;padding-bottom:10px;align-items:flex-start}
+.tt-col{flex:0 0 300px;max-width:300px;background:var(--head);border:1px solid var(--grid);border-radius:14px;display:flex;flex-direction:column;max-height:calc(100vh - 240px)}
+.tt-col.tt-inactive{opacity:.6}
+.tt-colhead{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--grid);position:sticky;top:0;background:var(--head);border-radius:14px 14px 0 0;z-index:1}
 .tt-who{display:flex;align-items:center;gap:10px;min-width:0}
 .tt-ava{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--med),var(--navy));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex:none;text-transform:uppercase}
 .tt-name{font-weight:700;color:var(--navy);font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -1746,18 +1747,11 @@ html[dir=rtl] .tt-search input{padding:9px 34px 9px 12px}
 .tt-c-act{color:var(--med)}
 .tt-c-tot{color:var(--grey)}
 .tt-c-sep{color:var(--grid);font-size:12px}
-.tt-tasks{padding:6px;display:flex;flex-direction:column;gap:1px;max-height:340px;overflow-y:auto}
-.tt-tasks::-webkit-scrollbar{width:6px}
-.tt-tasks::-webkit-scrollbar-thumb{background:var(--grid);border-radius:3px}
-.tt-task{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:9px;cursor:pointer;transition:background .12s}
-.tt-task:hover{background:var(--lgray)}
-.tt-task.tt-pend{background:#FFF7ED}
-.tt-task.tt-pend:hover{background:#FFEEDB}
-.tt-tid{font-size:10px;color:var(--grey);font-variant-numeric:tabular-nums;flex:none;min-width:52px}
-.tt-title{flex:1;font-size:13px;color:var(--txt);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
-.tt-pendtag{font-size:11px}
-.tt-proj{font-size:10px;color:var(--grey);flex:none;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:var(--lgray);padding:2px 7px;border-radius:20px}
-.tt-st{flex:none}
+.tt-colbody{padding:10px;display:flex;flex-direction:column;gap:10px;overflow-y:auto}
+.tt-colbody::-webkit-scrollbar{width:6px}
+.tt-colbody::-webkit-scrollbar-thumb{background:var(--grid);border-radius:3px}
+.tt-colbody .mcard{flex-shrink:0}
+.tt-cardacts{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
 .tt-empty{padding:22px 14px;color:var(--grey);font-size:12px;text-align:center}
 </style></head>
 <body class="notranslate"><div id="gate"></div><div class="app" id="app" style="display:none"></div><div class="toast" id="toast"></div>
@@ -5761,79 +5755,87 @@ function viewSettings(){
   <div class="settings-grid">${card(t('sProjects'),'projects')}${biCard(t('sCats'),'categories')}${biCard(t('sPris'),'priorities')}</div>`;
 }
 /* ===== STAFF DIRECTORY (own page) ===== */
+/* Global task-card renderer — identical to the "Assigned to staff" column card,
+   so Technician Tasks shows the very same rich card under each technician. */
+function wcDrow(label,val){ return (val&&val!=='—')?`<div class="mc-row"><span class="mc-lab">${label}</span><span class="mc-val">${val}</span></div>`:''; }
+function wcAtt(r){ let img=0;try{img=JSON.parse(r.images||'[]').length;}catch(e){} const pdf=fileCount(r); let s=''; if(img)s+=`<button class="lk" onclick="openGallery(${r.id})" title="${t('viewImages')}">🖼 ${img}</button>`; if(pdf)s+=fileLinks(r); return s?`<div class="mc-att">${s}</div>`:''; }
+function wcTaskCard(r){
+  const dl=dueCell(r);
+  const schedBadge=r.isFuture?`<span class="sched-badge future">🗓️ ${t('badgeFuture')}</span>`:(r.isReady?`<span class="sched-badge ready">▶ ${t('badgeReady')}</span>`:'');
+  return `<div class="mcard ${r.effStatus==='Overdue'?'ov':''}${r.pendingConfirm?' pendrow':''}">
+    <div class="mc-top"><span class="mc-id">${fmtID(r.id)}</span>${schedBadge||stBadge(r.effStatus)}</div>
+    ${mrCardBadge(r.id)?`<div class="mc-mrbadge">${mrCardBadge(r.id)}</div>`:''}
+    <div class="mc-title">${esc(r.title)}</div>
+    <div class="mc-rows">
+      ${wcDrow(t('mProj'),esc(r.project))}
+      ${wcDrow(t('svcType'),esc(dispCat(r.category)))}
+      ${wcDrow(t('priority'),`<span class="prio ${r.priority}">${esc(dispPri(r.priority))}</span>`)}
+      ${r.schedStart?wcDrow(t('taskStartLbl'),fmtTime(r.schedStart)):''}
+      ${wcDrow(t('mStart'),esc(r.start||'—'))}
+      ${wcDrow(t('mDur'),r.duration?esc(r.duration)+' '+t('daysUnit'):'—')}
+      ${wcDrow(t('mDue'),esc(r.due||'—'))}
+      ${dl.txt?wcDrow(t('mLeft'),`<span style="color:${dl.col};font-weight:700">${dl.txt}</span>`):''}
+    </div>
+    ${r.notes?`<div class="mc-note"><span class="mc-note-lab">📝 ${t('noteLabel')}</span>${esc(r.notes)}</div>`:''}
+    ${r.closeoutNote?`<div class="mc-note" style="background:#F0FDF4;border-color:#BBF7D0"><span class="mc-note-lab">💬 ${t('coNoteLbl')}</span>${esc(r.closeoutNote)}</div>`:''}
+    ${wcAtt(r)}
+    <div class="tt-cardacts">${mrProcBtn(r.id)}${r.pendingConfirm?`<button class="btn sm green" onclick="confirmStaffDone(${r.id})">✓ ${t('confirmDone')}</button>`:''}<button class="btn sm sec" onclick="wpOpenTask(${r.id})">${t('stfOpen')}</button></div>
+  </div>`;
+}
 function viewTechTasks(){
-  // Live mirror of Staff Directory + each technician's tasks (assigned_to === staff.en).
-  // A single global filter (active/all/finished) applies to every card. Everything derives
-  // from staffList() + state.requests, so rename/add/deactivate reflects automatically.
+  // Live mirror of Staff Directory. Each technician is a COLUMN; under the name we render the
+  // exact same rich task card used in the "Assigned to staff" board column (wcTaskCard).
+  // A global segmented filter (Active default / All / Finished) + a technician search apply here.
   const FINISHED=['Complete','Cancelled','Rejected'];
   const isFinished=(r)=>FINISHED.includes(r.effStatus);
   const all=(state.requests||[]);
-  const flt=state.ttFilter||'active';          // 'active' | 'all' | 'finished'
+  const flt=state.ttFilter||'active';
   const q=(state.ttSearch||'').trim().toLowerCase();
 
-  // group tasks by assigned technician name
   const byTech={};
   all.forEach(r=>{ const a=(r.assignedTo||'').trim(); if(!a)return; (byTech[a]=byTech[a]||[]).push(r); });
 
-  // active staff first, then inactive; by display name
   const staff=staffList().slice().sort((a,b)=>{
     const aa=staffActive(a)?0:1, bb=staffActive(b)?0:1;
     if(aa!==bb)return aa-bb;
     return (staffDisp(a.en)||'').localeCompare(staffDisp(b.en)||'','ar');
   });
 
-  const sortTasks=(list)=>list.slice().sort((x,y)=>{
+  const byNumDesc=(list)=>list.slice().sort((x,y)=>{
     const fx=isFinished(x)?1:0, fy=isFinished(y)?1:0;
-    if(fx!==fy)return fx-fy;                                   // active first
-    const dx=x.due?new Date(x.due).getTime():8e15, dy=y.due?new Date(y.due).getTime():8e15;
-    if(dx!==dy)return dx-dy;                                   // soonest due first
+    if(fx!==fy)return fx-fy;
     return (y.id||0)-(x.id||0);
   });
   const applyFilter=(tasks)=> flt==='all' ? tasks
       : flt==='finished' ? tasks.filter(isFinished)
-      : tasks.filter(r=>!isFinished(r));                       // 'active' default
+      : tasks.filter(r=>!isFinished(r));
 
-  const taskLine=(r)=>`<div class="tt-task ${r.pendingConfirm?'tt-pend':''}" onclick="wpOpenTask(${r.id})" title="${esc(r.title||'')}">
-      <span class="tt-tid">${fmtID(r.id)}</span>
-      <span class="tt-title">${esc(r.title||'—')}${r.pendingConfirm?` <span class="tt-pendtag">⏳</span>`:''}</span>
-      ${r.project?`<span class="tt-proj">${esc(r.project)}</span>`:''}
-      <span class="tt-st">${stBadge(r.effStatus)}</span>
-    </div>`;
-
-  const card=(disp,tasks,inactive)=>{
+  const col=(disp,tasks,inactive)=>{
     const active=tasks.filter(r=>!isFinished(r)).length;
     const total=tasks.length;
-    const shown=sortTasks(applyFilter(tasks));
+    const shown=byNumDesc(applyFilter(tasks));
     const emptyMsg = flt==='finished' ? t('ttNoFinished') : flt==='all' ? t('ttNoTasks') : t('ttNoActive');
-    const body = shown.length
-      ? `<div class="tt-tasks">${shown.map(taskLine).join('')}</div>`
-      : `<div class="tt-empty">${emptyMsg}</div>`;
     const initial=(disp||'?').trim().charAt(0);
-    return `<div class="tt-card${inactive?' tt-inactive':''}">
-      <div class="tt-head">
-        <div class="tt-who">
-          <span class="tt-ava">${esc(initial)}</span>
-          <div class="tt-name">${esc(disp)}${inactive?` <span class="tt-off">${t('stfInactiveTag')}</span>`:''}</div>
-        </div>
-        <div class="tt-counts">
-          <span class="tt-c tt-c-act" title="${t('ttActive')}">${active}</span>
-          <span class="tt-c-sep">/</span>
-          <span class="tt-c tt-c-tot" title="${t('ttTotal')}">${total}</span>
-        </div>
+    const body = shown.length
+      ? shown.map(wcTaskCard).join('')
+      : `<div class="tt-empty">${emptyMsg}</div>`;
+    return `<div class="tt-col${inactive?' tt-inactive':''}">
+      <div class="tt-colhead">
+        <div class="tt-who"><span class="tt-ava">${esc(initial)}</span>
+          <div class="tt-name">${esc(disp)}${inactive?` <span class="tt-off">${t('stfInactiveTag')}</span>`:''}</div></div>
+        <div class="tt-counts"><span class="tt-c tt-c-act">${active}</span><span class="tt-c-sep">/</span><span class="tt-c tt-c-tot">${total}</span></div>
       </div>
-      ${body}
+      <div class="tt-colbody">${body}</div>
     </div>`;
   };
 
-  // build the full card list (staff + orphan names), then filter by search
   const known=new Set(staff.map(x=>x.en));
   const orphanNames=Object.keys(byTech).filter(n=>!known.has(n)).sort((a,b)=>a.localeCompare(b,'ar'));
   let entries=staff.map(sm=>({disp:staffDisp(sm.en), tasks:byTech[sm.en]||[], inactive:!staffActive(sm)}))
     .concat(orphanNames.map(n=>({disp:n, tasks:byTech[n], inactive:true})));
   if(q) entries=entries.filter(e=>(e.disp||'').toLowerCase().includes(q));
 
-  const cards=entries.map(e=>card(e.disp,e.tasks,e.inactive)).join('');
-
+  const cols=entries.map(e=>col(e.disp,e.tasks,e.inactive)).join('');
   const totalTasks=all.filter(r=>(r.assignedTo||'').trim()).length;
   const totalActive=all.filter(r=>(r.assignedTo||'').trim() && !isFinished(r)).length;
   const seg=(val,lab)=>`<button class="tt-seg${flt===val?' on':''}" onclick="ttSetFilter('${val}')">${lab}</button>`;
@@ -5848,7 +5850,7 @@ function viewTechTasks(){
       <div class="tt-seggrp">${seg('active',t('ttFActive'))}${seg('all',t('ttFAll'))}${seg('finished',t('ttFFinished'))}</div>
       <div class="tt-search"><span class="tt-search-ic">🔍</span><input type="text" placeholder="${t('ttSearchPh')}" value="${esc(state.ttSearch||'')}" oninput="ttSetSearch(this.value)"></div>
     </div>
-    ${entries.length?`<div class="tt-grid">${cards}</div>`
+    ${entries.length?`<div class="tt-board">${cols}</div>`
       :`<div class="panel panel-pad"><div class="tt-empty">${q?t('ttNoMatch'):t('stfNoNames')}</div></div>`}`;
 }
 function ttSetFilter(v){ state.ttFilter=v; render(); }
