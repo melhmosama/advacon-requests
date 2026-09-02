@@ -1745,6 +1745,7 @@ html[dir=rtl] .tt-search input{padding:9px 34px 9px 12px}
 .tt-accbody{padding:14px 16px;background:var(--lblue,#F7FAFC)}
 .tt-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;align-items:start}
 .tt-empty{padding:16px;color:var(--grey);font-size:13px;text-align:center}
+.fld-hint{font-size:11px;color:var(--grey);margin-top:4px}
 </style></head>
 <body class="notranslate"><div id="gate"></div><div class="app" id="app" style="display:none"></div><div class="toast" id="toast"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -2457,7 +2458,7 @@ const T={
   fillReq:"Please fill in the required fields",mpSectionTitle:"Materials (optional)",mpAdd:"Add materials",mpOptionalHint:"Only if this request needs materials from the warehouse.",mpTitle:"Request materials",mpLoading:"Loading materials…",mpLoadErr:"Could not load materials. Try again.",mpEmpty:"No materials available to request right now.",mpNoMatch:"No item matches your search.",mpSearchPh:"Search by name or code",mpAvail:"Available",mpSelected:"Selected",mpConfirm:"Confirm materials",mpMaxOnly:"Only {n} available",mpReqTitle:"Requested materials",mpEdit:"Edit materials",mpAllCats:"All categories",mpNoCat:"Uncategorized",mpCatHint:"Choose a category",submitted:"Request submitted",acceptedToast:"start date set to today",declinedToast:"declined",exported:"requests exported",added:"Added",exists:"Already in the list",connErr:"Connection error",closedToast:"closed",restoredToast:"restored",
   exitAdmin:"Exit",navVisitor:"Visitor Page",navTech:"Technician Page",navAssetPortal:"Asset Portal",enter:"Enter",page:"Page",of:"of",
   confirmRejTitle:"Reject request?",confirmRejMsg:"This moves it to the archive as Rejected (number kept). You can restore it anytime.",confirmRejYes:"Reject",rejReasonLbl:"Reason (optional)",rejReasonPh:"Why is this request being rejected?",rejectedToast:"rejected",rejectedBadge:"Rejected",rejectTask:"Reject",cancel:"Cancel",
-  addTaskTitle:"Add a task",save:"Save",lang:"العربية",
+  addTaskTitle:"Add a task",aatReceivedLbl:"Received date & time",aatReceivedHint:"Leave empty for now. Set an earlier date/time to back-date the request.",aatFuture:"Received date cannot be in the future.",save:"Save",lang:"العربية",
   acceptTitle:"Accept request",editTitle:"Edit task",edit:"Edit",reopen:"Reopen",confirmReopenQ:"Reopen this completed task?",
   confirmCloseTitle:"Close this task?",confirmCloseMsg:"It will be marked Complete with today as the closing date, and move out of Open Tasks.",confirmCloseYes:"Close as Complete",
   durReq:"Duration is required to schedule the task",
@@ -2491,7 +2492,7 @@ const T={
   fillReq:"الرجاء تعبئة الحقول المطلوبة",mpSectionTitle:"المواد (اختياري)",mpAdd:"إضافة مواد",mpOptionalHint:"فقط إذا كان الطلب يحتاج مواد من المستودع.",mpTitle:"طلب مواد",mpLoading:"جارٍ تحميل المواد…",mpLoadErr:"تعذّر تحميل المواد. حاول مجدداً.",mpEmpty:"لا توجد مواد متاحة للطلب حالياً.",mpNoMatch:"لا يوجد صنف مطابق لبحثك.",mpSearchPh:"ابحث بالاسم أو الكود",mpAvail:"المتاح",mpSelected:"المحدّد",mpConfirm:"تأكيد المواد",mpMaxOnly:"المتاح {n} فقط",mpReqTitle:"المواد المطلوبة",mpEdit:"تعديل المواد",mpAllCats:"كل التصنيفات",mpNoCat:"بدون تصنيف",mpCatHint:"اختر تصنيفاً",submitted:"تم إرسال الطلب",acceptedToast:"تم القبول، وحُدِّد تاريخ البدء بتاريخ اليوم",declinedToast:"تم الرفض",exported:"طلب تم تصديره",added:"تمت الإضافة بنجاح",exists:"العنصر موجود بالفعل في القائمة",connErr:"تعذَّر الاتصال بالخادم",closedToast:"تم الإقفال",restoredToast:"تم الإرجاع",
   exitAdmin:"خروج",navVisitor:"صفحة الزائر",navTech:"صفحة الفني",navAssetPortal:"بوابة الأصول",enter:"دخول",page:"صفحة",of:"من",
   confirmRejTitle:"رفض الطلب؟",confirmRejMsg:"سيُنقل إلى الأرشيف كمرفوض مع الاحتفاظ برقمه، ويمكن إرجاعه في أي وقت.",confirmRejYes:"رفض",rejReasonLbl:"السبب (اختياري)",rejReasonPh:"لماذا يُرفض هذا الطلب؟",rejectedToast:"رُفض",rejectedBadge:"مرفوض",rejectTask:"رفض",cancel:"إلغاء",
-  addTaskTitle:"إضافة مهمة",save:"حفظ",lang:"English",
+  addTaskTitle:"إضافة مهمة",aatReceivedLbl:"تاريخ ووقت الاستلام",aatReceivedHint:"اتركه فارغاً لاستخدام الآن. حدّد تاريخاً/وقتاً أقدم لتسجيل الطلب بتاريخ سابق.",aatFuture:"تاريخ الاستلام لا يكون في المستقبل.",save:"حفظ",lang:"English",
   acceptTitle:"قبول الطلب",editTitle:"تعديل المهمة",edit:"تعديل",reopen:"إعادة فتح",confirmReopenQ:"إعادة فتح هذه المهمة المكتملة؟",
   confirmCloseTitle:"إقفال هذه المهمة؟",confirmCloseMsg:"سيتم اعتماد المهمة كمكتملة، وتسجيل تاريخ اليوم تاريخًا للإقفال، وستخرج من قائمة المهام المفتوحة.",confirmCloseYes:"إقفال كمكتملة",
   durReq:"يلزم إدخال المدة لجدولة المهمة",
@@ -5442,8 +5443,19 @@ async function saveTaskForm(mode,id){
     const req=g('tf_req').value.trim(),proj=g('tf_proj').value,cat=g('tf_cat').value,pri=g('tf_pri').value;
     if(!proj||!cat||!pri||!assign||!dur){toast(t('fillReq'));return;}
     const title=g('tf_title').value.trim();if(!title){toast(t('fillReq'));return;}
-    // Manual add via admin_add_task RPC (server sets status/accepted/archived/timestamps).
-    await admAddTask({p_requested_by:req||null,p_project:proj,p_category:cat,p_priority:pri,p_title:title,p_assigned_to:assign,p_duration:Number(dur),p_note:note||null},'added');
+    // Optional back-dated received date/time (admin only). datetime-local has no tz →
+    // interpret the entered wall-clock as Riyadh (+03:00) and send a real ISO instant.
+    let recvIso=null;
+    const recvEl=g('tf_received'); const recvVal=recvEl?recvEl.value:'';
+    if(recvVal){
+      const iso=recvVal.length===16?recvVal+':00':recvVal;   // YYYY-MM-DDTHH:MM(:SS)
+      recvIso=iso+'+03:00';
+      if(new Date(recvIso).getTime()>Date.now()){ toast(t('aatFuture')); return; }
+    }
+    // Manual add via admin_add_task RPC (server sets status/accepted/archived; received = provided or now).
+    const payload={p_requested_by:req||null,p_project:proj,p_category:cat,p_priority:pri,p_title:title,p_assigned_to:assign,p_duration:Number(dur),p_note:note||null};
+    if(recvIso)payload.p_received_at=recvIso;
+    await admAddTask(payload,'added');
     return;
   }
 }
@@ -5663,6 +5675,7 @@ function renderModal(){
         <div class="field"><label>${t('mDur')} <span class="req">*</span></label><input type="number" min="1" id="tf_dur" placeholder="${t('mDur')}"/></div>
         <div class="field full"><label>${t('needs')} <span class="req">*</span></label><textarea id="tf_title" placeholder="${t('needsPh')}"></textarea></div>
         <div class="field full"><label>${t('noteLabel')}</label><input id="tf_notes" placeholder="${t('notesPh')}"/></div>
+        <div class="field full"><label>${t('aatReceivedLbl')} <span style="color:var(--grey);font-weight:400">(${t('optional')})</span></label><input type="datetime-local" id="tf_received"/><div class="fld-hint">${t('aatReceivedHint')}</div></div>
       </div>
       <div class="btnrow" style="justify-content:flex-end;margin-top:14px"><button class="btn sec" onclick="modal=null;renderModal()">${t('cancel')}</button><button class="btn green" onclick="saveTaskForm('add')">${t('save')}</button></div>
     </div></div>`;return;
