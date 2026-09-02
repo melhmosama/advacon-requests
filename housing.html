@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" translate="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<meta name="google" content="notranslate">
+<title>ADVACON — Housing &amp; Offices</title>
+<style>
+  :root{
+    --navy:#15406E; --med:#2A5C8A; --accent:#3E6E9E; --steel:#5B7A99;
+    --green:#3C7D5A; --amber:#C08A3E; --red:#B0504A;
+    --bg:#f5f7fa; --card:#ffffff; --text:#1a2634; --muted:#6b7885;
+    --border:#e1e6ec;
+    --shadow:0 4px 20px rgba(21,64,110,.08);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Tahoma,Arial,sans-serif;
+    background:var(--bg); color:var(--text);
+    min-height:100vh; display:flex; align-items:center; justify-content:center;
+    padding:20px; line-height:1.5;
+  }
+  body.rtl{ direction:rtl; font-family:'Segoe UI',Tahoma,Arial,sans-serif; }
+
+  .langbar{ position:fixed; top:14px; right:14px; z-index:10 }
+  body.rtl .langbar{ right:auto; left:14px }
+  .langbtn{
+    background:#fff; border:1px solid var(--border); border-radius:8px;
+    padding:6px 12px; cursor:pointer; font-size:13px; color:var(--navy);
+    font-weight:600;
+  }
+
+  .card{
+    background:var(--card); border-radius:16px; box-shadow:var(--shadow);
+    padding:36px 32px; max-width:520px; width:100%;
+  }
+  .eyebrow{
+    color:var(--steel); font-size:12px; text-transform:uppercase;
+    letter-spacing:1.5px; margin-bottom:6px; font-weight:600;
+  }
+  h1{ color:var(--navy); font-size:24px; margin:0 0 6px; font-weight:700 }
+  .tagline{ color:var(--muted); font-size:14px; margin:0 0 20px }
+
+  .status{
+    padding:14px 16px; border-radius:10px; margin:16px 0;
+    font-size:14px; line-height:1.5;
+  }
+  .status-info{ background:rgba(46,92,138,.06); color:var(--med); border:1px solid rgba(46,92,138,.2) }
+  .status-ok{   background:rgba(60,125,90,.08); color:var(--green); border:1px solid rgba(60,125,90,.3) }
+  .status-warn{ background:rgba(192,138,62,.08); color:var(--amber); border:1px solid rgba(192,138,62,.3) }
+  .status-err{  background:rgba(176,80,74,.08); color:var(--red); border:1px solid rgba(176,80,74,.3) }
+
+  code{
+    background:#f0f2f5; padding:2px 7px; border-radius:5px;
+    font-size:12px; font-family:ui-monospace,'SF Mono',Consolas,monospace;
+    color:var(--navy); word-break:break-all;
+  }
+
+  .btnrow{ display:flex; gap:10px; flex-wrap:wrap; margin-top:14px }
+  .btn{
+    display:inline-block; background:var(--navy); color:#fff; border:0;
+    border-radius:10px; padding:11px 20px; font-size:14px; font-weight:600;
+    cursor:pointer; text-decoration:none; font-family:inherit;
+  }
+  .btn:hover{ background:var(--med) }
+  .btn-alt{ background:transparent; color:var(--navy); border:1px solid var(--navy) }
+  .btn-alt:hover{ background:var(--navy); color:#fff }
+
+  .foot{
+    text-align:center; color:var(--muted); font-size:12px;
+    margin-top:22px; padding-top:16px; border-top:1px solid var(--border);
+  }
+  .spinner{
+    display:inline-block; width:14px; height:14px; border:2px solid var(--med);
+    border-top-color:transparent; border-radius:50%;
+    animation:spin .8s linear infinite; vertical-align:-2px; margin-inline-end:6px;
+  }
+  @keyframes spin{ to{transform:rotate(360deg)} }
+</style>
+</head>
+<body>
+<div class="langbar"><button class="langbtn" id="langBtn" type="button">العربية</button></div>
+
+<div class="card" id="card">
+  <div class="eyebrow" id="eye">ADVACON — Assets</div>
+  <h1 id="title">Housing &amp; Offices</h1>
+  <p class="tagline" id="tagline">Milestone 0 — Foundation check</p>
+  <div id="status" class="status status-info"><span class="spinner"></span><span id="statusText">Checking…</span></div>
+  <div class="btnrow" id="actions"></div>
+  <div class="foot" id="foot">Isolated module — the main app is not affected.</div>
+</div>
+
+<script>
+'use strict';
+
+// ---------- Supabase (same project as the main app) ----------
+const SB_URL = 'https://abnfwabpqnwnscwyfqbm.supabase.co';
+const SB_KEY = 'sb_publishable_yeLa2U3cUo9MSn2H0pOlXQ_roSY8_Zx';
+
+// ---------- Bilingual dictionary ----------
+const T = {
+  en: {
+    eye:       'ADVACON — Assets',
+    title:     'Housing & Offices',
+    tagline:   'Milestone 0 — Foundation check',
+    checking:  'Checking connection to the backend…',
+    noSess:    'No admin session found on this browser. Please sign in through the main app first, then open /housing again.',
+    goAdmin:   'Open /admin',
+    retry:     'Retry',
+    okHead:    'Foundation ready.',
+    okBody:    'Backend responded at ',
+    okUser:    'Signed in as ',
+    failHead:  'Connection failed.',
+    unauth:    'Your session is not recognised as an administrator. Sign in again from /admin.',
+    net:       'Network or server error. Check your connection and retry.',
+    foot:      'Isolated module — the main app is not affected.',
+    langLbl:   'العربية',
+    dir:       'ltr'
+  },
+  ar: {
+    eye:       'ADVACON — الأصول',
+    title:     'الوحدات السكنية والمكاتب',
+    tagline:   'المرحلة صفر — فحص الأساس',
+    checking:  'جاري فحص الاتصال بالخادم…',
+    noSess:    'ما في جلسة أدمن على هذا المتصفح. سجّل الدخول من الموقع الرئيسي أولاً، وبعدها افتح /housing من جديد.',
+    goAdmin:   'فتح /admin',
+    retry:     'أعد المحاولة',
+    okHead:    'الأساس جاهز.',
+    okBody:    'استجاب الخادم في ',
+    okUser:    'مسجّل الدخول بحساب ',
+    failHead:  'فشل الاتصال.',
+    unauth:    'الجلسة الحالية غير معترف فيها كأدمن. سجّل دخول جديد من /admin.',
+    net:       'خطأ اتصال أو خادم. راجع الشبكة وأعد المحاولة.',
+    foot:      'مودل معزول — لا يؤثر على الموقع الرئيسي.',
+    langLbl:   'English',
+    dir:       'rtl'
+  }
+};
+
+let lang = 'en';
+try { const saved = localStorage.getItem('housing_lang'); if (saved === 'ar' || saved === 'en') lang = saved; } catch(e){}
+
+function tt(){ return T[lang]; }
+
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function applyLang(){
+  const t = tt();
+  document.documentElement.lang = lang;
+  document.documentElement.dir = t.dir;
+  document.body.classList.toggle('rtl', lang === 'ar');
+  document.title = 'ADVACON — ' + t.title;
+  document.getElementById('eye').textContent     = t.eye;
+  document.getElementById('title').textContent   = t.title;
+  document.getElementById('tagline').textContent = t.tagline;
+  document.getElementById('foot').textContent    = t.foot;
+  document.getElementById('langBtn').textContent = t.langLbl;
+}
+
+document.getElementById('langBtn').addEventListener('click', function(){
+  lang = (lang === 'en') ? 'ar' : 'en';
+  try { localStorage.setItem('housing_lang', lang); } catch(e){}
+  applyLang();
+  render(lastResult);
+});
+
+// ---------- Session lookup ----------
+// The main app stores the admin JWT under 'advacon_admin_sess' (same origin,
+// same localStorage). We only read it — never write it — so /housing cannot
+// affect the sign-in state of the main app.
+function getAdminSession(){
+  try {
+    const raw = localStorage.getItem('advacon_admin_sess');
+    if (!raw) return null;
+    const s = JSON.parse(raw);
+    if (!s || !s.access_token) return null;
+    return s;
+  } catch(e) { return null; }
+}
+
+// ---------- Ping the housing_ping RPC ----------
+async function ping(token){
+  const res = await fetch(SB_URL + '/rest/v1/rpc/housing_ping', {
+    method: 'POST',
+    headers: {
+      'apikey': SB_KEY,
+      'Authorization': 'Bearer ' + token,
+      'Content-Type': 'application/json'
+    },
+    body: '{}'
+  });
+  const text = await res.text();
+  let body = null;
+  try { body = text ? JSON.parse(text) : null; } catch(e){}
+  if (!res.ok) {
+    const msg = (body && (body.message || body.hint || body.error || body.msg)) || text || ('http_' + res.status);
+    const err = new Error(msg);
+    err.httpStatus = res.status;
+    err.body = body;
+    throw err;
+  }
+  return body;
+}
+
+// ---------- Render ----------
+let lastResult = { state: 'checking' };
+
+function render(r){
+  const t = tt();
+  const status = document.getElementById('status');
+  const stTxt  = document.getElementById('statusText');
+  const acts   = document.getElementById('actions');
+  acts.innerHTML = '';
+
+  if (r.state === 'checking') {
+    status.className = 'status status-info';
+    status.innerHTML = '<span class="spinner"></span><span id="statusText"></span>';
+    document.getElementById('statusText').textContent = t.checking;
+    return;
+  }
+
+  if (r.state === 'no_session') {
+    status.className = 'status status-warn';
+    status.innerHTML = '<span id="statusText"></span>';
+    document.getElementById('statusText').textContent = t.noSess;
+    acts.innerHTML = '<a class="btn" href="/admin">' + esc(t.goAdmin) + '</a>';
+    return;
+  }
+
+  if (r.state === 'ok') {
+    status.className = 'status status-ok';
+    const when = r.data && r.data.server_time ? r.data.server_time : '';
+    const uid  = r.data && r.data.user_id ? r.data.user_id : '';
+    status.innerHTML =
+      '<div><strong>' + esc(t.okHead) + '</strong></div>' +
+      '<div style="margin-top:6px">' + esc(t.okBody) + '<code>' + esc(when) + '</code></div>' +
+      (uid ? '<div style="margin-top:6px">' + esc(t.okUser) + '<code>' + esc(uid) + '</code></div>' : '');
+    return;
+  }
+
+  // failure branches
+  status.className = 'status status-err';
+  const isAuth = r.error && (r.error.httpStatus === 401 || r.error.httpStatus === 403 || /unauthorized|jwt|invalid|expired/i.test(r.error.message || ''));
+  const bodyMsg = isAuth ? t.unauth : (r.error && r.error.message ? (t.net + ' (' + r.error.message + ')') : t.net);
+  status.innerHTML =
+    '<div><strong>' + esc(t.failHead) + '</strong></div>' +
+    '<div style="margin-top:6px">' + esc(bodyMsg) + '</div>';
+  acts.innerHTML =
+    '<button class="btn" type="button" onclick="check()">' + esc(t.retry) + '</button>' +
+    '<a class="btn btn-alt" href="/admin">' + esc(t.goAdmin) + '</a>';
+}
+
+async function check(){
+  lastResult = { state: 'checking' };
+  render(lastResult);
+  const sess = getAdminSession();
+  if (!sess) {
+    lastResult = { state: 'no_session' };
+    render(lastResult);
+    return;
+  }
+  try {
+    const data = await ping(sess.access_token);
+    lastResult = { state: 'ok', data: data };
+  } catch(e) {
+    lastResult = { state: 'error', error: e };
+  }
+  render(lastResult);
+}
+window.check = check;
+
+applyLang();
+check();
+</script>
+</body>
+</html>
