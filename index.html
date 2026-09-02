@@ -1738,7 +1738,6 @@ html[dir=rtl] .tt-search input{padding:9px 34px 9px 12px}
 .tt-acchead:hover{background:var(--head)}
 .tt-acc.open .tt-acchead{background:var(--head);border-bottom:1px solid var(--grid)}
 .tt-chev{color:var(--med);font-size:13px;flex:none;width:14px}
-.tt-acchead .tt-ava{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--med),var(--navy));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;flex:none;text-transform:uppercase}
 .tt-acchead .tt-name{flex:1;font-weight:700;color:var(--navy);font-size:15px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tt-off{font-size:10px;color:var(--grey);font-weight:400;border:1px solid var(--grid);border-radius:6px;padding:1px 5px;margin-inline-start:6px;white-space:nowrap}
 .tt-count-pill{flex:none;min-width:28px;height:24px;padding:0 9px;border-radius:20px;background:#EAF2FA;color:var(--med);font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;font-variant-numeric:tabular-nums}
@@ -5813,7 +5812,6 @@ function viewTechTasks(){
   const row=(key,disp,tasks,inactive)=>{
     const active=tasks.filter(isActive);
     const shown=active.slice().sort((x,y)=>(y.id||0)-(x.id||0));
-    const initial=(disp||'?').trim().charAt(0);
     const isOpen=!!openSet[key];
     const body = shown.length
       ? `<div class="tt-cards">${shown.map(wcTaskCard).join('')}</div>`
@@ -5821,7 +5819,6 @@ function viewTechTasks(){
     return `<div class="tt-acc${inactive?' tt-inactive':''}${isOpen?' open':''}">
       <button class="tt-acchead" onclick="ttToggle('${encodeURIComponent(key)}')">
         <span class="tt-chev">${isOpen?'▾':'▸'}</span>
-        <span class="tt-ava">${esc(initial)}</span>
         <span class="tt-name">${esc(disp)}${inactive?` <span class="tt-off">${t('stfInactiveTag')}</span>`:''}</span>
         <span class="tt-count-pill">${active.length}</span>
       </button>
