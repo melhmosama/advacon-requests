@@ -1724,10 +1724,6 @@ textarea.rc-in{resize:vertical}
 .tt-kpi span{font-size:11px;color:var(--grey)}
 .tt-kpi-act b{color:var(--med)}
 .tt-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 16px;flex-wrap:wrap}
-.tt-seggrp{display:inline-flex;background:var(--lgray);border:1px solid var(--grid);border-radius:10px;padding:3px;gap:2px}
-.tt-seg{border:none;background:none;padding:7px 16px;border-radius:8px;font-size:13px;color:var(--grey);cursor:pointer;font-weight:600;transition:all .15s}
-.tt-seg:hover{color:var(--navy)}
-.tt-seg.on{background:var(--white);color:var(--navy);box-shadow:0 1px 3px rgba(10,16,22,.1)}
 .tt-search{position:relative;display:flex;align-items:center;min-width:220px;flex:0 1 280px}
 .tt-search-ic{position:absolute;inset-inline-start:11px;font-size:13px;opacity:.5;pointer-events:none}
 .tt-search input{width:100%;padding:9px 12px 9px 34px;border:1px solid var(--grid);border-radius:10px;font-size:13px;background:var(--white);font-family:inherit}
@@ -5779,17 +5775,17 @@ function wcTaskCard(r){
     ${r.notes?`<div class="mc-note"><span class="mc-note-lab">📝 ${t('noteLabel')}</span>${esc(r.notes)}</div>`:''}
     ${r.closeoutNote?`<div class="mc-note" style="background:#F0FDF4;border-color:#BBF7D0"><span class="mc-note-lab">💬 ${t('coNoteLbl')}</span>${esc(r.closeoutNote)}</div>`:''}
     ${wcAtt(r)}
-    <div class="tt-cardacts">${mrProcBtn(r.id)}${r.pendingConfirm?`<button class="btn sm green" onclick="confirmStaffDone(${r.id})">✓ ${t('confirmDone')}</button>`:''}<button class="btn sm sec" onclick="wpOpenTask(${r.id})">${t('stfOpen')}</button></div>
+    <div class="tt-cardacts">${mrProcBtn(r.id)}${r.pendingConfirm?`<button class="btn sm green" onclick="confirmStaffDone(${r.id})">✓ ${t('confirmDone')}</button>`:''}<button class="btn sm sec" onclick="openEdit(${r.id})">✎ ${t('edit')}</button></div>
   </div>`;
 }
 function viewTechTasks(){
-  // Live mirror of Staff Directory. Each technician is a COLUMN; under the name we render the
-  // exact same rich task card used in the "Assigned to staff" board column (wcTaskCard).
-  // A global segmented filter (Active default / All / Finished) + a technician search apply here.
+  // Live mirror of Staff Directory. One COLUMN per technician; under the name we render the
+  // exact same rich task card as the "Assigned to staff" board column (wcTaskCard).
+  // ACTIVE tasks only (finished = Complete/Cancelled/Rejected are not shown). A technician
+  // search narrows the columns. Everything derives from staffList()+state.requests (live).
   const FINISHED=['Complete','Cancelled','Rejected'];
-  const isFinished=(r)=>FINISHED.includes(r.effStatus);
+  const isActive=(r)=>!FINISHED.includes(r.effStatus);
   const all=(state.requests||[]);
-  const flt=state.ttFilter||'active';
   const q=(state.ttSearch||'').trim().toLowerCase();
 
   const byTech={};
@@ -5801,29 +5797,18 @@ function viewTechTasks(){
     return (staffDisp(a.en)||'').localeCompare(staffDisp(b.en)||'','ar');
   });
 
-  const byNumDesc=(list)=>list.slice().sort((x,y)=>{
-    const fx=isFinished(x)?1:0, fy=isFinished(y)?1:0;
-    if(fx!==fy)return fx-fy;
-    return (y.id||0)-(x.id||0);
-  });
-  const applyFilter=(tasks)=> flt==='all' ? tasks
-      : flt==='finished' ? tasks.filter(isFinished)
-      : tasks.filter(r=>!isFinished(r));
-
   const col=(disp,tasks,inactive)=>{
-    const active=tasks.filter(r=>!isFinished(r)).length;
-    const total=tasks.length;
-    const shown=byNumDesc(applyFilter(tasks));
-    const emptyMsg = flt==='finished' ? t('ttNoFinished') : flt==='all' ? t('ttNoTasks') : t('ttNoActive');
+    const active=tasks.filter(isActive);
+    const shown=active.slice().sort((x,y)=>(y.id||0)-(x.id||0));
     const initial=(disp||'?').trim().charAt(0);
     const body = shown.length
       ? shown.map(wcTaskCard).join('')
-      : `<div class="tt-empty">${emptyMsg}</div>`;
+      : `<div class="tt-empty">${t('ttNoActive')}</div>`;
     return `<div class="tt-col${inactive?' tt-inactive':''}">
       <div class="tt-colhead">
         <div class="tt-who"><span class="tt-ava">${esc(initial)}</span>
           <div class="tt-name">${esc(disp)}${inactive?` <span class="tt-off">${t('stfInactiveTag')}</span>`:''}</div></div>
-        <div class="tt-counts"><span class="tt-c tt-c-act">${active}</span><span class="tt-c-sep">/</span><span class="tt-c tt-c-tot">${total}</span></div>
+        <div class="tt-counts"><span class="tt-c tt-c-act">${active.length}</span></div>
       </div>
       <div class="tt-colbody">${body}</div>
     </div>`;
@@ -5836,24 +5821,19 @@ function viewTechTasks(){
   if(q) entries=entries.filter(e=>(e.disp||'').toLowerCase().includes(q));
 
   const cols=entries.map(e=>col(e.disp,e.tasks,e.inactive)).join('');
-  const totalTasks=all.filter(r=>(r.assignedTo||'').trim()).length;
-  const totalActive=all.filter(r=>(r.assignedTo||'').trim() && !isFinished(r)).length;
-  const seg=(val,lab)=>`<button class="tt-seg${flt===val?' on':''}" onclick="ttSetFilter('${val}')">${lab}</button>`;
+  const totalActive=all.filter(r=>(r.assignedTo||'').trim() && isActive(r)).length;
 
   return `<div class="phead"><div class="eyebrow">${t('staffDirEye')}</div><h1>${t('nav').techtasks||'Technician Tasks'}</h1><p>${t('ttSub')}</p></div>
     <div class="tt-kpis">
       <div class="tt-kpi"><b>${staff.filter(staffActive).length}</b><span>${t('ttTechs')}</span></div>
       <div class="tt-kpi tt-kpi-act"><b>${totalActive}</b><span>${t('ttActive')}</span></div>
-      <div class="tt-kpi"><b>${totalTasks}</b><span>${t('ttTotal')}</span></div>
     </div>
     <div class="tt-toolbar">
-      <div class="tt-seggrp">${seg('active',t('ttFActive'))}${seg('all',t('ttFAll'))}${seg('finished',t('ttFFinished'))}</div>
       <div class="tt-search"><span class="tt-search-ic">🔍</span><input type="text" placeholder="${t('ttSearchPh')}" value="${esc(state.ttSearch||'')}" oninput="ttSetSearch(this.value)"></div>
     </div>
     ${entries.length?`<div class="tt-board">${cols}</div>`
       :`<div class="panel panel-pad"><div class="tt-empty">${q?t('ttNoMatch'):t('stfNoNames')}</div></div>`}`;
 }
-function ttSetFilter(v){ state.ttFilter=v; render(); }
 function ttSetSearch(v){ state.ttSearch=v;
   // keep focus + caret while typing: patch grid only, don't full-render
   const host=document.getElementById('view'); if(!host){render();return;}
