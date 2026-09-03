@@ -10,268 +10,1500 @@
     --navy:#15406E; --med:#2A5C8A; --accent:#3E6E9E; --steel:#5B7A99;
     --green:#3C7D5A; --amber:#C08A3E; --red:#B0504A;
     --bg:#f5f7fa; --card:#ffffff; --text:#1a2634; --muted:#6b7885;
-    --border:#e1e6ec;
+    --border:#e1e6ec; --border-soft:#eef1f5;
     --shadow:0 4px 20px rgba(21,64,110,.08);
+    --shadow-lg:0 12px 40px rgba(21,64,110,.14);
+    --hdrh:64px;
   }
   *{box-sizing:border-box}
-  html,body{margin:0;padding:0}
+  html,body{margin:0;padding:0;height:100%}
   body{
     font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Tahoma,Arial,sans-serif;
-    background:var(--bg); color:var(--text);
-    min-height:100vh; display:flex; align-items:center; justify-content:center;
-    padding:20px; line-height:1.5;
+    background:var(--bg); color:var(--text); line-height:1.5;
+    min-height:100vh;
   }
   body.rtl{ direction:rtl; font-family:'Segoe UI',Tahoma,Arial,sans-serif; }
+  a{color:var(--med); text-decoration:none}
+  a:hover{text-decoration:underline}
+  button{font-family:inherit;cursor:pointer}
+  input,select,textarea{font-family:inherit;font-size:14px}
 
-  .langbar{ position:fixed; top:14px; right:14px; z-index:10 }
-  body.rtl .langbar{ right:auto; left:14px }
-  .langbtn{
-    background:#fff; border:1px solid var(--border); border-radius:8px;
-    padding:6px 12px; cursor:pointer; font-size:13px; color:var(--navy);
-    font-weight:600;
-  }
+  /* ============ Login screen ============ */
+  .lg-wrap{ min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px }
+  .lg-card{ background:var(--card); border-radius:16px; box-shadow:var(--shadow); padding:36px 32px; max-width:420px; width:100% }
+  .lg-eye{ color:var(--steel); font-size:12px; text-transform:uppercase; letter-spacing:1.5px; margin-bottom:6px; font-weight:600 }
+  .lg-title{ color:var(--navy); font-size:22px; margin:0 0 20px; font-weight:700 }
+  .lg-field{ margin-bottom:14px }
+  .lg-label{ display:block; font-size:13px; color:var(--muted); margin-bottom:6px; font-weight:500 }
+  .lg-input{ width:100%; padding:11px 12px; border:1px solid var(--border); border-radius:8px; font-size:15px; background:#fff; color:var(--text) }
+  .lg-input:focus{ outline:none; border-color:var(--accent); box-shadow:0 0 0 3px rgba(62,110,158,.15) }
+  .lg-btn{ width:100%; padding:12px; background:var(--navy); color:#fff; border:0; border-radius:10px; font-size:15px; font-weight:600; margin-top:6px }
+  .lg-btn:disabled{ opacity:.5; cursor:not-allowed }
+  .lg-btn:hover:not(:disabled){ background:var(--med) }
+  .lg-err{ background:rgba(176,80,74,.08); color:var(--red); border:1px solid rgba(176,80,74,.3); padding:10px 12px; border-radius:8px; font-size:13px; margin-top:12px }
+  .lg-info{ background:rgba(46,92,138,.06); color:var(--med); border:1px solid rgba(46,92,138,.2); padding:10px 12px; border-radius:8px; font-size:13px; margin-top:12px }
 
-  .card{
-    background:var(--card); border-radius:16px; box-shadow:var(--shadow);
-    padding:36px 32px; max-width:520px; width:100%;
+  /* ============ App shell ============ */
+  .app{ min-height:100vh }
+  .hdr{
+    position:sticky; top:0; z-index:20; background:#fff; border-bottom:1px solid var(--border);
+    padding:0 22px; height:var(--hdrh); display:flex; align-items:center; gap:18px;
   }
-  .eyebrow{
-    color:var(--steel); font-size:12px; text-transform:uppercase;
-    letter-spacing:1.5px; margin-bottom:6px; font-weight:600;
+  .hdr-brand{ font-size:15px; font-weight:700; color:var(--navy); white-space:nowrap; display:flex; align-items:center; gap:8px }
+  .hdr-brand .em{ color:var(--steel); font-size:11px; font-weight:600; letter-spacing:1px; text-transform:uppercase }
+  .hdr-tabs{ display:flex; gap:2px; flex:1; overflow-x:auto; scrollbar-width:none }
+  .hdr-tabs::-webkit-scrollbar{ display:none }
+  .hdr-tab{
+    background:transparent; border:0; color:var(--muted); font-size:14px; font-weight:600;
+    padding:8px 14px; border-radius:8px; white-space:nowrap; display:flex; align-items:center; gap:6px;
   }
-  h1{ color:var(--navy); font-size:24px; margin:0 0 6px; font-weight:700 }
-  .tagline{ color:var(--muted); font-size:14px; margin:0 0 20px }
+  .hdr-tab:hover:not(:disabled){ background:var(--border-soft); color:var(--text) }
+  .hdr-tab.active{ background:var(--navy); color:#fff }
+  .hdr-tab:disabled{ opacity:.5; cursor:not-allowed }
+  .hdr-tab .soon{ font-size:10px; padding:1px 6px; background:#fff; color:var(--muted); border-radius:8px; margin-inline-start:4px }
+  .hdr-tab.active .soon{ background:rgba(255,255,255,.2); color:#fff }
+  .hdr-right{ display:flex; align-items:center; gap:10px }
+  .hdr-user{ font-size:13px; color:var(--muted); max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
+  .hdr-btn{ background:transparent; border:1px solid var(--border); border-radius:8px; padding:6px 10px; font-size:13px; color:var(--text); font-weight:500 }
+  .hdr-btn:hover{ background:var(--border-soft) }
+  .hdr-btn.danger:hover{ background:rgba(176,80,74,.08); color:var(--red); border-color:rgba(176,80,74,.3) }
 
-  .status{
-    padding:14px 16px; border-radius:10px; margin:16px 0;
-    font-size:14px; line-height:1.5;
-  }
-  .status-info{ background:rgba(46,92,138,.06); color:var(--med); border:1px solid rgba(46,92,138,.2) }
-  .status-ok{   background:rgba(60,125,90,.08); color:var(--green); border:1px solid rgba(60,125,90,.3) }
-  .status-warn{ background:rgba(192,138,62,.08); color:var(--amber); border:1px solid rgba(192,138,62,.3) }
-  .status-err{  background:rgba(176,80,74,.08); color:var(--red); border:1px solid rgba(176,80,74,.3) }
+  /* ============ Content wrapper ============ */
+  .wrap{ max-width:1280px; margin:0 auto; padding:26px 22px 60px }
+  .phead{ display:flex; align-items:flex-end; justify-content:space-between; gap:14px; flex-wrap:wrap; margin-bottom:22px }
+  .phead-l h1{ margin:2px 0 4px; font-size:24px; color:var(--navy); font-weight:700 }
+  .phead-l .sub{ color:var(--muted); font-size:14px }
+  .phead-l .eye{ color:var(--steel); font-size:11px; text-transform:uppercase; letter-spacing:1.2px; font-weight:600 }
 
-  code{
-    background:#f0f2f5; padding:2px 7px; border-radius:5px;
-    font-size:12px; font-family:ui-monospace,'SF Mono',Consolas,monospace;
-    color:var(--navy); word-break:break-all;
-  }
-
-  .btnrow{ display:flex; gap:10px; flex-wrap:wrap; margin-top:14px }
-  .btn{
-    display:inline-block; background:var(--navy); color:#fff; border:0;
-    border-radius:10px; padding:11px 20px; font-size:14px; font-weight:600;
-    cursor:pointer; text-decoration:none; font-family:inherit;
-  }
-  .btn:hover{ background:var(--med) }
+  /* ============ Toolbar (filters + search + New button) ============ */
+  .tb{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:16px; background:#fff; padding:12px 14px; border:1px solid var(--border); border-radius:12px; box-shadow:0 1px 3px rgba(21,64,110,.04) }
+  .tb-search{ display:flex; align-items:center; gap:6px; flex:1; min-width:180px; background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:0 12px }
+  .tb-search input{ flex:1; border:0; background:transparent; padding:10px 0; outline:none; font-size:14px }
+  .tb-search .ic{ color:var(--muted); font-size:14px }
+  .tb-sel{ padding:9px 10px; border:1px solid var(--border); border-radius:8px; background:#fff; color:var(--text); font-size:14px; min-width:140px }
+  .tb-sel:focus{ outline:none; border-color:var(--accent) }
+  .tb-chk{ display:flex; align-items:center; gap:6px; font-size:13px; color:var(--text); cursor:pointer; user-select:none }
+  .tb-chk input{ margin:0 }
+  .btn{ background:var(--navy); color:#fff; border:0; border-radius:8px; padding:10px 16px; font-size:14px; font-weight:600; display:inline-flex; align-items:center; gap:6px }
+  .btn:hover:not(:disabled){ background:var(--med) }
+  .btn:disabled{ opacity:.5; cursor:not-allowed }
+  .btn-sm{ padding:6px 10px; font-size:13px }
   .btn-alt{ background:transparent; color:var(--navy); border:1px solid var(--navy) }
-  .btn-alt:hover{ background:var(--navy); color:#fff }
+  .btn-alt:hover:not(:disabled){ background:var(--navy); color:#fff }
+  .btn-ghost{ background:transparent; color:var(--muted); border:1px solid var(--border) }
+  .btn-ghost:hover:not(:disabled){ background:var(--border-soft); color:var(--text) }
+  .btn-danger{ background:var(--red); color:#fff; border:0 }
+  .btn-danger:hover:not(:disabled){ background:#8f4039 }
 
-  .foot{
-    text-align:center; color:var(--muted); font-size:12px;
-    margin-top:22px; padding-top:16px; border-top:1px solid var(--border);
-  }
-  .spinner{
-    display:inline-block; width:14px; height:14px; border:2px solid var(--med);
-    border-top-color:transparent; border-radius:50%;
-    animation:spin .8s linear infinite; vertical-align:-2px; margin-inline-end:6px;
-  }
+  /* ============ Empty / loading states ============ */
+  .empty{ background:#fff; border:1px dashed var(--border); border-radius:12px; padding:44px 20px; text-align:center; color:var(--muted); font-size:14px }
+  .empty .em-em{ font-size:32px; margin-bottom:6px; opacity:.6 }
+  .load{ background:#fff; border:1px solid var(--border); border-radius:12px; padding:32px; text-align:center; color:var(--muted) }
+  .spin{ display:inline-block; width:14px; height:14px; border:2px solid var(--med); border-top-color:transparent; border-radius:50%; animation:spin .8s linear infinite; vertical-align:-2px; margin-inline-end:6px }
   @keyframes spin{ to{transform:rotate(360deg)} }
+
+  /* ============ Data list / cards ============ */
+  .list{ display:flex; flex-direction:column; gap:8px }
+  .row{
+    background:#fff; border:1px solid var(--border); border-radius:12px; padding:14px 16px;
+    display:flex; gap:14px; align-items:center; transition:box-shadow .15s;
+  }
+  .row:hover{ box-shadow:0 4px 12px rgba(21,64,110,.08); border-color:var(--accent) }
+  .row-main{ flex:1; min-width:0 }
+  .row-title{ font-size:15px; font-weight:600; color:var(--text); display:flex; align-items:center; gap:8px; flex-wrap:wrap }
+  .row-sub{ font-size:12.5px; color:var(--muted); margin-top:3px; display:flex; gap:12px; flex-wrap:wrap }
+  .row-sub .sep{ opacity:.4 }
+  .row-right{ display:flex; gap:6px; align-items:center; flex-wrap:wrap; justify-content:flex-end }
+
+  .badge{ display:inline-block; padding:2px 8px; border-radius:12px; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.4px }
+  .badge-code{ background:#eef2f7; color:var(--navy); font-family:ui-monospace,'SF Mono',Consolas,monospace; text-transform:none; letter-spacing:0 }
+  .badge-ok{ background:rgba(60,125,90,.12); color:var(--green) }
+  .badge-warn{ background:rgba(192,138,62,.12); color:var(--amber) }
+  .badge-err{ background:rgba(176,80,74,.12); color:var(--red) }
+  .badge-mut{ background:var(--border-soft); color:var(--muted) }
+
+  /* ============ Modal ============ */
+  .mask{ position:fixed; inset:0; background:rgba(21,32,50,.55); backdrop-filter:blur(3px); z-index:100; display:flex; align-items:center; justify-content:center; padding:20px }
+  .mdl{ background:#fff; border-radius:16px; box-shadow:var(--shadow-lg); max-width:640px; width:100%; max-height:92vh; display:flex; flex-direction:column; overflow:hidden }
+  .mdl-hd{ display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:1px solid var(--border) }
+  .mdl-tt{ font-size:17px; font-weight:700; color:var(--navy) }
+  .mdl-x{ background:transparent; border:0; font-size:22px; color:var(--muted); line-height:1; padding:0 4px }
+  .mdl-x:hover{ color:var(--text) }
+  .mdl-bd{ padding:18px 20px; overflow:auto; flex:1 }
+  .mdl-ft{ padding:14px 20px; border-top:1px solid var(--border); display:flex; gap:10px; justify-content:flex-end; background:#fafbfc }
+
+  .fld{ margin-bottom:14px }
+  .fld-lbl{ display:block; font-size:13px; color:var(--muted); font-weight:500; margin-bottom:5px }
+  .fld-lbl .req{ color:var(--red); margin-inline-start:2px }
+  .fld-inp, .fld-sel, .fld-ta{
+    width:100%; padding:9px 11px; border:1px solid var(--border); border-radius:8px;
+    font-size:14px; background:#fff; color:var(--text);
+  }
+  .fld-sel{ appearance:none; background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%); background-position:calc(100% - 15px) 50%,calc(100% - 10px) 50%; background-size:5px 5px,5px 5px; background-repeat:no-repeat; padding-inline-end:32px }
+  body.rtl .fld-sel{ background-position:15px 50%,10px 50%; padding-inline-end:11px; padding-inline-start:32px }
+  .fld-ta{ min-height:70px; resize:vertical; font-family:inherit }
+  .fld-inp:focus, .fld-sel:focus, .fld-ta:focus{ outline:none; border-color:var(--accent); box-shadow:0 0 0 3px rgba(62,110,158,.15) }
+  .fld-hint{ font-size:12px; color:var(--muted); margin-top:4px }
+  .fld-warn{ font-size:12.5px; color:var(--amber); margin-top:6px; background:rgba(192,138,62,.08); padding:6px 10px; border-radius:6px; border-inline-start:3px solid var(--amber) }
+  .fld-good{ font-size:12.5px; color:var(--green); margin-top:6px }
+  .fld-row{ display:grid; grid-template-columns:1fr 1fr; gap:12px }
+  .fld-row-3{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px }
+  @media (max-width:520px){ .fld-row, .fld-row-3{ grid-template-columns:1fr } }
+  .mdl-err{ background:rgba(176,80,74,.08); color:var(--red); border:1px solid rgba(176,80,74,.3); padding:10px 12px; border-radius:8px; font-size:13px; margin-bottom:12px }
+
+  /* ============ Toast ============ */
+  .toast-root{ position:fixed; top:78px; left:50%; transform:translateX(-50%); z-index:120; pointer-events:none }
+  .toast{ background:var(--navy); color:#fff; padding:11px 18px; border-radius:10px; box-shadow:var(--shadow-lg); font-size:14px; font-weight:500; pointer-events:auto; max-width:520px; text-align:center; animation:slideDown .2s }
+  .toast-ok{ background:var(--green) } .toast-warn{ background:var(--amber) } .toast-err{ background:var(--red) }
+  @keyframes slideDown{ from{ transform:translate(-50%,-10px); opacity:0 } to{ transform:translate(-50%,0); opacity:1 } }
+
+  /* ============ Small helpers ============ */
+  .grow{ flex:1 } .nowrap{ white-space:nowrap } .mono{ font-family:ui-monospace,'SF Mono',Consolas,monospace }
 </style>
 </head>
 <body>
-<div class="langbar"><button class="langbtn" id="langBtn" type="button">العربية</button></div>
-
-<div class="card" id="card">
-  <div class="eyebrow" id="eye">ADVACON — Assets</div>
-  <h1 id="title">Housing &amp; Offices</h1>
-  <p class="tagline" id="tagline">Milestone 0 — Foundation check</p>
-  <div id="status" class="status status-info"><span class="spinner"></span><span id="statusText">Checking…</span></div>
-  <div class="btnrow" id="actions"></div>
-  <div class="foot" id="foot">Isolated module — the main app is not affected.</div>
-</div>
+<div id="app"></div>
+<div id="modal-root"></div>
+<div id="toast-root" class="toast-root"></div>
 
 <script>
 'use strict';
 
-// ---------- Supabase (same project as the main app) ----------
-const SB_URL = 'https://abnfwabpqnwnscwyfqbm.supabase.co';
-const SB_KEY = 'sb_publishable_yeLa2U3cUo9MSn2H0pOlXQ_roSY8_Zx';
+/* =====================================================================
+   ADVACON Housing & Offices — M3 UI (vanilla JS, single file, no build)
+   ---------------------------------------------------------------------
+   * Standalone from index.html. Shares admin session (advacon_admin_sess)
+     via same-origin localStorage. Never writes admin session — only reads.
+   * All state mutations funnel through hoSet* helpers; render() is the
+     single point of DOM output (innerHTML on #app/#modal-root/#toast-root).
+   * Every RPC goes through hoRpc which auto-refreshes the JWT before
+     each call if within 60 seconds of expiry.
+   ===================================================================== */
 
-// ---------- Bilingual dictionary ----------
+const SB_URL   = 'https://abnfwabpqnwnscwyfqbm.supabase.co';
+const SB_KEY   = 'sb_publishable_yeLa2U3cUo9MSn2H0pOlXQ_roSY8_Zx';
+const SESS_KEY = 'advacon_admin_sess';   // shared with /admin
+const LANG_KEY = 'housing_lang';
+
+/* ---------- Bilingual dictionary ---------- */
 const T = {
   en: {
-    eye:       'ADVACON — Assets',
-    title:     'Housing & Offices',
-    tagline:   'Milestone 0 — Foundation check',
-    checking:  'Checking connection to the backend…',
-    noSess:    'No admin session found on this browser. Please sign in through the main app first, then open /housing again.',
-    goAdmin:   'Open /admin',
-    retry:     'Retry',
-    okHead:    'Foundation ready.',
-    okBody:    'Backend responded at ',
-    okUser:    'Signed in as ',
-    failHead:  'Connection failed.',
-    unauth:    'Your session is not recognised as an administrator. Sign in again from /admin.',
-    net:       'Network or server error. Check your connection and retry.',
-    foot:      'Isolated module — the main app is not affected.',
-    langLbl:   'العربية',
-    dir:       'ltr'
+    /* login */
+    lgEye:'ADVACON — Assets', lgTitle:'Housing & Offices',
+    lgEmail:'Email', lgPassword:'Password', lgSignIn:'Sign in',
+    lgSigningIn:'Signing in…',
+    lgNotAdmin:'This account is not an administrator. Sign in with an admin account.',
+    lgAuthFail:'Sign-in failed. Check your email and password.',
+    lgNetwork:'Network error. Please try again.',
+    lgHint:'Use the same admin account you use for /admin.',
+    /* header */
+    hdBrand:'Housing & Offices', hdSignOut:'Sign out',
+    /* tabs */
+    tabUnits:'Units', tabLandlords:'Landlords', tabContracts:'Contracts', tabDashboard:'Dashboard',
+    tabSoon:'Soon',
+    /* toolbar */
+    tbSearch:'Search…', tbFiltCat:'All categories', tbFiltUse:'All uses',
+    tbFiltStatus:'All statuses', tbFiltUnit:'All units', tbFiltLandlord:'All landlords',
+    tbActiveOnly:'Active only', tbClear:'Clear filters',
+    /* actions */
+    actNewUnit:'+ New Unit', actNewLandlord:'+ New Landlord', actNewContract:'+ New Contract',
+    actChangeStatus:'Change status', actRefresh:'Refresh',
+    /* screens */
+    scrUnitsSub:'Leased properties tracked by ADVACON in AlUla.',
+    scrLandlordsSub:'Owners of the leased properties.',
+    scrContractsSub:'Rental agreements between ADVACON and landlords.',
+    /* empty */
+    emUnits:'No units yet. Add your first one with + New Unit.',
+    emLandlords:'No landlords yet. Add your first one with + New Landlord.',
+    emContracts:'No contracts yet. Add your first one with + New Contract.',
+    emMatch:'No records match your filters.',
+    /* loading */
+    ldLoading:'Loading…',
+    /* row labels */
+    rowRooms:'rooms', rowCap:'capacity', rowMonthly:'/month', rowActive:'Active', rowInactive:'Inactive',
+    rowExpired:'Expired', rowCancelled:'Cancelled', rowDays:'days left', rowOverdue:'overdue',
+    rowExpiresIn:'Expires in', rowExpiredAgo:'Expired',
+    rowStart:'Start', rowEnd:'End', rowNextDue:'Next payment',
+    /* modal common */
+    mCancel:'Cancel', mSave:'Save', mSaving:'Saving…', mClose:'Close',
+    /* create unit */
+    mdUnitCreate:'New Unit',
+    fCode:'Code', fCodeHint:'Uppercase letters/digits/dash, 3–16 chars (e.g. SAQ-ENG-01).',
+    fNameAr:'Name (Arabic)', fNameEn:'Name (English)',
+    fCategory:'Category', fLocation:'Location', fUseType:'Use type',
+    fPurposeLabel:'Purpose label', fPurposeHint:'Free text — e.g. "Al-Hijr nursery".',
+    fRoomCount:'Rooms', fCapacity:'Capacity', fNotes:'Notes',
+    /* create landlord */
+    mdLandlordCreate:'New Landlord', fLandlordName:'Full name', fPhone:'Phone',
+    /* create contract */
+    mdContractCreate:'New Contract',
+    fUnit:'Unit', fLandlord:'Landlord',
+    fPaymentMethod:'Payment method', fAccountRef:'Account reference',
+    fAccountRefHint:'IBAN, Ejar reference, or paper contract note.',
+    fContractNo:'Contract number',
+    fStartDate:'Start date', fEndDate:'End date', fDuration:'Duration label',
+    fDurationHint:'Free text — e.g. "1 year", "5 years", "29 months".',
+    fMonthlyRent:'Monthly rent', fTotalValue:'Total contract value',
+    fNextPaymentDue:'Next payment due', fPayStatusNote:'Payment status note',
+    fStatus:'Status',
+    varOk:'Total matches expected within tolerance.',
+    varWarn:'Warning: your total differs significantly from expected.',
+    varExpected:'Expected', varDiff:'Difference',
+    /* status change */
+    mdStatusChange:'Change contract status', fNewStatus:'New status', fReason:'Reason (optional)',
+    fReasonHint:'Recorded in audit. Max 500 chars.',
+    /* select placeholders */
+    optChoose:'— choose —',
+    /* toasts / errors */
+    tcUnitCreated:'Unit created.', tcLandlordCreated:'Landlord added.',
+    tcContractCreated:'Contract created.', tcStatusChanged:'Status updated.',
+    tcNoOp:'No change (same status).',
+    tcSignedOut:'Signed out.',
+    errGeneric:'Something went wrong. Please try again.',
+    err_unauthorized:'Session expired or not authorised. Sign in again.',
+    err_code_required:'Code is required.',
+    err_code_invalid_format:'Code must be uppercase letters/digits/dash, 3–16 chars.',
+    err_code_already_exists:'This code is already used.',
+    err_name_ar_required:'Arabic name is required.',
+    err_name_ar_too_short:'Arabic name is too short.',
+    err_name_ar_too_long:'Arabic name is too long.',
+    err_name_en_too_long:'English name is too long.',
+    err_category_required:'Category is required.', err_category_invalid:'Invalid category.',
+    err_location_required:'Location is required.',
+    err_location_too_short:'Location is too short.', err_location_too_long:'Location is too long.',
+    err_use_type_required:'Use type is required.', err_use_type_invalid:'Invalid use type.',
+    err_purpose_label_too_long:'Purpose label is too long.',
+    err_notes_too_long:'Notes are too long.',
+    err_room_count_out_of_range:'Rooms must be between 1 and 1000.',
+    err_capacity_out_of_range:'Capacity must be between 1 and 10000.',
+    err_landlord_name_required:'Landlord name is required.',
+    err_landlord_name_too_short:'Landlord name is too short.',
+    err_landlord_name_too_long:'Landlord name is too long.',
+    err_phone_too_long:'Phone is too long.',
+    err_unit_id_required:'Unit is required.', err_landlord_id_required:'Landlord is required.',
+    err_start_date_required:'Start date is required.', err_end_date_required:'End date is required.',
+    err_monthly_rent_required:'Monthly rent is required.',
+    err_total_value_required:'Total value is required.',
+    err_payment_method_required:'Payment method is required.',
+    err_payment_method_invalid:'Invalid payment method.',
+    err_status_required:'Status is required.', err_status_invalid:'Invalid status.',
+    err_monthly_rent_invalid:'Monthly rent cannot be negative.',
+    err_total_value_invalid:'Total value cannot be negative.',
+    err_date_range_invalid:'End date must be after start date.',
+    err_unit_not_found:'Unit not found.', err_landlord_not_found:'Landlord not found.',
+    err_unit_inactive:'Unit is inactive. Activate it or record a historical contract.',
+    err_landlord_inactive:'Landlord is inactive. Activate them or record a historical contract.',
+    err_active_contract_already_exists:'This unit already has an active contract. Change its status first.',
+    err_contract_not_found:'Contract not found.',
+    err_contract_id_required:'Contract id is required.',
+    err_reason_too_long:'Reason is too long (max 500 chars).',
+    err_network:'Network error.',
+    /* misc */
+    langLbl:'العربية', dir:'ltr'
   },
   ar: {
-    eye:       'ADVACON — الأصول',
-    title:     'الوحدات السكنية والمكاتب',
-    tagline:   'المرحلة صفر — فحص الأساس',
-    checking:  'جاري فحص الاتصال بالخادم…',
-    noSess:    'ما في جلسة أدمن على هذا المتصفح. سجّل الدخول من الموقع الرئيسي أولاً، وبعدها افتح /housing من جديد.',
-    goAdmin:   'فتح /admin',
-    retry:     'أعد المحاولة',
-    okHead:    'الأساس جاهز.',
-    okBody:    'استجاب الخادم في ',
-    okUser:    'مسجّل الدخول بحساب ',
-    failHead:  'فشل الاتصال.',
-    unauth:    'الجلسة الحالية غير معترف فيها كأدمن. سجّل دخول جديد من /admin.',
-    net:       'خطأ اتصال أو خادم. راجع الشبكة وأعد المحاولة.',
-    foot:      'مودل معزول — لا يؤثر على الموقع الرئيسي.',
-    langLbl:   'English',
-    dir:       'rtl'
+    lgEye:'ADVACON — الأصول', lgTitle:'الوحدات السكنية والمكاتب',
+    lgEmail:'البريد الإلكتروني', lgPassword:'كلمة المرور', lgSignIn:'تسجيل الدخول',
+    lgSigningIn:'جاري الدخول…',
+    lgNotAdmin:'هذا الحساب ليس مدير. سجّل دخول بحساب أدمن.',
+    lgAuthFail:'فشل تسجيل الدخول. تحقّق من البريد وكلمة المرور.',
+    lgNetwork:'خطأ اتصال. حاول مرة ثانية.',
+    lgHint:'استخدم نفس حساب الأدمن اللي بتستخدمه لـ /admin.',
+    hdBrand:'الوحدات السكنية والمكاتب', hdSignOut:'خروج',
+    tabUnits:'الوحدات', tabLandlords:'ملّاك السكن', tabContracts:'العقود', tabDashboard:'لوحة',
+    tabSoon:'قريباً',
+    tbSearch:'بحث…', tbFiltCat:'كل الفئات', tbFiltUse:'كل الاستخدامات',
+    tbFiltStatus:'كل الحالات', tbFiltUnit:'كل الوحدات', tbFiltLandlord:'كل الملّاك',
+    tbActiveOnly:'النشطة فقط', tbClear:'مسح الفلاتر',
+    actNewUnit:'+ وحدة جديدة', actNewLandlord:'+ مالك جديد', actNewContract:'+ عقد جديد',
+    actChangeStatus:'تغيير الحالة', actRefresh:'تحديث',
+    scrUnitsSub:'العقارات المستأجرة اللي بتديرها أدفاكون بالعلا.',
+    scrLandlordsSub:'أصحاب السكن للعقارات المستأجرة.',
+    scrContractsSub:'العقود بين أدفاكون والملّاك.',
+    emUnits:'ما في وحدات بعد. أضف أول واحدة بـ + وحدة جديدة.',
+    emLandlords:'ما في ملّاك بعد. أضف أول واحد بـ + مالك جديد.',
+    emContracts:'ما في عقود بعد. أضف أول واحد بـ + عقد جديد.',
+    emMatch:'ما في سجلات تطابق الفلاتر.',
+    ldLoading:'جاري التحميل…',
+    rowRooms:'غرفة', rowCap:'سعة', rowMonthly:'/شهر', rowActive:'ساري', rowInactive:'غير نشط',
+    rowExpired:'منتهي', rowCancelled:'ملغى', rowDays:'يوم متبقي', rowOverdue:'متأخّر',
+    rowExpiresIn:'ينتهي خلال', rowExpiredAgo:'انتهى منذ',
+    rowStart:'البداية', rowEnd:'النهاية', rowNextDue:'الدفعة القادمة',
+    mCancel:'إلغاء', mSave:'حفظ', mSaving:'جاري الحفظ…', mClose:'إغلاق',
+    mdUnitCreate:'وحدة جديدة',
+    fCode:'الكود', fCodeHint:'حروف كبيرة/أرقام/شرطة، 3–16 حرف (مثلاً SAQ-ENG-01).',
+    fNameAr:'الاسم (عربي)', fNameEn:'الاسم (إنجليزي)',
+    fCategory:'الفئة', fLocation:'الموقع', fUseType:'الاستخدام',
+    fPurposeLabel:'مسمّى الاستخدام', fPurposeHint:'نص حر — مثلاً "مشتل الحجر".',
+    fRoomCount:'عدد الغرف', fCapacity:'السعة', fNotes:'ملاحظات',
+    mdLandlordCreate:'مالك جديد', fLandlordName:'الاسم الكامل', fPhone:'الهاتف',
+    mdContractCreate:'عقد جديد',
+    fUnit:'الوحدة', fLandlord:'المالك',
+    fPaymentMethod:'طريقة الدفع', fAccountRef:'مرجع الحساب',
+    fAccountRefHint:'IBAN، أو رقم إجار، أو ملاحظة عقد ورقي.',
+    fContractNo:'رقم العقد',
+    fStartDate:'تاريخ البداية', fEndDate:'تاريخ النهاية', fDuration:'مدة العقد (نص)',
+    fDurationHint:'نص حر — مثلاً "سنة"، "خمس سنوات"، "تسعة وعشرين شهر".',
+    fMonthlyRent:'الإيجار الشهري', fTotalValue:'القيمة الكاملة للعقد',
+    fNextPaymentDue:'تاريخ الدفعة القادمة', fPayStatusNote:'ملاحظة حالة الدفع',
+    fStatus:'الحالة',
+    varOk:'المجموع مطابق للمتوقّع ضمن الحدود.',
+    varWarn:'تنبيه: المجموع يختلف بشكل كبير عن المتوقّع.',
+    varExpected:'المتوقّع', varDiff:'الفرق',
+    mdStatusChange:'تغيير حالة العقد', fNewStatus:'الحالة الجديدة', fReason:'السبب (اختياري)',
+    fReasonHint:'مسجّل بسجل التدقيق. حد أقصى 500 حرف.',
+    optChoose:'— اختر —',
+    tcUnitCreated:'تم إنشاء الوحدة.', tcLandlordCreated:'تم إضافة المالك.',
+    tcContractCreated:'تم إنشاء العقد.', tcStatusChanged:'تم تحديث الحالة.',
+    tcNoOp:'ما في تغيير (نفس الحالة).',
+    tcSignedOut:'تم الخروج.',
+    errGeneric:'صار شي غلط. حاول مرة ثانية.',
+    err_unauthorized:'انتهت الجلسة أو غير مصرّح. سجّل دخول من جديد.',
+    err_code_required:'الكود مطلوب.',
+    err_code_invalid_format:'الكود لازم حروف كبيرة/أرقام/شرطة، 3–16 حرف.',
+    err_code_already_exists:'الكود مستعمل من قبل.',
+    err_name_ar_required:'الاسم العربي مطلوب.',
+    err_name_ar_too_short:'الاسم العربي قصير جداً.',
+    err_name_ar_too_long:'الاسم العربي طويل جداً.',
+    err_name_en_too_long:'الاسم الإنجليزي طويل جداً.',
+    err_category_required:'الفئة مطلوبة.', err_category_invalid:'الفئة غير صحيحة.',
+    err_location_required:'الموقع مطلوب.',
+    err_location_too_short:'الموقع قصير.', err_location_too_long:'الموقع طويل.',
+    err_use_type_required:'الاستخدام مطلوب.', err_use_type_invalid:'الاستخدام غير صحيح.',
+    err_purpose_label_too_long:'مسمّى الاستخدام طويل.',
+    err_notes_too_long:'الملاحظات طويلة.',
+    err_room_count_out_of_range:'عدد الغرف لازم بين 1 و 1000.',
+    err_capacity_out_of_range:'السعة لازم بين 1 و 10000.',
+    err_landlord_name_required:'اسم المالك مطلوب.',
+    err_landlord_name_too_short:'اسم المالك قصير.',
+    err_landlord_name_too_long:'اسم المالك طويل.',
+    err_phone_too_long:'الهاتف طويل.',
+    err_unit_id_required:'الوحدة مطلوبة.', err_landlord_id_required:'المالك مطلوب.',
+    err_start_date_required:'تاريخ البداية مطلوب.', err_end_date_required:'تاريخ النهاية مطلوب.',
+    err_monthly_rent_required:'الإيجار الشهري مطلوب.',
+    err_total_value_required:'قيمة العقد الكاملة مطلوبة.',
+    err_payment_method_required:'طريقة الدفع مطلوبة.',
+    err_payment_method_invalid:'طريقة دفع غير صحيحة.',
+    err_status_required:'الحالة مطلوبة.', err_status_invalid:'الحالة غير صحيحة.',
+    err_monthly_rent_invalid:'الإيجار الشهري لا يمكن أن يكون سالب.',
+    err_total_value_invalid:'القيمة الكلية لا يمكن أن تكون سالبة.',
+    err_date_range_invalid:'تاريخ النهاية لازم بعد البداية.',
+    err_unit_not_found:'الوحدة غير موجودة.', err_landlord_not_found:'المالك غير موجود.',
+    err_unit_inactive:'الوحدة غير نشطة. فعّلها أو سجّل عقد تاريخي (منتهي).',
+    err_landlord_inactive:'المالك غير نشط. فعّله أو سجّل عقد تاريخي.',
+    err_active_contract_already_exists:'الوحدة عندها عقد ساري. غيّر حالته أولاً.',
+    err_contract_not_found:'العقد غير موجود.',
+    err_contract_id_required:'رقم العقد مطلوب.',
+    err_reason_too_long:'السبب طويل (حد أقصى 500 حرف).',
+    err_network:'خطأ اتصال.',
+    langLbl:'English', dir:'rtl'
   }
 };
 
-let lang = 'en';
-try { const saved = localStorage.getItem('housing_lang'); if (saved === 'ar' || saved === 'en') lang = saved; } catch(e){}
+/* ---------- Global state ---------- */
+const state = {
+  lang: 'en',
+  sess: null,
+  bootError: null,
+  screen: 'units',
+  refs: null,
+  units: [], landlords: [], contracts: [],
+  ui: {
+    units:     { search:'', category:'', use_type:'', activeOnly:true,  loading:false },
+    landlords: { search:'',                            activeOnly:true,  loading:false },
+    contracts: { search:'', status:'',   unit_id:'',  landlord_id:'',   loading:false }
+  },
+  modal: null,   // { type, data:{...}, busy:false, error:null }
+  toastRef: null
+};
 
-function tt(){ return T[lang]; }
+/* ---------- tiny helpers ---------- */
+function t(k){ const d = T[state.lang]; return (d && d[k]) || T.en[k] || k; }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function fmtNum(n){ if(n==null||n===''||isNaN(n)) return '—'; const num = Number(n); return num.toLocaleString(state.lang==='ar' ? 'ar-SA-u-nu-latn' : 'en-US', {maximumFractionDigits:2}); }
+function fmtDate(d){ if(!d) return '—'; try{ return new Date(d).toISOString().slice(0,10); }catch{ return String(d); } }
+function daysBetween(a, b){ const ta = new Date(a).getTime(); const tb = new Date(b).getTime(); return Math.round((tb - ta) / 86400000); }
+function todayISO(){ return new Date().toISOString().slice(0,10); }
 
-function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-
-function applyLang(){
-  const t = tt();
-  document.documentElement.lang = lang;
-  document.documentElement.dir = t.dir;
-  document.body.classList.toggle('rtl', lang === 'ar');
-  document.title = 'ADVACON — ' + t.title;
-  document.getElementById('eye').textContent     = t.eye;
-  document.getElementById('title').textContent   = t.title;
-  document.getElementById('tagline').textContent = t.tagline;
-  document.getElementById('foot').textContent    = t.foot;
-  document.getElementById('langBtn').textContent = t.langLbl;
-}
-
-document.getElementById('langBtn').addEventListener('click', function(){
-  lang = (lang === 'en') ? 'ar' : 'en';
-  try { localStorage.setItem('housing_lang', lang); } catch(e){}
-  applyLang();
-  render(lastResult);
-});
-
-// ---------- Session lookup ----------
-// The main app stores the admin JWT under 'advacon_admin_sess' (same origin,
-// same localStorage). We only read it — never write it — so /housing cannot
-// affect the sign-in state of the main app.
-function getAdminSession(){
+/* ---------- Storage ---------- */
+function getSess(){
   try {
-    const raw = localStorage.getItem('advacon_admin_sess');
+    const raw = localStorage.getItem(SESS_KEY);
     if (!raw) return null;
     const s = JSON.parse(raw);
     if (!s || !s.access_token) return null;
     return s;
-  } catch(e) { return null; }
+  } catch(e){ return null; }
 }
-
-// ---------- Ping the housing_ping RPC ----------
-async function ping(token){
-  const res = await fetch(SB_URL + '/rest/v1/rpc/housing_ping', {
-    method: 'POST',
-    headers: {
-      'apikey': SB_KEY,
-      'Authorization': 'Bearer ' + token,
-      'Content-Type': 'application/json'
-    },
-    body: '{}'
-  });
-  const text = await res.text();
-  let body = null;
-  try { body = text ? JSON.parse(text) : null; } catch(e){}
-  if (!res.ok) {
-    const msg = (body && (body.message || body.hint || body.error || body.msg)) || text || ('http_' + res.status);
-    const err = new Error(msg);
-    err.httpStatus = res.status;
-    err.body = body;
-    throw err;
-  }
-  return body;
+function saveSess(s){ try{ localStorage.setItem(SESS_KEY, JSON.stringify(s)); }catch(e){} }
+function clearSess(){ try{ localStorage.removeItem(SESS_KEY); }catch(e){} state.sess = null; }
+function getLang(){
+  try { const v = localStorage.getItem(LANG_KEY); if(v==='ar'||v==='en') return v; }catch(e){}
+  return 'en';
 }
+function saveLang(l){ try{ localStorage.setItem(LANG_KEY, l); }catch(e){} }
 
-// ---------- Render ----------
-let lastResult = { state: 'checking' };
-
-function render(r){
-  const t = tt();
-  const status = document.getElementById('status');
-  const stTxt  = document.getElementById('statusText');
-  const acts   = document.getElementById('actions');
-  acts.innerHTML = '';
-
-  if (r.state === 'checking') {
-    status.className = 'status status-info';
-    status.innerHTML = '<span class="spinner"></span><span id="statusText"></span>';
-    document.getElementById('statusText').textContent = t.checking;
-    return;
-  }
-
-  if (r.state === 'no_session') {
-    status.className = 'status status-warn';
-    status.innerHTML = '<span id="statusText"></span>';
-    document.getElementById('statusText').textContent = t.noSess;
-    acts.innerHTML = '<a class="btn" href="/admin">' + esc(t.goAdmin) + '</a>';
-    return;
-  }
-
-  if (r.state === 'ok') {
-    status.className = 'status status-ok';
-    const when = r.data && r.data.server_time ? r.data.server_time : '';
-    const uid  = r.data && r.data.user_id ? r.data.user_id : '';
-    status.innerHTML =
-      '<div><strong>' + esc(t.okHead) + '</strong></div>' +
-      '<div style="margin-top:6px">' + esc(t.okBody) + '<code>' + esc(when) + '</code></div>' +
-      (uid ? '<div style="margin-top:6px">' + esc(t.okUser) + '<code>' + esc(uid) + '</code></div>' : '');
-    return;
-  }
-
-  // failure branches
-  status.className = 'status status-err';
-  const isAuth = r.error && (r.error.httpStatus === 401 || r.error.httpStatus === 403 || /unauthorized|jwt|invalid|expired/i.test(r.error.message || ''));
-  const bodyMsg = isAuth ? t.unauth : (r.error && r.error.message ? (t.net + ' (' + r.error.message + ')') : t.net);
-  status.innerHTML =
-    '<div><strong>' + esc(t.failHead) + '</strong></div>' +
-    '<div style="margin-top:6px">' + esc(bodyMsg) + '</div>';
-  acts.innerHTML =
-    '<button class="btn" type="button" onclick="check()">' + esc(t.retry) + '</button>' +
-    '<a class="btn btn-alt" href="/admin">' + esc(t.goAdmin) + '</a>';
-}
-
-async function check(){
-  lastResult = { state: 'checking' };
-  render(lastResult);
-  const sess = getAdminSession();
-  if (!sess) {
-    lastResult = { state: 'no_session' };
-    render(lastResult);
-    return;
-  }
+/* ---------- Auth ---------- */
+async function signIn(email, password){
+  let login;
   try {
-    const data = await ping(sess.access_token);
-    lastResult = { state: 'ok', data: data };
-  } catch(e) {
-    lastResult = { state: 'error', error: e };
-  }
-  render(lastResult);
-}
-window.check = check;
+    const r = await fetch(SB_URL + '/auth/v1/token?grant_type=password', {
+      method:'POST',
+      headers:{'apikey':SB_KEY,'Content-Type':'application/json'},
+      body: JSON.stringify({email, password})
+    });
+    login = await r.json();
+    if (!r.ok || !login.access_token) {
+      return { ok:false, error: (login && (login.error_description || login.msg || login.error)) || 'auth_failed' };
+    }
+  } catch(e){ return { ok:false, error:'network' }; }
 
-applyLang();
-check();
+  // verify admin
+  let isAdmin = false;
+  try {
+    const ar = await fetch(SB_URL + '/rest/v1/rpc/is_admin', {
+      method:'POST',
+      headers:{'apikey':SB_KEY,'Authorization':'Bearer '+login.access_token,'Content-Type':'application/json'},
+      body:'{}'
+    });
+    isAdmin = (await ar.json()) === true;
+  } catch(e){ return { ok:false, error:'network' }; }
+
+  if (!isAdmin) return { ok:false, error:'not_admin' };
+
+  const sess = {
+    access_token:  login.access_token,
+    refresh_token: login.refresh_token,
+    expires_at:    new Date(Date.now() + (login.expires_in || 3600) * 1000).toISOString(),
+    user_id:       login.user && login.user.id,
+    email:         login.user && login.user.email
+  };
+  saveSess(sess);
+  state.sess = sess;
+  return { ok:true };
+}
+
+async function signOut(){
+  const s = state.sess;
+  if (s) {
+    // best-effort; ignore errors
+    try {
+      await fetch(SB_URL + '/auth/v1/logout', {
+        method:'POST',
+        headers:{'apikey':SB_KEY,'Authorization':'Bearer '+s.access_token,'Content-Type':'application/json'},
+        body:'{}'
+      });
+    } catch(e){}
+  }
+  clearSess();
+  state.screen = 'units';
+  state.units = state.landlords = state.contracts = [];
+  toast(t('tcSignedOut'), 'ok');
+  render();
+}
+
+async function refreshSession(){
+  const s = state.sess;
+  if (!s || !s.refresh_token) throw new Error('no_refresh');
+  const r = await fetch(SB_URL + '/auth/v1/token?grant_type=refresh_token', {
+    method:'POST',
+    headers:{'apikey':SB_KEY,'Content-Type':'application/json'},
+    body: JSON.stringify({refresh_token: s.refresh_token})
+  });
+  const body = await r.json();
+  if (!r.ok || !body.access_token) throw new Error('refresh_failed');
+  const next = {
+    ...s,
+    access_token:  body.access_token,
+    refresh_token: body.refresh_token || s.refresh_token,
+    expires_at:    new Date(Date.now() + (body.expires_in || 3600) * 1000).toISOString()
+  };
+  saveSess(next);
+  state.sess = next;
+}
+
+async function ensureSession(){
+  if (!state.sess) throw new Error('no_session');
+  const exp = new Date(state.sess.expires_at).getTime();
+  if (isNaN(exp) || exp - Date.now() < 60_000) {
+    await refreshSession();
+  }
+}
+
+/* ---------- RPC ---------- */
+async function hoRpc(fn, args){
+  try { await ensureSession(); }
+  catch(e){ return { ok:false, error:'unauthorized', status:401 }; }
+  try {
+    const res = await fetch(SB_URL + '/rest/v1/rpc/' + fn, {
+      method:'POST',
+      headers:{
+        'apikey':SB_KEY,
+        'Authorization':'Bearer '+state.sess.access_token,
+        'Content-Type':'application/json'
+      },
+      body: JSON.stringify(args || {})
+    });
+    const txt = await res.text();
+    let body = null;
+    try { body = txt ? JSON.parse(txt) : null; } catch(e){}
+    if (!res.ok) {
+      let err = (body && (body.message || body.hint || body.error)) || ('http_' + res.status);
+      // Session-expired shape from PostgREST → treat as unauthorized
+      if (res.status === 401 || res.status === 403 || /jwt|expired|invalid/i.test(err)) err = 'unauthorized';
+      return { ok:false, error:err, status:res.status };
+    }
+    return { ok:true, data:body, status:res.status };
+  } catch(e){
+    return { ok:false, error:'network', status:0 };
+  }
+}
+
+/* ---------- Toast ---------- */
+let _toastTimer = null;
+function toast(text, type){
+  const el = document.getElementById('toast-root');
+  if (!el) return;
+  const cls = type === 'ok' ? 'toast-ok' : type === 'warn' ? 'toast-warn' : type === 'err' ? 'toast-err' : '';
+  el.innerHTML = '<div class="toast '+cls+'">'+esc(text)+'</div>';
+  if (_toastTimer) clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(()=>{ el.innerHTML=''; }, 2600);
+}
+
+/* ---------- Data loaders ---------- */
+async function loadRefs(){
+  if (state.refs) return { ok:true };
+  const r = await hoRpc('housing_reference_lists', {});
+  if (!r.ok) return r;
+  state.refs = r.data;
+  return { ok:true };
+}
+async function loadUnits(){
+  state.ui.units.loading = true; render();
+  const r = await hoRpc('housing_list_units', { p_active_only:false });
+  state.ui.units.loading = false;
+  if (!r.ok) { toast(errMsg(r.error), 'err'); render(); return; }
+  state.units = (r.data && r.data.units) || [];
+  render();
+}
+async function loadLandlords(){
+  state.ui.landlords.loading = true; render();
+  const r = await hoRpc('housing_list_landlords', { p_active_only:false });
+  state.ui.landlords.loading = false;
+  if (!r.ok) { toast(errMsg(r.error), 'err'); render(); return; }
+  state.landlords = (r.data && r.data.landlords) || [];
+  render();
+}
+async function loadContracts(){
+  state.ui.contracts.loading = true; render();
+  const r = await hoRpc('housing_list_contracts', {});
+  state.ui.contracts.loading = false;
+  if (!r.ok) { toast(errMsg(r.error), 'err'); render(); return; }
+  state.contracts = (r.data && r.data.contracts) || [];
+  render();
+}
+
+function errMsg(k){
+  return t('err_' + k) || t('errGeneric');
+}
+
+/* =====================================================================
+   Actions (called from onclick / onchange in the rendered HTML)
+   ===================================================================== */
+
+function hoLangToggle(){
+  state.lang = state.lang === 'en' ? 'ar' : 'en';
+  saveLang(state.lang);
+  render();
+}
+
+async function hoSignInSubmit(ev){
+  if (ev && ev.preventDefault) ev.preventDefault();
+  const em = (document.getElementById('lg_email')||{}).value || '';
+  const pw = (document.getElementById('lg_password')||{}).value || '';
+  state.bootError = null;
+  const btn = document.getElementById('lg_btn');
+  if (btn) { btn.disabled = true; btn.textContent = t('lgSigningIn'); }
+  const r = await signIn(em.trim(), pw);
+  if (btn) { btn.disabled = false; btn.textContent = t('lgSignIn'); }
+  if (!r.ok) {
+    state.bootError = r.error === 'not_admin' ? 'lgNotAdmin'
+                    : r.error === 'network'   ? 'lgNetwork'
+                    : 'lgAuthFail';
+    render();
+    return;
+  }
+  state.bootError = null;
+  await bootstrapAfterAuth();
+}
+
+async function bootstrapAfterAuth(){
+  render();  // show shell immediately
+  const r = await loadRefs();
+  if (!r.ok) { toast(errMsg(r.error), 'err'); return; }
+  await loadUnits();
+  // eager preload of other tabs so nav is instant
+  loadLandlords();
+  loadContracts();
+}
+
+async function hoSignOutClick(){ await signOut(); }
+
+function hoNav(scr){
+  state.screen = scr;
+  render();
+  if (scr === 'units'     && state.units.length === 0     && !state.ui.units.loading)     loadUnits();
+  if (scr === 'landlords' && state.landlords.length === 0 && !state.ui.landlords.loading) loadLandlords();
+  if (scr === 'contracts' && state.contracts.length === 0 && !state.ui.contracts.loading) loadContracts();
+}
+
+function hoRefresh(){
+  if (state.screen === 'units')     loadUnits();
+  if (state.screen === 'landlords') loadLandlords();
+  if (state.screen === 'contracts') loadContracts();
+}
+
+/* filters — set without re-render for text inputs (preserve focus) */
+function hoFiltSet(scr, field, value, quiet){
+  state.ui[scr][field] = value;
+  if (!quiet) render();
+}
+function hoFiltClear(scr){
+  const u = state.ui[scr];
+  Object.keys(u).forEach(k => { if (k !== 'loading') u[k] = (k === 'activeOnly' ? true : ''); });
+  render();
+}
+
+/* ---------- Modal open / close ---------- */
+function openModal(type, data){
+  state.modal = { type, data: data || {}, busy:false, error:null, warning:null };
+  render();
+  // focus first input
+  setTimeout(()=>{
+    const el = document.querySelector('.mdl-bd input, .mdl-bd select, .mdl-bd textarea');
+    if (el) el.focus();
+  }, 40);
+}
+function closeModal(){ state.modal = null; render(); }
+function mdSet(field, value, quiet){
+  if (!state.modal) return;
+  state.modal.data[field] = value;
+  if (!quiet) render();
+}
+function mdSetBusy(b){ if (state.modal){ state.modal.busy = b; render(); } }
+function mdSetError(e){ if (state.modal){ state.modal.error = e; render(); } }
+function mdSetWarn(w){ if (state.modal){ state.modal.warning = w; render(); } }
+
+/* =====================================================================
+   RENDER
+   ===================================================================== */
+
+function render(){
+  // Apply direction + document lang
+  document.documentElement.lang = state.lang;
+  document.documentElement.dir = T[state.lang].dir;
+  document.body.classList.toggle('rtl', state.lang === 'ar');
+  document.title = 'ADVACON — ' + t('lgTitle');
+
+  const app = document.getElementById('app');
+  if (!state.sess) {
+    app.innerHTML = viewLogin();
+  } else {
+    app.innerHTML = viewApp();
+  }
+
+  // Modal overlay
+  const mroot = document.getElementById('modal-root');
+  mroot.innerHTML = state.modal ? viewModal() : '';
+}
+
+/* ---------- Login view ---------- */
+function viewLogin(){
+  const err = state.bootError;
+  return (
+  '<div class="lg-wrap">'+
+    '<div class="lg-card">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">'+
+        '<div class="lg-eye">'+esc(t('lgEye'))+'</div>'+
+        '<button class="hdr-btn" type="button" onclick="hoLangToggle()">'+esc(t('langLbl'))+'</button>'+
+      '</div>'+
+      '<h1 class="lg-title">'+esc(t('lgTitle'))+'</h1>'+
+      '<form onsubmit="hoSignInSubmit(event)">'+
+        '<div class="lg-field">'+
+          '<label class="lg-label" for="lg_email">'+esc(t('lgEmail'))+'</label>'+
+          '<input class="lg-input" id="lg_email" type="email" autocomplete="username" required>'+
+        '</div>'+
+        '<div class="lg-field">'+
+          '<label class="lg-label" for="lg_password">'+esc(t('lgPassword'))+'</label>'+
+          '<input class="lg-input" id="lg_password" type="password" autocomplete="current-password" required>'+
+        '</div>'+
+        (err ? '<div class="lg-err">'+esc(t(err))+'</div>' : '')+
+        '<button class="lg-btn" id="lg_btn" type="submit">'+esc(t('lgSignIn'))+'</button>'+
+      '</form>'+
+      '<div class="lg-info" style="margin-top:14px">'+esc(t('lgHint'))+'</div>'+
+    '</div>'+
+  '</div>'
+  );
+}
+
+/* ---------- App shell ---------- */
+function viewApp(){
+  return (
+    '<div class="app">'+
+      viewHeader()+
+      '<div class="wrap">'+ viewScreen() +'</div>'+
+    '</div>'
+  );
+}
+
+function viewHeader(){
+  const email = (state.sess && state.sess.email) || '';
+  const tab = (id, key, dis, soon) =>
+    '<button class="hdr-tab'+(state.screen===id?' active':'')+'" '+(dis?'disabled':'')+
+      ' onclick="hoNav(\''+id+'\')" type="button">'+
+      esc(t(key))+
+      (soon ? '<span class="soon">'+esc(t('tabSoon'))+'</span>' : '')+
+    '</button>';
+  return (
+  '<div class="hdr">'+
+    '<div class="hdr-brand"><span class="em">ADVACON</span><span>'+esc(t('hdBrand'))+'</span></div>'+
+    '<div class="hdr-tabs">'+
+      tab('units','tabUnits')+
+      tab('landlords','tabLandlords')+
+      tab('contracts','tabContracts')+
+      tab('dashboard','tabDashboard', true, true)+
+    '</div>'+
+    '<div class="hdr-right">'+
+      (email ? '<div class="hdr-user" title="'+esc(email)+'">'+esc(email)+'</div>' : '')+
+      '<button class="hdr-btn" type="button" onclick="hoLangToggle()">'+esc(t('langLbl'))+'</button>'+
+      '<button class="hdr-btn danger" type="button" onclick="hoSignOutClick()">'+esc(t('hdSignOut'))+'</button>'+
+    '</div>'+
+  '</div>'
+  );
+}
+
+function viewScreen(){
+  if (state.screen === 'units')     return viewUnits();
+  if (state.screen === 'landlords') return viewLandlords();
+  if (state.screen === 'contracts') return viewContracts();
+  return '<div class="empty">'+esc(t('tabSoon'))+'</div>';
+}
+
+/* =====================================================================
+   Screen: UNITS
+   ===================================================================== */
+
+function viewUnits(){
+  const ui = state.ui.units;
+  const cats = (state.refs && state.refs.categories) || [];
+  const uses = (state.refs && state.refs.use_types) || [];
+
+  // filters
+  let list = state.units.slice();
+  if (ui.activeOnly) list = list.filter(u => u.is_active);
+  if (ui.category)   list = list.filter(u => u.category === ui.category);
+  if (ui.use_type)   list = list.filter(u => u.use_type === ui.use_type);
+  if (ui.search) {
+    const q = ui.search.toLowerCase();
+    list = list.filter(u =>
+      (u.code||'').toLowerCase().includes(q) ||
+      (u.name_ar||'').toLowerCase().includes(q) ||
+      (u.name_en||'').toLowerCase().includes(q) ||
+      (u.location||'').toLowerCase().includes(q) ||
+      (u.purpose_label||'').toLowerCase().includes(q)
+    );
+  }
+
+  const optCat = '<option value="">'+esc(t('tbFiltCat'))+'</option>' +
+    cats.map(c => '<option value="'+esc(c.id)+'"'+(ui.category===c.id?' selected':'')+'>'+esc(labelFor(c))+'</option>').join('');
+  const optUse = '<option value="">'+esc(t('tbFiltUse'))+'</option>' +
+    uses.map(u => '<option value="'+esc(u.id)+'"'+(ui.use_type===u.id?' selected':'')+'>'+esc(labelFor(u))+'</option>').join('');
+
+  const rowsHtml = ui.loading
+    ? '<div class="load"><span class="spin"></span>'+esc(t('ldLoading'))+'</div>'
+    : list.length === 0
+      ? '<div class="empty"><div class="em-em">🏠</div>'+esc(state.units.length===0 ? t('emUnits') : t('emMatch'))+'</div>'
+      : '<div class="list">'+ list.map(unitRow).join('') +'</div>';
+
+  return (
+    '<div class="phead">'+
+      '<div class="phead-l">'+
+        '<div class="eye">'+esc(t('lgEye'))+'</div>'+
+        '<h1>'+esc(t('tabUnits'))+'</h1>'+
+        '<div class="sub">'+esc(t('scrUnitsSub'))+'</div>'+
+      '</div>'+
+      '<div style="display:flex;gap:8px">'+
+        '<button class="btn btn-ghost" type="button" onclick="hoRefresh()">↻ '+esc(t('actRefresh'))+'</button>'+
+        '<button class="btn" type="button" onclick="openModal(\'unit_create\')">'+esc(t('actNewUnit'))+'</button>'+
+      '</div>'+
+    '</div>'+
+
+    '<div class="tb">'+
+      '<div class="tb-search"><span class="ic">🔍</span>'+
+        '<input type="text" placeholder="'+esc(t('tbSearch'))+'" value="'+esc(ui.search)+'" oninput="hoFiltSet(\'units\',\'search\',this.value,true); rerenderUnitList();">'+
+      '</div>'+
+      '<select class="tb-sel" onchange="hoFiltSet(\'units\',\'category\',this.value)">'+optCat+'</select>'+
+      '<select class="tb-sel" onchange="hoFiltSet(\'units\',\'use_type\',this.value)">'+optUse+'</select>'+
+      '<label class="tb-chk"><input type="checkbox" '+(ui.activeOnly?'checked':'')+' onchange="hoFiltSet(\'units\',\'activeOnly\',this.checked)">'+esc(t('tbActiveOnly'))+'</label>'+
+      (hasUnitFilter() ? '<button class="btn btn-ghost btn-sm" type="button" onclick="hoFiltClear(\'units\')">'+esc(t('tbClear'))+'</button>' : '')+
+    '</div>'+
+
+    '<div id="units_list_root">'+rowsHtml+'</div>'
+  );
+}
+
+function hasUnitFilter(){
+  const u = state.ui.units;
+  return !!(u.search || u.category || u.use_type || !u.activeOnly);
+}
+
+function unitRow(u){
+  const cat = labelFor(refFind('categories', u.category));
+  const use = labelFor(refFind('use_types',  u.use_type));
+  const statusBadge = u.is_active
+    ? '<span class="badge badge-ok">'+esc(t('rowActive'))+'</span>'
+    : '<span class="badge badge-mut">'+esc(t('rowInactive'))+'</span>';
+  const details = [];
+  if (u.location)      details.push('📍 '+esc(u.location));
+  if (cat)             details.push(esc(cat));
+  if (use)             details.push(esc(use));
+  if (u.purpose_label) details.push('· '+esc(u.purpose_label));
+  if (u.room_count)    details.push(fmtNum(u.room_count)+' '+esc(t('rowRooms')));
+  if (u.capacity)      details.push(fmtNum(u.capacity)+' '+esc(t('rowCap')));
+
+  return (
+    '<div class="row">'+
+      '<div class="row-main">'+
+        '<div class="row-title">'+
+          '<span class="badge badge-code">'+esc(u.code)+'</span>'+
+          '<span>'+esc(u.name_ar||'')+'</span>'+
+          (u.name_en ? '<span style="color:var(--muted);font-weight:400"> · '+esc(u.name_en)+'</span>' : '')+
+        '</div>'+
+        '<div class="row-sub">'+ details.join('<span class="sep">·</span>') +'</div>'+
+      '</div>'+
+      '<div class="row-right">'+ statusBadge +'</div>'+
+    '</div>'
+  );
+}
+
+function rerenderUnitList(){
+  const root = document.getElementById('units_list_root');
+  if (!root) return;
+  const ui = state.ui.units;
+  let list = state.units.slice();
+  if (ui.activeOnly) list = list.filter(u => u.is_active);
+  if (ui.category)   list = list.filter(u => u.category === ui.category);
+  if (ui.use_type)   list = list.filter(u => u.use_type === ui.use_type);
+  if (ui.search) {
+    const q = ui.search.toLowerCase();
+    list = list.filter(u =>
+      (u.code||'').toLowerCase().includes(q) ||
+      (u.name_ar||'').toLowerCase().includes(q) ||
+      (u.name_en||'').toLowerCase().includes(q) ||
+      (u.location||'').toLowerCase().includes(q) ||
+      (u.purpose_label||'').toLowerCase().includes(q)
+    );
+  }
+  root.innerHTML = list.length === 0
+    ? '<div class="empty"><div class="em-em">🏠</div>'+esc(state.units.length===0 ? t('emUnits') : t('emMatch'))+'</div>'
+    : '<div class="list">'+ list.map(unitRow).join('') +'</div>';
+}
+
+/* =====================================================================
+   Screen: LANDLORDS
+   ===================================================================== */
+
+function viewLandlords(){
+  const ui = state.ui.landlords;
+  let list = state.landlords.slice();
+  if (ui.activeOnly) list = list.filter(l => l.is_active);
+  if (ui.search) {
+    const q = ui.search.toLowerCase();
+    list = list.filter(l =>
+      (l.name||'').toLowerCase().includes(q) ||
+      (l.phone||'').toLowerCase().includes(q)
+    );
+  }
+
+  const rowsHtml = ui.loading
+    ? '<div class="load"><span class="spin"></span>'+esc(t('ldLoading'))+'</div>'
+    : list.length === 0
+      ? '<div class="empty"><div class="em-em">👤</div>'+esc(state.landlords.length===0 ? t('emLandlords') : t('emMatch'))+'</div>'
+      : '<div class="list">'+ list.map(landlordRow).join('') +'</div>';
+
+  return (
+    '<div class="phead">'+
+      '<div class="phead-l">'+
+        '<div class="eye">'+esc(t('lgEye'))+'</div>'+
+        '<h1>'+esc(t('tabLandlords'))+'</h1>'+
+        '<div class="sub">'+esc(t('scrLandlordsSub'))+'</div>'+
+      '</div>'+
+      '<div style="display:flex;gap:8px">'+
+        '<button class="btn btn-ghost" type="button" onclick="hoRefresh()">↻ '+esc(t('actRefresh'))+'</button>'+
+        '<button class="btn" type="button" onclick="openModal(\'landlord_create\')">'+esc(t('actNewLandlord'))+'</button>'+
+      '</div>'+
+    '</div>'+
+
+    '<div class="tb">'+
+      '<div class="tb-search"><span class="ic">🔍</span>'+
+        '<input type="text" placeholder="'+esc(t('tbSearch'))+'" value="'+esc(ui.search)+'" oninput="hoFiltSet(\'landlords\',\'search\',this.value,true); rerenderLandlordList();">'+
+      '</div>'+
+      '<label class="tb-chk"><input type="checkbox" '+(ui.activeOnly?'checked':'')+' onchange="hoFiltSet(\'landlords\',\'activeOnly\',this.checked)">'+esc(t('tbActiveOnly'))+'</label>'+
+      ((ui.search || !ui.activeOnly) ? '<button class="btn btn-ghost btn-sm" type="button" onclick="hoFiltClear(\'landlords\')">'+esc(t('tbClear'))+'</button>' : '')+
+    '</div>'+
+
+    '<div id="landlords_list_root">'+rowsHtml+'</div>'
+  );
+}
+
+function landlordRow(l){
+  const statusBadge = l.is_active
+    ? '<span class="badge badge-ok">'+esc(t('rowActive'))+'</span>'
+    : '<span class="badge badge-mut">'+esc(t('rowInactive'))+'</span>';
+  return (
+    '<div class="row">'+
+      '<div class="row-main">'+
+        '<div class="row-title">'+esc(l.name)+'</div>'+
+        '<div class="row-sub">'+
+          (l.phone ? '📞 '+esc(l.phone) : '')+
+          (l.notes ? (l.phone?'<span class="sep">·</span>':'')+esc(l.notes) : '')+
+        '</div>'+
+      '</div>'+
+      '<div class="row-right">'+statusBadge+'</div>'+
+    '</div>'
+  );
+}
+
+function rerenderLandlordList(){
+  const root = document.getElementById('landlords_list_root');
+  if (!root) return;
+  const ui = state.ui.landlords;
+  let list = state.landlords.slice();
+  if (ui.activeOnly) list = list.filter(l => l.is_active);
+  if (ui.search) {
+    const q = ui.search.toLowerCase();
+    list = list.filter(l =>
+      (l.name||'').toLowerCase().includes(q) ||
+      (l.phone||'').toLowerCase().includes(q)
+    );
+  }
+  root.innerHTML = list.length === 0
+    ? '<div class="empty"><div class="em-em">👤</div>'+esc(state.landlords.length===0 ? t('emLandlords') : t('emMatch'))+'</div>'
+    : '<div class="list">'+ list.map(landlordRow).join('') +'</div>';
+}
+
+/* =====================================================================
+   Screen: CONTRACTS
+   ===================================================================== */
+
+function viewContracts(){
+  const ui = state.ui.contracts;
+  const statuses = (state.refs && state.refs.contract_statuses) || [];
+
+  // build filter dropdowns
+  const optStatus = '<option value="">'+esc(t('tbFiltStatus'))+'</option>' +
+    statuses.map(s => '<option value="'+esc(s.id)+'"'+(ui.status===s.id?' selected':'')+'>'+esc(labelFor(s))+'</option>').join('');
+  const optUnit = '<option value="">'+esc(t('tbFiltUnit'))+'</option>' +
+    state.units.map(u => '<option value="'+esc(u.id)+'"'+(ui.unit_id===u.id?' selected':'')+'>'+esc(u.code)+' — '+esc(u.name_ar||'')+'</option>').join('');
+  const optLandlord = '<option value="">'+esc(t('tbFiltLandlord'))+'</option>' +
+    state.landlords.map(l => '<option value="'+esc(l.id)+'"'+(ui.landlord_id===l.id?' selected':'')+'>'+esc(l.name)+'</option>').join('');
+
+  let list = state.contracts.slice();
+  if (ui.status)      list = list.filter(c => c.status === ui.status);
+  if (ui.unit_id)     list = list.filter(c => c.unit_id === ui.unit_id);
+  if (ui.landlord_id) list = list.filter(c => c.landlord_id === ui.landlord_id);
+  if (ui.search) {
+    const q = ui.search.toLowerCase();
+    list = list.filter(c =>
+      (c.contract_no||'').toLowerCase().includes(q) ||
+      (c.account_ref||'').toLowerCase().includes(q) ||
+      (c.unit && (
+        (c.unit.code||'').toLowerCase().includes(q) ||
+        (c.unit.name_ar||'').toLowerCase().includes(q) ||
+        (c.unit.location||'').toLowerCase().includes(q)
+      )) ||
+      (c.landlord && (c.landlord.name||'').toLowerCase().includes(q))
+    );
+  }
+
+  const rowsHtml = ui.loading
+    ? '<div class="load"><span class="spin"></span>'+esc(t('ldLoading'))+'</div>'
+    : list.length === 0
+      ? '<div class="empty"><div class="em-em">📄</div>'+esc(state.contracts.length===0 ? t('emContracts') : t('emMatch'))+'</div>'
+      : '<div class="list">'+ list.map(contractRow).join('') +'</div>';
+
+  return (
+    '<div class="phead">'+
+      '<div class="phead-l">'+
+        '<div class="eye">'+esc(t('lgEye'))+'</div>'+
+        '<h1>'+esc(t('tabContracts'))+'</h1>'+
+        '<div class="sub">'+esc(t('scrContractsSub'))+'</div>'+
+      '</div>'+
+      '<div style="display:flex;gap:8px">'+
+        '<button class="btn btn-ghost" type="button" onclick="hoRefresh()">↻ '+esc(t('actRefresh'))+'</button>'+
+        '<button class="btn" type="button" onclick="openModal(\'contract_create\')">'+esc(t('actNewContract'))+'</button>'+
+      '</div>'+
+    '</div>'+
+
+    '<div class="tb">'+
+      '<div class="tb-search"><span class="ic">🔍</span>'+
+        '<input type="text" placeholder="'+esc(t('tbSearch'))+'" value="'+esc(ui.search)+'" oninput="hoFiltSet(\'contracts\',\'search\',this.value,true); rerenderContractList();">'+
+      '</div>'+
+      '<select class="tb-sel" onchange="hoFiltSet(\'contracts\',\'status\',this.value)">'+optStatus+'</select>'+
+      '<select class="tb-sel" onchange="hoFiltSet(\'contracts\',\'unit_id\',this.value)">'+optUnit+'</select>'+
+      '<select class="tb-sel" onchange="hoFiltSet(\'contracts\',\'landlord_id\',this.value)">'+optLandlord+'</select>'+
+      ((ui.search||ui.status||ui.unit_id||ui.landlord_id) ? '<button class="btn btn-ghost btn-sm" type="button" onclick="hoFiltClear(\'contracts\')">'+esc(t('tbClear'))+'</button>' : '')+
+    '</div>'+
+
+    '<div id="contracts_list_root">'+rowsHtml+'</div>'
+  );
+}
+
+function contractRow(c){
+  const st = c.status;
+  const badge =
+    st === 'active'    ? '<span class="badge badge-ok">'+esc(t('rowActive'))+'</span>' :
+    st === 'expired'   ? '<span class="badge badge-mut">'+esc(t('rowExpired'))+'</span>' :
+                         '<span class="badge badge-err">'+esc(t('rowCancelled'))+'</span>';
+
+  const days = c.days_remaining;
+  let daysHtml = '';
+  if (typeof days === 'number' && st === 'active') {
+    if (days < 0)  daysHtml = '<span class="badge badge-err">'+esc(t('rowOverdue'))+' '+esc(String(-days))+' '+esc(t('rowDays'))+'</span>';
+    else if (days <= 60) daysHtml = '<span class="badge badge-warn">'+fmtNum(days)+' '+esc(t('rowDays'))+'</span>';
+  }
+
+  const uCode = c.unit && c.unit.code ? c.unit.code : '';
+  const uName = c.unit && c.unit.name_ar ? c.unit.name_ar : '';
+  const uLoc  = c.unit && c.unit.location ? c.unit.location : '';
+  const lName = c.landlord && c.landlord.name ? c.landlord.name : '';
+
+  const pm = labelFor(refFind('payment_methods', c.payment_method));
+
+  const bits = [];
+  if (uLoc) bits.push('📍 '+esc(uLoc));
+  if (lName) bits.push('👤 '+esc(lName));
+  if (pm) bits.push(esc(pm));
+  if (c.contract_no) bits.push('#'+esc(c.contract_no));
+
+  const money = fmtNum(c.monthly_rent)+' '+esc(t('rowMonthly'))+' · '+esc(t('rowStart'))+' '+esc(fmtDate(c.start_date))+' → '+esc(t('rowEnd'))+' '+esc(fmtDate(c.end_date));
+
+  return (
+    '<div class="row">'+
+      '<div class="row-main">'+
+        '<div class="row-title">'+
+          (uCode ? '<span class="badge badge-code">'+esc(uCode)+'</span>' : '')+
+          '<span>'+esc(uName||'—')+'</span>'+
+        '</div>'+
+        '<div class="row-sub">'+ bits.join('<span class="sep">·</span>') +'</div>'+
+        '<div class="row-sub" style="margin-top:4px">'+esc(money)+'</div>'+
+      '</div>'+
+      '<div class="row-right">'+
+        badge + daysHtml +
+        '<button class="btn btn-ghost btn-sm" type="button" onclick="openModal(\'status_change\',{contract_id:\''+esc(c.id)+'\',current_status:\''+esc(c.status)+'\',preview:\''+esc((c.unit&&c.unit.code)||'')+' — '+esc((c.unit&&c.unit.name_ar)||'')+'\'})">'+esc(t('actChangeStatus'))+'</button>'+
+      '</div>'+
+    '</div>'
+  );
+}
+
+function rerenderContractList(){
+  const root = document.getElementById('contracts_list_root');
+  if (!root) return;
+  const ui = state.ui.contracts;
+  let list = state.contracts.slice();
+  if (ui.status)      list = list.filter(c => c.status === ui.status);
+  if (ui.unit_id)     list = list.filter(c => c.unit_id === ui.unit_id);
+  if (ui.landlord_id) list = list.filter(c => c.landlord_id === ui.landlord_id);
+  if (ui.search) {
+    const q = ui.search.toLowerCase();
+    list = list.filter(c =>
+      (c.contract_no||'').toLowerCase().includes(q) ||
+      (c.account_ref||'').toLowerCase().includes(q) ||
+      (c.unit && ((c.unit.code||'').toLowerCase().includes(q) || (c.unit.name_ar||'').toLowerCase().includes(q) || (c.unit.location||'').toLowerCase().includes(q))) ||
+      (c.landlord && (c.landlord.name||'').toLowerCase().includes(q))
+    );
+  }
+  root.innerHTML = list.length === 0
+    ? '<div class="empty"><div class="em-em">📄</div>'+esc(state.contracts.length===0 ? t('emContracts') : t('emMatch'))+'</div>'
+    : '<div class="list">'+ list.map(contractRow).join('') +'</div>';
+}
+
+/* ---------- ref helpers ---------- */
+function refFind(list, id){
+  if (!state.refs || !id) return null;
+  const arr = state.refs[list];
+  if (!arr) return null;
+  return arr.find(x => x.id === id) || null;
+}
+function labelFor(ref){
+  if (!ref) return '';
+  return state.lang === 'ar' ? (ref.name_ar || ref.name_en) : (ref.name_en || ref.name_ar);
+}
+
+/* =====================================================================
+   MODALS
+   ===================================================================== */
+
+function viewModal(){
+  const m = state.modal;
+  if (!m) return '';
+  let body='', title='', save='', saveFn='';
+  if (m.type === 'unit_create')     { title = t('mdUnitCreate');      body = modalUnitCreate(m);      saveFn = 'hoSubmitUnit()'; }
+  else if (m.type === 'landlord_create'){ title = t('mdLandlordCreate'); body = modalLandlordCreate(m); saveFn = 'hoSubmitLandlord()'; }
+  else if (m.type === 'contract_create'){ title = t('mdContractCreate'); body = modalContractCreate(m); saveFn = 'hoSubmitContract()'; }
+  else if (m.type === 'status_change')  { title = t('mdStatusChange');   body = modalStatusChange(m);   saveFn = 'hoSubmitStatus()'; }
+
+  save = m.busy
+    ? '<button class="btn" disabled><span class="spin"></span>'+esc(t('mSaving'))+'</button>'
+    : '<button class="btn" type="button" onclick="'+saveFn+'">'+esc(t('mSave'))+'</button>';
+
+  return (
+    '<div class="mask" onclick="if(event.target===this) closeModal()">'+
+      '<div class="mdl">'+
+        '<div class="mdl-hd">'+
+          '<div class="mdl-tt">'+esc(title)+'</div>'+
+          '<button class="mdl-x" type="button" onclick="closeModal()" '+(m.busy?'disabled':'')+'>×</button>'+
+        '</div>'+
+        '<div class="mdl-bd">'+
+          (m.error ? '<div class="mdl-err">'+esc(t('err_'+m.error) || t('errGeneric'))+'</div>' : '')+
+          body+
+        '</div>'+
+        '<div class="mdl-ft">'+
+          '<button class="btn btn-ghost" type="button" onclick="closeModal()" '+(m.busy?'disabled':'')+'>'+esc(t('mCancel'))+'</button>'+
+          save+
+        '</div>'+
+      '</div>'+
+    '</div>'
+  );
+}
+
+/* ---------- UNIT create modal ---------- */
+function modalUnitCreate(m){
+  const d = m.data;
+  const cats = (state.refs && state.refs.categories) || [];
+  const uses = (state.refs && state.refs.use_types)  || [];
+  const optCats = '<option value="">'+esc(t('optChoose'))+'</option>' +
+    cats.map(c => '<option value="'+esc(c.id)+'"'+(d.category===c.id?' selected':'')+'>'+esc(labelFor(c))+'</option>').join('');
+  const optUses = '<option value="">'+esc(t('optChoose'))+'</option>' +
+    uses.map(u => '<option value="'+esc(u.id)+'"'+(d.use_type===u.id?' selected':'')+'>'+esc(labelFor(u))+'</option>').join('');
+
+  return (
+    '<div class="fld"><label class="fld-lbl">'+esc(t('fCode'))+'<span class="req">*</span></label>'+
+      '<input class="fld-inp mono" type="text" value="'+esc(d.code||'')+'" oninput="mdSet(\'code\',this.value.toUpperCase(),true); this.value=this.value.toUpperCase();" maxlength="16">'+
+      '<div class="fld-hint">'+esc(t('fCodeHint'))+'</div>'+
+    '</div>'+
+    '<div class="fld-row">'+
+      '<div class="fld"><label class="fld-lbl">'+esc(t('fNameAr'))+'<span class="req">*</span></label>'+
+        '<input class="fld-inp" type="text" value="'+esc(d.name_ar||'')+'" oninput="mdSet(\'name_ar\',this.value,true)" maxlength="200">'+
+      '</div>'+
+      '<div class="fld"><label class="fld-lbl">'+esc(t('fNameEn'))+'</label>'+
+        '<input class="fld-inp" type="text" value="'+esc(d.name_en||'')+'" oninput="mdSet(\'name_en\',this.value,true)" maxlength="200">'+
+      '</div>'+
+    '</div>'+
+    '<div class="fld-row">'+
+      '<div class="fld"><label class="fld-lbl">'+esc(t('fCategory'))+'<span class="req">*</span></label>'+
+        '<select class="fld-sel" onchange="mdSet(\'category\',this.value,true)">'+optCats+'</select>'+
+      '</div>'+
+      '<div class="fld"><label class="fld-lbl">'+esc(t('fUseType'))+'<span class="req">*</span></label>'+
+        '<select class="fld-sel" onchange="mdSet(\'use_type\',this.value,true)">'+optUses+'</select>'+
+      '</div>'+
+    '</div>'+
+    '<div class="fld-row">'+
+      '<div class="fld"><label class="fld-lbl">'+esc(t('fLocation'))+'<span class="req">*</span></label>'+
+        '<input class="fld-inp" type="text" value="'+esc(d.location||'')+'" oninput="mdSet(\'location\',this.value,true)" maxlength="200">'+
+      '</div>'+
+      '<div class="fld"><label class="fld-lbl">'+esc(t('fPurposeLabel'))+'</label>'+
+        '<input class="fld-inp" type="text" value="'+esc(d.purpose_label||'')+'" oninput="mdSet(\'purpose_label\',this.value,true)" maxlength="200">'+
+        '<div class="fld-hint">'+esc(t('fPurposeHint'))+'</div>'+
+      '</div>'+
+    '</div>'+
+    '<div class="fld-row">'+
+      '<div class="fld"><label class="fld-lbl">'+esc(t('fRoomCount'))+'</label>'+
+        '<input class="fld-inp" type="number" min="1" max="1000" value="'+esc(d.room_count||'')+'" oninput="mdSet(\'room_count\',this.value,true)">'+
+      '</div>'+
+      '<div class="fld"><label class="fld-lbl">'+esc(t('fCapacity'))+'</label>'+
+        '<input class="fld-inp" type="number" min="1" max="10000" value="'+esc(d.capacity||'')+'" oninput="mdSet(\'capacity\',this.value,true)">'+
+      '</div>'+
+    '</div>'+
+    '<div class="fld"><label class="fld-lbl">'+esc(t('fNotes'))+'</label>'+
+      '<textarea class="fld-ta" oninput="mdSet(\'notes\',this.value,true)" maxlength="2000">'+esc(d.notes||'')+'</textarea>'+
+    '</div>'
+  );
+}
+
+async function hoSubmitUnit(){
+  const m = state.modal; if (!m) return;
+  const d = m.data;
+  mdSetError(null); mdSetBusy(true);
+  const r = await hoRpc('housing_create_unit', {
+    p_code:          (d.code || '').toUpperCase().trim(),
+    p_name_ar:       (d.name_ar || '').trim(),
+    p_category:      d.category || '',
+    p_location:      (d.location || '').trim(),
+    p_use_type:      d.use_type || '',
+    p_name_en:       (d.name_en || '').trim() || null,
+    p_purpose_label: (d.purpose_label || '').trim() || null,
+    p_room_count:    d.room_count ? Number(d.room_count) : null,
+    p_capacity:      d.capacity   ? Number(d.capacity)   : null,
+    p_notes:         (d.notes || '').trim() || null
+  });
+  mdSetBusy(false);
+  if (!r.ok) { mdSetError(r.error); return; }
+  closeModal();
+  toast(t('tcUnitCreated'), 'ok');
+  await loadUnits();
+}
+
+/* ---------- LANDLORD create modal ---------- */
+function modalLandlordCreate(m){
+  const d = m.data;
+  return (
+    '<div class="fld"><label class="fld-lbl">'+esc(t('fLandlordName'))+'<span class="req">*</span></label>'+
+      '<input class="fld-inp" type="text" value="'+esc(d.name||'')+'" oninput="mdSet(\'name\',this.value,true)" maxlength="200">'+
+    '</div>'+
+    '<div class="fld"><label class="fld-lbl">'+esc(t('fPhone'))+'</label>'+
+      '<input class="fld-inp" type="text" value="'+esc(d.phone||'')+'" oninput="mdSet(\'phone\',this.value,true)" maxlength="50" dir="ltr">'+
+    '</div>'+
+    '<div class="fld"><label class="fld-lbl">'+esc(t('fNotes'))+'</label>'+
+      '<textarea class="fld-ta" oninput="mdSet(\'notes\',this.value,true)" maxlength="2000">'+esc(d.notes||'')+'</textarea>'+
+    '</div>'
+  );
+}
+
+async function hoSubmitLandlord(){
+  const m = state.modal; if (!m) return;
+  const d = m.data;
+  mdSetError(null); mdSetBusy(true);
+  const r = await hoRpc('housing_create_landlord', {
+    p_name:  (d.name  || '').trim(),
+    p_phone: (d.phone || '').trim() || null,
+    p_notes: (d.notes || '').trim() || null
+  });
+  mdSetBusy(false);
+  if (!r.ok) { mdSetError(r.error); return; }
+  closeModal();
+  toast(t('tcLandlordCreated'), 'ok');
+  await loadLandlords();
+}
+
+/* ---------- CONTRACT create modal ---------- */
+function modalContractCreate(m){
+  const d = m.data;
+  const activeUnits = state.units.filter(u => u.is_active);
+  const activeLandlords = state.landlords.filter(l => l.is_active);
+  const pays = (state.refs && state.refs.payment_methods)   || [];
+  const stats= (state.refs && state.refs.contract_statuses) || [];
+
+  const optUnit = '<option value="">'+esc(t('optChoose'))+'</option>' +
+    activeUnits.map(u => '<option value="'+esc(u.id)+'"'+(d.unit_id===u.id?' selected':'')+'>'+esc(u.code)+' — '+esc(u.name_ar||'')+'</option>').join('');
+  const optLandlord = '<option value="">'+esc(t('optChoose'))+'</option>' +
+    activeLandlords.map(l => '<option value="'+esc(l.id)+'"'+(d.landlord_id===l.id?' selected':'')+'>'+esc(l.name)+'</option>').join('');
+  const optPay = '<option value="">'+esc(t('optChoose'))+'</option>' +
+    pays.map(p => '<option value="'+esc(p.id)+'"'+(d.payment_method===p.id?' selected':'')+'>'+esc(labelFor(p))+'</option>').join('');
+  const optStat = stats.map(s => '<option value="'+esc(s.id)+'"'+((d.status||'active')===s.id?' selected':'')+'>'+esc(labelFor(s))+'</option>').join('');
+
+  // client-side variance preview
+  let varHtml = '';
+  const m_r = Number(d.monthly_rent);
+  const t_v = Number(d.total_value);
+  if (d.start_date && d.end_date && !isNaN(m_r) && !isNaN(t_v) && m_r >= 0 && t_v >= 0) {
+    const days = daysBetween(d.start_date, d.end_date) + 1;
+    if (days > 0) {
+      const months = days / 30.4375;
+      const expected = Math.round(m_r * months * 100) / 100;
+      const diff = t_v - expected;
+      const pct = expected > 0 ? Math.abs(diff) / expected : 0;
+      const sig = pct > 0.02;
+      if (expected > 0) {
+        const line = esc(t('varExpected'))+' '+fmtNum(expected)+' · '+esc(t('varDiff'))+' '+fmtNum(diff)+' ('+fmtNum(pct*100)+'%)';
+        varHtml = sig
+          ? '<div class="fld-warn">⚠️ '+esc(t('varWarn'))+'<br><span style="opacity:.85">'+line+'</span></div>'
+          : '<div class="fld-good">✅ '+esc(t('varOk'))+'<br><span style="opacity:.85">'+line+'</span></div>';
+      }
+    }
+  }
+
+  return (
+    '<div class="fld-row">'+
+      '<div class="fld"><label class="fld-lbl">'+esc(t('fUnit'))+'<span class="req">*</span></label>'+
+        '<select class="fld-sel" onchange="mdSet(\'unit_id\',this.value,true)">'+optUnit+'</select>'+
+      '</div>'+
+      '<div class="fld"><label class="fld-lbl">'+esc(t('fLandlord'))+'<span class="req">*</span></label>'+
+        '<select class="fld-sel" onchange="mdSet(\'landlord_id\',this.value,true)">'+optLandlord+'</select>'+
+      '</div>'+
+    '</div>'+
+
+    '<div class="fld-row">'+
+      '<div class="fld"><label class="fld-lbl">'+esc(t('fPaymentMethod'))+'<span class="req">*</span></label>'+
+        '<select class="fld-sel" onchange="mdSet(\'payment_method\',this.value,true)">'+optPay+'</select>'+
+      '</div>'+
+      '<div class="fld"><label class="fld-lbl">'+esc(t('fContractNo'))+'</label>'+
+        '<input class="fld-inp" type="text" value="'+esc(d.contract_no||'')+'" oninput="mdSet(\'contract_no\',this.value,true)" maxlength="100">'+
+      '</div>'+
+    '</div>'+
+
+    '<div class="fld"><label class="fld-lbl">'+esc(t('fAccountRef'))+'</label>'+
+      '<input class="fld-inp" type="text" value="'+esc(d.account_ref||'')+'" oninput="mdSet(\'account_ref\',this.value,true)" maxlength="100">'+
+      '<div class="fld-hint">'+esc(t('fAccountRefHint'))+'</div>'+
+    '</div>'+
+
+    '<div class="fld-row-3">'+
+      '<div class="fld"><label class="fld-lbl">'+esc(t('fStartDate'))+'<span class="req">*</span></label>'+
+        '<input class="fld-inp" type="date" value="'+esc(d.start_date||'')+'" onchange="mdSet(\'start_date\',this.value)">'+
+      '</div>'+
+      '<div class="fld"><label class="fld-lbl">'+esc(t('fEndDate'))+'<span class="req">*</span></label>'+
+        '<input class="fld-inp" type="date" value="'+esc(d.end_date||'')+'" onchange="mdSet(\'end_date\',this.value)">'+
+      '</div>'+
+      '<div class="fld"><label class="fld-lbl">'+esc(t('fDuration'))+'</label>'+
+        '<input class="fld-inp" type="text" value="'+esc(d.duration_label||'')+'" oninput="mdSet(\'duration_label\',this.value,true)" maxlength="100">'+
+        '<div class="fld-hint">'+esc(t('fDurationHint'))+'</div>'+
+      '</div>'+
+    '</div>'+
+
+    '<div class="fld-row">'+
+      '<div class="fld"><label class="fld-lbl">'+esc(t('fMonthlyRent'))+'<span class="req">*</span></label>'+
+        '<input class="fld-inp" type="number" min="0" step="0.01" value="'+esc(d.monthly_rent||'')+'" oninput="mdSet(\'monthly_rent\',this.value)">'+
+      '</div>'+
+      '<div class="fld"><label class="fld-lbl">'+esc(t('fTotalValue'))+'<span class="req">*</span></label>'+
+        '<input class="fld-inp" type="number" min="0" step="0.01" value="'+esc(d.total_value||'')+'" oninput="mdSet(\'total_value\',this.value)">'+
+        varHtml+
+      '</div>'+
+    '</div>'+
+
+    '<div class="fld-row">'+
+      '<div class="fld"><label class="fld-lbl">'+esc(t('fNextPaymentDue'))+'</label>'+
+        '<input class="fld-inp" type="date" value="'+esc(d.next_payment_due||'')+'" onchange="mdSet(\'next_payment_due\',this.value,true)">'+
+      '</div>'+
+      '<div class="fld"><label class="fld-lbl">'+esc(t('fStatus'))+'</label>'+
+        '<select class="fld-sel" onchange="mdSet(\'status\',this.value,true)">'+optStat+'</select>'+
+      '</div>'+
+    '</div>'+
+
+    '<div class="fld"><label class="fld-lbl">'+esc(t('fPayStatusNote'))+'</label>'+
+      '<input class="fld-inp" type="text" value="'+esc(d.payment_status_note||'')+'" oninput="mdSet(\'payment_status_note\',this.value,true)" maxlength="500">'+
+    '</div>'+
+
+    '<div class="fld"><label class="fld-lbl">'+esc(t('fNotes'))+'</label>'+
+      '<textarea class="fld-ta" oninput="mdSet(\'notes\',this.value,true)" maxlength="2000">'+esc(d.notes||'')+'</textarea>'+
+    '</div>'
+  );
+}
+
+async function hoSubmitContract(){
+  const m = state.modal; if (!m) return;
+  const d = m.data;
+  mdSetError(null); mdSetBusy(true);
+  const r = await hoRpc('housing_create_contract', {
+    p_unit_id:              d.unit_id     || null,
+    p_landlord_id:          d.landlord_id || null,
+    p_payment_method:       d.payment_method || '',
+    p_start_date:           d.start_date  || null,
+    p_end_date:             d.end_date    || null,
+    p_monthly_rent:         d.monthly_rent === '' || d.monthly_rent == null ? null : Number(d.monthly_rent),
+    p_total_value:          d.total_value  === '' || d.total_value  == null ? null : Number(d.total_value),
+    p_status:               d.status || 'active',
+    p_contract_no:          (d.contract_no || '').trim() || null,
+    p_account_ref:          (d.account_ref || '').trim() || null,
+    p_duration_label:       (d.duration_label || '').trim() || null,
+    p_next_payment_due:     d.next_payment_due || null,
+    p_payment_status_note:  (d.payment_status_note || '').trim() || null,
+    p_notes:                (d.notes || '').trim() || null
+  });
+  mdSetBusy(false);
+  if (!r.ok) { mdSetError(r.error); return; }
+  closeModal();
+  toast(t('tcContractCreated'), 'ok');
+  if (r.data && r.data.variance && r.data.variance.has_significant_variance) {
+    setTimeout(()=> toast('⚠️ '+t('varWarn'), 'warn'), 1200);
+  }
+  await loadContracts();
+}
+
+/* ---------- STATUS CHANGE modal ---------- */
+function modalStatusChange(m){
+  const d = m.data;
+  const stats = (state.refs && state.refs.contract_statuses) || [];
+  const opts = stats.map(s => '<option value="'+esc(s.id)+'"'+(d.new_status===s.id?' selected':'')+'>'+esc(labelFor(s))+'</option>').join('');
+  const curLabel = labelFor(refFind('contract_statuses', d.current_status)) || d.current_status;
+  return (
+    '<div class="fld"><label class="fld-lbl">'+esc(t('fUnit'))+'</label>'+
+      '<div class="fld-inp" style="background:var(--bg);color:var(--muted)">'+esc(d.preview||'')+'</div>'+
+    '</div>'+
+    '<div class="fld"><label class="fld-lbl">'+esc(t('fStatus'))+' → '+esc(t('fNewStatus'))+'</label>'+
+      '<select class="fld-sel" onchange="mdSet(\'new_status\',this.value,true)">'+
+        '<option value="">'+esc(t('optChoose'))+' ('+esc(t('fStatus'))+': '+esc(curLabel)+')</option>'+
+        opts+
+      '</select>'+
+    '</div>'+
+    '<div class="fld"><label class="fld-lbl">'+esc(t('fReason'))+'</label>'+
+      '<textarea class="fld-ta" oninput="mdSet(\'reason\',this.value,true)" maxlength="500">'+esc(d.reason||'')+'</textarea>'+
+      '<div class="fld-hint">'+esc(t('fReasonHint'))+'</div>'+
+    '</div>'
+  );
+}
+
+async function hoSubmitStatus(){
+  const m = state.modal; if (!m) return;
+  const d = m.data;
+  if (!d.new_status) { mdSetError('status_required'); return; }
+  mdSetError(null); mdSetBusy(true);
+  const r = await hoRpc('housing_update_contract_status', {
+    p_contract_id: d.contract_id,
+    p_new_status:  d.new_status,
+    p_reason:      (d.reason || '').trim() || null
+  });
+  mdSetBusy(false);
+  if (!r.ok) { mdSetError(r.error); return; }
+  closeModal();
+  toast(r.data && r.data.no_op ? t('tcNoOp') : t('tcStatusChanged'), r.data && r.data.no_op ? 'info' : 'ok');
+  await loadContracts();
+}
+
+/* =====================================================================
+   Expose action functions to inline onclick handlers
+   ===================================================================== */
+window.hoLangToggle    = hoLangToggle;
+window.hoSignInSubmit  = hoSignInSubmit;
+window.hoSignOutClick  = hoSignOutClick;
+window.hoNav           = hoNav;
+window.hoRefresh       = hoRefresh;
+window.hoFiltSet       = hoFiltSet;
+window.hoFiltClear     = hoFiltClear;
+window.openModal       = openModal;
+window.closeModal      = closeModal;
+window.mdSet           = mdSet;
+window.hoSubmitUnit    = hoSubmitUnit;
+window.hoSubmitLandlord= hoSubmitLandlord;
+window.hoSubmitContract= hoSubmitContract;
+window.hoSubmitStatus  = hoSubmitStatus;
+window.rerenderUnitList     = rerenderUnitList;
+window.rerenderLandlordList = rerenderLandlordList;
+window.rerenderContractList = rerenderContractList;
+
+/* =====================================================================
+   BOOT
+   ===================================================================== */
+(async function boot(){
+  state.lang = getLang();
+  state.sess = getSess();
+  render();
+  if (state.sess) {
+    // silently refresh + verify then load data
+    try {
+      await ensureSession();
+      await bootstrapAfterAuth();
+    } catch(e) {
+      clearSess();
+      state.bootError = 'lgAuthFail';
+      render();
+    }
+  }
+})();
+
+// Escape key closes modal
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && state.modal && !state.modal.busy) closeModal();
+});
 </script>
 </body>
 </html>
