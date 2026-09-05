@@ -922,6 +922,7 @@ async function screenPropertyDetail(el, id) {
         ${fmtIsActive(p.is_active)}
         <button class="btn" id="btnEditProp">${t('edit')}</button>
         <button class="btn ${p.is_active?'btn-ghost':'btn-primary'}" id="btnToggleActive">${p.is_active?t('deactivate'):t('activate')}</button>
+        <button class="btn btn-ghost" id="btnDeleteProp" style="color:var(--red); border-color:var(--red);">${t('delete')}</button>
       </div>
       <div class="tabs">
         ${tabs.map(k => `<a class="tab ${k===activeTab?'active':''}" href="#properties/${id}?tab=${k}">${t('tab'+k.charAt(0).toUpperCase()+k.slice(1))}</a>`).join('')}
@@ -932,6 +933,83 @@ async function screenPropertyDetail(el, id) {
       if (p.is_active && !await confirmAction({ title: t('confirmDeactivate'), message: t('confirmDeactivate') })) return;
       await rpc('housing_toggle_property_active', { p_id: id, p_active: !p.is_active });
       toast(t('savedSuccessfully'), 'success'); load();
+    });
+    document.getElementById('btnDeleteProp').addEventListener('click', async () => {
+      // Step 1: silent probe — see what will be deleted (cascade=false)
+      let probe;
+      try {
+        probe = await rpc('housing_delete_property', { p_id: id, p_cascade: false });
+      } catch (e) { toast(e.message || String(e), 'error'); return; }
+
+      // Case A: property was empty — already deleted
+      if (probe && probe.ok === true) {
+        toast(t('deletedSuccessfully'), 'success');
+        location.hash = 'properties';
+        return;
+      }
+
+      // Case B: has dependents — show rich confirmation modal
+      if (probe && probe.ok === false && probe.error === 'has_dependents') {
+        const c = probe.counts || {};
+        const rows = [];
+        if (c.contracts   > 0) rows.push([LANG==='ar'?'العقود':'Contracts',                 c.contracts]);
+        if (c.meters_to_delete > 0) {
+          rows.push([LANG==='ar'?'العدادات (خاصة بهذا العقار فقط)':'Meters (exclusive)',    c.meters_to_delete]);
+          if (c.bills_to_delete > 0)    rows.push([LANG==='ar'?'الفواتير المرتبطة':'Bills',        c.bills_to_delete]);
+          if (c.readings_to_delete > 0) rows.push([LANG==='ar'?'قراءات العدادات':'Meter readings', c.readings_to_delete]);
+        }
+        if (c.attachments > 0) rows.push([LANG==='ar'?'المرفقات':'Attachments',              c.attachments]);
+        if (c.expenses    > 0) rows.push([LANG==='ar'?'المصاريف':'Expenses',                 c.expenses]);
+        if (c.active_residents > 0) rows.push([LANG==='ar'?'تخصيصات السكان النشطة (السكان يبقوا)':'Active resident assignments (residents preserved)', c.active_residents]);
+
+        const body = document.createElement('div');
+        body.innerHTML = `
+          <div style="font-size:14px; color:var(--text); margin-bottom:12px;">
+            ${LANG==='ar'
+              ? `عند حذف <strong>${escapeHtml(p.code)} — ${escapeHtml(p.name_ar||'')}</strong> سيتم حذف ما يلي معاً:`
+              : `Deleting <strong>${escapeHtml(p.code)} — ${escapeHtml(p.name_ar||'')}</strong> will also delete:`}
+          </div>
+          <table class="data" style="margin-bottom:12px;">
+            <tbody>
+              ${rows.map(([k,v]) => `<tr><td>${escapeHtml(k)}</td><td class="num-cell" style="font-weight:600;">${v}</td></tr>`).join('')}
+            </tbody>
+          </table>
+          <div style="font-size:12px; color:var(--muted);">
+            ${LANG==='ar'
+              ? 'العدادات المشتركة مع عقارات أخرى لن تُحذف. لا يمكن التراجع بعد الحذف.'
+              : 'Meters shared with other properties are preserved. This cannot be undone.'}
+          </div>`;
+        const foot = document.createElement('div');
+        foot.className='flex'; foot.style.gap='8px'; foot.style.justifyContent='flex-end'; foot.style.flex='1';
+        const cx = document.createElement('button'); cx.className='btn'; cx.textContent = t('cancel');
+        const del = document.createElement('button'); del.className='btn'; del.style.background='var(--red)'; del.style.color='#fff'; del.style.borderColor='var(--red)';
+        del.textContent = LANG==='ar' ? 'حذف الكل نهائياً' : 'Delete everything';
+        foot.appendChild(cx); foot.appendChild(del);
+        const pm = openModal({ title: t('delete'), body, footer: foot });
+        cx.addEventListener('click', pm.close);
+        del.addEventListener('click', async () => {
+          del.disabled = true;
+          try {
+            const res = await rpc('housing_delete_property', { p_id: id, p_cascade: true });
+            // Clean up attachment files from storage
+            const paths = (res && res.attachment_paths) || [];
+            if (paths.length > 0) {
+              try { await sb.storage.from('housing-attachments').remove(paths); } catch(e) { /* non-fatal */ }
+            }
+            const d = (res && res.deleted) || {};
+            const summary = LANG==='ar'
+              ? `تم حذف العقار + ${d.contracts||0} عقد + ${d.meters||0} عدّاد + ${d.bills||0} فاتورة`
+              : `Deleted property + ${d.contracts||0} contract(s) + ${d.meters||0} meter(s) + ${d.bills||0} bill(s)`;
+            toast(summary, 'success');
+            pm.close();
+            location.hash = 'properties';
+          } catch (e) { toast(e.message || String(e), 'error'); del.disabled = false; }
+        });
+        return;
+      }
+
+      // Unexpected shape
+      toast(t('errorOccurred'), 'error');
     });
     await renderPropertyTab(document.getElementById('tabContent'), p, activeTab, load);
   };
