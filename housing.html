@@ -660,7 +660,12 @@ function renderNav(activeRoute) {
 
 async function route() {
   const hash = location.hash.slice(1);
-  const [head, ...rest] = hash.split('/');
+  // Split path from query string first — otherwise IDs like UUIDs get
+  // contaminated with '?tab=xxx' and downstream RPC calls fail with
+  // 'invalid input syntax for type uuid'. The query part is still readable
+  // via location.hash.split('?tab=')[1] where needed.
+  const pathOnly = hash.split('?')[0];
+  const [head, ...rest] = pathOnly.split('/');
   const mainRoute = head || '';
   renderNav(mainRoute);
   const content = document.getElementById('content');
