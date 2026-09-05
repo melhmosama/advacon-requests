@@ -378,14 +378,18 @@ async function requireAdmin() {
   const sess = await getAdminSession();
   if (!sess) { showSignInRequired('no_session'); return false; }
   try {
-    const { data, error } = await sb.rpc('housing_ping');
+    // Validate by calling any admin-only RPC we know exists (from Phase 1)
+    const { data, error } = await sb.rpc('housing_list_refs', { p_list_key: null });
     if (error) throw error;
-    if (!data || data.ok !== true) throw new Error('ping_invalid');
-    document.getElementById('userInfo').textContent = data.user_id ? data.user_id.slice(0, 8) + '…' : '';
+    if (!data || data.ok !== true) throw new Error('invalid_response');
+    // Extract user info from the session itself
+    const uid = sess.user?.id || sess.user_id;
+    const email = sess.user?.email;
+    document.getElementById('userInfo').textContent = email || (uid ? uid.slice(0, 8) + '…' : '');
     return true;
   } catch (e) {
-    console.error('[requireAdmin] ping failed:', e);
-    showSignInRequired('ping_failed:' + (e.message || e));
+    console.error('[requireAdmin] validation failed:', e);
+    showSignInRequired('validation_failed: ' + (e.message || e));
     return false;
   }
 }
