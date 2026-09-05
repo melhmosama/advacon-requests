@@ -251,6 +251,8 @@ const T = {
     logout: 'تسجيل خروج', loading: 'جاري التحميل...',
     dashboard: 'لوحة التحكم', properties: 'الوحدات', contracts: 'العقود', meters: 'العدادات',
     bills: 'الفواتير', residents: 'الساكنون', expenses: 'المصاريف', reports: 'التقارير', settings: 'الإعدادات',
+    landlords: 'الملاك', landlordType: 'نوع المالك', individual: 'فرد', organization: 'مؤسسة',
+    email: 'البريد الإلكتروني', phone: 'الهاتف', nationalId: 'رقم الهوية',
     add: 'إضافة', edit: 'تعديل', delete: 'حذف', save: 'حفظ', cancel: 'إلغاء', close: 'إغلاق',
     yes: 'نعم', no: 'لا', ok: 'موافق', back: 'رجوع', view: 'عرض', activate: 'تفعيل', deactivate: 'إيقاف',
     search: 'بحث', filter: 'فلترة', all: 'الكل', none: 'لا يوجد',
@@ -292,6 +294,8 @@ const T = {
     logout: 'Sign out', loading: 'Loading…',
     dashboard: 'Dashboard', properties: 'Properties', contracts: 'Contracts', meters: 'Meters',
     bills: 'Bills', residents: 'Residents', expenses: 'Expenses', reports: 'Reports', settings: 'Settings',
+    landlords: 'Landlords', landlordType: 'Type', individual: 'Individual', organization: 'Organization',
+    email: 'Email', phone: 'Phone', nationalId: 'National ID',
     add: 'Add', edit: 'Edit', delete: 'Delete', save: 'Save', cancel: 'Cancel', close: 'Close',
     yes: 'Yes', no: 'No', ok: 'OK', back: 'Back', view: 'View', activate: 'Activate', deactivate: 'Deactivate',
     search: 'Search', filter: 'Filter', all: 'All', none: 'None',
@@ -640,6 +644,7 @@ function clearRefCache() { Object.keys(REF_CACHE).forEach(k => delete REF_CACHE[
 const NAV_ITEMS = [
   { key: 'dashboard', route: '', icon: '⌂' },
   { key: 'properties', route: 'properties', icon: '▤' },
+  { key: 'landlords', route: 'landlords', icon: '☖' },
   { key: 'contracts', route: 'contracts', icon: '⎘' },
   { key: 'meters', route: 'meters', icon: '⏱' },
   { key: 'bills', route: 'bills', icon: '₪' },
@@ -678,6 +683,7 @@ async function route() {
         else await screenProperties(content);
         break;
       case 'contracts': await screenContracts(content); break;
+      case 'landlords': await screenLandlords(content); break;
       case 'meters': await screenMeters(content); break;
       case 'bills': await screenBills(content); break;
       case 'residents': await screenResidents(content); break;
@@ -1123,11 +1129,181 @@ async function openContractForm(existing, propId, onSaved) {
     p_ejar_ref: existing.ejar_ref, p_notes: existing.notes,
   } : {};
   const formEl = buildForm(schema, initial);
+
+  // -----------------------------------------------------------------------
+  // Attachments section (PDF or any file) — optional, works for new + edit
+  //   - EXISTING contract: existing attachments listed, immediate upload/delete
+  //   - NEW contract: files queued in memory, uploaded after Save creates the contract
+  // -----------------------------------------------------------------------
+  const attachSection = document.createElement('div');
+  attachSection.style.marginTop = '16px';
+  attachSection.style.padding = '12px';
+  attachSection.style.borderTop = '1px solid var(--border)';
+  const attachTitle = LANG==='ar' ? 'مرفقات (اختياري)' : 'Attachments (optional)';
+  const attachHint = LANG==='ar'
+    ? 'ارفق PDF أو أي ملف — نسخة العقد، الفاتورة، الهوية، إلخ.'
+    : 'Attach a PDF or any file — contract copy, invoice, ID, etc.';
+  attachSection.innerHTML = `
+    <div style="font-weight:600; margin-bottom:4px; color:var(--navy);">${attachTitle}</div>
+    <div style="font-size:12px; color:var(--muted); margin-bottom:8px;">${attachHint}</div>
+    <div id="attList" style="margin-bottom:8px;"></div>
+    <div class="flex" style="gap:8px; align-items:center;">
+      <input type="file" id="attFileInp" style="display:none;" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx">
+      <button type="button" class="btn btn-ghost btn-sm" id="attPickBtn">+ ${LANG==='ar'?'اختر ملف':'Pick file'}</button>
+      <span id="attStatus" style="font-size:12px; color:var(--muted);"></span>
+    </div>`;
+  formEl.appendChild(attachSection);
+
+  const attListEl   = attachSection.querySelector('#attList');
+  const attFileInp  = attachSection.querySelector('#attFileInp');
+  const attPickBtn  = attachSection.querySelector('#attPickBtn');
+  const attStatusEl = attachSection.querySelector('#attStatus');
+
+  // Pending queue (used only for NEW contracts — uploaded after Save)
+  const pendingFiles = []; // [{ file, kindKey, notes }]
+
+  const renderAttList = async () => {
+    let html = '';
+    if (existing) {
+      try {
+        const res = await rpc('housing_list_attachments', { p_entity_type: 'contract', p_entity_id: existing.id });
+        const items = res.items || [];
+        if (items.length) {
+          html += items.map(a => `
+            <div class="flex" style="gap:8px; padding:6px 8px; border:1px solid var(--border); border-radius:6px; margin-bottom:4px; align-items:center;">
+              <span style="flex:1;">📎 ${escapeHtml(a.filename)} <span style="color:var(--muted); font-size:11px;">(${escapeHtml(pickName(a.kind))}${a.size_bytes?` · ${fmtNum(Math.round(a.size_bytes/1024))} KB`:''})</span></span>
+              <button type="button" class="btn btn-sm" data-att-dl="${escapeHtml(a.storage_path)}">↓</button>
+              <button type="button" class="btn btn-sm" style="color:var(--red);" data-att-del="${a.id}" data-path="${escapeHtml(a.storage_path)}">×</button>
+            </div>`).join('');
+        }
+      } catch(e) { html += `<div class="text-muted" style="font-size:12px;">${escapeHtml(e.message||e)}</div>`; }
+    }
+    // Pending (for new contracts)
+    pendingFiles.forEach((pf, i) => {
+      html += `
+        <div class="flex" style="gap:8px; padding:6px 8px; border:1px dashed var(--border); border-radius:6px; margin-bottom:4px; align-items:center; background:var(--panel-alt);">
+          <span style="flex:1;">📎 ${escapeHtml(pf.file.name)} <span style="color:var(--muted); font-size:11px;">(${LANG==='ar'?'قيد الانتظار':'pending'} · ${fmtNum(Math.round(pf.file.size/1024))} KB)</span></span>
+          <button type="button" class="btn btn-sm" style="color:var(--red);" data-pend-del="${i}">×</button>
+        </div>`;
+    });
+    attListEl.innerHTML = html;
+
+    // Wire up actions
+    attListEl.querySelectorAll('[data-att-dl]').forEach(b => b.addEventListener('click', async (e) => {
+      const path = e.currentTarget.getAttribute('data-att-dl');
+      const { data, error } = await sb.storage.from('housing-attachments').createSignedUrl(path, 300);
+      if (error) { toast(error.message,'error'); return; }
+      window.open(data.signedUrl, '_blank');
+    }));
+    attListEl.querySelectorAll('[data-att-del]').forEach(b => b.addEventListener('click', async (e) => {
+      if (!await confirmAction({ title: t('delete'), message: t('confirmDelete'), danger: true })) return;
+      const id = e.currentTarget.getAttribute('data-att-del');
+      const path = e.currentTarget.getAttribute('data-path');
+      try {
+        await rpc('housing_delete_attachment', { p_id: id });
+        await sb.storage.from('housing-attachments').remove([path]);
+        toast(t('deletedSuccessfully'),'success');
+        renderAttList();
+      } catch(err){ toast(err.message||err,'error'); }
+    }));
+    attListEl.querySelectorAll('[data-pend-del]').forEach(b => b.addEventListener('click', (e) => {
+      const idx = parseInt(e.currentTarget.getAttribute('data-pend-del'), 10);
+      pendingFiles.splice(idx, 1);
+      renderAttList();
+    }));
+  };
+
+  attPickBtn.addEventListener('click', () => attFileInp.click());
+  attFileInp.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    attFileInp.value = '';
+
+    // Ask for kind + notes in a small popup
+    const kinds = await getRefOptions('attachment_kinds');
+    const body = document.createElement('div');
+    body.innerHTML = `
+      <div class="field mb-2"><label>${LANG==='ar'?'نوع المرفق':'Attachment Kind'} <span class="req">*</span></label>
+        <select id="pkKind">${kinds.map(k=>`<option value="${escapeHtml(k.value)}"${k.value==='contract_document'?' selected':''}>${escapeHtml(k.label)}</option>`).join('')}</select>
+      </div>
+      <div class="field mb-2"><label>${t('notes')}</label><textarea id="pkNotes" rows="2"></textarea></div>
+      <div class="info-box">${escapeHtml(file.name)} — ${fmtNum(Math.round(file.size/1024))} KB</div>`;
+    const foot = document.createElement('div'); foot.className='flex'; foot.style.gap='8px'; foot.style.justifyContent='flex-end'; foot.style.flex='1';
+    const c = document.createElement('button'); c.className='btn'; c.textContent = t('cancel');
+    const ok = document.createElement('button'); ok.className='btn btn-primary'; ok.textContent = existing ? (LANG==='ar'?'رفع':'Upload') : (LANG==='ar'?'أضف للقائمة':'Add to list');
+    foot.appendChild(c); foot.appendChild(ok);
+    const pm = openModal({ title: LANG==='ar'?'إضافة مرفق':'Add attachment', body, footer: foot });
+    c.addEventListener('click', pm.close);
+    ok.addEventListener('click', async () => {
+      const kindKey = document.getElementById('pkKind').value;
+      const notes   = document.getElementById('pkNotes').value;
+      if (existing) {
+        ok.disabled = true;
+        try {
+          attStatusEl.textContent = LANG==='ar'?'يرفع...':'Uploading...';
+          const path = `contract/${existing.id}/${Date.now()}_${file.name.replace(/[^\w.-]/g,'_')}`;
+          const { error: upErr } = await sb.storage.from('housing-attachments').upload(path, file, { contentType: file.type });
+          if (upErr) throw upErr;
+          await rpc('housing_register_attachment', {
+            p_entity_type: 'contract', p_entity_id: existing.id, p_kind_key: kindKey,
+            p_storage_path: path, p_filename: file.name, p_mime_type: file.type, p_size_bytes: file.size,
+            p_notes: notes || null,
+          });
+          toast(t('savedSuccessfully'),'success');
+          pm.close();
+          attStatusEl.textContent = '';
+          renderAttList();
+        } catch(err){ toast(err.message||err,'error'); ok.disabled = false; attStatusEl.textContent = ''; }
+      } else {
+        pendingFiles.push({ file, kindKey, notes });
+        pm.close();
+        renderAttList();
+      }
+    });
+  });
+
+  renderAttList();
+  // -----------------------------------------------------------------------
+
   const footer = document.createElement('div'); footer.className='flex'; footer.style.gap='8px'; footer.style.justifyContent='flex-end'; footer.style.flex='1';
   const cancel = document.createElement('button'); cancel.className='btn'; cancel.textContent = t('cancel');
   const save = document.createElement('button'); save.className='btn btn-primary'; save.textContent = t('save');
   footer.appendChild(cancel); footer.appendChild(save);
   const m = openModal({ title: existing ? t('edit') : t('add') + ' ' + t('contracts'), body: formEl, footer, wide: true });
+
+  // Inject a small "+ new landlord" link next to the landlord dropdown
+  const landlordSelect = formEl.querySelector('[name="p_landlord_id"]');
+  if (landlordSelect) {
+    const addLink = document.createElement('button');
+    addLink.type = 'button';
+    addLink.className = 'btn btn-ghost btn-sm';
+    addLink.style.marginInlineStart = '8px';
+    addLink.textContent = '+ ' + (LANG==='ar' ? 'مالك جديد' : 'New landlord');
+    addLink.addEventListener('click', () => {
+      openLandlordForm(null, async (res) => {
+        // After new landlord saved: refresh the dropdown and preselect it
+        const fresh = await rpc('housing_list_landlords', { p_active_only: true });
+        const opts = (fresh.items||[]).map(l => `<option value="${escapeHtml(l.id)}">${escapeHtml(l.name)}</option>`).join('');
+        landlordSelect.innerHTML = '<option value="">—</option>' + opts;
+        if (res && res.id) landlordSelect.value = res.id;
+      });
+    });
+    // Insert next to the select's label
+    const wrapper = landlordSelect.closest('.field') || landlordSelect.parentElement;
+    const label = wrapper.querySelector('label');
+    if (label) {
+      const row = document.createElement('div');
+      row.style.display = 'flex';
+      row.style.alignItems = 'center';
+      row.style.gap = '8px';
+      label.parentNode.insertBefore(row, label);
+      row.appendChild(label);
+      row.appendChild(addLink);
+    } else {
+      wrapper.insertBefore(addLink, landlordSelect);
+    }
+  }
+
   cancel.addEventListener('click', m.close);
   save.addEventListener('click', async () => {
     save.disabled = true;
@@ -1139,9 +1315,36 @@ async function openContractForm(existing, propId, onSaved) {
       let fn, args;
       if (existing) { fn = 'housing_update_contract'; args = { ...vals, p_id: existing.id }; }
       else { fn = 'housing_create_contract'; args = { ...vals, p_property_id: propId }; }
-      await rpc(fn, args);
-      toast(t('savedSuccessfully'), 'success'); m.close(); if (onSaved) onSaved();
-    } catch(e) { toast(e.message,'error'); save.disabled=false; }
+      const res = await rpc(fn, args);
+
+      // For NEW contracts: upload queued files now that we have the contract id
+      const newContractId = existing ? existing.id : (res && res.id);
+      if (!existing && newContractId && pendingFiles.length > 0) {
+        attStatusEl.textContent = LANG==='ar' ? `يرفع المرفقات (${pendingFiles.length})...` : `Uploading attachments (${pendingFiles.length})...`;
+        let uploaded = 0, failed = 0;
+        for (const pf of pendingFiles) {
+          try {
+            const path = `contract/${newContractId}/${Date.now()}_${pf.file.name.replace(/[^\w.-]/g,'_')}`;
+            const { error: upErr } = await sb.storage.from('housing-attachments').upload(path, pf.file, { contentType: pf.file.type });
+            if (upErr) throw upErr;
+            await rpc('housing_register_attachment', {
+              p_entity_type: 'contract', p_entity_id: newContractId, p_kind_key: pf.kindKey,
+              p_storage_path: path, p_filename: pf.file.name, p_mime_type: pf.file.type, p_size_bytes: pf.file.size,
+              p_notes: pf.notes || null,
+            });
+            uploaded++;
+          } catch (err) {
+            failed++;
+            console.error('attachment upload failed:', pf.file.name, err);
+          }
+        }
+        if (failed > 0) toast(`${LANG==='ar'?'تحذير: فشل رفع':'Warning: failed to upload'} ${failed} ${LANG==='ar'?'من':'of'} ${pendingFiles.length}`, 'error');
+      }
+
+      toast(t('savedSuccessfully'), 'success');
+      m.close();
+      if (onSaved) onSaved();
+    } catch(e) { toast(e.message,'error'); save.disabled=false; attStatusEl.textContent=''; }
   });
 }
 
@@ -1399,6 +1602,151 @@ async function handleAttachmentUpload(file, entityType, entityId, onSaved) {
       });
       toast(t('savedSuccessfully'),'success'); m.close(); if (onSaved) onSaved();
     } catch(e){ toast(e.message || e,'error'); save.disabled=false; }
+  });
+}
+
+/* =====================================================================
+   SCREEN: LANDLORDS LIST
+   ===================================================================== */
+async function screenLandlords(el) {
+  el.innerHTML = `
+    <div class="page-header">
+      <h1>${t('landlords')}</h1>
+      <span class="spacer"></span>
+      <button class="btn btn-primary" id="btnAddLandlord">+ ${t('add')}</button>
+    </div>
+    <div class="filters">
+      <div class="field"><label>${t('search')}</label><input id="fSearch" placeholder="${t('search')}..."></div>
+      <div class="field"><label>${t('landlordType')}</label>
+        <select id="fType">
+          <option value="">${t('all')}</option>
+          <option value="individual">${t('individual')}</option>
+          <option value="organization">${t('organization')}</option>
+        </select>
+      </div>
+      <div class="field"><label>${t('isActive')}</label>
+        <select id="fActive">
+          <option value="">${t('all')}</option>
+          <option value="true">${t('active')}</option>
+          <option value="false">${t('inactive')}</option>
+        </select>
+      </div>
+      <span class="spacer"></span>
+      <button class="btn btn-ghost" id="btnClear">↺</button>
+    </div>
+    <div id="list" class="table-wrap"><div class="loading">${t('loading')}</div></div>`;
+  const listEl = document.getElementById('list');
+  const load = async () => {
+    listEl.innerHTML = `<div class="loading">${t('loading')}</div>`;
+    try {
+      const args = {};
+      const activeVal = document.getElementById('fActive').value;
+      if (activeVal === 'true') args.p_active_only = true;
+      const res = await rpc('housing_list_landlords', args);
+      let items = res.items || [];
+      if (activeVal === 'false') items = items.filter(l => !l.is_active);
+      const typeVal = document.getElementById('fType').value;
+      if (typeVal) items = items.filter(l => l.landlord_type === typeVal);
+      const q = document.getElementById('fSearch').value.trim().toLowerCase();
+      if (q) items = items.filter(l =>
+        (l.name||'').toLowerCase().includes(q) ||
+        (l.phone||'').toLowerCase().includes(q) ||
+        (l.email||'').toLowerCase().includes(q) ||
+        (l.national_id||'').toLowerCase().includes(q)
+      );
+      if (!items.length) {
+        listEl.innerHTML = `<div class="empty" style="padding:40px; text-align:center; color:var(--muted);">${t('noItems')}</div>`;
+        return;
+      }
+      listEl.innerHTML = `
+        <table class="data">
+          <thead><tr>
+            <th>${t('name')}</th>
+            <th>${t('landlordType')}</th>
+            <th>${t('phone')}</th>
+            <th>${t('email')}</th>
+            <th>${t('nationalId')}</th>
+            <th>${t('isActive')}</th>
+            <th></th>
+          </tr></thead>
+          <tbody>${items.map(l => `
+            <tr>
+              <td>${escapeHtml(l.name)}</td>
+              <td>${l.landlord_type === 'organization' ? t('organization') : t('individual')}</td>
+              <td>${escapeHtml(l.phone || '—')}</td>
+              <td>${escapeHtml(l.email || '—')}</td>
+              <td>${escapeHtml(l.national_id || '—')}</td>
+              <td>${fmtIsActive(l.is_active)}</td>
+              <td class="row-actions"><button class="btn btn-sm" data-edit="${l.id}">${t('edit')}</button></td>
+            </tr>`).join('')}</tbody>
+        </table>`;
+      listEl.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', async (e) => {
+        const lid = e.currentTarget.getAttribute('data-edit');
+        const lr = await rpc('housing_get_landlord', { p_id: lid });
+        openLandlordForm(lr.landlord, load);
+      }));
+    } catch (e) {
+      listEl.innerHTML = `<div class="error-box">${escapeHtml(e.message || e)}</div>`;
+    }
+  };
+  ['fSearch','fType','fActive'].forEach(id => document.getElementById(id).addEventListener('input', load));
+  document.getElementById('btnClear').addEventListener('click', () => {
+    ['fSearch','fType','fActive'].forEach(id => document.getElementById(id).value = '');
+    load();
+  });
+  document.getElementById('btnAddLandlord').addEventListener('click', () => openLandlordForm(null, load));
+  await load();
+}
+
+async function openLandlordForm(existing, onSaved) {
+  const schema = { __cols: 2, fields: [
+    { name: 'p_name', label: t('name'), required: true, spanAll: true },
+    { name: 'p_landlord_type', label: t('landlordType'), type: 'select', required: true,
+      options: [{ value: 'individual', label: t('individual') }, { value: 'organization', label: t('organization') }] },
+    { name: 'p_phone', label: t('phone') },
+    { name: 'p_email', label: t('email') },
+    { name: 'p_national_id', label: t('nationalId') },
+    { name: 'p_notes', label: t('notes'), type: 'textarea', spanAll: true },
+  ]};
+  const initial = existing ? {
+    p_name: existing.name,
+    p_landlord_type: existing.landlord_type,
+    p_phone: existing.phone,
+    p_email: existing.email,
+    p_national_id: existing.national_id,
+    p_notes: existing.notes,
+  } : { p_landlord_type: 'individual' };
+  const formEl = buildForm(schema, initial);
+  const footer = document.createElement('div');
+  footer.className = 'flex';
+  footer.style.gap = '8px';
+  footer.style.justifyContent = 'flex-end';
+  footer.style.flex = '1';
+  const cancel = document.createElement('button'); cancel.className = 'btn'; cancel.textContent = t('cancel');
+  const save = document.createElement('button'); save.className = 'btn btn-primary'; save.textContent = t('save');
+  footer.appendChild(cancel); footer.appendChild(save);
+  const m = openModal({ title: (existing ? t('edit') : t('add')) + ' ' + t('landlords'), body: formEl, footer });
+  cancel.addEventListener('click', m.close);
+  save.addEventListener('click', async () => {
+    save.disabled = true;
+    try {
+      const vals = readForm(formEl);
+      if (!vals.p_name || !vals.p_name.trim()) {
+        toast(t('requiredField') + ': ' + t('name'), 'error');
+        save.disabled = false; return;
+      }
+      if (!vals.p_landlord_type) vals.p_landlord_type = 'individual';
+      let fn, args;
+      if (existing) { fn = 'housing_update_landlord'; args = { ...vals, p_id: existing.id }; }
+      else          { fn = 'housing_create_landlord'; args = vals; }
+      const res = await rpc(fn, args);
+      toast(t('savedSuccessfully'), 'success');
+      m.close();
+      if (onSaved) onSaved(res);
+    } catch (e) {
+      toast(e.message || String(e), 'error');
+      save.disabled = false;
+    }
   });
 }
 
