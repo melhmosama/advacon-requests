@@ -353,66 +353,105 @@ function toggleLang() {
 /* =====================================================================
    SESSION
    ===================================================================== */
-async function getAdminSession() {
-  // 1) Supabase auto-restores its own session on createClient. Try that first.
-  try {
-    const { data: { session } } = await sb.auth.getSession();
-    if (session && session.access_token) return session;
-  } catch (e) { console.warn('[session] getSession failed:', e); }
+/* =====================================================================
+   ADMIN SESSION — aligned with index.html patterns
+   (refresh via /auth/v1/token?grant_type=refresh_token, verify with is_admin())
+   ===================================================================== */
+const SB_URL = CFG.supabaseUrl;
+const SB_KEY = CFG.supabaseAnonKey;
 
-  // 2) Fallback: manual key set by /admin
-  const raw = localStorage.getItem(CFG.adminSessionKey);
-  if (raw) {
-    try {
-      const stored = JSON.parse(raw);
-      if (stored && stored.access_token) {
-        await sb.auth.setSession({
-          access_token: stored.access_token,
-          refresh_token: stored.refresh_token || ''
-        });
-        const { data: { session } } = await sb.auth.getSession();
-        if (session) return session;
-      }
-    } catch (e) { console.warn('[session] manual restore failed:', e); }
+function admGetSession() {
+  try {
+    const raw = localStorage.getItem(CFG.adminSessionKey);
+    if (!raw) return null;
+    const s = JSON.parse(raw);
+    if (!s || !s.access_token) return null;
+    return s;
+  } catch(e) { return null; }
+}
+function admSetSession(s) { try { localStorage.setItem(CFG.adminSessionKey, JSON.stringify(s)); } catch(e){} }
+function admClearSession() { try { localStorage.removeItem(CFG.adminSessionKey); } catch(e){} }
+
+async function admRefresh(refreshToken) {
+  try {
+    const r = await fetch(SB_URL + '/auth/v1/token?grant_type=refresh_token', {
+      method: 'POST', headers: {'apikey': SB_KEY, 'Content-Type': 'application/json'},
+      body: JSON.stringify({refresh_token: refreshToken})
+    });
+    const j = await r.json();
+    if (!r.ok || !j.access_token) return null;
+    return { access_token: j.access_token, refresh_token: j.refresh_token || refreshToken,
+      expires_at: j.expires_at || null, user_id: (j.user && j.user.id) || null };
+  } catch(e) { return null; }
+}
+
+async function admVerifyIsAdmin(accessToken) {
+  try {
+    const r = await fetch(SB_URL + '/rest/v1/rpc/is_admin', {
+      method: 'POST',
+      headers: {'apikey': SB_KEY, 'Authorization': 'Bearer ' + accessToken, 'Content-Type': 'application/json'},
+      body: '{}'
+    });
+    if (!r.ok) return false;
+    return (await r.json()) === true;
+  } catch(e) { return false; }
+}
+
+async function admEnsureSession() {
+  let sess = admGetSession();
+  if (!sess || !sess.access_token || !sess.refresh_token) { admClearSession(); return false; }
+  const nowSec = Math.floor(Date.now() / 1000);
+  const exp = Number(sess.expires_at || 0);
+  // Refresh if expired or within 60s of expiring
+  if (!exp || exp <= nowSec + 60) {
+    const fresh = await admRefresh(sess.refresh_token);
+    if (!fresh) { admClearSession(); return false; }
+    admSetSession(fresh); sess = fresh;
   }
-  return null;
+  // Server-side confirmation that this token maps to an admin
+  const ok = await admVerifyIsAdmin(sess.access_token);
+  if (!ok) {
+    // Token might have expired between the refresh check and is_admin call → one retry
+    const fresh = await admRefresh(sess.refresh_token);
+    if (fresh) { admSetSession(fresh); if (await admVerifyIsAdmin(fresh.access_token)) return true; }
+    admClearSession(); return false;
+  }
+  return true;
+}
+
+async function admSignOut() {
+  const sess = admGetSession();
+  if (sess && sess.access_token) {
+    try {
+      await fetch(SB_URL + '/auth/v1/logout', {
+        method: 'POST',
+        headers: {'apikey': SB_KEY, 'Authorization': 'Bearer ' + sess.access_token, 'Content-Type': 'application/json'},
+        body: '{}'
+      });
+    } catch(e) { /* best-effort */ }
+  }
+  admClearSession();
 }
 
 async function requireAdmin() {
-  const sess = await getAdminSession();
-  if (!sess) { showSignInRequired('no_session'); return false; }
-  try {
-    // Validate by calling any admin-only RPC we know exists (from Phase 1)
-    const { data, error } = await sb.rpc('housing_list_refs', { p_list_key: null });
-    if (error) throw error;
-    if (!data || data.ok !== true) throw new Error('invalid_response');
-    // Extract user info from the session itself
-    const uid = sess.user?.id || sess.user_id;
-    const email = sess.user?.email;
-    document.getElementById('userInfo').textContent = email || (uid ? uid.slice(0, 8) + '…' : '');
-    return true;
-  } catch (e) {
-    console.error('[requireAdmin] validation failed:', e);
-    showSignInRequired('validation_failed: ' + (e.message || e));
-    return false;
-  }
+  const ok = await admEnsureSession();
+  if (!ok) { showSignInRequired('no_session_or_not_admin'); return false; }
+  // Populate user info in the header
+  const sess = admGetSession();
+  const uid = sess && sess.user_id;
+  const el = document.getElementById('userInfo');
+  if (el) el.textContent = uid ? uid.slice(0, 8) + '…' : 'admin';
+  return true;
 }
 
 function showSignInRequired(reason) {
-  // Diagnostic: what session-like keys exist
-  const keys = [];
-  for (let i = 0; i < localStorage.length; i++) {
-    const k = localStorage.key(i);
-    if (k && (k.includes('supabase') || k.includes('sb-') || k.includes('admin') || k.includes('auth'))) keys.push(k);
-  }
   document.getElementById('content').innerHTML = `
     <div style="max-width: 560px; margin: 80px auto; text-align: center;">
       <div class="card" style="padding: 32px;">
         <h2 style="color: var(--navy); margin: 0 0 12px;">${t('signInRequired')}</h2>
         <p class="text-muted mb-3">${t('sessionInvalid')}</p>
         <div style="text-align:start; background:var(--panel-alt); padding:10px 14px; border-radius:var(--radius); font-size:12px; margin-bottom:16px; font-family:monospace; color:var(--muted);">
-          reason: ${escapeHtml(reason||'unknown')}<br>
-          keys found: ${keys.length ? keys.map(escapeHtml).join(', ') : '(none)'}
+          reason: ${escapeHtml(reason||'unknown')}
         </div>
         <a href="/admin" class="btn btn-primary">/admin</a>
       </div>
@@ -420,14 +459,106 @@ function showSignInRequired(reason) {
 }
 
 /* =====================================================================
-   RPC CLIENT
+   getAdminSession (legacy shim — used by attachment upload/download that
+   go directly through sb.storage.*). Ensures the sb.auth session is in
+   sync with our localStorage-managed one before storage calls.
    ===================================================================== */
+async function getAdminSession() {
+  const sess = admGetSession();
+  if (!sess || !sess.access_token) return null;
+  try {
+    await sb.auth.setSession({ access_token: sess.access_token, refresh_token: sess.refresh_token || '' });
+  } catch(e) { /* non-fatal */ }
+  return sess;
+}
+
+/* =====================================================================
+   RPC CLIENT — parses JSON error body so backend codes survive,
+   translates common Postgres error codes to Arabic/English,
+   auto-signs-out on 401/403.
+   ===================================================================== */
+const ERROR_TRANSLATIONS_AR = {
+  'end_before_start':          'تاريخ النهاية لازم يكون بعد تاريخ البداية',
+  'start_date_required':       'تاريخ البداية مطلوب',
+  'end_date_required':         'تاريخ النهاية مطلوب',
+  'name_ar_required':          'الاسم بالعربي مطلوب',
+  'name_required':             'الاسم مطلوب',
+  'category_required':         'الفئة مطلوبة',
+  'use_type_required':         'نوع الاستخدام مطلوب',
+  'ownership_required':        'نوع الملكية مطلوب',
+  'location_required':         'الموقع مطلوب',
+  'property_required':         'العقار مطلوب',
+  'property_not_found':        'العقار غير موجود',
+  'contract_not_found':        'العقد غير موجود',
+  'landlord_not_found':        'المالك غير موجود',
+  'meter_not_found':           'العدّاد غير موجود',
+  'bill_not_found':            'الفاتورة غير موجودة',
+  'resident_not_found':        'الساكن غير موجود',
+  'expense_not_found':         'المصروف غير موجود',
+  'space_not_found':           'التقسيم غير موجود',
+  'space_type_invalid':        'نوع التقسيم غير صالح',
+  'category_invalid':          'الفئة غير صالحة',
+  'use_type_invalid':          'نوع الاستخدام غير صالح',
+  'ownership_invalid':         'نوع الملكية غير صالح',
+  'status_invalid':            'الحالة غير صالحة',
+  'payment_method_invalid':    'طريقة الدفع غير صالحة',
+  'frequency_invalid':         'الدورية غير صالحة',
+  'currency_invalid':          'العملة غير صالحة (لازم 3 حروف مثل SAR)',
+  'monthly_rent_invalid':      'قيمة الإيجار الشهري غير صالحة',
+  'total_value_invalid':       'قيمة العقد الإجمالية غير صالحة',
+  'capacity_invalid':          'السعة الاستيعابية غير صالحة',
+  'area_invalid':              'المساحة غير صالحة',
+  'not_admin':                 'لا تملك صلاحية الوصول',
+  'name_ar_too_long':          'الاسم بالعربي طويل جداً (200 حرف كحد أقصى)',
+  'name_en_too_long':          'الاسم بالإنجليزي طويل جداً',
+  'location_too_long':         'الموقع طويل جداً',
+  'purpose_label_too_long':    'الغرض التفصيلي طويل جداً',
+  'project_ref_too_long':      'مرجع المشروع طويل جداً',
+  'ejar_ref_too_long':         'مرجع إجار طويل جداً',
+};
+const ERROR_TRANSLATIONS_EN = {
+  'end_before_start':          'End date must be after start date',
+  'not_admin':                 'You do not have admin access',
+};
+
+function translateError(code) {
+  if (!code) return code;
+  const table = LANG === 'ar' ? ERROR_TRANSLATIONS_AR : ERROR_TRANSLATIONS_EN;
+  return table[code] || code;
+}
+
 async function rpc(fn, args = {}) {
-  const { data, error } = await sb.rpc(fn, args);
-  if (error) {
-    console.error('[RPC]', fn, error);
-    throw new Error(error.message || 'rpc_error');
+  // Prefer our fetch-based path (better error handling than sb.rpc)
+  const okSess = await admEnsureSession();
+  if (!okSess) { showSignInRequired('session_expired'); throw new Error(translateError('not_admin')); }
+  const sess = admGetSession();
+  let res;
+  try {
+    res = await fetch(SB_URL + '/rest/v1/rpc/' + fn, {
+      method: 'POST',
+      headers: {'apikey': SB_KEY, 'Authorization': 'Bearer ' + sess.access_token, 'Content-Type': 'application/json'},
+      body: JSON.stringify(args || {})
+    });
+  } catch(e) {
+    throw new Error(LANG==='ar' ? 'فشل الاتصال بالخادم' : 'Network error');
   }
+  if (res.status === 401 || res.status === 403) {
+    await admSignOut();
+    showSignInRequired('http_' + res.status);
+    throw new Error(translateError('not_admin'));
+  }
+  if (!res.ok) {
+    let msg = 'http_' + res.status;
+    try {
+      const b = await res.json();
+      // Postgres errors surface as { message: 'error_code' } or { message: 'context: error_code' }
+      msg = (b && (b.message || b.error || b.details || b.hint)) || msg;
+    } catch(_) {}
+    // If message contains a known code as a substring, translate it
+    const key = String(msg).trim();
+    throw new Error(translateError(key));
+  }
+  const data = await res.json();
   return data;
 }
 
@@ -935,81 +1066,78 @@ async function screenPropertyDetail(el, id) {
       toast(t('savedSuccessfully'), 'success'); load();
     });
     document.getElementById('btnDeleteProp').addEventListener('click', async () => {
-      // Step 1: silent probe — see what will be deleted (cascade=false)
+      // Step 1: TRUE probe — dry_run=true never deletes, only reports counts
       let probe;
       try {
-        probe = await rpc('housing_delete_property', { p_id: id, p_cascade: false });
+        probe = await rpc('housing_delete_property', { p_id: id, p_cascade: false, p_dry_run: true });
       } catch (e) { toast(e.message || String(e), 'error'); return; }
+      if (!probe || probe.ok !== true) { toast(t('errorOccurred'), 'error'); return; }
 
-      // Case A: property was empty — already deleted
-      if (probe && probe.ok === true) {
-        toast(t('deletedSuccessfully'), 'success');
-        location.hash = 'properties';
-        return;
+      const c = probe.counts || {};
+      const rows = [];
+      if (c.contracts        > 0) rows.push([LANG==='ar'?'العقود':'Contracts',                          c.contracts]);
+      if (c.meters_to_delete > 0) {
+        rows.push([LANG==='ar'?'العدادات (خاصة بهذا العقار فقط)':'Meters (exclusive)',                 c.meters_to_delete]);
+        if (c.bills_to_delete    > 0) rows.push([LANG==='ar'?'الفواتير المرتبطة':'Bills',              c.bills_to_delete]);
+        if (c.readings_to_delete > 0) rows.push([LANG==='ar'?'قراءات العدادات':'Meter readings',       c.readings_to_delete]);
       }
+      if (c.attachments      > 0) rows.push([LANG==='ar'?'المرفقات':'Attachments',                     c.attachments]);
+      if (c.expenses         > 0) rows.push([LANG==='ar'?'المصاريف':'Expenses',                        c.expenses]);
+      if (c.active_residents > 0) rows.push([LANG==='ar'?'تخصيصات السكان النشطة (السكان يبقوا)':'Active resident assignments (residents preserved)', c.active_residents]);
 
-      // Case B: has dependents — show rich confirmation modal
-      if (probe && probe.ok === false && probe.error === 'has_dependents') {
-        const c = probe.counts || {};
-        const rows = [];
-        if (c.contracts   > 0) rows.push([LANG==='ar'?'العقود':'Contracts',                 c.contracts]);
-        if (c.meters_to_delete > 0) {
-          rows.push([LANG==='ar'?'العدادات (خاصة بهذا العقار فقط)':'Meters (exclusive)',    c.meters_to_delete]);
-          if (c.bills_to_delete > 0)    rows.push([LANG==='ar'?'الفواتير المرتبطة':'Bills',        c.bills_to_delete]);
-          if (c.readings_to_delete > 0) rows.push([LANG==='ar'?'قراءات العدادات':'Meter readings', c.readings_to_delete]);
-        }
-        if (c.attachments > 0) rows.push([LANG==='ar'?'المرفقات':'Attachments',              c.attachments]);
-        if (c.expenses    > 0) rows.push([LANG==='ar'?'المصاريف':'Expenses',                 c.expenses]);
-        if (c.active_residents > 0) rows.push([LANG==='ar'?'تخصيصات السكان النشطة (السكان يبقوا)':'Active resident assignments (residents preserved)', c.active_residents]);
-
-        const body = document.createElement('div');
-        body.innerHTML = `
+      const body = document.createElement('div');
+      body.innerHTML = probe.has_dependents
+        ? `
           <div style="font-size:14px; color:var(--text); margin-bottom:12px;">
             ${LANG==='ar'
               ? `عند حذف <strong>${escapeHtml(p.code)} — ${escapeHtml(p.name_ar||'')}</strong> سيتم حذف ما يلي معاً:`
               : `Deleting <strong>${escapeHtml(p.code)} — ${escapeHtml(p.name_ar||'')}</strong> will also delete:`}
           </div>
           <table class="data" style="margin-bottom:12px;">
-            <tbody>
-              ${rows.map(([k,v]) => `<tr><td>${escapeHtml(k)}</td><td class="num-cell" style="font-weight:600;">${v}</td></tr>`).join('')}
-            </tbody>
+            <tbody>${rows.map(([k,v]) => `<tr><td>${escapeHtml(k)}</td><td class="num-cell" style="font-weight:600;">${v}</td></tr>`).join('')}</tbody>
           </table>
           <div style="font-size:12px; color:var(--muted);">
+            ${LANG==='ar' ? 'العدادات المشتركة مع عقارات أخرى لن تُحذف. لا يمكن التراجع.' : 'Meters shared with other properties are preserved. This cannot be undone.'}
+          </div>`
+        : `
+          <div style="font-size:14px; color:var(--text); margin-bottom:8px;">
             ${LANG==='ar'
-              ? 'العدادات المشتركة مع عقارات أخرى لن تُحذف. لا يمكن التراجع بعد الحذف.'
-              : 'Meters shared with other properties are preserved. This cannot be undone.'}
-          </div>`;
-        const foot = document.createElement('div');
-        foot.className='flex'; foot.style.gap='8px'; foot.style.justifyContent='flex-end'; foot.style.flex='1';
-        const cx = document.createElement('button'); cx.className='btn'; cx.textContent = t('cancel');
-        const del = document.createElement('button'); del.className='btn'; del.style.background='var(--red)'; del.style.color='#fff'; del.style.borderColor='var(--red)';
-        del.textContent = LANG==='ar' ? 'حذف الكل نهائياً' : 'Delete everything';
-        foot.appendChild(cx); foot.appendChild(del);
-        const pm = openModal({ title: t('delete'), body, footer: foot });
-        cx.addEventListener('click', pm.close);
-        del.addEventListener('click', async () => {
-          del.disabled = true;
-          try {
-            const res = await rpc('housing_delete_property', { p_id: id, p_cascade: true });
-            // Clean up attachment files from storage
-            const paths = (res && res.attachment_paths) || [];
-            if (paths.length > 0) {
-              try { await sb.storage.from('housing-attachments').remove(paths); } catch(e) { /* non-fatal */ }
-            }
-            const d = (res && res.deleted) || {};
-            const summary = LANG==='ar'
-              ? `تم حذف العقار + ${d.contracts||0} عقد + ${d.meters||0} عدّاد + ${d.bills||0} فاتورة`
-              : `Deleted property + ${d.contracts||0} contract(s) + ${d.meters||0} meter(s) + ${d.bills||0} bill(s)`;
-            toast(summary, 'success');
-            pm.close();
-            location.hash = 'properties';
-          } catch (e) { toast(e.message || String(e), 'error'); del.disabled = false; }
-        });
-        return;
-      }
+              ? `هل تريد حذف <strong>${escapeHtml(p.code)} — ${escapeHtml(p.name_ar||'')}</strong> نهائياً؟`
+              : `Delete <strong>${escapeHtml(p.code)} — ${escapeHtml(p.name_ar||'')}</strong> permanently?`}
+          </div>
+          <div style="font-size:12px; color:var(--muted);">${LANG==='ar' ? 'العقار فارغ — لا يوجد ما يُحذف معه. لا يمكن التراجع.' : 'Property is empty — nothing to cascade. This cannot be undone.'}</div>`;
 
-      // Unexpected shape
-      toast(t('errorOccurred'), 'error');
+      const foot = document.createElement('div');
+      foot.className='flex'; foot.style.gap='8px'; foot.style.justifyContent='flex-end'; foot.style.flex='1';
+      const cx = document.createElement('button'); cx.className='btn'; cx.textContent = t('cancel');
+      const del = document.createElement('button'); del.className='btn'; del.style.background='var(--red)'; del.style.color='#fff'; del.style.borderColor='var(--red)';
+      del.textContent = probe.has_dependents
+        ? (LANG==='ar' ? 'حذف الكل نهائياً' : 'Delete everything')
+        : (LANG==='ar' ? 'حذف' : 'Delete');
+      foot.appendChild(cx); foot.appendChild(del);
+      const pm = openModal({ title: t('delete'), body, footer: foot });
+      cx.addEventListener('click', pm.close);
+      del.addEventListener('click', async () => {
+        del.disabled = true;
+        try {
+          const res = await rpc('housing_delete_property', {
+            p_id: id, p_cascade: probe.has_dependents, p_dry_run: false
+          });
+          const paths = (res && res.attachment_paths) || [];
+          if (paths.length > 0) {
+            try { await sb.storage.from('housing-attachments').remove(paths); } catch(_) {}
+          }
+          const d = (res && res.deleted) || {};
+          const summary = probe.has_dependents
+            ? (LANG==='ar'
+                ? `تم حذف العقار + ${d.contracts||0} عقد + ${d.meters_to_delete||0} عدّاد + ${d.bills_to_delete||0} فاتورة`
+                : `Deleted property + ${d.contracts||0} contract(s) + ${d.meters_to_delete||0} meter(s) + ${d.bills_to_delete||0} bill(s)`)
+            : t('deletedSuccessfully');
+          toast(summary, 'success');
+          pm.close();
+          location.hash = 'properties';
+        } catch (e) { toast(e.message || String(e), 'error'); del.disabled = false; }
+      });
     });
     await renderPropertyTab(document.getElementById('tabContent'), p, activeTab, load);
   };
@@ -1117,12 +1245,16 @@ async function openSpaceForm(existing, propId, parentId, onSaved) {
     { name: 'p_code', label: t('code'), required: true, hint: LANG==='ar'?'اختصار قصير':'Short code' },
     { name: 'p_name', label: t('name'), required: true, spanAll: true },
     { name: 'p_capacity', label: LANG==='ar'?'السعة':'Capacity', type: 'number', min: 0 },
-    { name: 'p_floor_number', label: LANG==='ar'?'رقم الطابق':'Floor No.', type: 'number' },
+    { name: 'p_level_number', label: LANG==='ar'?'رقم الطابق':'Floor / Level No.', type: 'number' },
+    { name: 'p_sort_order', label: LANG==='ar'?'ترتيب العرض':'Sort Order', type: 'number' },
     { name: 'p_notes', label: t('notes'), type: 'textarea', spanAll: true },
   ]};
   const initial = existing ? {
     p_space_type_key: existing.space_type?.key, p_code: existing.code, p_name: existing.name,
-    p_capacity: existing.capacity, p_floor_number: existing.floor_number, p_notes: existing.notes,
+    p_capacity: existing.capacity,
+    p_level_number: existing.level_number,
+    p_sort_order: existing.sort_order,
+    p_notes: existing.notes,
   } : {};
   const formEl = buildForm(schema, initial);
   const footer = document.createElement('div'); footer.className='flex'; footer.style.gap='8px'; footer.style.justifyContent='flex-end'; footer.style.flex='1';
@@ -1140,7 +1272,7 @@ async function openSpaceForm(existing, propId, parentId, onSaved) {
       }
       let fn, args;
       if (existing) { fn = 'housing_update_space'; args = { ...vals, p_id: existing.id }; }
-      else { fn = 'housing_create_space'; args = { ...vals, p_property_id: propId, p_parent_id: parentId }; }
+      else { fn = 'housing_create_space'; args = { ...vals, p_property_id: propId, p_parent_space_id: parentId }; }
       await rpc(fn, args);
       toast(t('savedSuccessfully'), 'success'); m.close(); if (onSaved) onSaved();
     } catch(e) { toast(e.message,'error'); save.disabled=false; }
@@ -1167,7 +1299,10 @@ async function renderPropTabContracts(container, p, refresh) {
               <td class="num-cell">${fmtSAR(c.total_value)}</td>
               <td>${c.landlord?escapeHtml(c.landlord.name):'—'}</td>
               <td>${fmtStatus(c.status)}</td>
-              <td class="row-actions"><button class="btn btn-sm" data-c-edit="${c.id}">${t('edit')}</button></td>
+              <td class="row-actions">
+                <button class="btn btn-sm" data-c-edit="${c.id}">${t('edit')}</button>
+                <button class="btn btn-sm" style="color:var(--red);" data-c-del="${c.id}" data-c-no="${escapeHtml(c.contract_no||c.id.slice(0,8))}">×</button>
+              </td>
             </tr>`).join('')}</tbody>
         </table>` : `<div class="empty" style="padding:40px; text-align:center; color:var(--muted);">${t('noItems')}</div>`}
     </div>`;
@@ -1176,6 +1311,44 @@ async function renderPropTabContracts(container, p, refresh) {
     const cid = e.currentTarget.getAttribute('data-c-edit');
     const cr = await rpc('housing_get_contract', { p_id: cid });
     openContractForm(cr.contract, p.id, refresh);
+  }));
+  container.querySelectorAll('[data-c-del]').forEach(b => b.addEventListener('click', async (e) => {
+    const cid = e.currentTarget.getAttribute('data-c-del');
+    const cno = e.currentTarget.getAttribute('data-c-no');
+    // TRUE probe: dry_run=true never deletes
+    let probe;
+    try { probe = await rpc('housing_delete_contract', { p_id: cid, p_cascade: false, p_dry_run: true }); }
+    catch(err) { toast(err.message||err,'error'); return; }
+    if (!probe || probe.ok !== true) { toast(t('errorOccurred'),'error'); return; }
+
+    const c = probe.counts || {};
+    const msg = probe.has_dependents
+      ? (LANG==='ar'
+          ? `العقد <strong>${escapeHtml(cno)}</strong> عنده ${c.attachments||0} مرفق. احذفهم كلهم معه؟ لا يمكن التراجع.`
+          : `Contract <strong>${escapeHtml(cno)}</strong> has ${c.attachments||0} attachment(s). Delete them all together? This cannot be undone.`)
+      : (LANG==='ar'
+          ? `هل تريد حذف العقد <strong>${escapeHtml(cno)}</strong> نهائياً؟ لا يمكن التراجع.`
+          : `Delete contract <strong>${escapeHtml(cno)}</strong> permanently? This cannot be undone.`);
+
+    const body = document.createElement('div');
+    body.innerHTML = `<div style="font-size:14px;">${msg}</div>`;
+    const foot = document.createElement('div');
+    foot.className='flex'; foot.style.gap='8px'; foot.style.justifyContent='flex-end'; foot.style.flex='1';
+    const cx = document.createElement('button'); cx.className='btn'; cx.textContent = t('cancel');
+    const del = document.createElement('button'); del.className='btn'; del.style.background='var(--red)'; del.style.color='#fff'; del.style.borderColor='var(--red)';
+    del.textContent = probe.has_dependents ? (LANG==='ar'?'حذف الكل':'Delete all') : (LANG==='ar'?'حذف':'Delete');
+    foot.appendChild(cx); foot.appendChild(del);
+    const pm = openModal({ title: t('delete'), body, footer: foot });
+    cx.addEventListener('click', pm.close);
+    del.addEventListener('click', async () => {
+      del.disabled = true;
+      try {
+        const res = await rpc('housing_delete_contract', { p_id: cid, p_cascade: probe.has_dependents, p_dry_run: false });
+        const paths = (res && res.attachment_paths) || [];
+        if (paths.length) { try { await sb.storage.from('housing-attachments').remove(paths); } catch(_){} }
+        toast(t('deletedSuccessfully'),'success'); pm.close(); refresh();
+      } catch(err){ toast(err.message||err,'error'); del.disabled = false; }
+    });
   }));
 }
 
@@ -1397,6 +1570,11 @@ async function openContractForm(existing, propId, onSaved) {
       for (const req of ['p_landlord_id','p_payment_method_key','p_start_date','p_end_date','p_monthly_rent','p_total_value']) {
         if (vals[req] == null || vals[req] === '') { toast(t('requiredField')+': '+req, 'error'); save.disabled=false; return; }
       }
+      // Client-side date sanity: end must be after start
+      if (new Date(vals.p_end_date) <= new Date(vals.p_start_date)) {
+        toast(LANG==='ar' ? 'تاريخ نهاية العقد لازم يكون بعد تاريخ البداية' : 'Contract end date must be after start date', 'error');
+        save.disabled=false; return;
+      }
       let fn, args;
       if (existing) { fn = 'housing_update_contract'; args = { ...vals, p_id: existing.id }; }
       else { fn = 'housing_create_contract'; args = { ...vals, p_property_id: propId }; }
@@ -1472,7 +1650,7 @@ async function openAssignMeterForm(propId, onSaved) {
     { name: 'p_assigned_from', label: LANG==='ar'?'من تاريخ':'From Date', type: 'date' },
     { name: 'p_notes', label: t('notes'), type: 'textarea' },
   ]};
-  const formEl = buildForm(schema, { p_assigned_from: new Date().toISOString().slice(0,10) });
+  const formEl = buildForm(schema, { p_assigned_from: localDateISO() });
   const footer = document.createElement('div'); footer.className='flex'; footer.style.gap='8px'; footer.style.justifyContent='flex-end'; footer.style.flex='1';
   const cancel = document.createElement('button'); cancel.className='btn'; cancel.textContent = t('cancel');
   const save = document.createElement('button'); save.className='btn btn-primary'; save.textContent = t('save');
@@ -1529,7 +1707,7 @@ async function openAssignResidentForm(propId, onSaved) {
     { name: 'p_assigned_from', label: LANG==='ar'?'من تاريخ':'From Date', type: 'date' },
     { name: 'p_notes', label: t('notes'), type: 'textarea' },
   ]};
-  const formEl = buildForm(schema, { p_assigned_from: new Date().toISOString().slice(0,10) });
+  const formEl = buildForm(schema, { p_assigned_from: localDateISO() });
   const footer = document.createElement('div'); footer.className='flex'; footer.style.gap='8px'; footer.style.justifyContent='flex-end'; footer.style.flex='1';
   const cancel = document.createElement('button'); cancel.className='btn'; cancel.textContent = t('cancel');
   const save = document.createElement('button'); save.className='btn btn-primary'; save.textContent = t('save');
@@ -1575,6 +1753,61 @@ async function renderPropTabExpenses(container, p, refresh) {
   document.getElementById('btnAddExp').addEventListener('click', () => openExpenseForm(null, 'property', p.id, refresh));
 }
 
+/* Local (non-UTC) date helper — avoids UTC bugs during KSA night hours */
+function localDateISO(d) {
+  d = d || new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+
+/* Generic safe-delete flow used by meter / resident / expense list rows.
+   Contract: probe with p_dry_run=true, show confirmation with counts,
+   then delete with p_cascade set based on has_dependents.
+   The RPC MUST accept (p_id, p_cascade, p_dry_run). */
+async function deleteEntityWithProbe(opts) {
+  const { rpcName, id, labelAr, labelEn, countRowsBuilder, onDone } = opts;
+  let probe;
+  try { probe = await rpc(rpcName, { p_id: id, p_cascade: false, p_dry_run: true }); }
+  catch(err) { toast(err.message||err, 'error'); return; }
+  if (!probe || probe.ok !== true) { toast(t('errorOccurred'), 'error'); return; }
+
+  const label = (LANG==='ar' ? labelAr : labelEn) || id.slice(0,8);
+  const rows = probe.has_dependents ? (countRowsBuilder(probe.counts || {}) || []) : [];
+  const body = document.createElement('div');
+  body.innerHTML = probe.has_dependents
+    ? `
+      <div style="font-size:14px; color:var(--text); margin-bottom:12px;">
+        ${LANG==='ar' ? `عند حذف <strong>${escapeHtml(label)}</strong> سيتم حذف ما يلي معاً:` : `Deleting <strong>${escapeHtml(label)}</strong> will also delete:`}
+      </div>
+      ${rows.length ? `<table class="data" style="margin-bottom:12px;"><tbody>${rows.map(([k,v]) => `<tr><td>${escapeHtml(k)}</td><td class="num-cell" style="font-weight:600;">${v}</td></tr>`).join('')}</tbody></table>` : ''}
+      <div style="font-size:12px; color:var(--muted);">${LANG==='ar' ? 'لا يمكن التراجع.' : 'This cannot be undone.'}</div>`
+    : `
+      <div style="font-size:14px; color:var(--text); margin-bottom:8px;">
+        ${LANG==='ar' ? `هل تريد حذف <strong>${escapeHtml(label)}</strong> نهائياً؟` : `Delete <strong>${escapeHtml(label)}</strong> permanently?`}
+      </div>
+      <div style="font-size:12px; color:var(--muted);">${LANG==='ar' ? 'لا يمكن التراجع.' : 'This cannot be undone.'}</div>`;
+  const foot = document.createElement('div'); foot.className='flex'; foot.style.gap='8px'; foot.style.justifyContent='flex-end'; foot.style.flex='1';
+  const cx = document.createElement('button'); cx.className='btn'; cx.textContent = t('cancel');
+  const del = document.createElement('button'); del.className='btn'; del.style.background='var(--red)'; del.style.color='#fff'; del.style.borderColor='var(--red)';
+  del.textContent = probe.has_dependents ? (LANG==='ar'?'حذف الكل':'Delete all') : (LANG==='ar'?'حذف':'Delete');
+  foot.appendChild(cx); foot.appendChild(del);
+  const pm = openModal({ title: t('delete'), body, footer: foot });
+  cx.addEventListener('click', pm.close);
+  del.addEventListener('click', async () => {
+    del.disabled = true;
+    try {
+      const res = await rpc(rpcName, { p_id: id, p_cascade: probe.has_dependents, p_dry_run: false });
+      const paths = (res && res.attachment_paths) || [];
+      if (paths.length) { try { await sb.storage.from('housing-attachments').remove(paths); } catch(_){} }
+      toast(t('deletedSuccessfully'), 'success');
+      pm.close();
+      if (onDone) onDone(res);
+    } catch(err) { toast(err.message||err, 'error'); del.disabled = false; }
+  });
+}
+
 async function openExpenseForm(existing, entityType, entityId, onSaved) {
   const [cats, freqs] = await Promise.all([
     getRefOptions('expense_categories'), getRefOptions('expense_frequencies')
@@ -1590,13 +1823,23 @@ async function openExpenseForm(existing, entityType, entityId, onSaved) {
     { name: 'p_next_due_date', label: LANG==='ar'?'المستحق التالي':'Next Due', type: 'date' },
     { name: 'p_notes', label: t('notes'), type: 'textarea', spanAll: true },
   ]};
-  const initial = existing || { p_currency: 'SAR', p_start_date: new Date().toISOString().slice(0,10) };
+  const initial = existing ? {
+    p_category_key:  existing.category?.key,
+    p_frequency_key: existing.frequency?.key,
+    p_description:   existing.description,
+    p_amount:        existing.amount,
+    p_currency:      existing.currency || 'SAR',
+    p_start_date:    existing.start_date,
+    p_end_date:      existing.end_date,
+    p_next_due_date: existing.next_due_date,
+    p_notes:         existing.notes,
+  } : { p_currency: 'SAR', p_start_date: localDateISO() };
   const formEl = buildForm(schema, initial);
   const footer = document.createElement('div'); footer.className='flex'; footer.style.gap='8px'; footer.style.justifyContent='flex-end'; footer.style.flex='1';
   const cancel = document.createElement('button'); cancel.className='btn'; cancel.textContent = t('cancel');
   const save = document.createElement('button'); save.className='btn btn-primary'; save.textContent = t('save');
   footer.appendChild(cancel); footer.appendChild(save);
-  const m = openModal({ title: t('add') + ' ' + t('expenses'), body: formEl, footer, wide: true });
+  const m = openModal({ title: (existing?t('edit'):t('add')) + ' ' + t('expenses'), body: formEl, footer, wide: true });
   cancel.addEventListener('click', m.close);
   save.addEventListener('click', async () => {
     save.disabled = true;
@@ -1605,7 +1848,11 @@ async function openExpenseForm(existing, entityType, entityId, onSaved) {
       for (const req of ['p_category_key','p_frequency_key','p_description','p_amount','p_start_date']) {
         if (vals[req] == null || vals[req] === '') { toast(t('requiredField')+': '+req,'error'); save.disabled=false; return; }
       }
-      await rpc('housing_create_expense', { ...vals, p_entity_type: entityType, p_entity_id: entityId });
+      if (existing) {
+        await rpc('housing_update_expense', { ...vals, p_id: existing.id });
+      } else {
+        await rpc('housing_create_expense', { ...vals, p_entity_type: entityType, p_entity_id: entityId });
+      }
       toast(t('savedSuccessfully'),'success'); m.close(); if (onSaved) onSaved();
     } catch(e){ toast(e.message,'error'); save.disabled=false; }
   });
@@ -1762,13 +2009,39 @@ async function screenLandlords(el) {
               <td>${escapeHtml(l.email || '—')}</td>
               <td>${escapeHtml(l.national_id || '—')}</td>
               <td>${fmtIsActive(l.is_active)}</td>
-              <td class="row-actions"><button class="btn btn-sm" data-edit="${l.id}">${t('edit')}</button></td>
-            </tr>`).join('')}</tbody>
+              <td class="row-actions">
+              <button class="btn btn-sm" data-edit="${l.id}">${t('edit')}</button>
+              <button class="btn btn-sm" style="color:var(--red);" data-del="${l.id}" data-name="${escapeHtml(l.name)}">×</button>
+            </td>
+          </tr>`).join('')}</tbody>
         </table>`;
       listEl.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', async (e) => {
         const lid = e.currentTarget.getAttribute('data-edit');
         const lr = await rpc('housing_get_landlord', { p_id: lid });
         openLandlordForm(lr.landlord, load);
+      }));
+      listEl.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', async (e) => {
+        const lid  = e.currentTarget.getAttribute('data-del');
+        const name = e.currentTarget.getAttribute('data-name');
+        // TRUE probe
+        let probe;
+        try { probe = await rpc('housing_delete_landlord', { p_id: lid, p_dry_run: true }); }
+        catch(err) { toast(err.message||err,'error'); return; }
+        if (!probe || probe.ok !== true) { toast(t('errorOccurred'),'error'); return; }
+
+        if (probe.has_dependents) {
+          const c = probe.counts || {};
+          const detail = LANG==='ar' ? `مربوط بـ ${c.contracts} عقد. غيّر مالك العقود أو احذفها أولاً.` : `Linked to ${c.contracts} contract(s). Reassign or delete them first.`;
+          toast(detail, 'error');
+          return;
+        }
+
+        const msg = LANG==='ar' ? `هل تريد حذف المالك "${name}" نهائياً؟ لا يمكن التراجع.` : `Delete landlord "${name}" permanently? This cannot be undone.`;
+        if (!await confirmAction({ title: t('delete'), message: msg, danger: true })) return;
+        try {
+          await rpc('housing_delete_landlord', { p_id: lid, p_dry_run: false });
+          toast(t('deletedSuccessfully'), 'success'); load();
+        } catch(err) { toast(err.message||err,'error'); }
       }));
     } catch (e) {
       listEl.innerHTML = `<div class="error-box">${escapeHtml(e.message || e)}</div>`;
@@ -1941,10 +2214,30 @@ async function screenMeters(el) {
               <td>${escapeHtml(m.provider||'—')}</td>
               <td>${escapeHtml(m.description||'—')}</td>
               <td>${fmtIsActive(m.is_active)}</td>
-              <td class="row-actions"><button class="btn btn-sm" data-view="${m.id}">${t('view')}</button></td>
+              <td class="row-actions">
+                <button class="btn btn-sm" data-view="${m.id}">${t('view')}</button>
+                <button class="btn btn-sm" style="color:var(--red);" data-del="${m.id}" data-name="${escapeHtml(m.code + ' — ' + (m.meter_number||''))}">×</button>
+              </td>
             </tr>`).join('')}</tbody>
         </table>`;
       listEl.querySelectorAll('[data-view]').forEach(b => b.addEventListener('click', (e) => openMeterDetail(e.currentTarget.getAttribute('data-view'), load)));
+      listEl.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', (e) => {
+        const mid  = e.currentTarget.getAttribute('data-del');
+        const name = e.currentTarget.getAttribute('data-name');
+        deleteEntityWithProbe({
+          rpcName: 'housing_delete_meter', id: mid,
+          labelAr: name, labelEn: name,
+          countRowsBuilder: (c) => {
+            const rr = [];
+            if (c.bills       > 0) rr.push([LANG==='ar'?'الفواتير':'Bills',                   c.bills]);
+            if (c.readings    > 0) rr.push([LANG==='ar'?'القراءات':'Readings',                c.readings]);
+            if (c.assignments > 0) rr.push([LANG==='ar'?'التخصيصات':'Assignments',            c.assignments]);
+            if (c.attachments > 0) rr.push([LANG==='ar'?'المرفقات':'Attachments',             c.attachments]);
+            return rr;
+          },
+          onDone: () => load(),
+        });
+      }));
     } catch(e) { listEl.innerHTML = `<div class="error-box">${escapeHtml(e.message)}</div>`; }
   };
   ['fSearch','fType','fActive'].forEach(id => document.getElementById(id).addEventListener('input', load));
@@ -1966,7 +2259,14 @@ async function openMeterForm(existing, onSaved) {
     { name: 'p_description', label: LANG==='ar'?'الوصف':'Description', spanAll: true },
     { name: 'p_notes', label: t('notes'), type: 'textarea', spanAll: true },
   ]};
-  const initial = existing || {};
+  const initial = existing ? {
+    p_meter_type_key:    existing.meter_type?.key,
+    p_meter_number:      existing.meter_number,
+    p_payment_reference: existing.payment_reference,
+    p_provider:          existing.provider,
+    p_description:       existing.description,
+    p_notes:             existing.notes,
+  } : {};
   const formEl = buildForm(schema, initial);
   const footer = document.createElement('div'); footer.className='flex'; footer.style.gap='8px'; footer.style.justifyContent='flex-end'; footer.style.flex='1';
   const cancel = document.createElement('button'); cancel.className='btn'; cancel.textContent = t('cancel');
@@ -2042,7 +2342,7 @@ async function openReadingForm(meterId, onSaved) {
     { name: 'p_unit', label: LANG==='ar'?'الوحدة':'Unit', hint: LANG==='ar'?'تُشتقّ تلقائياً من نوع العدّاد':'Auto-derived from meter type' },
     { name: 'p_notes', label: t('notes'), type: 'textarea' },
   ]};
-  const formEl = buildForm(schema, { p_reading_date: new Date().toISOString().slice(0,10) });
+  const formEl = buildForm(schema, { p_reading_date: localDateISO() });
   const footer = document.createElement('div'); footer.className='flex'; footer.style.gap='8px'; footer.style.justifyContent='flex-end'; footer.style.flex='1';
   const cancel = document.createElement('button'); cancel.className='btn'; cancel.textContent = t('cancel');
   const save = document.createElement('button'); save.className='btn btn-primary'; save.textContent = t('save');
@@ -2064,10 +2364,13 @@ async function openReadingForm(meterId, onSaved) {
    SCREEN: BILLS LIST
    ===================================================================== */
 async function screenBills(el) {
+  const PAGE_SIZE = 100;
+  let currentOffset = 0;
   el.innerHTML = `
     <div class="page-header">
       <h1>${t('bills')}</h1>
       <span class="spacer"></span>
+      <button class="btn" id="btnBulkPay" title="${LANG==='ar'?'علّم كل الفواتير المطابقة للفلاتر كمدفوعة':'Mark all bills matching filters as paid'}">${LANG==='ar'?'علّم الكل كمدفوع':'Bulk mark paid'}</button>
       <button class="btn btn-primary" id="btnAdd">+ ${t('add')}</button>
     </div>
     <div class="filters">
@@ -2078,19 +2381,28 @@ async function screenBills(el) {
       <button class="btn btn-ghost" id="btnClear">↺</button>
     </div>
     <div id="summary" class="mb-3"></div>
-    <div id="list" class="table-wrap"><div class="loading">${t('loading')}</div></div>`;
+    <div id="list" class="table-wrap"><div class="loading">${t('loading')}</div></div>
+    <div id="pager" class="flex mb-3" style="justify-content:center; gap:12px; align-items:center; margin-top:12px;"></div>`;
+
+  const buildFilters = () => {
+    const f = {};
+    if (document.getElementById('fStatus').value) f.p_status = document.getElementById('fStatus').value;
+    if (document.getElementById('fFrom').value)   f.p_period_from = document.getElementById('fFrom').value;
+    if (document.getElementById('fTo').value)     f.p_period_to = document.getElementById('fTo').value;
+    return f;
+  };
+
   const load = async () => {
     document.getElementById('list').innerHTML = `<div class="loading">${t('loading')}</div>`;
+    document.getElementById('pager').innerHTML = '';
     try {
-      const args = { p_limit: 200 };
-      if (document.getElementById('fStatus').value) args.p_status = document.getElementById('fStatus').value;
-      if (document.getElementById('fFrom').value) args.p_period_from = document.getElementById('fFrom').value;
-      if (document.getElementById('fTo').value) args.p_period_to = document.getElementById('fTo').value;
-      const res = await rpc('housing_list_bills', args);
+      const filters = buildFilters();
+      const res = await rpc('housing_list_bills', { ...filters, p_limit: PAGE_SIZE, p_offset: currentOffset });
       const items = res.items || [];
+      const total = res.total_count || 0;
       document.getElementById('summary').innerHTML = `
         <div class="stat-grid">
-          <div class="stat"><div class="stat-label">${t('count')}</div><div class="stat-value">${fmtNum(res.count||items.length,{decimals:0})}</div></div>
+          <div class="stat"><div class="stat-label">${t('count')}</div><div class="stat-value">${fmtNum(total,{decimals:0})}</div></div>
           <div class="stat"><div class="stat-label">${t('total')}</div><div class="stat-value">${fmtSAR(res.total_amount||0)}</div></div>
         </div>`;
       const listEl = document.getElementById('list');
@@ -2121,14 +2433,80 @@ async function screenBills(el) {
         </table>`;
       listEl.querySelectorAll('[data-pay]').forEach(btn => btn.addEventListener('click', (e) => openMarkPaid(e.currentTarget.getAttribute('data-pay'), load)));
       listEl.querySelectorAll('[data-view]').forEach(btn => btn.addEventListener('click', (e) => openBillDetail(e.currentTarget.getAttribute('data-view'), load)));
+
+      // Pagination controls
+      const pgEl = document.getElementById('pager');
+      const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
+      const currentPage = Math.floor(currentOffset / PAGE_SIZE) + 1;
+      if (total > PAGE_SIZE) {
+        const fromN = currentOffset + 1;
+        const toN   = Math.min(currentOffset + items.length, total);
+        pgEl.innerHTML = `
+          <button class="btn btn-sm" id="pgPrev" ${currentOffset<=0?'disabled':''}>‹ ${LANG==='ar'?'السابق':'Prev'}</button>
+          <span class="text-muted" style="font-size:13px;">${LANG==='ar'?'صفحة':'Page'} ${currentPage} / ${pageCount} &nbsp;·&nbsp; ${fromN}–${toN} ${LANG==='ar'?'من':'of'} ${total}</span>
+          <button class="btn btn-sm" id="pgNext" ${currentOffset+PAGE_SIZE>=total?'disabled':''}>${LANG==='ar'?'التالي':'Next'} ›</button>`;
+        document.getElementById('pgPrev').addEventListener('click', () => { if (currentOffset > 0) { currentOffset = Math.max(0, currentOffset - PAGE_SIZE); load(); } });
+        document.getElementById('pgNext').addEventListener('click', () => { if (currentOffset + PAGE_SIZE < total) { currentOffset += PAGE_SIZE; load(); } });
+      }
     } catch(e) { document.getElementById('list').innerHTML = `<div class="error-box">${escapeHtml(e.message)}</div>`; }
   };
-  ['fStatus','fFrom','fTo'].forEach(id => document.getElementById(id).addEventListener('input', load));
+
+  ['fStatus','fFrom','fTo'].forEach(id => document.getElementById(id).addEventListener('input', () => { currentOffset = 0; load(); }));
   document.getElementById('btnClear').addEventListener('click', () => {
     ['fStatus','fFrom','fTo'].forEach(id => document.getElementById(id).value = '');
-    load();
+    currentOffset = 0; load();
   });
   document.getElementById('btnAdd').addEventListener('click', () => openBillForm(null, load));
+
+  // Bulk mark paid — uses current filters, prompts for paid_date
+  document.getElementById('btnBulkPay').addEventListener('click', async () => {
+    // Probe: how many pending/overdue match the current filters
+    const filters = buildFilters();
+    let candCount = 0;
+    try {
+      // Only bills currently pending or overdue will be affected; use both queries to be accurate
+      const pending  = await rpc('housing_list_bills', { ...filters, p_status: 'pending',  p_limit: 1, p_offset: 0 });
+      const overdue  = await rpc('housing_list_bills', { ...filters, p_status: 'overdue',  p_limit: 1, p_offset: 0 });
+      // If filters already restrict status, use the total from that
+      if (filters.p_status === 'pending')     candCount = pending.total_count || 0;
+      else if (filters.p_status === 'overdue') candCount = overdue.total_count || 0;
+      else                                     candCount = (pending.total_count || 0) + (overdue.total_count || 0);
+    } catch(e) { toast(e.message,'error'); return; }
+
+    if (candCount === 0) {
+      toast(LANG==='ar' ? 'لا توجد فواتير مستحقة تطابق الفلاتر الحالية' : 'No pending/overdue bills match the current filters', 'error');
+      return;
+    }
+
+    const body = document.createElement('div');
+    body.innerHTML = `
+      <div style="font-size:14px; color:var(--text); margin-bottom:12px;">
+        ${LANG==='ar' ? `سيتم وضع علامة "مدفوعة" على <strong>${candCount}</strong> فاتورة (المستحقة و/أو المتأخرة) المطابقة للفلاتر الحالية.` : `Will mark <strong>${candCount}</strong> pending/overdue bill(s) matching current filters as paid.`}
+      </div>
+      <div class="field mb-2"><label>${LANG==='ar'?'تاريخ الدفع':'Paid Date'} <span class="req">*</span></label>
+        <input id="bmpDate" type="date" value="${localDateISO()}">
+      </div>
+      <div style="font-size:12px; color:var(--muted);">${LANG==='ar' ? 'الفواتير المدفوعة أو الملغاة أو المتنازع عليها لن تتأثر. لا يمكن التراجع.' : 'Already-paid, cancelled or disputed bills are not affected. This cannot be undone.'}</div>`;
+    const foot = document.createElement('div'); foot.className='flex'; foot.style.gap='8px'; foot.style.justifyContent='flex-end'; foot.style.flex='1';
+    const cx = document.createElement('button'); cx.className='btn'; cx.textContent = t('cancel');
+    const ok = document.createElement('button'); ok.className='btn btn-primary'; ok.textContent = LANG==='ar' ? 'علّم الكل' : 'Mark all';
+    foot.appendChild(cx); foot.appendChild(ok);
+    const pm = openModal({ title: LANG==='ar'?'دفع جماعي':'Bulk Mark Paid', body, footer: foot });
+    cx.addEventListener('click', pm.close);
+    ok.addEventListener('click', async () => {
+      const paidDate = document.getElementById('bmpDate').value;
+      if (!paidDate) { toast(LANG==='ar'?'اختر تاريخ الدفع':'Pick a paid date','error'); return; }
+      ok.disabled = true;
+      try {
+        const res = await rpc('housing_bulk_mark_bills_paid', { p_paid_date: paidDate, ...filters });
+        toast((LANG==='ar' ? 'تم تعليم ' : 'Marked ') + (res.updated || 0) + (LANG==='ar' ? ' فاتورة كمدفوعة' : ' bill(s) as paid'), 'success');
+        pm.close();
+        currentOffset = 0;
+        load();
+      } catch(e) { toast(e.message,'error'); ok.disabled = false; }
+    });
+  });
+
   await load();
 }
 
@@ -2151,7 +2529,19 @@ async function openBillForm(existing, onSaved) {
     { name: 'p_paid_date', label: LANG==='ar'?'تاريخ الدفع':'Paid Date', type: 'date', hint: LANG==='ar'?'مطلوب فقط إذا كانت الحالة "مدفوع"':'Only if status = paid' },
     { name: 'p_notes', label: t('notes'), type: 'textarea', spanAll: true },
   ]};
-  const initial = existing || { p_status: 'pending' };
+  const initial = existing ? {
+    p_meter_id:          existing.meter_id || existing.meter?.id,
+    p_bill_period_start: existing.bill_period_start,
+    p_bill_period_end:   existing.bill_period_end,
+    p_issue_date:        existing.issue_date,
+    p_due_date:          existing.due_date,
+    p_amount:            existing.amount,
+    p_consumption:       existing.consumption,
+    p_payment_reference: existing.payment_reference,
+    p_status:            existing.status,
+    p_paid_date:         existing.paid_date,
+    p_notes:             existing.notes,
+  } : { p_status: 'pending' };
   const formEl = buildForm(schema, initial);
   const footer = document.createElement('div'); footer.className='flex'; footer.style.gap='8px'; footer.style.justifyContent='flex-end'; footer.style.flex='1';
   const cancel = document.createElement('button'); cancel.className='btn'; cancel.textContent = t('cancel');
@@ -2166,8 +2556,22 @@ async function openBillForm(existing, onSaved) {
       for (const req of ['p_meter_id','p_bill_period_start','p_bill_period_end','p_amount']) {
         if (vals[req] == null || vals[req] === '') { toast(t('requiredField')+': '+req,'error'); save.disabled=false; return; }
       }
+      // Date sanity: end after start
+      if (new Date(vals.p_bill_period_end) <= new Date(vals.p_bill_period_start)) {
+        toast(LANG==='ar' ? 'نهاية الفترة لازم تكون بعد بدايتها' : 'Period end must be after start', 'error');
+        save.disabled=false; return;
+      }
+      // Paid must have a paid_date (never auto-fill)
+      if (vals.p_status === 'paid' && !vals.p_paid_date) {
+        toast(LANG==='ar' ? 'اختر تاريخ الدفع (لا يتم افتراضه تلقائياً)' : 'Pick the paid date (not auto-set)', 'error');
+        save.disabled=false; return;
+      }
       const fn = existing ? 'housing_update_bill' : 'housing_create_bill';
-      if (existing) vals.p_id = existing.id;
+      if (existing) {
+        vals.p_id = existing.id;
+        // Meter can't be changed after creation — strip it from update
+        delete vals.p_meter_id;
+      }
       await rpc(fn, vals);
       toast(t('savedSuccessfully'),'success'); m.close(); if (onSaved) onSaved();
     } catch(e){ toast(e.message,'error'); save.disabled=false; }
@@ -2177,7 +2581,7 @@ async function openBillForm(existing, onSaved) {
 async function openMarkPaid(billId, onSaved) {
   const body = document.createElement('div');
   body.innerHTML = `<div class="form-grid cols-1">
-    <div class="field"><label>${LANG==='ar'?'تاريخ الدفع':'Paid Date'} <span class="req">*</span></label><input id="pdDate" type="date" value="${new Date().toISOString().slice(0,10)}"></div>
+    <div class="field"><label>${LANG==='ar'?'تاريخ الدفع':'Paid Date'} <span class="req">*</span></label><input id="pdDate" type="date" value="${localDateISO()}"></div>
     <div class="field"><label>${LANG==='ar'?'مرجع الدفع':'Payment Reference'}</label><input id="pdRef"></div>
   </div>`;
   const footer = document.createElement('div'); footer.className='flex'; footer.style.gap='8px'; footer.style.justifyContent='flex-end'; footer.style.flex='1';
@@ -2302,13 +2706,31 @@ async function screenResidents(el) {
               <td>${escapeHtml(r.phone||'—')}</td>
               <td>${escapeHtml(r.nationality||'—')}</td>
               <td>${fmtIsActive(r.is_active)}</td>
-              <td class="row-actions"><button class="btn btn-sm" data-edit="${r.id}">${t('edit')}</button></td>
+              <td class="row-actions">
+                <button class="btn btn-sm" data-edit="${r.id}">${t('edit')}</button>
+                <button class="btn btn-sm" style="color:var(--red);" data-del="${r.id}" data-name="${escapeHtml(r.code + ' — ' + r.name_ar)}">×</button>
+              </td>
             </tr>`).join('')}</tbody>
         </table>`;
       listEl.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', async (e) => {
         const rid = e.currentTarget.getAttribute('data-edit');
         const rr = await rpc('housing_get_resident', { p_id: rid });
         openResidentForm(rr.resident, load);
+      }));
+      listEl.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', (e) => {
+        const rid  = e.currentTarget.getAttribute('data-del');
+        const name = e.currentTarget.getAttribute('data-name');
+        deleteEntityWithProbe({
+          rpcName: 'housing_delete_resident', id: rid,
+          labelAr: name, labelEn: name,
+          countRowsBuilder: (c) => {
+            const rr = [];
+            if (c.assignments > 0) rr.push([LANG==='ar'?'التخصيصات (السكان في العقارات)':'Assignments', c.assignments]);
+            if (c.attachments > 0) rr.push([LANG==='ar'?'المرفقات':'Attachments',                       c.attachments]);
+            return rr;
+          },
+          onDone: () => load(),
+        });
       }));
     } catch(e) { document.getElementById('list').innerHTML = `<div class="error-box">${escapeHtml(e.message)}</div>`; }
   };
@@ -2369,6 +2791,8 @@ async function screenExpenses(el) {
   const [cats, freqs] = await Promise.all([
     getRefOptions('expense_categories'), getRefOptions('expense_frequencies')
   ]);
+  const PAGE_SIZE = 100;
+  let currentOffset = 0;
   el.innerHTML = `
     <div class="page-header">
       <h1>${t('expenses')}</h1>
@@ -2383,11 +2807,13 @@ async function screenExpenses(el) {
       <button class="btn btn-ghost" id="btnClear">↺</button>
     </div>
     <div id="summary" class="mb-3"></div>
-    <div id="list" class="table-wrap"><div class="loading">${t('loading')}</div></div>`;
+    <div id="list" class="table-wrap"><div class="loading">${t('loading')}</div></div>
+    <div id="pager" class="flex mb-3" style="justify-content:center; gap:12px; align-items:center; margin-top:12px;"></div>`;
   const load = async () => {
     document.getElementById('list').innerHTML = `<div class="loading">${t('loading')}</div>`;
+    document.getElementById('pager').innerHTML = '';
     try {
-      const args = { p_limit: 200 };
+      const args = { p_limit: PAGE_SIZE, p_offset: currentOffset };
       if (document.getElementById('fEntity').value) args.p_entity_type = document.getElementById('fEntity').value;
       if (document.getElementById('fCat').value) args.p_category_key = document.getElementById('fCat').value;
       if (document.getElementById('fFreq').value) args.p_frequency_key = document.getElementById('fFreq').value;
@@ -2395,9 +2821,10 @@ async function screenExpenses(el) {
       if (document.getElementById('fTo').value) args.p_to_date = document.getElementById('fTo').value;
       const res = await rpc('housing_list_expenses', args);
       const items = res.items || [];
+      const total = res.total_count || 0;
       document.getElementById('summary').innerHTML = `
         <div class="stat-grid">
-          <div class="stat"><div class="stat-label">${t('count')}</div><div class="stat-value">${fmtNum(res.count||items.length,{decimals:0})}</div></div>
+          <div class="stat"><div class="stat-label">${t('count')}</div><div class="stat-value">${fmtNum(total,{decimals:0})}</div></div>
           <div class="stat"><div class="stat-label">${t('total')}</div><div class="stat-value">${fmtSAR(res.total_amount||0)}</div></div>
         </div>`;
       const listEl = document.getElementById('list');
@@ -2407,7 +2834,7 @@ async function screenExpenses(el) {
           <thead><tr>
             <th>${LANG==='ar'?'الوصف':'Description'}</th><th>${LANG==='ar'?'الكيان':'Entity'}</th>
             <th>${t('category')}</th><th>${LANG==='ar'?'الدورية':'Frequency'}</th>
-            <th>${t('amount')}</th><th>${t('startDate')}</th><th>${LANG==='ar'?'التالي':'Next'}</th><th>${t('isActive')}</th>
+            <th>${t('amount')}</th><th>${t('startDate')}</th><th>${LANG==='ar'?'التالي':'Next'}</th><th>${t('isActive')}</th><th></th>
           </tr></thead>
           <tbody>${items.map(e=>`
             <tr>
@@ -2419,14 +2846,52 @@ async function screenExpenses(el) {
               <td>${fmtDate(e.start_date)}</td>
               <td>${fmtDate(e.next_due_date)}</td>
               <td>${fmtIsActive(e.is_active)}</td>
+              <td class="row-actions">
+                <button class="btn btn-sm" data-edit="${e.id}">${t('edit')}</button>
+                <button class="btn btn-sm" style="color:var(--red);" data-del="${e.id}" data-name="${escapeHtml(e.description)}">×</button>
+              </td>
             </tr>`).join('')}</tbody>
         </table>`;
+      listEl.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', async (ev) => {
+        const eid = ev.currentTarget.getAttribute('data-edit');
+        const er  = await rpc('housing_get_expense', { p_id: eid });
+        openExpenseForm(er.expense, er.expense.entity_type, er.expense.entity_id, load);
+      }));
+      listEl.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', (ev) => {
+        const eid  = ev.currentTarget.getAttribute('data-del');
+        const name = ev.currentTarget.getAttribute('data-name');
+        deleteEntityWithProbe({
+          rpcName: 'housing_delete_expense', id: eid,
+          labelAr: name, labelEn: name,
+          countRowsBuilder: (c) => {
+            const rr = [];
+            if (c.attachments > 0) rr.push([LANG==='ar'?'المرفقات':'Attachments', c.attachments]);
+            return rr;
+          },
+          onDone: () => load(),
+        });
+      }));
+
+      // Pagination
+      const pgEl = document.getElementById('pager');
+      const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
+      const currentPage = Math.floor(currentOffset / PAGE_SIZE) + 1;
+      if (total > PAGE_SIZE) {
+        const fromN = currentOffset + 1;
+        const toN   = Math.min(currentOffset + items.length, total);
+        pgEl.innerHTML = `
+          <button class="btn btn-sm" id="pgPrev" ${currentOffset<=0?'disabled':''}>‹ ${LANG==='ar'?'السابق':'Prev'}</button>
+          <span class="text-muted" style="font-size:13px;">${LANG==='ar'?'صفحة':'Page'} ${currentPage} / ${pageCount} &nbsp;·&nbsp; ${fromN}–${toN} ${LANG==='ar'?'من':'of'} ${total}</span>
+          <button class="btn btn-sm" id="pgNext" ${currentOffset+PAGE_SIZE>=total?'disabled':''}>${LANG==='ar'?'التالي':'Next'} ›</button>`;
+        document.getElementById('pgPrev').addEventListener('click', () => { if (currentOffset > 0) { currentOffset = Math.max(0, currentOffset - PAGE_SIZE); load(); } });
+        document.getElementById('pgNext').addEventListener('click', () => { if (currentOffset + PAGE_SIZE < total) { currentOffset += PAGE_SIZE; load(); } });
+      }
     } catch(e) { document.getElementById('list').innerHTML = `<div class="error-box">${escapeHtml(e.message)}</div>`; }
   };
-  ['fEntity','fCat','fFreq','fFrom','fTo'].forEach(id => document.getElementById(id).addEventListener('input', load));
+  ['fEntity','fCat','fFreq','fFrom','fTo'].forEach(id => document.getElementById(id).addEventListener('input', () => { currentOffset = 0; load(); }));
   document.getElementById('btnClear').addEventListener('click', () => {
     ['fEntity','fCat','fFreq','fFrom','fTo'].forEach(id => document.getElementById(id).value = '');
-    load();
+    currentOffset = 0; load();
   });
   await load();
 }
@@ -2527,7 +2992,7 @@ async function openReport(kind) {
     await run();
   }
   else if (kind === 'occupancy') {
-    body.innerHTML = `<div class="card"><div class="filters" style="margin:0 0 12px;"><div class="field"><label>${LANG==='ar'?'كما في تاريخ':'As of'}</label><input type="date" id="rDate" value="${new Date().toISOString().slice(0,10)}"></div><span class="spacer"></span><button class="btn btn-primary" id="btnRun">${LANG==='ar'?'تشغيل':'Run'}</button></div><div id="rOut"></div></div>`;
+    body.innerHTML = `<div class="card"><div class="filters" style="margin:0 0 12px;"><div class="field"><label>${LANG==='ar'?'كما في تاريخ':'As of'}</label><input type="date" id="rDate" value="${localDateISO()}"></div><span class="spacer"></span><button class="btn btn-primary" id="btnRun">${LANG==='ar'?'تشغيل':'Run'}</button></div><div id="rOut"></div></div>`;
     const run = async () => {
       document.getElementById('rOut').innerHTML = `<div class="loading">${t('loading')}</div>`;
       try {
@@ -2561,8 +3026,8 @@ async function openReport(kind) {
   else if (kind === 'utility') {
     const types = await getRefOptions('meter_types');
     body.innerHTML = `<div class="card"><div class="filters" style="margin:0 0 12px;">
-      <div class="field"><label>${LANG==='ar'?'من':'From'}</label><input type="date" id="rFrom" value="${new Date(Date.now()-90*86400000).toISOString().slice(0,10)}"></div>
-      <div class="field"><label>${LANG==='ar'?'إلى':'To'}</label><input type="date" id="rTo" value="${new Date().toISOString().slice(0,10)}"></div>
+      <div class="field"><label>${LANG==='ar'?'من':'From'}</label><input type="date" id="rFrom" value="${localDateISO(new Date(Date.now()-90*86400000))}"></div>
+      <div class="field"><label>${LANG==='ar'?'إلى':'To'}</label><input type="date" id="rTo" value="${localDateISO()}"></div>
       <div class="field"><label>${t('type')}</label><select id="rType"><option value="">${t('all')}</option>${types.map(x=>`<option value="${escapeHtml(x.value)}">${escapeHtml(x.label)}</option>`).join('')}</select></div>
       <span class="spacer"></span><button class="btn btn-primary" id="btnRun">${LANG==='ar'?'تشغيل':'Run'}</button></div><div id="rOut"></div></div>`;
     const run = async () => {
@@ -2616,8 +3081,8 @@ async function openReport(kind) {
   }
   else if (kind === 'expenses') {
     body.innerHTML = `<div class="card"><div class="filters" style="margin:0 0 12px;">
-      <div class="field"><label>${LANG==='ar'?'من':'From'}</label><input type="date" id="rFrom" value="${new Date(Date.now()-365*86400000).toISOString().slice(0,10)}"></div>
-      <div class="field"><label>${LANG==='ar'?'إلى':'To'}</label><input type="date" id="rTo" value="${new Date().toISOString().slice(0,10)}"></div>
+      <div class="field"><label>${LANG==='ar'?'من':'From'}</label><input type="date" id="rFrom" value="${localDateISO(new Date(Date.now()-365*86400000))}"></div>
+      <div class="field"><label>${LANG==='ar'?'إلى':'To'}</label><input type="date" id="rTo" value="${localDateISO()}"></div>
       <span class="spacer"></span><button class="btn btn-primary" id="btnRun">${LANG==='ar'?'تشغيل':'Run'}</button></div><div id="rOut"></div></div>`;
     const run = async () => {
       document.getElementById('rOut').innerHTML = `<div class="loading">${t('loading')}</div>`;
@@ -2839,8 +3304,8 @@ async function openTemplateForm(existing, onSaved) {
 document.addEventListener('DOMContentLoaded', async () => {
   applyLang();
   document.getElementById('langToggleBtn').addEventListener('click', toggleLang);
-  document.getElementById('logoutBtn').addEventListener('click', () => {
-    localStorage.removeItem(CFG.adminSessionKey);
+  document.getElementById('logoutBtn').addEventListener('click', async () => {
+    await admSignOut();
     location.href = '/admin';
   });
   window.addEventListener('hashchange', route);
