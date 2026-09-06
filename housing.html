@@ -574,6 +574,105 @@ function translateStorageError(err) {
   return raw || 'Storage error';
 }
 
+/* =====================================================================
+   ATTACHMENT INTEGRITY — upload + register + delete with compensation
+   ---------------------------------------------------------------------
+   These helpers turn the two-step Storage + DB flow into an atomic-like
+   operation. If DB register fails after a successful Storage upload, we
+   compensate by removing the uploaded file. If Storage cleanup fails
+   after a successful DB delete, we log the orphan to audit_log so the
+   operator can find and clean it later.
+   ===================================================================== */
+
+/* Upload a file to the housing bucket and register it in the DB.
+   On any failure, ensures no orphan file is left behind (best-effort).
+   Returns the register RPC response on success; throws on failure with
+   a translated error message. */
+async function uploadAndRegisterAttachment({ entityType, entityId, file, kindKey, notes }) {
+  const safeName = file.name.replace(/[^\w.-]/g,'_');
+  const path = `${entityType}/${entityId}/${Date.now()}_${safeName}`;
+  // Fail-closed: never proceed to Storage without a valid admin session
+  const okSess = await admEnsureSession();
+  if (!okSess) throw new Error(translateError('not_admin'));
+
+  // Step 1: upload to storage
+  const { error: upErr } = await sb.storage.from('housing-attachments').upload(path, file, { contentType: file.type });
+  if (upErr) throw new Error(translateStorageError(upErr));
+
+  // Step 2: register in DB. If it fails, compensate.
+  try {
+    return await rpc('housing_register_attachment', {
+      p_entity_type: entityType, p_entity_id: entityId, p_kind_key: kindKey,
+      p_storage_path: path, p_filename: file.name,
+      p_mime_type:   file.type, p_size_bytes: file.size,
+      p_notes:       notes || null,
+    });
+  } catch (regErr) {
+    // Compensating action: remove the just-uploaded file
+    let compensationFailed = null;
+    try {
+      const okC = await admEnsureSession();
+      if (!okC) throw new Error('session_expired_during_compensation');
+      const { error: remErr } = await sb.storage.from('housing-attachments').remove([path]);
+      if (remErr) compensationFailed = remErr;
+    } catch (cErr) { compensationFailed = cErr; }
+
+    if (compensationFailed) {
+      // Storage now has an orphan file — log it so an operator can clean it up
+      try {
+        await rpc('housing_log_storage_issue', {
+          p_kind: 'upload',
+          p_paths: [path],
+          p_details: {
+            entity_type: entityType, entity_id: entityId, filename: file.name,
+            register_error: String(regErr.message || regErr),
+            compensation_error: String(compensationFailed.message || compensationFailed)
+          }
+        });
+      } catch(_) { /* if even logging fails, we've done our best */ }
+    }
+    // Bubble up the original register failure — with a hint if orphan was logged
+    const suffix = compensationFailed
+      ? (LANG==='ar' ? ' (سُجّل الملف كـ orphan للتنظيف اليدوي لاحقاً)' : ' (file logged as orphan for later cleanup)')
+      : '';
+    throw new Error((regErr.message || String(regErr)) + suffix);
+  }
+}
+
+/* Remove one or more storage files. On failure, log to audit_log as an
+   'orphan_delete' entry so operator can find and clean them later. Never
+   throws — deletion of storage files is a compensating step after a DB
+   delete has already committed. */
+async function removeStorageFilesWithFallback(paths, context) {
+  if (!paths || !paths.length) return;
+  let failed = null;
+  try {
+    // Fail-closed: no valid admin session means we should not attempt Storage;
+    // treat as an ordinary failure so the paths get logged for later cleanup.
+    const okSess = await admEnsureSession();
+    if (!okSess) throw new Error('session_expired');
+    const { error } = await sb.storage.from('housing-attachments').remove(paths);
+    if (error) failed = error;
+  } catch (e) { failed = e; }
+
+  if (failed) {
+    try {
+      await rpc('housing_log_storage_issue', {
+        p_kind: 'delete',
+        p_paths: paths,
+        p_details: { ...(context || {}), error: String(failed.message || failed) }
+      });
+      // Non-fatal: DB is consistent, storage has stragglers. Show a soft warning.
+      toast(
+        LANG==='ar'
+          ? `تحذير: تعذّر حذف ${paths.length} ملف من Storage — سُجّل للتنظيف اليدوي`
+          : `Warning: could not remove ${paths.length} storage file(s) — logged for later cleanup`,
+        'error'
+      );
+    } catch(_) { /* even logging failed; nothing we can do here */ }
+  }
+}
+
 async function rpc(fn, args = {}) {
   // Prefer our fetch-based path (better error handling than sb.rpc)
   const okSess = await admEnsureSession();
@@ -1172,7 +1271,7 @@ async function screenPropertyDetail(el, id) {
           });
           const paths = (res && res.attachment_paths) || [];
           if (paths.length > 0) {
-            try { await admEnsureSession(); await sb.storage.from('housing-attachments').remove(paths); } catch(_) {}
+            await removeStorageFilesWithFallback(paths, { context: 'property.cascade' });
           }
           const d = (res && res.deleted) || {};
           const summary = probe.has_dependents
@@ -1392,7 +1491,7 @@ async function renderPropTabContracts(container, p, refresh) {
       try {
         const res = await rpc('housing_delete_contract', { p_id: cid, p_cascade: probe.has_dependents, p_dry_run: false });
         const paths = (res && res.attachment_paths) || [];
-        if (paths.length) { try { await admEnsureSession(); await sb.storage.from('housing-attachments').remove(paths); } catch(_){} }
+        if (paths.length) { await removeStorageFilesWithFallback(paths, { context: 'cascade' }); }
         toast(t('deletedSuccessfully'),'success'); pm.close(); refresh();
       } catch(err){ toast(err.message||err,'error'); del.disabled = false; }
     });
@@ -1496,9 +1595,10 @@ async function openContractForm(existing, propId, onSaved) {
     // Wire up actions
     attListEl.querySelectorAll('[data-att-dl]').forEach(b => b.addEventListener('click', async (e) => {
       const path = e.currentTarget.getAttribute('data-att-dl');
-      await admEnsureSession();
+      const okS = await admEnsureSession();
+      if (!okS) { toast(translateError('not_admin'),'error'); return; }
       const { data, error } = await sb.storage.from('housing-attachments').createSignedUrl(path, 300);
-      if (error) { toast(error.message,'error'); return; }
+      if (error) { toast(translateStorageError(error),'error'); return; }
       window.open(data.signedUrl, '_blank');
     }));
     attListEl.querySelectorAll('[data-att-del]').forEach(b => b.addEventListener('click', async (e) => {
@@ -1507,7 +1607,7 @@ async function openContractForm(existing, propId, onSaved) {
       const path = e.currentTarget.getAttribute('data-path');
       try {
         await rpc('housing_delete_attachment', { p_id: id });
-        await admEnsureSession(); await sb.storage.from('housing-attachments').remove([path]);
+        await removeStorageFilesWithFallback([path], { context: 'single_delete' });
         toast(t('deletedSuccessfully'),'success');
         renderAttList();
       } catch(err){ toast(err.message||err,'error'); }
@@ -1547,14 +1647,9 @@ async function openContractForm(existing, propId, onSaved) {
         ok.disabled = true;
         try {
           attStatusEl.textContent = LANG==='ar'?'يرفع...':'Uploading...';
-          const path = `contract/${existing.id}/${Date.now()}_${file.name.replace(/[^\w.-]/g,'_')}`;
-          await admEnsureSession();
-          const { error: upErr } = await sb.storage.from('housing-attachments').upload(path, file, { contentType: file.type });
-          if (upErr) throw new Error(translateStorageError(upErr));
-          await rpc('housing_register_attachment', {
-            p_entity_type: 'contract', p_entity_id: existing.id, p_kind_key: kindKey,
-            p_storage_path: path, p_filename: file.name, p_mime_type: file.type, p_size_bytes: file.size,
-            p_notes: notes || null,
+          await uploadAndRegisterAttachment({
+            entityType: 'contract', entityId: existing.id,
+            file, kindKey, notes,
           });
           toast(t('savedSuccessfully'),'success');
           pm.close();
@@ -1636,14 +1731,9 @@ async function openContractForm(existing, propId, onSaved) {
         let uploaded = 0, failed = 0;
         for (const pf of pendingFiles) {
           try {
-            const path = `contract/${newContractId}/${Date.now()}_${pf.file.name.replace(/[^\w.-]/g,'_')}`;
-            await admEnsureSession();
-            const { error: upErr } = await sb.storage.from('housing-attachments').upload(path, pf.file, { contentType: pf.file.type });
-            if (upErr) throw new Error(translateStorageError(upErr));
-            await rpc('housing_register_attachment', {
-              p_entity_type: 'contract', p_entity_id: newContractId, p_kind_key: pf.kindKey,
-              p_storage_path: path, p_filename: pf.file.name, p_mime_type: pf.file.type, p_size_bytes: pf.file.size,
-              p_notes: pf.notes || null,
+            await uploadAndRegisterAttachment({
+              entityType: 'contract', entityId: newContractId,
+              file: pf.file, kindKey: pf.kindKey, notes: pf.notes,
             });
             uploaded++;
           } catch (err) {
@@ -1850,7 +1940,7 @@ async function deleteEntityWithProbe(opts) {
     try {
       const res = await rpc(rpcName, { p_id: id, p_cascade: probe.has_dependents, p_dry_run: false });
       const paths = (res && res.attachment_paths) || [];
-      if (paths.length) { try { await admEnsureSession(); await sb.storage.from('housing-attachments').remove(paths); } catch(_){} }
+      if (paths.length) { await removeStorageFilesWithFallback(paths, { context: 'cascade' }); }
       toast(t('deletedSuccessfully'), 'success');
       pm.close();
       if (onDone) onDone(res);
@@ -1941,9 +2031,10 @@ async function renderPropTabAttachments(container, p, refresh) {
   });
   container.querySelectorAll('[data-att-dl]').forEach(b => b.addEventListener('click', async (e) => {
     const path = e.currentTarget.getAttribute('data-path');
-    await admEnsureSession();
-      const { data, error } = await sb.storage.from('housing-attachments').createSignedUrl(path, 300);
-    if (error) { toast(error.message, 'error'); return; }
+    const okS = await admEnsureSession();
+    if (!okS) { toast(translateError('not_admin'),'error'); return; }
+    const { data, error } = await sb.storage.from('housing-attachments').createSignedUrl(path, 300);
+    if (error) { toast(translateStorageError(error), 'error'); return; }
     window.open(data.signedUrl, '_blank');
   }));
   container.querySelectorAll('[data-att-del]').forEach(b => b.addEventListener('click', async (e) => {
@@ -1952,7 +2043,7 @@ async function renderPropTabAttachments(container, p, refresh) {
     const path = e.currentTarget.getAttribute('data-path');
     try {
       const res = await rpc('housing_delete_attachment', { p_id: id });
-      await admEnsureSession(); await sb.storage.from('housing-attachments').remove([path]);
+      await removeStorageFilesWithFallback([path], { context: 'single_delete' });
       toast(t('deletedSuccessfully'),'success'); refresh();
     } catch(err) { toast(err.message, 'error'); }
   }));
@@ -1975,15 +2066,7 @@ async function handleAttachmentUpload(file, entityType, entityId, onSaved) {
     try {
       const kindKey = document.getElementById('attKind').value;
       const notes = document.getElementById('attNotes').value;
-      const path = `${entityType}/${entityId}/${Date.now()}_${file.name.replace(/[^\w.-]/g,'_')}`;
-      await admEnsureSession();
-      const { error: upErr } = await sb.storage.from('housing-attachments').upload(path, file, { contentType: file.type });
-      if (upErr) throw new Error(translateStorageError(upErr));
-      await rpc('housing_register_attachment', {
-        p_entity_type: entityType, p_entity_id: entityId, p_kind_key: kindKey,
-        p_storage_path: path, p_filename: file.name, p_mime_type: file.type, p_size_bytes: file.size,
-        p_notes: notes || null,
-      });
+      await uploadAndRegisterAttachment({ entityType, entityId, file, kindKey, notes });
       toast(t('savedSuccessfully'),'success'); m.close(); if (onSaved) onSaved();
     } catch(e){ toast(e.message || e,'error'); save.disabled=false; }
   });
@@ -3430,19 +3513,48 @@ async function openAuditLog() {
           }
           if (bits.length) cascadeStr = ` <span class="text-muted" style="font-size:11px;">(+ ${bits.join(', ')})</span>`;
         }
+        // Storage orphan entries — show the paths as the label and offer resolve
+        let orphanExtra = '';
+        const isOrphan = a.action === 'storage.orphan_upload' || a.action === 'storage.orphan_delete';
+        if (isOrphan) {
+          const paths = Array.isArray(p.paths) ? p.paths : [];
+          if (paths.length) {
+            orphanExtra = `<div style="font-family:monospace; font-size:11px; color:var(--muted); margin-top:4px; word-break:break-all;">${paths.map(escapeHtml).join('<br>')}</div>`;
+          }
+          orphanExtra += `<button class="btn btn-sm" style="margin-top:6px;" data-resolve-orphan="${a.id}">${LANG==='ar'?'✓ علّم كمُنظَّف':'✓ Mark cleaned'}</button>`;
+        }
+        // Resolution entries — show what was resolved
+        if (a.action === 'storage.orphan_resolved') {
+          const oid = p.orphan_audit_id;
+          const notes = p.notes ? ` — ${escapeHtml(p.notes)}` : '';
+          orphanExtra = `<div class="text-muted" style="font-size:11px; margin-top:2px;">resolved #${oid}${notes}</div>`;
+        }
         const label = parts.join(' — ') || (a.entity_id ? a.entity_id.slice(0,8) : '');
         const actionColor = a.action.endsWith('.delete') ? 'var(--red)'
                           : a.action.endsWith('.create') ? 'var(--green, #16a34a)'
+                          : isOrphan ? '#a16207'
                           : 'var(--muted)';
         return `
           <div style="padding:8px 12px; border-bottom:1px solid var(--border); font-size:13px;">
             <div class="flex" style="gap:8px; align-items:baseline;">
-              <span style="color:${actionColor}; font-family:monospace; font-size:11px; min-width:130px;">${escapeHtml(a.action)}</span>
-              <span style="flex:1;">${label}${cascadeStr}</span>
+              <span style="color:${actionColor}; font-family:monospace; font-size:11px; min-width:180px;">${escapeHtml(a.action)}</span>
+              <span style="flex:1;">${label}${cascadeStr}${orphanExtra}</span>
               <span class="text-muted" style="font-size:11px; white-space:nowrap;">${fmtDateTime(a.created_at)}</span>
             </div>
           </div>`;
       }).join('');
+
+      // Wire resolve buttons
+      listEl.querySelectorAll('[data-resolve-orphan]').forEach(btn => btn.addEventListener('click', async (e) => {
+        const oid = e.currentTarget.getAttribute('data-resolve-orphan');
+        const notes = prompt(LANG==='ar' ? 'ملاحظات (اختياري):' : 'Notes (optional):');
+        if (notes === null) return;  // user cancelled
+        try {
+          await rpc('housing_resolve_storage_orphan', { p_audit_id: parseInt(oid,10), p_notes: notes || null });
+          toast(LANG==='ar'?'تم تعليم Orphan كمُنظَّف':'Orphan marked cleaned','success');
+          load();  // refresh list
+        } catch(err) { toast(err.message||err,'error'); }
+      }));
 
       // Pager
       if (total > PAGE_SIZE) {
