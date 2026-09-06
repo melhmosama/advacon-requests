@@ -209,6 +209,7 @@
     <span class="text-muted" data-t="modName">Housing &amp; Offices</span>
     <span class="spacer"></span>
     <span id="userInfo" class="user-info"></span>
+    <button class="btn btn-sm" id="auditBtn" title="Audit log / سجل الحذف">🕐</button>
     <button class="btn btn-sm" id="langToggleBtn" title="Language">عربي / EN</button>
     <button class="btn btn-sm btn-ghost" id="logoutBtn" data-t="logout">Sign out</button>
   </header>
@@ -525,6 +526,34 @@ function translateError(code) {
   if (!code) return code;
   const table = LANG === 'ar' ? ERROR_TRANSLATIONS_AR : ERROR_TRANSLATIONS_EN;
   return table[code] || code;
+}
+
+/* Translates Supabase Storage errors to Arabic/English. The bucket-not-found
+   case is by far the most common cause of "PDF upload appears to succeed but
+   file never shows" in this project — the SDK sometimes returns a very
+   generic message that hides the real cause. */
+function translateStorageError(err) {
+  const raw = String((err && (err.message || err.error || err)) || '');
+  const lower = raw.toLowerCase();
+  if (LANG === 'ar') {
+    if (lower.includes('bucket not found') || lower.includes('bucket does not exist')) {
+      return 'مستودع الملفات "housing-attachments" غير موجود. أنشئه في Supabase Dashboard → Storage → New bucket (خاص، ليس عام).';
+    }
+    if (lower.includes('violates row-level security') || lower.includes('permission denied')) {
+      return 'لا توجد صلاحية للرفع على المستودع. تحقق من سياسات الوصول (RLS) للـ bucket.';
+    }
+    if (lower.includes('duplicate') || lower.includes('already exists')) {
+      return 'ملف بنفس المسار موجود مسبقاً — جرّب مرة ثانية.';
+    }
+    if (lower.includes('payload too large') || lower.includes('too large')) {
+      return 'حجم الملف تجاوز الحد المسموح به.';
+    }
+    if (lower.includes('network') || lower.includes('failed to fetch')) {
+      return 'فشل الاتصال أثناء رفع الملف. تحقق من الشبكة وأعد المحاولة.';
+    }
+    return `خطأ في رفع الملف: ${raw}`;
+  }
+  return raw || 'Storage error';
 }
 
 async function rpc(fn, args = {}) {
@@ -1501,7 +1530,7 @@ async function openContractForm(existing, propId, onSaved) {
           attStatusEl.textContent = LANG==='ar'?'يرفع...':'Uploading...';
           const path = `contract/${existing.id}/${Date.now()}_${file.name.replace(/[^\w.-]/g,'_')}`;
           const { error: upErr } = await sb.storage.from('housing-attachments').upload(path, file, { contentType: file.type });
-          if (upErr) throw upErr;
+          if (upErr) throw new Error(translateStorageError(upErr));
           await rpc('housing_register_attachment', {
             p_entity_type: 'contract', p_entity_id: existing.id, p_kind_key: kindKey,
             p_storage_path: path, p_filename: file.name, p_mime_type: file.type, p_size_bytes: file.size,
@@ -1589,7 +1618,7 @@ async function openContractForm(existing, propId, onSaved) {
           try {
             const path = `contract/${newContractId}/${Date.now()}_${pf.file.name.replace(/[^\w.-]/g,'_')}`;
             const { error: upErr } = await sb.storage.from('housing-attachments').upload(path, pf.file, { contentType: pf.file.type });
-            if (upErr) throw upErr;
+            if (upErr) throw new Error(translateStorageError(upErr));
             await rpc('housing_register_attachment', {
               p_entity_type: 'contract', p_entity_id: newContractId, p_kind_key: pf.kindKey,
               p_storage_path: path, p_filename: pf.file.name, p_mime_type: pf.file.type, p_size_bytes: pf.file.size,
@@ -1926,7 +1955,7 @@ async function handleAttachmentUpload(file, entityType, entityId, onSaved) {
       const notes = document.getElementById('attNotes').value;
       const path = `${entityType}/${entityId}/${Date.now()}_${file.name.replace(/[^\w.-]/g,'_')}`;
       const { error: upErr } = await sb.storage.from('housing-attachments').upload(path, file, { contentType: file.type });
-      if (upErr) throw upErr;
+      if (upErr) throw new Error(translateStorageError(upErr));
       await rpc('housing_register_attachment', {
         p_entity_type: entityType, p_entity_id: entityId, p_kind_key: kindKey,
         p_storage_path: path, p_filename: file.name, p_mime_type: file.type, p_size_bytes: file.size,
@@ -2427,12 +2456,27 @@ async function screenBills(el) {
               <td class="row-actions">
                 ${b.status!=='paid'&&!b.is_amended?`<button class="btn btn-sm btn-primary" data-pay="${b.id}">${LANG==='ar'?'دفع':'Pay'}</button>`:''}
                 <button class="btn btn-sm" data-view="${b.id}">${t('view')}</button>
+                <button class="btn btn-sm" style="color:var(--red);" data-del="${b.id}" data-name="${escapeHtml((b.meter?.code||'') + ' · ' + fmtDate(b.bill_period_start) + '→' + fmtDate(b.bill_period_end))}">×</button>
               </td>
             </tr>`;
           }).join('')}</tbody>
         </table>`;
       listEl.querySelectorAll('[data-pay]').forEach(btn => btn.addEventListener('click', (e) => openMarkPaid(e.currentTarget.getAttribute('data-pay'), load)));
       listEl.querySelectorAll('[data-view]').forEach(btn => btn.addEventListener('click', (e) => openBillDetail(e.currentTarget.getAttribute('data-view'), load)));
+      listEl.querySelectorAll('[data-del]').forEach(btn => btn.addEventListener('click', (e) => {
+        const bid  = e.currentTarget.getAttribute('data-del');
+        const name = e.currentTarget.getAttribute('data-name');
+        deleteEntityWithProbe({
+          rpcName: 'housing_delete_bill', id: bid,
+          labelAr: name, labelEn: name,
+          countRowsBuilder: (c) => {
+            const rr = [];
+            if (c.attachments > 0) rr.push([LANG==='ar'?'المرفقات':'Attachments', c.attachments]);
+            return rr;
+          },
+          onDone: () => load(),
+        });
+      }));
 
       // Pagination controls
       const pgEl = document.getElementById('pager');
@@ -3299,11 +3343,116 @@ async function openTemplateForm(existing, onSaved) {
 }
 
 /* =====================================================================
+   AUDIT LOG VIEWER — recent deletions, edits, and other actions
+   ===================================================================== */
+async function openAuditLog() {
+  const PAGE_SIZE = 50;
+  let currentOffset = 0;
+  let currentActionFilter = 'delete';  // default: show deletions
+
+  const body = document.createElement('div');
+  body.innerHTML = `
+    <div class="filters" style="margin-bottom:12px;">
+      <div class="field"><label>${LANG==='ar'?'النوع':'Action'}</label>
+        <select id="alAction">
+          <option value="delete">${LANG==='ar'?'الحذف فقط':'Deletions only'}</option>
+          <option value="update">${LANG==='ar'?'التعديلات':'Updates'}</option>
+          <option value="create">${LANG==='ar'?'الإنشاء':'Creations'}</option>
+          <option value="all">${LANG==='ar'?'الكل':'All actions'}</option>
+        </select>
+      </div>
+      <div class="field"><label>${LANG==='ar'?'من':'From'}</label><input id="alFrom" type="date"></div>
+      <div class="field"><label>${LANG==='ar'?'إلى':'To'}</label><input id="alTo" type="date"></div>
+    </div>
+    <div id="alList" style="max-height:60vh; overflow-y:auto;"><div class="loading">${t('loading')}</div></div>
+    <div id="alPager" class="flex" style="justify-content:center; gap:12px; align-items:center; margin-top:12px;"></div>`;
+
+  const modal = openModal({ title: LANG==='ar'?'سجل الإجراءات':'Audit Log', body, footer: null, wide: true });
+
+  const load = async () => {
+    const listEl  = body.querySelector('#alList');
+    const pagerEl = body.querySelector('#alPager');
+    listEl.innerHTML = `<div class="loading">${t('loading')}</div>`;
+    pagerEl.innerHTML = '';
+    try {
+      const args = { p_limit: PAGE_SIZE, p_offset: currentOffset };
+      const actVal = body.querySelector('#alAction').value;
+      if (actVal !== 'all') args.p_action_like = '%.' + actVal;
+      if (body.querySelector('#alFrom').value) args.p_from_date = body.querySelector('#alFrom').value;
+      if (body.querySelector('#alTo').value)   args.p_to_date   = body.querySelector('#alTo').value;
+      const res = await rpc('housing_get_audit_log', args);
+      const items = res.items || [];
+      const total = res.total_count || 0;
+
+      if (!items.length) {
+        listEl.innerHTML = `<div class="empty" style="padding:40px; text-align:center; color:var(--muted);">${t('noItems')}</div>`;
+        return;
+      }
+
+      listEl.innerHTML = items.map(a => {
+        const p = a.payload || {};
+        // Extract a friendly label depending on entity + payload
+        const parts = [];
+        if (p.code) parts.push(`<span class="code-cell">${escapeHtml(p.code)}</span>`);
+        if (p.name_ar) parts.push(escapeHtml(p.name_ar));
+        if (p.name) parts.push(escapeHtml(p.name));
+        if (p.description) parts.push(escapeHtml(p.description));
+        if (p.meter_number) parts.push(escapeHtml(p.meter_number));
+        // Cascade summary for deletions
+        let cascadeStr = '';
+        if (a.action.endsWith('.delete') && p.deleted && typeof p.deleted === 'object') {
+          const bits = [];
+          for (const [k, v] of Object.entries(p.deleted)) {
+            if (v && v > 0) bits.push(`${v} ${k}`);
+          }
+          if (bits.length) cascadeStr = ` <span class="text-muted" style="font-size:11px;">(+ ${bits.join(', ')})</span>`;
+        }
+        const label = parts.join(' — ') || (a.entity_id ? a.entity_id.slice(0,8) : '');
+        const actionColor = a.action.endsWith('.delete') ? 'var(--red)'
+                          : a.action.endsWith('.create') ? 'var(--green, #16a34a)'
+                          : 'var(--muted)';
+        return `
+          <div style="padding:8px 12px; border-bottom:1px solid var(--border); font-size:13px;">
+            <div class="flex" style="gap:8px; align-items:baseline;">
+              <span style="color:${actionColor}; font-family:monospace; font-size:11px; min-width:130px;">${escapeHtml(a.action)}</span>
+              <span style="flex:1;">${label}${cascadeStr}</span>
+              <span class="text-muted" style="font-size:11px; white-space:nowrap;">${fmtDateTime(a.created_at)}</span>
+            </div>
+          </div>`;
+      }).join('');
+
+      // Pager
+      if (total > PAGE_SIZE) {
+        const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
+        const currentPage = Math.floor(currentOffset / PAGE_SIZE) + 1;
+        pagerEl.innerHTML = `
+          <button class="btn btn-sm" id="alPrev" ${currentOffset<=0?'disabled':''}>‹ ${LANG==='ar'?'السابق':'Prev'}</button>
+          <span class="text-muted" style="font-size:12px;">${LANG==='ar'?'صفحة':'Page'} ${currentPage} / ${pageCount} · ${currentOffset+1}–${Math.min(currentOffset+items.length,total)} ${LANG==='ar'?'من':'of'} ${total}</span>
+          <button class="btn btn-sm" id="alNext" ${currentOffset+PAGE_SIZE>=total?'disabled':''}>${LANG==='ar'?'التالي':'Next'} ›</button>`;
+        body.querySelector('#alPrev').addEventListener('click', () => { if (currentOffset > 0) { currentOffset = Math.max(0, currentOffset - PAGE_SIZE); load(); } });
+        body.querySelector('#alNext').addEventListener('click', () => { if (currentOffset + PAGE_SIZE < total) { currentOffset += PAGE_SIZE; load(); } });
+      }
+    } catch(e) { listEl.innerHTML = `<div class="error-box">${escapeHtml(e.message||e)}</div>`; }
+  };
+
+  ['alAction','alFrom','alTo'].forEach(id => body.querySelector('#'+id).addEventListener('input', () => { currentOffset = 0; load(); }));
+  await load();
+}
+
+/* small helper for the audit viewer */
+function fmtDateTime(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return `${localDateISO(d)} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+
+/* =====================================================================
    BOOTSTRAP
    ===================================================================== */
 document.addEventListener('DOMContentLoaded', async () => {
   applyLang();
   document.getElementById('langToggleBtn').addEventListener('click', toggleLang);
+  document.getElementById('auditBtn').addEventListener('click', openAuditLog);
   document.getElementById('logoutBtn').addEventListener('click', async () => {
     await admSignOut();
     location.href = '/admin';
