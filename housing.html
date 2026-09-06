@@ -414,10 +414,28 @@ async function admEnsureSession() {
   if (!ok) {
     // Token might have expired between the refresh check and is_admin call → one retry
     const fresh = await admRefresh(sess.refresh_token);
-    if (fresh) { admSetSession(fresh); if (await admVerifyIsAdmin(fresh.access_token)) return true; }
+    if (fresh) {
+      admSetSession(fresh);
+      if (await admVerifyIsAdmin(fresh.access_token)) { await syncSbAuth(fresh); return true; }
+    }
     admClearSession(); return false;
   }
+  // Sync the sb.auth session so sb.storage.* calls carry the JWT (RLS needs it)
+  await syncSbAuth(sess);
   return true;
+}
+
+/* Mirror the localStorage-managed session into the Supabase JS client so that
+   sb.storage.* / sb.auth.getUser() etc. carry the admin JWT. Without this,
+   storage uploads/downloads run as `anon` and RLS rejects them. */
+async function syncSbAuth(sess) {
+  if (!sess || !sess.access_token) return;
+  try {
+    await sb.auth.setSession({
+      access_token:  sess.access_token,
+      refresh_token: sess.refresh_token || ''
+    });
+  } catch(e) { /* best-effort */ }
 }
 
 async function admSignOut() {
@@ -1154,7 +1172,7 @@ async function screenPropertyDetail(el, id) {
           });
           const paths = (res && res.attachment_paths) || [];
           if (paths.length > 0) {
-            try { await sb.storage.from('housing-attachments').remove(paths); } catch(_) {}
+            try { await admEnsureSession(); await sb.storage.from('housing-attachments').remove(paths); } catch(_) {}
           }
           const d = (res && res.deleted) || {};
           const summary = probe.has_dependents
@@ -1374,7 +1392,7 @@ async function renderPropTabContracts(container, p, refresh) {
       try {
         const res = await rpc('housing_delete_contract', { p_id: cid, p_cascade: probe.has_dependents, p_dry_run: false });
         const paths = (res && res.attachment_paths) || [];
-        if (paths.length) { try { await sb.storage.from('housing-attachments').remove(paths); } catch(_){} }
+        if (paths.length) { try { await admEnsureSession(); await sb.storage.from('housing-attachments').remove(paths); } catch(_){} }
         toast(t('deletedSuccessfully'),'success'); pm.close(); refresh();
       } catch(err){ toast(err.message||err,'error'); del.disabled = false; }
     });
@@ -1478,6 +1496,7 @@ async function openContractForm(existing, propId, onSaved) {
     // Wire up actions
     attListEl.querySelectorAll('[data-att-dl]').forEach(b => b.addEventListener('click', async (e) => {
       const path = e.currentTarget.getAttribute('data-att-dl');
+      await admEnsureSession();
       const { data, error } = await sb.storage.from('housing-attachments').createSignedUrl(path, 300);
       if (error) { toast(error.message,'error'); return; }
       window.open(data.signedUrl, '_blank');
@@ -1488,7 +1507,7 @@ async function openContractForm(existing, propId, onSaved) {
       const path = e.currentTarget.getAttribute('data-path');
       try {
         await rpc('housing_delete_attachment', { p_id: id });
-        await sb.storage.from('housing-attachments').remove([path]);
+        await admEnsureSession(); await sb.storage.from('housing-attachments').remove([path]);
         toast(t('deletedSuccessfully'),'success');
         renderAttList();
       } catch(err){ toast(err.message||err,'error'); }
@@ -1529,6 +1548,7 @@ async function openContractForm(existing, propId, onSaved) {
         try {
           attStatusEl.textContent = LANG==='ar'?'يرفع...':'Uploading...';
           const path = `contract/${existing.id}/${Date.now()}_${file.name.replace(/[^\w.-]/g,'_')}`;
+          await admEnsureSession();
           const { error: upErr } = await sb.storage.from('housing-attachments').upload(path, file, { contentType: file.type });
           if (upErr) throw new Error(translateStorageError(upErr));
           await rpc('housing_register_attachment', {
@@ -1617,6 +1637,7 @@ async function openContractForm(existing, propId, onSaved) {
         for (const pf of pendingFiles) {
           try {
             const path = `contract/${newContractId}/${Date.now()}_${pf.file.name.replace(/[^\w.-]/g,'_')}`;
+            await admEnsureSession();
             const { error: upErr } = await sb.storage.from('housing-attachments').upload(path, pf.file, { contentType: pf.file.type });
             if (upErr) throw new Error(translateStorageError(upErr));
             await rpc('housing_register_attachment', {
@@ -1829,7 +1850,7 @@ async function deleteEntityWithProbe(opts) {
     try {
       const res = await rpc(rpcName, { p_id: id, p_cascade: probe.has_dependents, p_dry_run: false });
       const paths = (res && res.attachment_paths) || [];
-      if (paths.length) { try { await sb.storage.from('housing-attachments').remove(paths); } catch(_){} }
+      if (paths.length) { try { await admEnsureSession(); await sb.storage.from('housing-attachments').remove(paths); } catch(_){} }
       toast(t('deletedSuccessfully'), 'success');
       pm.close();
       if (onDone) onDone(res);
@@ -1920,7 +1941,8 @@ async function renderPropTabAttachments(container, p, refresh) {
   });
   container.querySelectorAll('[data-att-dl]').forEach(b => b.addEventListener('click', async (e) => {
     const path = e.currentTarget.getAttribute('data-path');
-    const { data, error } = await sb.storage.from('housing-attachments').createSignedUrl(path, 300);
+    await admEnsureSession();
+      const { data, error } = await sb.storage.from('housing-attachments').createSignedUrl(path, 300);
     if (error) { toast(error.message, 'error'); return; }
     window.open(data.signedUrl, '_blank');
   }));
@@ -1930,7 +1952,7 @@ async function renderPropTabAttachments(container, p, refresh) {
     const path = e.currentTarget.getAttribute('data-path');
     try {
       const res = await rpc('housing_delete_attachment', { p_id: id });
-      await sb.storage.from('housing-attachments').remove([path]);
+      await admEnsureSession(); await sb.storage.from('housing-attachments').remove([path]);
       toast(t('deletedSuccessfully'),'success'); refresh();
     } catch(err) { toast(err.message, 'error'); }
   }));
@@ -1954,6 +1976,7 @@ async function handleAttachmentUpload(file, entityType, entityId, onSaved) {
       const kindKey = document.getElementById('attKind').value;
       const notes = document.getElementById('attNotes').value;
       const path = `${entityType}/${entityId}/${Date.now()}_${file.name.replace(/[^\w.-]/g,'_')}`;
+      await admEnsureSession();
       const { error: upErr } = await sb.storage.from('housing-attachments').upload(path, file, { contentType: file.type });
       if (upErr) throw new Error(translateStorageError(upErr));
       await rpc('housing_register_attachment', {
