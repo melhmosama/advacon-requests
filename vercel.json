@@ -3,6 +3,7 @@
     { "source": "/admin", "destination": "/index.html" },
     { "source": "/staff", "destination": "/index.html" },
     { "source": "/asset", "destination": "/index.html" },
-    { "source": "/housing", "destination": "/housing.html" }
+    { "source": "/housing", "destination": "/housing.html" },
+    { "source": "/warehouse", "destination": "/warehouse.html" }
   ]
 }
