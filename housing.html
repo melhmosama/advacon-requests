@@ -3621,10 +3621,93 @@ async function screenActivity(content){
 }
 
 async function screenPermissions(content){
-  const usersR=await rawRpc('asset_admin_list_users',{p_module_key:'housing'}); const users=usersR.items||[];
-  content.innerHTML=`<div class="page-head"><div><h1>${LANG==='ar'?'الصلاحيات':'Access & Permissions'}</h1><p class="text-muted">${LANG==='ar'?'Role defaults + user overrides — التغييرات فورية':'Role defaults + user overrides — changes apply immediately'}</p></div></div><div class="card" style="padding:16px"><div class="field"><label>${LANG==='ar'?'المستخدم':'User'}</label><select id="permUser"><option value="">${LANG==='ar'?'اختر مستخدم':'Select user'}</option>${users.map(u=>`<option value="${u.user_id}">${escapeHtml(u.email||u.user_id)} — ${escapeHtml(u.role||'')}</option>`).join('')}</select></div><div id="permMatrix" style="margin-top:16px"></div></div>`;
-  const sel=content.querySelector('#permUser'), matrix=content.querySelector('#permMatrix');
-  sel.onchange=async()=>{if(!sel.value){matrix.innerHTML='';return;} matrix.innerHTML=`<div class="loading">${t('loading')}</div>`;try{const r=await rawRpc('asset_admin_permission_matrix',{p_module_key:'housing',p_user_id:sel.value});const items=r.items||[];matrix.innerHTML=items.map(x=>`<div style="display:grid;grid-template-columns:minmax(220px,1fr) 180px;gap:12px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line)"><div><b>${escapeHtml(LANG==='ar'?x.label_ar:x.label_en)}</b><div class="text-muted" style="font-size:11px">${escapeHtml(x.action_key)} · ${LANG==='ar'?'افتراضي':'default'}: ${escapeHtml(x.role_mode||'deny')}</div></div><select data-pk="${x.action_key}"><option value="inherit" ${x.override_mode==null?'selected':''}>${LANG==='ar'?'وراثة الافتراضي':'Inherit role default'}</option><option value="deny" ${x.override_mode==='deny'?'selected':''}>DENY</option><option value="direct" ${x.override_mode==='direct'?'selected':''}>DIRECT</option>${x.supports_approval?`<option value="approval" ${x.override_mode==='approval'?'selected':''}>APPROVAL</option>`:''}</select></div>`).join('');matrix.querySelectorAll('[data-pk]').forEach(c=>c.onchange=async()=>{try{if(c.value==='inherit')await rawRpc('asset_admin_clear_user_permission',{p_user_id:sel.value,p_module_key:'housing',p_action_key:c.dataset.pk});else await rawRpc('asset_admin_set_user_permission',{p_user_id:sel.value,p_module_key:'housing',p_action_key:c.dataset.pk,p_mode:c.value});toast(LANG==='ar'?'تم تحديث الصلاحية':'Permission updated','success');}catch(e){toast(e.message,'error')}});}catch(e){matrix.innerHTML=`<div class="empty">${escapeHtml(e.message)}</div>`;}};
+  // Housing permissions are intentionally scoped to the active Housing Manager only.
+  // Admin does not need to browse users/roles here.
+  const usersR=await rawRpc('asset_admin_list_users',{p_module_key:'housing'});
+  const managers=(usersR.items||[]).filter(u=>u.role==='housing_manager' && u.is_active!==false);
+  const manager=managers[0];
+
+  if(!manager){
+    content.innerHTML=`<div class="page-head"><div><h1>${LANG==='ar'?'صلاحيات مشرف الإسكان':'Housing Manager Permissions'}</h1></div></div><div class="card empty">${LANG==='ar'?'لا يوجد مشرف Housing Manager نشط حالياً.':'No active Housing Manager is currently assigned.'}</div>`;
+    return;
+  }
+
+  content.innerHTML=`
+    <div class="page-head">
+      <div>
+        <h1>${LANG==='ar'?'صلاحيات مشرف الإسكان':'Housing Manager Permissions'}</h1>
+        <p class="text-muted">${escapeHtml(manager.email||'Housing Manager')}</p>
+      </div>
+    </div>
+    <div class="card" style="padding:0;overflow:hidden">
+      <div style="display:grid;grid-template-columns:minmax(240px,1fr) 120px 150px;gap:8px;align-items:center;padding:12px 16px;background:var(--surface-2,#f7f8fa);border-bottom:1px solid var(--line);font-weight:700">
+        <div>${LANG==='ar'?'الصلاحية':'Permission'}</div>
+        <div style="text-align:center">${LANG==='ar'?'سماح':'Allow'}</div>
+        <div style="text-align:center">${LANG==='ar'?'تحتاج موافقة':'Require Approval'}</div>
+      </div>
+      <div id="permMatrix"><div class="loading">${t('loading')}</div></div>
+    </div>
+    <div class="text-muted" style="margin-top:10px;font-size:12px">
+      ${LANG==='ar'?'إذا لم يتم تحديد أي خيار تكون الصلاحية ممنوعة. يتم حفظ كل تغيير مباشرة.':'If neither option is selected, the permission is denied. Every change is saved immediately.'}
+    </div>`;
+
+  const matrix=content.querySelector('#permMatrix');
+  try{
+    const r=await rawRpc('asset_admin_permission_matrix',{p_module_key:'housing',p_user_id:manager.user_id});
+    const items=r.items||[];
+    const sectionNames={
+      dashboard:['لوحة المعلومات','Dashboard'], properties:['العقارات','Properties'], spaces:['المساحات','Spaces'],
+      landlords:['الملاك','Landlords'], contracts:['العقود','Contracts'], meters:['العدادات','Meters'],
+      bills:['الفواتير','Bills'], residents:['السكان','Residents'], expenses:['المصروفات','Expenses'],
+      attachments:['المرفقات','Attachments'], reports:['التقارير','Reports'], settings:['الإعدادات','Settings'],
+      permissions:['الصلاحيات','Permissions'], approvals:['الموافقات','Approvals'], activity:['سجل النشاط','Activity Log']
+    };
+    let lastSection='';
+    matrix.innerHTML=items.map(x=>{
+      const section=(x.action_key||'').split('.')[0]||'other';
+      const sectionTitle=(sectionNames[section]||[section,section])[LANG==='ar'?0:1];
+      const head=section!==lastSection?`<div style="padding:10px 16px;background:var(--surface-2,#f7f8fa);border-bottom:1px solid var(--line);font-weight:800">${escapeHtml(sectionTitle)}</div>`:'';
+      lastSection=section;
+      const mode=x.effective_mode||'deny';
+      return head+`<div class="perm-simple-row" data-perm-row="${escapeHtml(x.action_key)}" style="display:grid;grid-template-columns:minmax(240px,1fr) 120px 150px;gap:8px;align-items:center;padding:11px 16px;border-bottom:1px solid var(--line)">
+        <div><b>${escapeHtml(LANG==='ar'?x.label_ar:x.label_en)}</b></div>
+        <div style="text-align:center"><input type="checkbox" data-perm-direct="${escapeHtml(x.action_key)}" ${mode==='direct'?'checked':''} aria-label="Allow"></div>
+        <div style="text-align:center">${x.supports_approval?`<input type="checkbox" data-perm-approval="${escapeHtml(x.action_key)}" ${mode==='approval'?'checked':''} aria-label="Require approval">`:`<span class="text-muted">—</span>`}</div>
+      </div>`;
+    }).join('') || `<div class="empty">${t('noItems')}</div>`;
+
+    const saveMode=async(actionKey,mode,row)=>{
+      const controls=row.querySelectorAll('input[type="checkbox"]');
+      controls.forEach(el=>el.disabled=true);
+      try{
+        await rawRpc('asset_admin_set_user_permission',{p_user_id:manager.user_id,p_module_key:'housing',p_action_key:actionKey,p_mode:mode});
+        toast(LANG==='ar'?'تم حفظ الصلاحية':'Permission saved','success');
+      }catch(e){
+        toast(e.message,'error');
+        // Reload the matrix so the UI always reflects the backend after a failed save.
+        await screenPermissions(content);
+      }finally{
+        controls.forEach(el=>el.disabled=false);
+      }
+    };
+
+    matrix.querySelectorAll('[data-perm-direct]').forEach(cb=>cb.onchange=async()=>{
+      const key=cb.dataset.permDirect, row=cb.closest('[data-perm-row]');
+      const approval=row.querySelector('[data-perm-approval]');
+      if(cb.checked && approval) approval.checked=false;
+      const mode=cb.checked?'direct':(approval&&approval.checked?'approval':'deny');
+      await saveMode(key,mode,row);
+    });
+    matrix.querySelectorAll('[data-perm-approval]').forEach(cb=>cb.onchange=async()=>{
+      const key=cb.dataset.permApproval, row=cb.closest('[data-perm-row]');
+      const direct=row.querySelector('[data-perm-direct]');
+      if(cb.checked && direct) direct.checked=false;
+      const mode=cb.checked?'approval':(direct&&direct.checked?'direct':'deny');
+      await saveMode(key,mode,row);
+    });
+  }catch(e){
+    matrix.innerHTML=`<div class="empty">${escapeHtml(e.message)}</div>`;
+  }
 }
 
 function fmtDateTime(iso) {
