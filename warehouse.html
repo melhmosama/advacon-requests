@@ -883,6 +883,7 @@ const WH_SUBNAV = [
   { key:'shelves',     ic:'🗄', label_ar:'المستودعات والأرفف',  label_en:'Warehouses & Shelves' },
   { key:'batches',     ic:'⏳', label_ar:'الدفعات والصلاحية',   label_en:'Batches & Expiry' },
   { key:'reports',     ic:'📈', label_ar:'التقارير',           label_en:'Reports' },
+  { key:'permissions', ic:'🔐', label_ar:'الصلاحيات',          label_en:'Permissions', adminOnly:true },
 ];
 
 /* Storekeeper permission map for /asset entry (mirrors index.html) */
@@ -1474,7 +1475,7 @@ async function syncSbAuth(sess){
         c. Else → Access screen
    Result stored in `CTX.mode` = 'admin' | 'asset' | null (unauthenticated)
    ===================================================================== */
-const CTX = { mode: null, role: null, userId: null };
+const CTX = { mode: null, role: null, userId: null, permissions: {} };
 
 function urlFromParam(){
   try{
@@ -1501,6 +1502,25 @@ async function detectContext(){
   }
   return false;
 }
+
+async function loadWarehousePermissions(){
+  if(CTX.mode==='admin'){ CTX.permissions={}; return {}; }
+  const sess=assetGetSession();
+  if(!sess||!sess.access_token){ CTX.permissions={}; return {}; }
+  try{
+    const r=await fetch(SB_URL+'/rest/v1/rpc/asset_my_permissions',{
+      method:'POST',
+      headers:{'apikey':SB_KEY,'Authorization':'Bearer '+sess.access_token,'Content-Type':'application/json'},
+      body:JSON.stringify({p_module_key:'warehouses'})
+    });
+    if(!r.ok){ CTX.permissions={}; return {}; }
+    const v=await r.json();
+    CTX.permissions=(v&&typeof v==='object'&&!Array.isArray(v))?v:{};
+    return CTX.permissions;
+  }catch(_){CTX.permissions={};return {};}
+}
+function whPermissionMode(key){return CTX.mode==='admin'?'direct':(CTX.permissions[key]||'deny');}
+function whCan(key){return whPermissionMode(key)!=='deny';}
 
 async function ensureCurrentSession(){ return CTX.mode==='admin' ? admEnsureSession() : (CTX.mode==='asset' ? assetEnsureSession() : false); }
 function currentAccessToken(){ const s=CTX.mode==='admin' ? admGetSession() : (CTX.mode==='asset' ? assetGetSession() : null); return s&&s.access_token; }
@@ -1768,7 +1788,7 @@ function showAccessScreen(reason){
    ===================================================================== */
 function renderSidebar(){
   const nav = document.getElementById('mainNav');
-  nav.innerHTML = WH_SUBNAV.map(tab => {
+  nav.innerHTML = WH_SUBNAV.filter(tab=>!tab.adminOnly || CTX.mode==='admin').map(tab => {
     const label = (LANG==='ar') ? tab.label_ar : tab.label_en;
     const activeClass = (currentTab() === tab.key) ? 'active' : '';
     return `
@@ -1841,11 +1861,82 @@ function whGoBatches(warehouseId){
   else batLoad();
 }
 
+
+async function rawWarehouseAdminRpc(fn,args={}){
+  const sess=await admEnsureSession();
+  if(!sess) throw new Error((LANG==='ar')?'جلسة الأدمن غير صالحة.':'Invalid admin session.');
+  const r=await fetch(SB_URL+'/rest/v1/rpc/'+fn,{
+    method:'POST',
+    headers:{'apikey':SB_KEY,'Authorization':'Bearer '+sess.access_token,'Content-Type':'application/json'},
+    body:JSON.stringify(args||{})
+  });
+  let data=null; try{data=await r.json()}catch(_){}
+  if(!r.ok) throw new Error((data&&(data.message||data.error))||('HTTP '+r.status));
+  return data;
+}
+async function viewWarehousePermissions(){
+  if(CTX.mode!=='admin') return `<div class="empty">${LANG==='ar'?'غير مصرح':'Not authorized'}</div>`;
+  const usersR=await rawWarehouseAdminRpc('asset_admin_list_users',{p_module_key:'warehouses'});
+  const manager=((usersR&&usersR.items)||[]).find(u=>u.role==='storekeeper' && u.is_active!==false);
+  if(!manager) return `<div class="phead"><h1>${LANG==='ar'?'صلاحيات مسؤول المستودعات':'Storekeeper Permissions'}</h1></div><div class="panel empty">${LANG==='ar'?'لا يوجد مسؤول مستودعات نشط حالياً.':'No active Storekeeper is currently assigned.'}</div>`;
+  const r=await rawWarehouseAdminRpc('asset_admin_permission_matrix',{p_module_key:'warehouses',p_user_id:manager.user_id});
+  const items=(r&&r.items)||[];
+  const names={
+    dashboard:['لوحة التحكم','Dashboard'],inventory:['المخزون','Inventory'],catalog:['دليل الأصناف','Item Catalog'],
+    movements:['حركات المخزون','Stock Movements'],warehouses:['المستودعات','Warehouses'],shelves:['الأرفف','Shelves'],
+    batches:['الدفعات والصلاحية','Batches & Expiry'],reports:['التقارير','Reports']
+  };
+  let last='',rows='';
+  for(const x of items){
+    const sec=(x.action_key||'').split('.')[0]||'other';
+    if(['settings','permissions','approvals','activity'].includes(sec)) continue;
+    if(sec!==last){
+      const n=(names[sec]||[sec,sec])[LANG==='ar'?0:1];
+      rows+=`<div style="padding:10px 16px;background:#f7f8fa;border-bottom:1px solid var(--line);font-weight:800">${esc(n)}</div>`;last=sec;
+    }
+    const mode=x.effective_mode||'deny';
+    rows+=`<div data-wh-perm-row="${esc(x.action_key)}" style="display:grid;grid-template-columns:minmax(240px,1fr) 120px 150px;gap:8px;align-items:center;padding:11px 16px;border-bottom:1px solid var(--line)">
+      <div><b>${esc(LANG==='ar'?x.label_ar:x.label_en)}</b></div>
+      <div style="text-align:center"><input type="checkbox" data-wh-direct="${esc(x.action_key)}" ${mode==='direct'?'checked':''}></div>
+      <div style="text-align:center">${x.supports_approval?`<input type="checkbox" data-wh-approval="${esc(x.action_key)}" ${mode==='approval'?'checked':''}>`:`<span class="text-muted">—</span>`}</div>
+    </div>`;
+  }
+  setTimeout(()=>bindWarehousePermissionControls(manager.user_id),0);
+  return `<div class="phead"><div class="eyebrow">ASSETS</div><h1>${LANG==='ar'?'صلاحيات مسؤول المستودعات':'Storekeeper Permissions'}</h1><div class="text-muted">${esc(manager.email||'Storekeeper')}</div></div>
+  <div class="panel" style="padding:0;overflow:hidden">
+    <div style="display:grid;grid-template-columns:minmax(240px,1fr) 120px 150px;gap:8px;align-items:center;padding:12px 16px;background:#f7f8fa;border-bottom:1px solid var(--line);font-weight:700">
+      <div>${LANG==='ar'?'الصلاحية':'Permission'}</div><div style="text-align:center">${LANG==='ar'?'سماح':'Allow'}</div><div style="text-align:center">${LANG==='ar'?'تحتاج موافقة':'Require Approval'}</div>
+    </div>${rows||`<div class="empty">${LANG==='ar'?'لا توجد صلاحيات معرفة. شغّل ملف SQL المرفق أولاً.':'No permissions are defined. Run the attached SQL first.'}</div>`}
+  </div><div class="text-muted" style="margin-top:10px;font-size:12px">${LANG==='ar'?'إذا لم يتم تحديد أي خيار تكون الصلاحية ممنوعة. يتم حفظ كل تغيير مباشرة.':'If neither option is selected, the permission is denied. Every change is saved immediately.'}</div>`;
+}
+function bindWarehousePermissionControls(userId){
+  const save=async(key,mode,row)=>{
+    const cs=row.querySelectorAll('input[type=checkbox]');cs.forEach(x=>x.disabled=true);
+    try{
+      await rawWarehouseAdminRpc('asset_admin_set_user_permission',{p_user_id:userId,p_module_key:'warehouses',p_action_key:key,p_mode:mode});
+      toast(LANG==='ar'?'تم حفظ الصلاحية':'Permission saved','success');
+    }catch(e){toast(e.message||'Error','error');}
+    finally{cs.forEach(x=>x.disabled=false);}
+  };
+  document.querySelectorAll('[data-wh-direct]').forEach(cb=>cb.onchange=async()=>{
+    const row=cb.closest('[data-wh-perm-row]'),ap=row.querySelector('[data-wh-approval]');
+    if(cb.checked&&ap)ap.checked=false;
+    await save(cb.dataset.whDirect,cb.checked?'direct':(ap&&ap.checked?'approval':'deny'),row);
+  });
+  document.querySelectorAll('[data-wh-approval]').forEach(cb=>cb.onchange=async()=>{
+    const row=cb.closest('[data-wh-perm-row]'),d=row.querySelector('[data-wh-direct]');
+    if(cb.checked&&d)d.checked=false;
+    await save(cb.dataset.whApproval,cb.checked?'approval':(d&&d.checked?'direct':'deny'),row);
+  });
+}
+
+
 /* =====================================================================
    ROUTING
    ===================================================================== */
 async function route(){
   if(!CTX.mode){ showAccessScreen('no_context'); return; }
+  await loadWarehousePermissions();
   const key = currentTab();
   const tab = WH_SUBNAV.find(x => x.key === key);
   const el = document.getElementById('content');
@@ -1863,6 +1954,7 @@ async function route(){
     case 'shelves':     el.innerHTML = viewWarehouses(); break;
     case 'batches':     el.innerHTML = viewBatches(); break;
     case 'reports':     el.innerHTML = viewWhReports(); break;
+    case 'permissions': el.innerHTML = await viewWarehousePermissions(); break;
     default:            el.innerHTML = `<div class="empty">${esc((LANG==='ar')?'شاشة غير معروفة':'Unknown screen')}</div>`;
   }
 }
