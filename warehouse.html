@@ -575,6 +575,181 @@
   .apr-pending-badge{margin-inline-start:auto;background:var(--red);color:#fff;font-size:10px;font-weight:800;min-width:19px;height:19px;display:inline-flex;align-items:center;justify-content:center;border-radius:10px;padding:0 5px}
   @media(max-width:700px){.apr-card-top{align-items:flex-start}.apr-thumb{width:48px;height:48px}.apr-edit-grid{grid-template-columns:1fr}.apr-actions .btn-primary,.apr-actions .btn-ghost{flex:1}}
 
+
+
+  /* ======================================================================
+     PHASE 5 — Batches & Expiry
+     Read-only operational view; mirrors index (2).html with responsive polish.
+     ====================================================================== */
+  .bat-controls{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-bottom:16px}
+  .bat-whsel{padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--panel);font:inherit;font-size:13px;color:var(--navy);cursor:pointer;min-width:200px}
+  .bat-loading,.bat-empty{padding:40px;text-align:center;color:var(--grey);font-size:14px}
+  .bat-list{display:flex;flex-direction:column;gap:10px}
+  .bat-card{display:flex;align-items:center;gap:14px;padding:13px 14px;border:1px solid var(--border);border-radius:10px;background:var(--panel);border-inline-start-width:5px;transition:box-shadow .15s,transform .15s}
+  .bat-card:hover{box-shadow:var(--shadow);transform:translateY(-1px)}
+  .bat-card.bat-expired{border-inline-start-color:var(--red)}
+  .bat-card.bat-soon{border-inline-start-color:var(--amber)}
+  .bat-card.bat-ok{border-inline-start-color:var(--green)}
+  .bat-card.bat-none{border-inline-start-color:var(--grey)}
+  .bat-thumb{width:56px;height:56px;border-radius:8px;object-fit:cover;flex-shrink:0;cursor:zoom-in;border:1px solid var(--border);background:var(--panel-alt)}
+  .bat-thumb-none{display:flex;align-items:center;justify-content:center;font-size:25px;cursor:default}
+  .bat-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+  .bat-top{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+  .bat-code{font-size:12px;font-weight:800;color:var(--accent);font-family:monospace;white-space:nowrap}
+  .bat-name{font-size:15px;font-weight:700;color:var(--navy);overflow-wrap:anywhere}
+  .bat-sub{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--grey)}
+  .bat-batchno{font-weight:700;color:var(--steel)}
+  .bat-row2{display:flex;flex-wrap:wrap;align-items:center;gap:14px;font-size:13px}
+  .bat-qty{font-weight:800;color:var(--navy)}
+  .bat-exp{color:var(--med)}
+  .bat-noexp{color:var(--grey);font-style:italic}
+  .bat-days{font-weight:700;font-size:12px}
+  .bat-days-exp{color:var(--red)}
+  .bat-days-soon{color:var(--amber)}
+  .bat-shelf{color:var(--grey)}
+  .bat-badge{flex-shrink:0;font-size:11px;font-weight:800;padding:5px 10px;border-radius:20px;white-space:nowrap}
+  .bat-badge.bat-expired{background:#fde8e8;color:var(--red)}
+  .bat-badge.bat-soon{background:#fef3e2;color:#9a681c}
+  .bat-badge.bat-ok{background:#e6f4ea;color:#1e7e34}
+  .bat-badge.bat-none{background:var(--pale);color:var(--grey)}
+  @media (max-width:700px){
+    .bat-controls{align-items:stretch}.bat-whsel{width:100%;min-width:0}
+    .bat-card{align-items:flex-start;gap:10px;position:relative;padding-bottom:46px}
+    .bat-thumb{width:48px;height:48px}.bat-badge{position:absolute;inset-inline-end:12px;bottom:10px}
+    .bat-sub,.bat-row2{gap:8px 12px}
+  }
+
+
+/* ===== REPORTS MODULE (PHASE C) ===== */
+.rep-form{background:var(--white);border:1px solid var(--grid);border-radius:12px;padding:16px 18px;margin-bottom:18px;box-shadow:var(--shadow)}
+.rep-field{margin-bottom:14px}
+.rep-field>label{display:block;font-size:12px;font-weight:700;color:var(--grey);margin-bottom:7px;text-transform:uppercase;letter-spacing:.3px}
+.rep-chips{display:flex;flex-wrap:wrap;gap:7px}
+.rep-chip{border:1px solid var(--grid);background:var(--pale);color:var(--txt);border-radius:20px;padding:7px 15px;font-size:13px;font-weight:600;cursor:pointer;transition:.15s}
+.rep-chip:hover{border-color:var(--accent)}
+.rep-chip.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+.rep-custom{display:flex;gap:16px;margin-top:10px;flex-wrap:wrap}
+.rep-custom label{font-size:13px;color:var(--txt);display:flex;align-items:center;gap:6px}
+.rep-custom input{border:1px solid var(--grid);border-radius:8px;padding:6px 10px;font-size:13px}
+.rep-whrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.rep-sel{border:1px solid var(--grid);border-radius:8px;padding:8px 12px;font-size:13px;background:#fff;color:var(--txt);min-width:180px}
+.rep-actions{display:flex;gap:12px;align-items:center;margin-top:6px}
+.rep-gen{background:var(--navy);color:#fff;border:none;border-radius:9px;padding:11px 28px;font-size:14px;font-weight:700;cursor:pointer;transition:.15s}
+.rep-gen:hover{background:var(--med)}
+.rep-more{background:none;border:none;color:var(--accent);font-size:13px;font-weight:600;cursor:pointer;padding:6px}
+.rep-morebox{margin-top:12px;padding-top:12px;border-top:1px dashed var(--grid)}
+.rep-check{font-size:13px;color:var(--txt);display:flex;align-items:center;gap:8px;cursor:pointer}
+.rep-hint-box,.rep-loading,.rep-err,.rep-empty{padding:26px;text-align:center;color:var(--grey);font-size:14px;background:var(--white);border:1px solid var(--grid);border-radius:12px}
+.rep-err{color:var(--red);border-color:var(--red)}
+.rep-loading{color:var(--accent)}
+.rep-empty{padding:16px;font-size:13px}
+.rep-ok{color:var(--green)}
+.rep-empty-inline{color:var(--grey);font-size:13px}
+/* preview */
+.rep-preview{background:var(--white);border:1px solid var(--grid);border-radius:12px;padding:0;box-shadow:var(--shadow);overflow:hidden}
+.rep-preview-head{background:var(--navy);color:#fff;padding:20px 24px;display:flex;flex-wrap:wrap;gap:16px;justify-content:space-between;align-items:flex-start}
+.rph-brand{font-size:12px;letter-spacing:2px;opacity:.75;font-weight:700}
+.rph-title h2{margin:4px 0 2px;font-size:20px}
+.rph-preset{font-size:12px;opacity:.85}
+.rph-meta{font-size:12.5px;line-height:1.9;text-align:start}
+.rph-meta span{opacity:.7}
+.rph-export{display:flex;gap:8px;flex-wrap:wrap}
+.rep-exp{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:7px;padding:7px 13px;font-size:12px;font-weight:600;cursor:not-allowed;opacity:.6}
+.rep-sec{padding:18px 24px;border-bottom:1px solid var(--grid)}
+.rep-sec:last-child{border-bottom:none}
+.rep-sec>h3{margin:0 0 14px;font-size:15px;color:var(--navy);font-weight:700}
+.rep-hint{font-size:11px;color:var(--grey);font-weight:500}
+.rep-kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:11px}
+.rep-kpi{background:var(--pale);border:1px solid var(--grid);border-radius:10px;padding:13px;text-align:center}
+.rep-kpi .rk-val{font-size:22px;font-weight:800;color:var(--navy)}
+.rep-kpi .rk-lbl{font-size:11.5px;color:var(--grey);margin-top:3px}
+.rep-kpi.crit{background:#fbeceb;border-color:var(--red)}.rep-kpi.crit .rk-val{color:var(--red)}
+.rep-kpi.warn{background:#fbf3e6;border-color:var(--amber)}.rep-kpi.warn .rk-val{color:var(--amber)}
+.rep-kpi.ok{background:#eaf5ef;border-color:var(--green)}.rep-kpi.ok .rk-val{color:var(--green)}
+.rep-kpi.info{background:#eaf0f7;border-color:var(--accent)}.rep-kpi.info .rk-val{color:var(--accent)}
+.rep-alert{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:9px;margin-bottom:8px;font-size:13.5px;border:1px solid}
+.rep-alert.crit{background:#fbeceb;border-color:var(--red);color:var(--red)}
+.rep-alert.warn{background:#fbf3e6;border-color:var(--amber);color:#8a5d1e}
+.rep-alert.info{background:#eaf0f7;border-color:var(--accent);color:var(--med)}
+.rep-alert .ra-msg{flex:1}
+.rep-alert .ra-cnt{font-weight:800}
+.rep-obs{margin:0;padding-inline-start:20px;font-size:13.5px;color:var(--txt);line-height:2}
+.rep-tbl{width:100%;border-collapse:collapse;font-size:13px}
+.rep-tbl th{background:var(--pale);color:var(--grey);font-size:11.5px;text-transform:uppercase;letter-spacing:.3px;padding:8px 10px;text-align:start;border-bottom:2px solid var(--grid)}
+.rep-tbl td{padding:8px 10px;border-bottom:1px solid var(--grid);color:var(--txt);text-align:start}
+.rep-tbl tr:last-child td{border-bottom:none}
+.rep-tbl .rep-total td{font-weight:800;background:var(--pale);color:var(--navy)}
+.rep-chg.up{color:var(--green)}.rep-chg.down{color:var(--red)}
+.rep-cmpnote{font-size:11.5px;color:var(--grey);margin-top:8px;font-style:italic}
+.rep-c-crit{color:var(--red);font-weight:700}.rep-c-warn{color:var(--amber);font-weight:700}.rep-c-ok{color:var(--green);font-weight:700}
+.rep-scroll{overflow-x:auto}
+.rep-tbl-items,.rep-tbl-reg{min-width:760px}
+.rep-thumb{width:34px;height:34px;border-radius:6px;object-fit:cover;cursor:pointer;border:1px solid var(--grid)}
+.rep-thumb-none{display:flex;align-items:center;justify-content:center;background:var(--pale);font-size:16px}
+.rep-thumb-sm{width:26px;height:26px;border-radius:5px;object-fit:cover;cursor:pointer;vertical-align:middle}
+.rep-itname{color:var(--grey);font-size:12px}
+.rep-inline{display:flex;gap:22px;flex-wrap:wrap;font-size:13px;color:var(--txt);margin-bottom:10px}
+.rep-note-sm,.rep-cmpnote{font-size:11.5px;color:var(--grey)}
+.rep-note-sm{margin-top:8px}
+.rep-regcard{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 16px;background:var(--pale);border:1px solid var(--grid);border-radius:10px;font-size:14px;font-weight:600;color:var(--txt);flex-wrap:wrap}
+.rep-regbtn{background:var(--navy);color:#fff;border:none;border-radius:8px;padding:9px 18px;font-size:13px;font-weight:700;cursor:pointer}
+.rep-regbtn:hover{background:var(--med)}
+.rep-q-neg{color:var(--red);font-weight:700}.rep-q-pos{color:var(--green);font-weight:700}
+.rep-mvtype{font-size:11px;padding:2px 8px;border-radius:12px;background:var(--pale);border:1px solid var(--grid);white-space:nowrap}
+.rep-pager{display:flex;align-items:center;justify-content:center;gap:16px;margin-top:12px;font-size:13px;color:var(--grey)}
+.rep-pbtn{border:1px solid var(--grid);background:#fff;border-radius:7px;padding:7px 16px;font-size:13px;cursor:pointer;color:var(--txt)}
+.rep-pbtn:disabled{opacity:.4;cursor:default}
+
+/* ===================== PHASE D — REPORT PRINT / PDF ===================== */
+/* Screen: the print-only footer never shows on screen */
+.rep-print-footer{display:none}
+@media print{
+  /* page geometry */
+  @page{ size:A4; margin:14mm 12mm; }
+  /* reset chrome: hide everything, then reveal only the report preview */
+  body{ background:#fff !important; }
+  body.printing-report .gate, body.printing-report #gate,
+  body.printing-report .sidebar,
+  body.printing-report .wh-subbar,
+  body.printing-report .wh-breadcrumb,
+  body.printing-report .rep-form,
+  body.printing-report .rph-export,
+  body.printing-report .rep-reg-actions,
+  body.printing-report .rep-reg-pager,
+  body.printing-report .toast,
+  body.printing-report .rep-exp{ display:none !important; }
+  /* collapse layout wrappers so the report uses the full page width */
+  body.printing-report .app{ display:block !important; }
+  body.printing-report .content{ margin:0 !important; padding:0 !important; width:100% !important; }
+  body.printing-report .wrap{ margin:0 !important; padding:0 !important; max-width:none !important; }
+  /* the report card itself: flat on paper, no shadow/rounded/overflow clipping */
+  body.printing-report .rep-preview{ box-shadow:none !important; border:none !important; border-radius:0 !important; overflow:visible !important; }
+  /* header band prints in ink-friendly form (dark bg wastes toner + unreadable grayscale) */
+  body.printing-report .rep-preview-head{ background:#fff !important; color:#111 !important; border-bottom:2px solid #111 !important; padding:0 0 10px 0 !important; margin-bottom:10px !important; }
+  body.printing-report .rph-brand{ color:#111 !important; font-weight:800 !important; letter-spacing:1px !important; }
+  body.printing-report .rep-preview-head h2{ color:#111 !important; }
+  body.printing-report .rph-preset{ color:#333 !important; }
+  body.printing-report .rph-meta span{ color:#555 !important; }
+  /* force backgrounds/colors to actually print */
+  body.printing-report .rep-preview *{ -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
+  /* section = keep together where possible, break before major ones */
+  body.printing-report .rep-sec{ break-inside:avoid; page-break-inside:avoid; margin-bottom:12px !important; }
+  body.printing-report .rep-sec h3{ break-after:avoid; page-break-after:avoid; }
+  /* KPI grids shouldn't split a tile */
+  body.printing-report .rep-kpi{ break-inside:avoid; page-break-inside:avoid; }
+  /* tables: repeat header rows on each page, don't split a row */
+  body.printing-report .rep-preview table{ page-break-inside:auto; }
+  body.printing-report .rep-preview thead{ display:table-header-group; }
+  body.printing-report .rep-preview tr{ break-inside:avoid; page-break-inside:avoid; }
+  /* status chips: add a text glyph so meaning survives grayscale (color not sole signal) */
+  body.printing-report .rep-preview{ font-size:11.5px !important; }
+  /* wide detailed register: compact but readable */
+  body.printing-report .rep-reg-table{ font-size:10px !important; }
+  body.printing-report .rep-reg-table th, body.printing-report .rep-reg-table td{ padding:3px 5px !important; }
+  /* print-only official footer */
+  body.printing-report .rep-print-footer{ display:block !important; margin-top:14px; padding-top:8px; border-top:1px solid #999; font-size:10px; color:#555; text-align:center; }
+}
+
 </style>
 </head>
 <body>
@@ -634,8 +809,8 @@ const WH_SUBNAV = [
   { key:'movements',   ic:'🔁', label_ar:'حركات المخزون',     label_en:'Stock Movements',    phase:3, live:true  },
   { key:'materialreq', ic:'📝', label_ar:'موافقة الحركات',    label_en:'Movement Approvals', phase:4, live:true  },
   { key:'shelves',     ic:'🗄', label_ar:'المستودعات والأرفف', label_en:'Warehouses & Shelves', phase:2, live:true  },
-  { key:'batches',     ic:'⏳', label_ar:'الدفعات والصلاحية',  label_en:'Batches & Expiry',   phase:5, live:false },
-  { key:'reports',     ic:'📈', label_ar:'التقارير',          label_en:'Reports',            phase:6, live:false },
+  { key:'batches',     ic:'⏳', label_ar:'الدفعات والصلاحية',  label_en:'Batches & Expiry',   phase:5, live:true  },
+  { key:'reports',     ic:'📈', label_ar:'التقارير',          label_en:'Reports',            phase:6, live:true  },
 ];
 
 /* Storekeeper permission map for /asset entry (mirrors index.html) */
@@ -1290,6 +1465,8 @@ async function currentSignOut(){
   resetPhase2Caches();
   resetPhase3Caches();
   resetPhase4Caches();
+  resetPhase5Caches();
+  resetPhase6Caches();
   if(CTX.mode === 'admin') await admSignOut();
   else if(CTX.mode === 'asset') await assetSignOut();
   const from = urlFromParam();
@@ -1614,6 +1791,8 @@ async function route(){
     case 'movements': el.innerHTML = viewMovements();  break;
     case 'materialreq': el.innerHTML = viewApprovals(); break;
     case 'shelves':   el.innerHTML = viewWarehouses(); break;
+    case 'batches':   el.innerHTML = viewBatches();    break;
+    case 'reports':   el.innerHTML = viewWhReports();  break;
     default:
       el.innerHTML = `<div class="empty">screen "${esc(tab.key)}" is marked live but has no renderer wired yet</div>`;
   }
@@ -2746,6 +2925,117 @@ async function aprSubmitReq(){if(aprSubmitting)return;const r=aprReq,tp=r.type;i
 function aprModalHtml(){if(!aprModal)return'';return aprModal==='chooser'?aprChooserModal():aprReqModal(aprModal)}
 function resetPhase4Caches(){aprList=null;aprLoading=false;aprFilter='pending';aprModal=null;aprSubmitting=false;aprErr='';aprReq={};aprPickOpen=false;aprPickQuery='';aprRtIssues=null;aprRtIssuesLoading=false;aprWh=null;aprShelves={};aprEditId=null;aprEdit={};aprActing=false;aprRejectId=null;aprRejectReason='';aprPendingCount=0}
 
+
+/* =====================================================================
+   PHASE 5 — BATCHES & EXPIRY
+   Read-only for both Admin and Storekeeper.
+   Backend: warehouses_list + batches_expiry_list.
+   ===================================================================== */
+Object.assign(T.ar,{
+  batLoading:'جاري تحميل الدفعات…',batNone:'لا توجد دفعات للعرض.',batAllWh:'كل المستودعات',
+  batStExpired:'منتهية',batStSoon:'قرب الانتهاء',batStOk:'صالحة',batStNoExpiry:'بدون صلاحية',
+  batFAll:'الكل',batFExpired:'منتهية',batFSoon:'قرب الانتهاء',batFOk:'صالحة',batFNoExpiry:'بدون صلاحية',
+  batDaysLeft:'متبقي',batDaysExpired:'منتهية منذ',batDaysUnit:'يوم',
+  batErrGeneric:'تعذّر تحميل الدفعات. حاول مجدداً.',batErr_not_authorized:'لا تملك الصلاحية.',
+  batErr_invalid_expiry_status:'فلتر الصلاحية غير صحيح.',awh_batches:'الدفعات والصلاحية'
+});
+Object.assign(T.en,{
+  batLoading:'Loading batches…',batNone:'No batches to show.',batAllWh:'All warehouses',
+  batStExpired:'Expired',batStSoon:'Expiring soon',batStOk:'Valid',batStNoExpiry:'No expiry',
+  batFAll:'All',batFExpired:'Expired',batFSoon:'Expiring soon',batFOk:'Valid',batFNoExpiry:'No expiry',
+  batDaysLeft:'in',batDaysExpired:'expired',batDaysUnit:'days',
+  batErrGeneric:'Could not load batches. Please try again.',batErr_not_authorized:'You are not authorized.',
+  batErr_invalid_expiry_status:'Invalid expiry filter.',awh_batches:'Batches & Expiry'
+});
+
+let batList=null, batLoading=false, batFilter='all', batWhFilter='';
+let batWh=null;
+
+function batRender(){
+  const el=document.getElementById('content');
+  if(el && currentTab()==='batches') el.innerHTML=viewBatches();
+}
+async function batEnsureWh(){
+  if(batWh!==null) return;
+  const res=await warehouseRpc('warehouses_list',{});
+  batWh=Array.isArray(res)?res:[];
+}
+async function batLoad(){
+  if(batLoading) return;
+  batLoading=true; batRender();
+  try{
+    await batEnsureWh();
+    const res=await warehouseRpc('batches_expiry_list',{
+      p_warehouse_id:batWhFilter||null,
+      p_status:batFilter==='all'?null:batFilter
+    });
+    batList=Array.isArray(res)?res:[];
+  }catch(e){
+    batList=[];
+    toast(e.message||t('batErrGeneric'),'error');
+  }finally{
+    batLoading=false;
+    batRender();
+  }
+}
+function batSetFilter(f){
+  if(!['all','expired','soon','ok','no_expiry'].includes(f)) return;
+  batFilter=f; batList=null; batLoad();
+}
+function batSetWh(v){ batWhFilter=v||''; batList=null; batLoad(); }
+function batStatusMeta(s){
+  if(s==='expired') return {cls:'bat-expired',ic:'🔴',lbl:t('batStExpired')};
+  if(s==='soon') return {cls:'bat-soon',ic:'🟠',lbl:t('batStSoon')};
+  if(s==='ok') return {cls:'bat-ok',ic:'🟢',lbl:t('batStOk')};
+  return {cls:'bat-none',ic:'⚪',lbl:t('batStNoExpiry')};
+}
+function batCard(b){
+  const nm=LANG==='ar'?(b.item_name_ar||b.item_name_en):(b.item_name_en||b.item_name_ar);
+  const wn=LANG==='ar'?(b.warehouse_name_ar||b.warehouse_code):(b.warehouse_name_en||b.warehouse_name_ar||b.warehouse_code);
+  const un=LANG==='ar'?(b.unit_name_ar||b.unit_name_en):(b.unit_name_en||b.unit_name_ar);
+  const m=batStatusMeta(b.expiry_status);
+  const safeUrl=b.image_url?esc(b.image_url):'';
+  const img=b.image_url
+    ? `<img class="bat-thumb" src="${safeUrl}" onclick="openLightbox('${safeUrl.replace(/'/g,"\\'")}')" alt=""/>`
+    : `<div class="bat-thumb bat-thumb-none">📦</div>`;
+  let daysTxt='';
+  const days=Number(b.days_left);
+  if(b.expiry_status==='expired' && Number.isFinite(days)) daysTxt=`<span class="bat-days bat-days-exp">${t('batDaysExpired')} ${fmtInt(Math.abs(days))} ${t('batDaysUnit')}</span>`;
+  else if(b.expiry_status==='soon' && Number.isFinite(days)) daysTxt=`<span class="bat-days bat-days-soon">${t('batDaysLeft')} ${fmtInt(days)} ${t('batDaysUnit')}</span>`;
+  else if(b.expiry_status==='ok' && Number.isFinite(days)) daysTxt=`<span class="bat-days">${t('batDaysLeft')} ${fmtInt(days)} ${t('batDaysUnit')}</span>`;
+  const expTxt=b.expiry_date?esc(b.expiry_date):`<span class="bat-noexp">${t('batStNoExpiry')}</span>`;
+  const shelf=b.shelf_name?`<span class="bat-shelf">🗄️ ${esc(b.shelf_name)}</span>`:'';
+  return `<div class="bat-card ${m.cls}">
+    ${img}
+    <div class="bat-main">
+      <div class="bat-top"><span class="bat-code">${esc(b.item_code||'')}</span><span class="bat-name">${esc(nm||'')}</span></div>
+      <div class="bat-sub"><span class="bat-wh">🏬 ${esc(wn||'')}</span>${shelf}<span class="bat-batchno">🏷️ ${esc(b.batch_no||'')}</span></div>
+      <div class="bat-row2"><span class="bat-qty">${fmtInt(Number(b.qty))} ${esc(un||'')}</span><span class="bat-exp">📅 ${expTxt}</span>${daysTxt}</div>
+    </div>
+    <div class="bat-badge ${m.cls}">${m.ic} ${m.lbl}</div>
+  </div>`;
+}
+function viewBatches(){
+  if(batList===null && !batLoading) batLoad();
+  const chips=[['all','batFAll'],['expired','batFExpired'],['soon','batFSoon'],['ok','batFOk'],['no_expiry','batFNoExpiry']];
+  const chipBar=`<div class="mv-filters">${chips.map(([k,lbl])=>`<button class="mv-chip ${batFilter===k?'on':''}" onclick="batSetFilter('${k}')">${t(lbl)}</button>`).join('')}</div>`;
+  let whOpts=`<option value="">${t('batAllWh')}</option>`;
+  (batWh||[]).forEach(w=>{
+    const wn=LANG==='ar'?(w.name_ar||w.code):(w.name_en||w.name_ar||w.code);
+    whOpts+=`<option value="${esc(w.warehouse_id)}" ${batWhFilter===w.warehouse_id?'selected':''}>${esc(wn)}</option>`;
+  });
+  const whSel=`<select class="bat-whsel" onchange="batSetWh(this.value)">${whOpts}</select>`;
+  let body='';
+  if(batLoading || batList===null) body=`<div class="bat-loading">${t('batLoading')}</div>`;
+  else if(!batList.length) body=`<div class="bat-empty">${t('batNone')}</div>`;
+  else body=`<div class="bat-list">${batList.map(batCard).join('')}</div>`;
+  return `<div class="phead"><div class="eyebrow">${t('dashEye')}</div><h1>${t('awh_batches')}</h1></div>
+    <div class="bat-controls">${whSel}${chipBar}</div>${body}`;
+}
+function resetPhase5Caches(){
+  batList=null; batLoading=false; batFilter='all'; batWhFilter=''; batWh=null;
+}
+
 /* Extend the sign-out cache reset with Phase-2 state so a switch of portal
    (admin ↔ storekeeper) always sees a fresh warehouses list. */
 function resetPhase2Caches(){
@@ -2788,6 +3078,610 @@ document.addEventListener('DOMContentLoaded', async () => {
   await aprLoadBadge();
   await route();
 });
+
+
+/* Phase 6 report labels */
+Object.assign(T.en,{awh_reports:'Reports',repPToday:'Today',repPYesterday:'Yesterday',repPWeek:'This Week',repPLastWeek:'Last Week',repPMonth:'This Month',repPLastMonth:'Last Month',repPCustom:'Custom',repFrom:'From',repTo:'To',repAllWh:'All Warehouses',repOneWh:'One Warehouse',repPreset:'Report Type',repRepFull:'Full Report',repRepDaily:'Daily',repRepWeekly:'Weekly',repRepMonthly:'Monthly',repRepInventory:'Inventory',repRepMovement:'Movements',repRepExpiry:'Expiry',repRepApprovals:'Approvals',repMoreFilters:'More Filters',repCompare:'Compare with previous period',repPeriod:'Period',repWarehouses:'Warehouses',repGenerate:'Generate Report',repPickDates:'Select both dates.',repBadRange:'End date must not be before start date.',repGenerating:'Generating report…',repStartHint:'Choose the period and scope, then generate the report.',repReportTitle:'Warehouse Management Report',repScope:'Scope',repGenerated:'Generated',repExportPdf:'Save PDF',repExportExcel:'Excel',repPrint:'Print',repPdfHint:'Use the browser print dialog and choose Save as PDF',repSoon:'Coming later',repFooterSys:'Warehouse Management System',repExecSummary:'Executive Summary',repActiveWh:'Active Warehouses',repDistinctItems:'Distinct Items',repWithStock:'Items with Stock',repOutStock:'Out of Stock',repLowStock:'Low Stock',repNoShelf:'Without Shelf',repTotalMv:'Total Movements',repPendingAppr:'Pending Approvals',repObservations:'Observations',repMovementSummary:'Movement Summary',repMvType:'Movement Type',repCount:'Count',repPrevCount:'Previous',repChange:'Change',repCompareVs:'Compared with',repWarehouseSummary:'Warehouse Summary',repWh:'Warehouse',repItems:'Items',repMvTotal:'Movements',repExpired:'Expired',repInventoryHealth:'Inventory Health',repHealthy:'Healthy',repReserved:'With Reservations',repNoImage:'Without Image',repNoMove90:'No Movement 90d',repMultiWh:'Multi-Warehouse Items',repItemSummary:'Item Summary',repNoItems:'No items to show.',repCode:'Code',repItem:'Item',repUnit:'Unit',repOpening:'Opening',repClosing:'Closing',repStatus:'Status',repBatchesSummary:'Batches / Expiry',repCurrentExpiry:'current status',repNoBatches:'No real batches to show.',repExp30:'Expiring ≤30d',repExp60:'Expiring ≤60d',repExp90:'Expiring ≤90d',repNoExpiry:'No Expiry',repApprovalsSummary:'Movement Approvals',repApPending:'Pending',repApApproved:'Approved',repApRejected:'Rejected',repApCancelled:'Cancelled',repApModified:'Admin Modified',repApTurnaround:'Avg. turnaround',repApOldest:'Oldest pending',repMaterialSummary:'Material Requests',repMrPending:'Pending',repMrAllocated:'Allocated',repMrIssued:'Issued',repMrRejected:'Rejected',repMrCancelled:'Cancelled',repMrShort:'Short Approved Lines',repMrPendingNote:'Current material-request status.',repExceptions:'Exceptions',repNoExceptions:'No exceptions.',repResOverHand:'Reserved > On Hand',repAuditSummary:'Audit Summary',repNoAudit:'No audit events.',repAuditEvents:'Events',repAuditActors:'Actors',repAuditAction:'Action',repMovementRegister:'Movement Register',repMovements:'movements',repViewRegister:'View Register',repNoMovements:'No movements.',repLoading:'Loading…',repDate:'Date',repQty:'Qty',repBatch:'Batch',repActor:'Actor',repNote:'Note',repErrGeneric:'Could not generate the report.'});
+Object.assign(T.ar,{awh_reports:'التقارير',repPToday:'اليوم',repPYesterday:'أمس',repPWeek:'هذا الأسبوع',repPLastWeek:'الأسبوع الماضي',repPMonth:'هذا الشهر',repPLastMonth:'الشهر الماضي',repPCustom:'مخصص',repFrom:'من',repTo:'إلى',repAllWh:'كل المستودعات',repOneWh:'مستودع واحد',repPreset:'نوع التقرير',repRepFull:'تقرير كامل',repRepDaily:'يومي',repRepWeekly:'أسبوعي',repRepMonthly:'شهري',repRepInventory:'المخزون',repRepMovement:'الحركات',repRepExpiry:'الصلاحية',repRepApprovals:'الموافقات',repMoreFilters:'فلاتر إضافية',repCompare:'مقارنة بالفترة السابقة',repPeriod:'الفترة',repWarehouses:'المستودعات',repGenerate:'إنشاء التقرير',repPickDates:'اختر تاريخ البداية والنهاية.',repBadRange:'تاريخ النهاية يجب ألا يسبق البداية.',repGenerating:'جاري إنشاء التقرير…',repStartHint:'اختر الفترة والنطاق ثم أنشئ التقرير.',repReportTitle:'تقرير إدارة المستودعات',repScope:'النطاق',repGenerated:'تاريخ الإنشاء',repExportPdf:'حفظ PDF',repExportExcel:'Excel',repPrint:'طباعة',repPdfHint:'اختر Save as PDF من نافذة الطباعة',repSoon:'لاحقاً',repFooterSys:'نظام إدارة المستودعات',repExecSummary:'الملخص التنفيذي',repActiveWh:'المستودعات النشطة',repDistinctItems:'الأصناف المختلفة',repWithStock:'أصناف متوفرة',repOutStock:'نفد المخزون',repLowStock:'مخزون منخفض',repNoShelf:'بدون رف',repTotalMv:'إجمالي الحركات',repPendingAppr:'موافقات معلقة',repObservations:'ملاحظات',repMovementSummary:'ملخص الحركات',repMvType:'نوع الحركة',repCount:'العدد',repPrevCount:'السابق',repChange:'التغيير',repCompareVs:'مقارنة مع',repWarehouseSummary:'ملخص المستودعات',repWh:'المستودع',repItems:'الأصناف',repMvTotal:'الحركات',repExpired:'منتهية',repInventoryHealth:'صحة المخزون',repHealthy:'سليم',repReserved:'عليه حجوزات',repNoImage:'بدون صورة',repNoMove90:'بدون حركة 90 يوم',repMultiWh:'أصناف متعددة المستودعات',repItemSummary:'ملخص الأصناف',repNoItems:'لا توجد أصناف للعرض.',repCode:'الكود',repItem:'الصنف',repUnit:'الوحدة',repOpening:'الرصيد الافتتاحي',repClosing:'الرصيد الختامي',repStatus:'الحالة',repBatchesSummary:'ملخص الدفعات والصلاحية',repCurrentExpiry:'الحالة الحالية',repNoBatches:'لا توجد دفعات فعلية للعرض.',repExp30:'تنتهي خلال 30 يوم',repExp60:'تنتهي خلال 60 يوم',repExp90:'تنتهي خلال 90 يوم',repNoExpiry:'بدون صلاحية',repApprovalsSummary:'موافقات الحركات',repApPending:'معلقة',repApApproved:'معتمدة',repApRejected:'مرفوضة',repApCancelled:'ملغاة',repApModified:'عدّلها المدير',repApTurnaround:'متوسط زمن المعالجة',repApOldest:'أقدم طلب معلق',repMaterialSummary:'طلبات المواد',repMrPending:'معلقة',repMrAllocated:'مخصصة',repMrIssued:'مصروفة',repMrRejected:'مرفوضة',repMrCancelled:'ملغاة',repMrShort:'بنود معتمدة بنقص',repMrPendingNote:'الحالة الحالية لطلبات المواد.',repExceptions:'الاستثناءات',repNoExceptions:'لا توجد استثناءات.',repResOverHand:'المحجوز أكبر من الرصيد',repAuditSummary:'ملخص التدقيق',repNoAudit:'لا توجد أحداث تدقيق.',repAuditEvents:'الأحداث',repAuditActors:'المستخدمون',repAuditAction:'الإجراء',repMovementRegister:'سجل الحركات',repMovements:'حركة',repViewRegister:'عرض السجل',repNoMovements:'لا توجد حركات.',repLoading:'جاري التحميل…',repDate:'التاريخ',repQty:'الكمية',repBatch:'الدفعة',repActor:'المستخدم',repNote:'الملاحظة',repErrGeneric:'تعذّر إنشاء التقرير.'});
+function resetPhase6Caches(){repState={period:'today',from:null,to:null,whMode:'all',whId:'',preset:'full',compare:true,showFilters:false,loading:false,data:null,error:null,wh:null,regOpen:false,regLoading:false,regData:null,regError:null,regType:'',regLimit:100,regOffset:0};}
+
+/* ═══════════════════════════════════════════════════════════════════
+   REPORTS MODULE (PHASE C) — Period → Warehouse → Generate → Preview.
+   Backend: warehouse_report (one call) + warehouse_report_movements
+   (lazy, only when register opened/paged). NO KPI recompute in JS.
+   ─────────────────────────────────────────────────────────────────── */
+let repState = {
+  period:'today', from:null, to:null,      // period preset + custom dates
+  whMode:'all', whId:'',                    // 'all' or one warehouse id
+  preset:'full',                            // report preset
+  compare:true,
+  showFilters:false,                        // More Filters toggle
+  loading:false, data:null, error:null,     // main report
+  wh:null,                                  // warehouses_list cache
+  // detailed register (lazy)
+  regOpen:false, regLoading:false, regData:null, regError:null,
+  regType:'', regLimit:100, regOffset:0
+};
+
+function repRpc(fn,args){ return warehouseRpc(fn,args); }
+function repRender(){ const el=document.getElementById('content'); if(el && currentTab()==='reports') el.innerHTML=viewWhReports(); }
+
+async function repEnsureWh(){
+  if(repState.wh!==null) return;
+  const res=await repRpc('warehouses_list', {});
+  repState.wh=(res && Array.isArray(res))?res:[];
+}
+
+/* ── period preset → [from, to) timestamps (Riyadh-day aligned, ISO) ── */
+function repPeriodRange(){
+  // All boundaries are Riyadh-day-aligned, returned as ISO strings ("YYYY-MM-DDT00:00:00+03:00").
+  // Half-open [from, to): "to" is the START of the day AFTER the last included day.
+  // Single reference: today's Riyadh calendar date. Everything derives from it via
+  // explicit calendar math on a UTC-noon anchor (no local getDay, no new Date()/Date.now() mix).
+  const p=repState.period;
+
+  // today's Riyadh date as YYYY-MM-DD (the ONE time reference)
+  const todayYmd=new Date(Date.now()).toLocaleDateString('en-CA',{timeZone:'Asia/Riyadh'});
+  // ymd -> ISO Riyadh midnight
+  const iso=(ymd)=>ymd+'T00:00:00+03:00';
+  // add n days to a YYYY-MM-DD (calendar-safe via UTC noon to avoid any DST/local drift)
+  const addDays=(ymd,n)=>{
+    const d=new Date(ymd+'T12:00:00Z'); d.setUTCDate(d.getUTCDate()+n);
+    return d.toISOString().slice(0,10);
+  };
+  // day-of-week of a YYYY-MM-DD computed from the UTC-noon anchor (stable, tz-independent). 0=Sun..6=Sat
+  const dow=(ymd)=>new Date(ymd+'T12:00:00Z').getUTCDay();
+  // first day of the month for a YYYY-MM-DD
+  const firstOfMonth=(ymd)=>ymd.slice(0,8)+'01';
+  // first day of the month n months before the month of ymd
+  const firstOfMonthBack=(ymd,back)=>{
+    let y=+ymd.slice(0,4), m=+ymd.slice(5,7)-1; // 0-based month
+    m-=back; while(m<0){ m+=12; y-=1; }
+    return `${y}-${String(m+1).padStart(2,'0')}-01`;
+  };
+
+  if(p==='custom'){
+    if(!repState.from || !repState.to) return null;
+    if(repState.to < repState.from) return null; // guard: inverted custom range
+    // inclusive custom: push "to" to the start of the day AFTER the chosen end date
+    return { from: iso(repState.from), to: iso(addDays(repState.to,1)) };
+  }
+  if(p==='today')     return { from: iso(todayYmd),            to: iso(addDays(todayYmd,1)) };
+  if(p==='yesterday') return { from: iso(addDays(todayYmd,-1)),to: iso(todayYmd) };
+  if(p==='week'){ // week starts Saturday (Riyadh convention); includes today
+    const backToSat=(dow(todayYmd)+1)%7;  // days since the most recent Saturday
+    return { from: iso(addDays(todayYmd,-backToSat)), to: iso(addDays(todayYmd,1)) };
+  }
+  if(p==='lastweek'){
+    const backToSat=(dow(todayYmd)+1)%7;
+    const thisSat=addDays(todayYmd,-backToSat);
+    return { from: iso(addDays(thisSat,-7)), to: iso(thisSat) };
+  }
+  if(p==='month'){ // 1st of this month → tomorrow (includes today)
+    return { from: iso(firstOfMonth(todayYmd)), to: iso(addDays(todayYmd,1)) };
+  }
+  if(p==='lastmonth'){ // full previous calendar month
+    return { from: iso(firstOfMonthBack(todayYmd,1)), to: iso(firstOfMonth(todayYmd)) };
+  }
+  return { from: iso(todayYmd), to: iso(addDays(todayYmd,1)) };
+}
+
+/* preset → { compare, sections[] } — controls which sections show */
+const REP_PRESETS={
+  full:      { compare:true,  sections:'all' },
+  daily:     { compare:true,  sections:['summary','movement_summary','movement_register','observations'] },
+  weekly:    { compare:true,  sections:['summary','movement_summary','comparison','warehouse_summary','observations','movement_register'] },
+  monthly:   { compare:true,  sections:'all' },
+  inventory: { compare:false, sections:['summary','warehouse_summary','inventory_health','item_summary','exceptions'] },
+  movement:  { compare:true,  sections:['summary','movement_summary','comparison','movement_register'] },
+  expiry:    { compare:false, sections:['summary','batches_summary'] },
+  approvals: { compare:false, sections:['summary','movement_approvals_summary','material_requests_summary'] }
+};
+function repSectionOn(key){
+  const pr=REP_PRESETS[repState.preset]||REP_PRESETS.full;
+  if(pr.sections==='all') return true;
+  return pr.sections.includes(key);
+}
+
+/* ── setters (no reload; just re-render the form) ── */
+function repSetPeriod(p){ repState.period=p; repState.data=null; repRender(); }
+function repSetCustom(which,val){ repState[which]=val; } // no render (keep focus)
+function repSetWhMode(m){ repState.whMode=m; if(m==='all') repState.whId=''; repState.data=null; repRender(); }
+function repSetWh(v){ repState.whId=v; repState.data=null; }
+function repSetPreset(p){ repState.preset=p; const pr=REP_PRESETS[p]||REP_PRESETS.full; repState.compare=pr.compare; repState.data=null; repRender(); }
+function repToggleFilters(){ repState.showFilters=!repState.showFilters; repRender(); }
+function repSetCompare(v){ repState.compare=v; }
+
+/* scope → uuid[] or null */
+function repScopeIds(){
+  if(repState.whMode==='all') return null;
+  return repState.whId ? [repState.whId] : null;
+}
+
+/* ── GENERATE: single warehouse_report call ── */
+async function repGenerate(){
+  // custom-range client checks (missing vs inverted) before building the range
+  if(repState.period==='custom'){
+    if(!repState.from || !repState.to){ toast(t('repPickDates')); return; }
+    if(repState.to < repState.from){ toast(t('repBadRange')); return; }
+  }
+  const range=repPeriodRange();
+  if(!range){ toast(t('repPickDates')); return; }
+  const from=range.from, to=range.to;  // repPeriodRange already returns half-open [from,to)
+  repState.loading=true; repState.error=null; repState.data=null;
+  repState.regOpen=false; repState.regData=null; repState.regOffset=0;
+  repRender();
+  const res=await repRpc('warehouse_report', {
+    p_warehouse_ids: repScopeIds(),
+    p_from: from, p_to: to,
+    p_compare: repState.compare
+  });
+  repState.loading=false;
+  if(res && res.ok===false){
+    repState.error=res.error||'generic';
+    repRender(); return;
+  }
+  repState.data=res; repState.lastFrom=from; repState.lastTo=to;
+  repRender();
+}
+
+/* ── DETAILED REGISTER (lazy) ── */
+async function repOpenRegister(){
+  repState.regOpen=true; repState.regOffset=0; repState.regType='';
+  await repLoadRegister();
+}
+async function repLoadRegister(){
+  repState.regLoading=true; repState.regError=null; repRender();
+  const res=await repRpc('warehouse_report_movements', {
+    p_warehouse_ids: repScopeIds(),
+    p_from: repState.lastFrom, p_to: repState.lastTo,
+    p_movement_type: repState.regType||null,
+    p_item_id: null,
+    p_limit: repState.regLimit, p_offset: repState.regOffset
+  });
+  repState.regLoading=false;
+  if(res && res.ok===false){ repState.regError=res.error||'generic'; repRender(); return; }
+  repState.regData=res; repRender();
+}
+function repRegPage(dir){
+  const d=repState.regData; if(!d) return;
+  const no=repState.regOffset + dir*repState.regLimit;
+  if(no<0 || no>=(d.total_count||0)) return;
+  repState.regOffset=no; repLoadRegister();
+}
+function repRegType(v){ repState.regType=v; repState.regOffset=0; repLoadRegister(); }
+
+
+/* ═══════════════════════ RENDER LAYER ═══════════════════════ */
+
+/* localized name helper for warehouses */
+function repWhName(w){ return LANG==='ar'?(w.name_ar||w.code):(w.name_en||w.code); }
+function repFmtDT(iso){
+  if(!iso) return '—';
+  const dt=new Date(iso);
+  // timestamps (generated_at, movement created_at) shown in Riyadh time
+  return dt.toLocaleDateString(LANG==='ar'?'ar':'en-GB',{day:'2-digit',month:'short',year:'numeric',timeZone:'Asia/Riyadh'})
+    +' '+dt.toLocaleTimeString(LANG==='ar'?'ar':'en-GB',{hour:'2-digit',minute:'2-digit',timeZone:'Asia/Riyadh'});
+}
+function repFmtDate(iso){
+  if(!iso) return '—';
+  // format in Riyadh time so a +03:00 midnight never renders as the previous day
+  return new Date(iso).toLocaleDateString(LANG==='ar'?'ar':'en-GB',{day:'2-digit',month:'short',year:'numeric',timeZone:'Asia/Riyadh'});
+}
+/* DISPLAY-ONLY: backend uses half-open [from,to); the header shows the last INCLUDED day
+   (to − 1 day). Single-day ranges collapse to one date. Never affects what is sent.
+   All math is done on the Riyadh calendar date STRING (no local-tz Date drift). */
+function repRiyadhYmd(iso){ // ISO -> 'YYYY-MM-DD' as seen in Riyadh
+  return new Date(iso).toLocaleDateString('en-CA',{timeZone:'Asia/Riyadh'});
+}
+function repYmdMinus1(ymd){ // subtract one calendar day via UTC-noon anchor (drift-free)
+  const d=new Date(ymd+'T12:00:00Z'); d.setUTCDate(d.getUTCDate()-1);
+  return d.toISOString().slice(0,10);
+}
+function repFmtYmd(ymd){ // 'YYYY-MM-DD' -> localized label (anchor at Riyadh noon so the day is stable)
+  return new Date(ymd+'T12:00:00+03:00').toLocaleDateString(LANG==='ar'?'ar':'en-GB',{day:'2-digit',month:'short',year:'numeric',timeZone:'Asia/Riyadh'});
+}
+function repFmtRange(fromIso,toIso){
+  if(!fromIso||!toIso) return '—';
+  const fromYmd=repRiyadhYmd(fromIso);
+  const lastIncl=repYmdMinus1(repRiyadhYmd(toIso));
+  if(fromYmd===lastIncl) return repFmtYmd(fromYmd);
+  return repFmtYmd(fromYmd)+' → '+repFmtYmd(lastIncl);
+}
+
+/* the control form (always visible) */
+function repForm(){
+  const periods=[['today','repPToday'],['yesterday','repPYesterday'],['week','repPWeek'],
+    ['lastweek','repPLastWeek'],['month','repPMonth'],['lastmonth','repPLastMonth'],['custom','repPCustom']];
+  const chipBar=periods.map(([k,lbl])=>
+    `<button class="rep-chip ${repState.period===k?'on':''}" onclick="repSetPeriod('${k}')">${t(lbl)}</button>`).join('');
+  // custom date inputs (only when custom)
+  let custom='';
+  if(repState.period==='custom'){
+    custom=`<div class="rep-custom">
+      <label>${t('repFrom')} <input type="date" value="${repState.from||''}" onchange="repSetCustom('from',this.value)"/></label>
+      <label>${t('repTo')} <input type="date" value="${repState.to||''}" onchange="repSetCustom('to',this.value)"/></label>
+    </div>`;
+  }
+  // warehouse: All vs one
+  let whOpts=`<option value="">${t('repAllWh')}</option>`;
+  (repState.wh||[]).forEach(w=>{ whOpts+=`<option value="${w.warehouse_id}" ${repState.whId===w.warehouse_id?'selected':''}>${esc(repWhName(w))}</option>`; });
+  const whBlock=`<div class="rep-whrow">
+    <button class="rep-chip ${repState.whMode==='all'?'on':''}" onclick="repSetWhMode('all')">${t('repAllWh')}</button>
+    <button class="rep-chip ${repState.whMode==='one'?'on':''}" onclick="repSetWhMode('one')">${t('repOneWh')}</button>
+    ${repState.whMode==='one'?`<select class="rep-sel" onchange="repSetWh(this.value)">${whOpts}</select>`:''}
+  </div>`;
+  // preset
+  const presets=[['full','repRepFull'],['daily','repRepDaily'],['weekly','repRepWeekly'],
+    ['monthly','repRepMonthly'],['inventory','repRepInventory'],['movement','repRepMovement'],
+    ['expiry','repRepExpiry'],['approvals','repRepApprovals']];
+  let presetOpts=presets.map(([k,lbl])=>`<option value="${k}" ${repState.preset===k?'selected':''}>${t(lbl)}</option>`).join('');
+  const presetBlock=`<div class="rep-field"><label>${t('repPreset')}</label><select class="rep-sel" onchange="repSetPreset(this.value)">${presetOpts}</select></div>`;
+  // More Filters (advanced, hidden by default)
+  const moreBtn=`<button class="rep-more" onclick="repToggleFilters()">${repState.showFilters?'▾':'▸'} ${t('repMoreFilters')}</button>`;
+  let moreBox='';
+  if(repState.showFilters){
+    moreBox=`<div class="rep-morebox">
+      <label class="rep-check"><input type="checkbox" ${repState.compare?'checked':''} onchange="repSetCompare(this.checked)"/> ${t('repCompare')}</label>
+    </div>`;
+  }
+  return `<div class="rep-form">
+    <div class="rep-field"><label>${t('repPeriod')}</label><div class="rep-chips">${chipBar}</div>${custom}</div>
+    <div class="rep-field"><label>${t('repWarehouses')}</label>${whBlock}</div>
+    ${presetBlock}
+    <div class="rep-actions">
+      <button class="rep-gen" onclick="repGenerate()">${t('repGenerate')}</button>
+      ${moreBtn}
+    </div>
+    ${moreBox}
+  </div>`;
+}
+
+/* KPI tile */
+function repKpi(val,lbl,tone){ return `<div class="rep-kpi ${tone||''}"><div class="rk-val">${fmtNum(val)}</div><div class="rk-lbl">${lbl}</div></div>`; }
+
+/* Executive Summary */
+function repExecSummary(s){
+  if(!s) return '';
+  return `<div class="rep-sec"><h3>${t('repExecSummary')}</h3>
+    <div class="rep-kpis">
+      ${repKpi(s.active_warehouses,t('repActiveWh'))}
+      ${repKpi(s.distinct_items,t('repDistinctItems'))}
+      ${repKpi(s.items_with_stock,t('repWithStock'))}
+      ${repKpi(s.out_of_stock,t('repOutStock'),(s.out_of_stock>0?'crit':''))}
+      ${repKpi(s.low_stock,t('repLowStock'),(s.low_stock>0?'warn':''))}
+      ${repKpi(s.items_without_shelf,t('repNoShelf'),(s.items_without_shelf>0?'info':''))}
+      ${repKpi(s.total_movements,t('repTotalMv'))}
+      ${repKpi(s.pending_approvals,t('repPendingAppr'),(s.pending_approvals>0?'warn':''))}
+    </div></div>`;
+}
+
+/* Attention Required */
+function repAttention(alerts){
+  return ''; // Attention Required section removed from all reports (user request)
+  if(!repSectionOn('attention')) return '';
+  if(!alerts || !alerts.length) return `<div class="rep-sec"><h3>${t('repAttention')}</h3><div class="rep-empty rep-ok">${t('repNoAlerts')}</div></div>`;
+  const rows=alerts.map(a=>{
+    const tone=a.severity==='critical'?'crit':(a.severity==='warning'?'warn':'info');
+    const ic=a.severity==='critical'?'🔴':(a.severity==='warning'?'🟠':'🔵');
+    return `<div class="rep-alert ${tone}">${ic} <span class="ra-msg">${t('repAlert_'+a.code)||a.code}</span> <span class="ra-cnt">${fmtNum(a.count)}</span></div>`;
+  }).join('');
+  return `<div class="rep-sec"><h3>${t('repAttention')}</h3>${rows}</div>`;
+}
+
+/* Observations */
+function repObservations(obs){
+  if(!repSectionOn('observations')) return '';
+  if(!obs || !obs.length) return '';
+  const rows=obs.map(o=>{
+    let txt=t('repObs_'+o.code)||o.code;
+    let extra='';
+    if(o.code==='top_issue_warehouse'){ const wn=LANG==='ar'?(o.warehouse_name_ar||o.warehouse_code):(o.warehouse_name_en||o.warehouse_code); extra=` — ${esc(wn||'')}`; }
+    return `<li>${txt}: <b>${fmtNum(o.value)}</b>${extra}</li>`;
+  }).join('');
+  return `<div class="rep-sec"><h3>${t('repObservations')}</h3><ul class="rep-obs">${rows}</ul></div>`;
+}
+
+/* Movement Summary + Comparison */
+function repMovementSummary(ms,cmp){
+  if(!repSectionOn('movement_summary')) return '';
+  if(!ms) return '';
+  const rowsData=[
+    ['receipts','mvT_RECEIPT'],['issues','mvT_ISSUE'],['returns','mvT_RETURN'],
+    ['transfers_in','mvT_TRANSFER_IN'],['transfers_out','mvT_TRANSFER_OUT'],
+    ['disposals','mvT_DISPOSAL'],['adjustments','mvT_ADJUSTMENT']
+  ];
+  const showCmp=repSectionOn('comparison') && cmp;
+  const head=`<tr><th>${t('repMvType')}</th><th>${t('repCount')}</th>${showCmp?`<th>${t('repPrevCount')}</th><th>${t('repChange')}</th>`:''}</tr>`;
+  const body=rowsData.map(([k,lbl])=>{
+    const cur=Number(ms[k]||0);
+    let cmpCells='';
+    if(showCmp){
+      const prev=Number(cmp['prev_'+k]||0);
+      const diff=cur-prev;
+      const arrow=diff>0?'▲':(diff<0?'▼':'—');
+      const cls=diff>0?'up':(diff<0?'down':'');
+      cmpCells=`<td>${fmtNum(prev)}</td><td class="rep-chg ${cls}">${arrow} ${fmtNum(Math.abs(diff))}</td>`;
+    }
+    return `<tr><td>${t(lbl)}</td><td>${fmtNum(cur)}</td>${cmpCells}</tr>`;
+  }).join('');
+  const totalRow=`<tr class="rep-total"><td>${t('repTotalMv')}</td><td>${fmtNum(ms.total_movements)}</td>${showCmp?`<td>${fmtNum(cmp.prev_total_movements)}</td><td></td>`:''}</tr>`;
+  let cmpNote='';
+  if(showCmp){ cmpNote=`<div class="rep-cmpnote">${t('repCompareVs')}: ${repFmtRange(cmp.prev_from, cmp.prev_to)}</div>`; }
+  return `<div class="rep-sec"><h3>${t('repMovementSummary')}</h3>
+    <table class="rep-tbl">${head}${body}${totalRow}</table>${cmpNote}</div>`;
+}
+
+/* Warehouse Summary (dynamic rows) */
+function repWarehouseSummary(ws){
+  if(!repSectionOn('warehouse_summary')) return '';
+  if(!ws || !ws.length) return '';
+  const head=`<tr><th>${t('repWh')}</th><th>${t('repItems')}</th><th>${t('repOutStock')}</th><th>${t('repLowStock')}</th>
+    <th>${t('mvT_RECEIPT')}</th><th>${t('mvT_ISSUE')}</th><th>${t('repMvTotal')}</th><th>${t('repExpired')}</th></tr>`;
+  const body=ws.map(w=>{
+    const wn=LANG==='ar'?(w.warehouse_name_ar||w.warehouse_code):(w.warehouse_name_en||w.warehouse_code);
+    return `<tr><td>${esc(wn||'')}</td><td>${fmtNum(w.item_lines)}</td>
+      <td class="${w.out_of_stock>0?'rep-c-crit':''}">${fmtNum(w.out_of_stock)}</td>
+      <td class="${w.low_stock>0?'rep-c-warn':''}">${fmtNum(w.low_stock)}</td>
+      <td>${fmtNum(w.receipts)}</td><td>${fmtNum(w.issues)}</td><td>${fmtNum(w.total_movements)}</td>
+      <td class="${w.expired_batches>0?'rep-c-crit':''}">${fmtNum(w.expired_batches)}</td></tr>`;
+  }).join('');
+  return `<div class="rep-sec"><h3>${t('repWarehouseSummary')}</h3><table class="rep-tbl">${head}${body}</table></div>`;
+}
+
+/* Inventory Health */
+function repInventoryHealth(h){
+  if(!repSectionOn('inventory_health')) return '';
+  if(!h) return '';
+  return `<div class="rep-sec"><h3>${t('repInventoryHealth')}</h3>
+    <div class="rep-kpis">
+      ${repKpi(h.healthy,t('repHealthy'),'ok')}
+      ${repKpi(h.low_stock,t('repLowStock'),(h.low_stock>0?'warn':''))}
+      ${repKpi(h.out_of_stock,t('repOutStock'),(h.out_of_stock>0?'crit':''))}
+      ${repKpi(h.with_reservations,t('repReserved'))}
+      ${repKpi(h.without_shelf,t('repNoShelf'),(h.without_shelf>0?'info':''))}
+      ${repKpi(h.without_image,t('repNoImage'),'info')}
+      ${repKpi(h.no_move_90,t('repNoMove90'),(h.no_move_90>0?'warn':''))}
+      ${repKpi(h.items_multi_warehouse,t('repMultiWh'))}
+    </div></div>`;
+}
+
+/* Item Summary (opening/closing per item — item-level ONLY, no grand totals) */
+function repItemSummary(items){
+  if(!repSectionOn('item_summary')) return '';
+  if(!items || !items.length) return `<div class="rep-sec"><h3>${t('repItemSummary')}</h3><div class="rep-empty">${t('repNoItems')}</div></div>`;
+  const head=`<tr><th></th><th>${t('repCode')}</th><th>${t('repItem')}</th><th>${t('repWh')}</th><th>${t('repUnit')}</th>
+    <th>${t('repOpening')}</th><th>${t('mvT_RECEIPT')}</th><th>${t('mvT_ISSUE')}</th><th>${t('repClosing')}</th><th>${t('repStatus')}</th></tr>`;
+  const body=items.map(it=>{
+    const nm=LANG==='ar'?(it.name_ar||it.name_en):(it.name_en||it.name_ar);
+    const wn=LANG==='ar'?(it.warehouse_name_ar||it.warehouse_code):(it.warehouse_name_en||it.warehouse_code);
+    const un=LANG==='ar'?(it.unit_name_ar||it.unit_name_en):(it.unit_name_en||it.unit_name_ar);
+    const img=it.image_url?`<img class="rep-thumb" src="${esc(it.image_url)}" onclick="openLightbox('${esc(it.image_url)}')" alt=""/>`:`<div class="rep-thumb rep-thumb-none">📦</div>`;
+    const st=it.stock_status;
+    const stCls=st==='out'?'rep-c-crit':(st==='low'?'rep-c-warn':'rep-c-ok');
+    const stLbl=st==='out'?t('repOutStock'):(st==='low'?t('repLowStock'):t('repHealthy'));
+    return `<tr><td>${img}</td><td>${esc(it.item_code||'')}</td><td>${esc(nm||'')}</td><td>${esc(wn||'')}</td><td>${esc(un||'')}</td>
+      <td>${fmtNum(it.opening)}</td><td>${fmtNum(it.receipts)}</td><td>${fmtNum(it.issues)}</td>
+      <td><b>${fmtNum(it.closing)}</b></td><td class="${stCls}">${stLbl}</td></tr>`;
+  }).join('');
+  return `<div class="rep-sec"><h3>${t('repItemSummary')}</h3><div class="rep-scroll"><table class="rep-tbl rep-tbl-items">${head}${body}</table></div></div>`;
+}
+
+/* Batches / Expiry Summary */
+function repBatchesSummary(b){
+  if(!repSectionOn('batches_summary')) return '';
+  if(!b) return '';
+  const empty=(Number(b.total_real_batches)||0)===0;
+  if(empty) return `<div class="rep-sec"><h3>${t('repBatchesSummary')}</h3><div class="rep-empty">${t('repNoBatches')}</div></div>`;
+  return `<div class="rep-sec"><h3>${t('repBatchesSummary')} <span class="rep-hint">(${t('repCurrentExpiry')})</span></h3>
+    <div class="rep-kpis">
+      ${repKpi(b.expired,t('repExpired'),(b.expired>0?'crit':''))}
+      ${repKpi(b.expiring_30,t('repExp30'),(b.expiring_30>0?'warn':''))}
+      ${repKpi(b.expiring_60,t('repExp60'),(b.expiring_60>0?'warn':''))}
+      ${repKpi(b.expiring_90,t('repExp90'))}
+      ${repKpi(b.healthy,t('repHealthy'),'ok')}
+      ${repKpi(b.no_expiry,t('repNoExpiry'))}
+    </div></div>`;
+}
+
+/* Movement Approvals Summary */
+function repApprovalsSummary(a){
+  if(!repSectionOn('movement_approvals_summary')) return '';
+  if(!a) return '';
+  return `<div class="rep-sec"><h3>${t('repApprovalsSummary')}</h3>
+    <div class="rep-kpis">
+      ${repKpi(a.pending,t('repApPending'),(a.pending>0?'warn':''))}
+      ${repKpi(a.approved,t('repApApproved'),'ok')}
+      ${repKpi(a.rejected,t('repApRejected'))}
+      ${repKpi(a.cancelled,t('repApCancelled'))}
+      ${repKpi(a.admin_modified,t('repApModified'),'info')}
+    </div>
+    <div class="rep-inline">
+      <span>${t('repApTurnaround')}: <b>${a.avg_turnaround_hours==null?'—':fmtNum(a.avg_turnaround_hours)+'h'}</b></span>
+      <span>${t('repApOldest')}: <b>${a.oldest_pending_days==null?'—':fmtNum(a.oldest_pending_days)+' '+t('batDaysUnit')}</b></span>
+    </div></div>`;
+}
+
+/* Material Requests Summary */
+function repMaterialSummary(m){
+  if(!repSectionOn('material_requests_summary')) return '';
+  if(!m) return '';
+  return `<div class="rep-sec"><h3>${t('repMaterialSummary')}</h3>
+    <div class="rep-kpis">
+      ${repKpi(m.pending,t('repMrPending'),(m.pending>0?'warn':''))}
+      ${repKpi(m.allocated,t('repMrAllocated'),(m.allocated>0?'warn':''))}
+      ${repKpi(m.issued,t('repMrIssued'),'ok')}
+      ${repKpi(m.rejected,t('repMrRejected'))}
+      ${repKpi(m.cancelled,t('repMrCancelled'))}
+      ${repKpi(m.lines_short_approved,t('repMrShort'),(m.lines_short_approved>0?'info':''))}
+    </div>
+    <div class="rep-note-sm">${t('repMrPendingNote')}</div></div>`;
+}
+
+/* Exceptions */
+function repExceptions(e){
+  if(!repSectionOn('exceptions')) return '';
+  if(!e) return '';
+  const any=['out_of_stock','low_stock','without_shelf','without_image','no_move_90','reserved_over_hand'].some(k=>Number(e[k])>0);
+  if(!any) return `<div class="rep-sec"><h3>${t('repExceptions')}</h3><div class="rep-empty rep-ok">${t('repNoExceptions')}</div></div>`;
+  return `<div class="rep-sec"><h3>${t('repExceptions')}</h3>
+    <div class="rep-kpis">
+      ${repKpi(e.out_of_stock,t('repOutStock'),(e.out_of_stock>0?'crit':''))}
+      ${repKpi(e.low_stock,t('repLowStock'),(e.low_stock>0?'warn':''))}
+      ${repKpi(e.without_shelf,t('repNoShelf'),(e.without_shelf>0?'info':''))}
+      ${repKpi(e.without_image,t('repNoImage'),'info')}
+      ${repKpi(e.no_move_90,t('repNoMove90'),(e.no_move_90>0?'warn':''))}
+      ${repKpi(e.reserved_over_hand,t('repResOverHand'),(e.reserved_over_hand>0?'crit':''))}
+    </div></div>`;
+}
+
+/* Audit Summary */
+function repAuditSummary(a){
+  if(!repSectionOn('audit_summary')) return '';
+  if(!a) return '';
+  if((Number(a.total_events)||0)===0) return `<div class="rep-sec"><h3>${t('repAuditSummary')}</h3><div class="rep-empty">${t('repNoAudit')}</div></div>`;
+  const by=a.by_action||{};
+  const rows=Object.keys(by).map(k=>`<tr><td>${esc(k)}</td><td>${fmtNum(by[k])}</td></tr>`).join('');
+  return `<div class="rep-sec"><h3>${t('repAuditSummary')}</h3>
+    <div class="rep-inline"><span>${t('repAuditEvents')}: <b>${fmtNum(a.total_events)}</b></span><span>${t('repAuditActors')}: <b>${fmtNum(a.distinct_actors)}</b></span></div>
+    ${rows?`<table class="rep-tbl"><tr><th>${t('repAuditAction')}</th><th>${t('repCount')}</th></tr>${rows}</table>`:''}</div>`;
+}
+
+/* Movement Register card (stub) + detailed (lazy) */
+function repRegisterCard(reg){
+  if(!repSectionOn('movement_register')) return '';
+  if(!reg) return '';
+  const n=Number(reg.total_rows||0);
+  if(!repState.regOpen){
+    return `<div class="rep-sec"><h3>${t('repMovementRegister')}</h3>
+      <div class="rep-regcard">
+        <span>${fmtNum(n)} ${t('repMovements')}</span>
+        ${n>0?`<button class="rep-regbtn" onclick="repOpenRegister()">${t('repViewRegister')}</button>`:`<span class="rep-empty-inline">${t('repNoMovements')}</span>`}
+      </div></div>`;
+  }
+  // opened → detailed table
+  let inner='';
+  if(repState.regLoading){ inner=`<div class="rep-loading">${t('repLoading')}</div>`; }
+  else if(repState.regError){ inner=`<div class="rep-err">${t('repErr_'+repState.regError)||t('repErrGeneric')}</div>`; }
+  else if(repState.regData){
+    const d=repState.regData;
+    const mvs=d.movements||[];
+    // type filter chips
+    const types=['','RECEIPT','ISSUE','RETURN','TRANSFER_IN','TRANSFER_OUT','DISPOSAL','ADJUSTMENT'];
+    const typeSel=`<select class="rep-sel" onchange="repRegType(this.value)">
+      <option value="">${t('mvAllTypes')}</option>
+      ${types.slice(1).map(tp=>`<option value="${tp}" ${repState.regType===tp?'selected':''}>${t('mvT_'+tp)}</option>`).join('')}
+    </select>`;
+    if(!mvs.length){ inner=`${typeSel}<div class="rep-empty">${t('repNoMovements')}</div>`; }
+    else {
+      const isAdm=CTX.mode==='admin';
+      const head=`<tr><th>${t('repDate')}</th><th>${t('repMvType')}</th><th>${t('repItem')}</th><th>${t('repWh')}</th><th>${t('repQty')}</th><th>${t('repBatch')}</th>${isAdm?`<th>${t('repActor')}</th>`:''}<th>${t('repNote')}</th></tr>`;
+      const rows=mvs.map(m=>{
+        const nm=LANG==='ar'?(m.item_name_ar||m.item_name_en):(m.item_name_en||m.item_name_ar);
+        const wn=LANG==='ar'?(m.warehouse_name_ar||m.warehouse_code):(m.warehouse_name_en||m.warehouse_code);
+        const un=LANG==='ar'?(m.unit_name_ar||m.unit_name_en):(m.unit_name_en||m.unit_name_ar);
+        const q=Number(m.qty); const qCls=q<0?'rep-q-neg':'rep-q-pos';
+        const img=m.image_url?`<img class="rep-thumb-sm" src="${esc(m.image_url)}" onclick="openLightbox('${esc(m.image_url)}')" alt=""/>`:'';
+        return `<tr>
+          <td>${repFmtDT(m.created_at)}</td>
+          <td><span class="rep-mvtype rep-mv-${esc(m.movement_type)}">${t('mvT_'+m.movement_type)||m.movement_type}</span></td>
+          <td>${img} ${esc(m.item_code||'')} <span class="rep-itname">${esc(nm||'')}</span></td>
+          <td>${esc(wn||'')}</td>
+          <td class="${qCls}">${fmtNum(q)} ${esc(un||'')}</td>
+          <td>${esc(m.batch_no||'—')}</td>
+          ${isAdm?`<td>${esc(m.actor_email||'—')}</td>`:''}
+          <td>${esc(m.note||'')}</td>
+        </tr>`;
+      }).join('');
+      // pagination
+      const total=Number(d.total_count||0);
+      const from=repState.regOffset+1, to=Math.min(repState.regOffset+repState.regLimit,total);
+      const pager=`<div class="rep-pager">
+        <button class="rep-pbtn" ${repState.regOffset<=0?'disabled':''} onclick="repRegPage(-1)">${t('mvPrev')}</button>
+        <span>${fmtNum(from)}–${fmtNum(to)} ${t('mvOf')} ${fmtNum(total)}</span>
+        <button class="rep-pbtn" ${!d.has_more?'disabled':''} onclick="repRegPage(1)">${t('mvNext')}</button>
+      </div>`;
+      inner=`${typeSel}<div class="rep-scroll"><table class="rep-tbl rep-tbl-reg">${head}${rows}</table></div>${pager}`;
+    }
+  }
+  return `<div class="rep-sec"><h3>${t('repMovementRegister')}</h3>${inner}</div>`;
+}
+
+/* the preview (all sections, gated by preset) */
+function repPreview(){
+  const d=repState.data; if(!d) return '';
+  const m=d.meta||{};
+  // scope label
+  let scopeLbl;
+  if(m.is_all_warehouses){ scopeLbl=t('repAllWh'); }
+  else {
+    const w=(repState.wh||[]).find(x=>x.warehouse_id===repState.whId);
+    scopeLbl=w?repWhName(w):t('repOneWh');
+  }
+  const header=`<div class="rep-preview-head">
+    <div class="rph-title">
+      <div class="rph-brand">ADVACON</div>
+      <h2>${t('repReportTitle')}</h2>
+      <div class="rph-preset">${t('repRep'+({full:'Full',daily:'Daily',weekly:'Weekly',monthly:'Monthly',inventory:'Inventory',movement:'Movement',expiry:'Expiry',approvals:'Approvals'}[repState.preset]||'Full'))}</div>
+    </div>
+    <div class="rph-meta">
+      <div><span>${t('repPeriod')}:</span> ${repFmtRange(m.from, m.to)}</div>
+      <div><span>${t('repScope')}:</span> ${esc(scopeLbl)} ${m.is_all_warehouses?`(${fmtNum(m.scope_warehouse_count)})`:''}</div>
+      <div><span>${t('repGenerated')}:</span> ${repFmtDT(m.generated_at)}</div>
+    </div>
+    <div class="rph-export">
+      <button class="rep-exp" onclick="repPrintReport()" title="${t('repPdfHint')}">${t('repExportPdf')}</button>
+      <button class="rep-exp" disabled title="${t('repSoon')}">${t('repExportExcel')}</button>
+      <button class="rep-exp" onclick="repPrintReport()">${t('repPrint')}</button>
+    </div>
+  </div>`;
+  const printFooter=`<div class="rep-print-footer">ADVACON — ${t('repFooterSys')} · ${t('repGenerated')}: ${repFmtDT(m.generated_at)}</div>`;
+  return `<div class="rep-preview">
+    ${header}
+    ${repExecSummary(d.summary)}
+    ${repObservations(d.observations)}
+    ${repMovementSummary(d.movement_summary, d.comparison)}
+    ${repWarehouseSummary(d.warehouse_summary)}
+    ${repInventoryHealth(d.inventory_health)}
+    ${repItemSummary(d.item_summary)}
+    ${repBatchesSummary(d.batches_summary)}
+    ${repApprovalsSummary(d.movement_approvals_summary)}
+    ${repMaterialSummary(d.material_requests_summary)}
+    ${repExceptions(d.exceptions)}
+    ${repAuditSummary(d.audit_summary)}
+    ${repRegisterCard(d.movement_register)}
+    ${printFooter}
+  </div>`;
+}
+
+/* PHASE D — Print / PDF. Same flow for both buttons; user picks "Save as PDF"
+   in the browser dialog. Prints exactly what's on screen (register included only
+   if the user opened it — NO background fetch of extra pages). */
+function repPrintReport(){
+  if(!repState.data){ return; }
+  document.body.classList.add('printing-report');
+  const cleanup=()=>{ document.body.classList.remove('printing-report'); window.removeEventListener('afterprint',cleanup); };
+  window.addEventListener('afterprint',cleanup);
+  // Safety net for browsers that don't fire afterprint reliably
+  setTimeout(cleanup, 60000);
+  try{ window.print(); }
+  catch(e){ cleanup(); }
+}
+
+/* main entry */
+function viewWhReports(){
+  if(repState.wh===null){ repEnsureWh().then(repRender); }
+  let body='';
+  if(repState.loading){ body=`<div class="rep-loading">${t('repGenerating')}</div>`; }
+  else if(repState.error){ body=`<div class="rep-err">${t('repErr_'+repState.error)||t('repErrGeneric')}</div>`; }
+  else if(repState.data){ body=repPreview(); }
+  else { body=`<div class="rep-hint-box">${t('repStartHint')}</div>`; }
+  return `<div class="phead"><div class="eyebrow">${t('dashEye')}</div><h1>${t('awh_reports')}</h1></div>
+    ${repForm()}
+    ${body}`;
+}
+
+
 </script>
 </body>
 </html>
