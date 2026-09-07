@@ -1039,7 +1039,7 @@ const NAV_ITEMS = [
   { key: 'residents', route: 'residents', icon: '☺' },
   { key: 'expenses', route: 'expenses', icon: '⟳' },
   { key: 'reports', route: 'reports', icon: '▦' },
-  { key: 'settings', route: 'settings', icon: '⚙' },
+  { key: 'settings', route: 'settings', icon: '⚙', adminOnly: true },
   { key: 'approvals', route: 'approvals', icon: '✓', adminOnly: true },
   { key: 'permissions', route: 'permissions', icon: '🔐', adminOnly: true },
   { key: 'activity', route: 'activity', icon: '🕐', adminOnly: true },
@@ -3654,7 +3654,8 @@ async function screenPermissions(content){
   const matrix=content.querySelector('#permMatrix');
   try{
     const r=await rawRpc('asset_admin_permission_matrix',{p_module_key:'housing',p_user_id:manager.user_id});
-    const items=r.items||[];
+    const ADMIN_ONLY_PERMISSION_SECTIONS=new Set(['settings','permissions','approvals','activity']);
+    const items=(r.items||[]).filter(x=>!ADMIN_ONLY_PERMISSION_SECTIONS.has((x.action_key||'').split('.')[0]));
     const sectionNames={
       dashboard:['لوحة المعلومات','Dashboard'], properties:['العقارات','Properties'], spaces:['المساحات','Spaces'],
       landlords:['الملاك','Landlords'], contracts:['العقود','Contracts'], meters:['العدادات','Meters'],
