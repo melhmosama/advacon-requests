@@ -193,11 +193,47 @@
   .mt-3 { margin-top: 16px; }
   .hidden { display: none !important; }
 
+  /* Hamburger — only visible on mobile */
+  .nav-toggle { display: none; }
+
+  /* Backdrop — only rendered on mobile when the drawer is open */
+  .drawer-backdrop {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.35);
+    z-index: 90; opacity: 0; transition: opacity 0.2s ease;
+  }
+  .drawer-backdrop.open { display: block; opacity: 1; }
+
   @media (max-width: 900px) {
+    /* Collapse to single column; sidebar becomes an off-canvas drawer */
     #app { grid-template-columns: 1fr; grid-template-areas: "topbar" "main"; }
-    .sidebar { display: none; }
+    html[dir="rtl"] #app { grid-template-columns: 1fr; grid-template-areas: "topbar" "main"; }
     main { padding: 16px; }
     .form-grid { grid-template-columns: 1fr; }
+
+    /* Show the hamburger */
+    .nav-toggle {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 36px; height: 36px; border: 1px solid var(--border); background: var(--panel);
+      border-radius: 6px; cursor: pointer; font-size: 18px; line-height: 1;
+      margin-inline-end: 8px; color: var(--text);
+    }
+    .nav-toggle:hover { background: var(--panel-alt); }
+
+    /* Sidebar → off-canvas drawer */
+    .sidebar {
+      position: fixed; top: 0; bottom: 0; width: 280px; max-width: 85vw;
+      z-index: 100; padding-top: calc(var(--topbar-h) + 16px);
+      transition: transform 0.25s ease;
+      box-shadow: 0 0 24px rgba(0,0,0,0.15);
+      overflow-y: auto;
+      display: block;  /* override any 'display:none' from earlier iterations */
+    }
+    /* LTR: drawer slides in from the LEFT */
+    html[dir="ltr"] .sidebar { inset-inline-start: 0; transform: translateX(-100%); border-inline-end: 1px solid var(--border); border-inline-start: none; }
+    html[dir="ltr"] .sidebar.open { transform: translateX(0); }
+    /* RTL: drawer slides in from the RIGHT */
+    html[dir="rtl"] .sidebar { inset-inline-start: 0; transform: translateX(100%); border-inline-start: 1px solid var(--border); border-inline-end: none; }
+    html[dir="rtl"] .sidebar.open { transform: translateX(0); }
   }
 </style>
 </head>
@@ -205,6 +241,7 @@
 
 <div id="app">
   <header class="topbar">
+    <button class="nav-toggle" id="navToggle" aria-label="Menu" title="Menu">☰</button>
     <span class="logo">ADVACON</span>
     <span class="text-muted" data-t="modName">Housing &amp; Offices</span>
     <span class="spacer"></span>
@@ -214,13 +251,15 @@
     <button class="btn btn-sm btn-ghost" id="logoutBtn" data-t="logout">Sign out</button>
   </header>
 
-  <aside class="sidebar">
+  <aside class="sidebar" id="sidebar">
     <div class="brand">
       <div class="brand-title" data-t="brandTitle">Housing &amp; Offices</div>
       <div class="brand-sub" data-t="brandSub">Management Console</div>
     </div>
     <nav id="mainNav"></nav>
   </aside>
+
+  <div class="drawer-backdrop" id="drawerBackdrop"></div>
 
   <main id="content">
     <div class="loading" data-t="loading">Loading…</div>
@@ -3592,6 +3631,27 @@ document.addEventListener('DOMContentLoaded', async () => {
     await admSignOut();
     location.href = '/admin';
   });
+
+  // Mobile drawer wiring — hamburger + backdrop + Escape + auto-close on nav click
+  const sidebar  = document.getElementById('sidebar');
+  const backdrop = document.getElementById('drawerBackdrop');
+  const toggle   = document.getElementById('navToggle');
+  const openDrawer  = () => { sidebar.classList.add('open'); backdrop.classList.add('open'); };
+  const closeDrawer = () => { sidebar.classList.remove('open'); backdrop.classList.remove('open'); };
+  toggle.addEventListener('click', () => {
+    if (sidebar.classList.contains('open')) closeDrawer(); else openDrawer();
+  });
+  backdrop.addEventListener('click', closeDrawer);
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && sidebar.classList.contains('open')) closeDrawer();
+  });
+  // Any nav-item click (delegated) also closes the drawer
+  document.getElementById('mainNav').addEventListener('click', (e) => {
+    if (e.target.closest('.nav-item')) closeDrawer();
+  });
+  // If the viewport is resized past the breakpoint while open, close cleanly
+  window.addEventListener('resize', () => { if (window.innerWidth > 900) closeDrawer(); });
+
   window.addEventListener('hashchange', route);
   const ok = await requireAdmin();
   if (ok) await route();
