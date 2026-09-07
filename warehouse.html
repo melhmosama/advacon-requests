@@ -1636,7 +1636,13 @@ async function warehouseRpc(fn, args){
     }catch(_){}
     throw new Error(translateError(String(msg).trim()));
   }
-  return await res.json();
+  const text = await res.text();
+    if(!text) return { ok:true };
+    try{
+      return JSON.parse(text);
+    }catch(_){
+      return text;
+    }
 }
 
 /* =====================================================================
