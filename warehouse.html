@@ -176,6 +176,161 @@
   .phase-placeholder .icon{font-size:56px;margin-bottom:16px;opacity:.5}
   .phase-placeholder .phase-name{font-size:15px;color:var(--navy);font-weight:600;margin-bottom:6px}
   .phase-placeholder .detail{font-size:12px}
+
+  /* ======================================================================
+     PHASE 1 — Dashboard / Inventory / Catalog screens (ported from index.html)
+     Design tokens and class names preserved for parity.
+     ====================================================================== */
+  .phead{margin:0 0 14px}
+  .phead.sm{margin:0 0 8px}
+  .phead h1{margin:2px 0 4px;color:var(--navy);font-size:20px;font-weight:700}
+  .phead h2{margin:2px 0 4px;color:var(--navy);font-size:14px;font-weight:700}
+  .phead p{margin:0;color:var(--grey);font-size:12px}
+  .phead .eyebrow,.eyebrow{color:var(--steel);font-size:11px;letter-spacing:1px;text-transform:uppercase;font-weight:700}
+  .panel{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:14px;box-shadow:var(--shadow);margin-bottom:14px}
+  .empty{padding:40px;text-align:center;color:var(--muted)}
+  .tbl-wrap{overflow-x:auto;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius)}
+  table.tbl{width:100%;border-collapse:collapse;font-size:13px}
+  table.tbl th{background:var(--head);color:var(--navy);font-weight:600;padding:9px 12px;text-align:start;border-bottom:1px solid var(--border);font-size:12px}
+  table.tbl td{padding:9px 12px;border-bottom:1px solid var(--border)}
+  table.tbl tr:last-child td{border-bottom:none}
+  table.tbl .num{text-align:end;font-variant-numeric:tabular-nums}
+
+  /* Dashboard */
+  .dash-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+  .dash-wh select{padding:6px 10px;border:1px solid var(--border);border-radius:6px;background:var(--panel);font:inherit;min-width:180px}
+  .dash-back{background:none;border:none;color:var(--med);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:10px;padding:0}
+  .kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:12px}
+  .kpi{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:14px;box-shadow:var(--shadow);border-inline-start:4px solid var(--steel)}
+  .kpi.k-navy{border-inline-start-color:var(--navy)}
+  .kpi.k-amber{border-inline-start-color:var(--amber)}
+  .kpi.k-red{border-inline-start-color:var(--red)}
+  .kpi.k-grey{border-inline-start-color:var(--grey)}
+  .kpi.clickable{cursor:pointer;transition:transform .1s,box-shadow .15s}
+  .kpi.clickable:hover{transform:translateY(-2px);box-shadow:0 4px 14px rgba(21,64,110,.15)}
+  .kpi-v{font-size:24px;font-weight:800;color:var(--navy);line-height:1;font-variant-numeric:tabular-nums}
+  .kpi-l{font-size:11px;color:var(--grey);text-transform:uppercase;letter-spacing:.5px;margin-top:6px}
+  .cat-panel .cat-tbl{font-size:12px}
+  .cat-panel .cat-tbl .cat-nm{font-weight:600;color:var(--txt)}
+  .cat-panel .cat-tbl .cat-bar{background:var(--pale);height:5px;margin-top:4px;border-radius:3px;overflow:hidden}
+  .cat-panel .cat-tbl .cat-bar span{display:block;background:var(--accent);height:100%}
+  .cat-panel .cat-tbl .cat-n{text-align:end;font-variant-numeric:tabular-nums;color:var(--txt)}
+  .cat-panel .cat-tbl .cat-row{cursor:pointer}
+  .cat-panel .cat-tbl .cat-row:hover td{background:var(--pale)}
+  .mv-panel .mv-tbl .mv-dt{color:var(--grey);font-size:11px;white-space:nowrap}
+  .mv-panel .mv-tbl .mv-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;background:var(--head);color:var(--txt)}
+  .mv-panel .mv-tbl .mv-badge.mv-in{background:#d1e7dd;color:#0f5132}
+  .mv-panel .mv-tbl .mv-badge.mv-out{background:#f8d7da;color:#842029}
+  .mv-panel .mv-tbl .mv-badge.mv-adj{background:#fff3cd;color:#664d03}
+  .mv-panel .mv-tbl .mv-item .mv-code{font-family:monospace;font-weight:700;color:var(--navy);margin-inline-end:6px}
+  .mv-panel .mv-tbl .mv-q{text-align:end;font-variant-numeric:tabular-nums;font-weight:700}
+  .mv-panel .mv-tbl .mv-q.q-pos{color:var(--green)}
+  .mv-panel .mv-tbl .mv-q.q-neg{color:var(--red)}
+  .mv-panel .mv-tbl .mv-actor{font-size:11px;color:var(--grey);font-family:monospace}
+  .mv-new{background:var(--navy);color:#fff;border:none;padding:8px 14px;border-radius:6px;cursor:pointer;font:inherit;font-size:13px;font-weight:600}
+  .mv-new:hover{background:var(--navy2)}
+
+  /* Inventory */
+  .inv-toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:6px}
+  .inv-search{position:relative;flex:1;min-width:220px}
+  .inv-search .si{position:absolute;inset-inline-start:10px;top:8px;color:var(--grey);font-size:14px}
+  .inv-search input{width:100%;padding:8px 10px 8px 32px;border:1px solid var(--border);border-radius:6px;font:inherit;background:var(--panel)}
+  html[dir="rtl"] .inv-search input{padding:8px 32px 8px 10px}
+  .inv-filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .inv-filters select{padding:7px 10px;border:1px solid var(--border);border-radius:6px;background:var(--panel);font:inherit;font-size:13px}
+  .toggle{border:1px solid var(--border);padding:6px 10px;border-radius:6px;cursor:pointer;font-size:12px;color:var(--txt);background:var(--panel);user-select:none}
+  .toggle.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .filterbar{display:flex;align-items:center;gap:8px;margin:6px 0}
+  .filterbar .spacer{flex:1}
+  .count-chip{font-size:11px;color:var(--grey);background:var(--head);padding:3px 8px;border-radius:10px}
+  .inv-th-img{width:44px}
+  .inv-thumb{width:36px;height:36px;object-fit:cover;border-radius:5px;cursor:zoom-in;border:1px solid var(--border);background:var(--panel-alt);display:inline-block;text-align:center;line-height:34px;font-size:18px}
+  .inv-thumb-ph{cursor:default}
+  .c-thumb{width:44px;padding:6px !important}
+  .c-id{font-family:monospace;font-weight:600;color:var(--navy);white-space:nowrap}
+  .c-title .ttl{font-weight:600;color:var(--txt)}
+  .c-title .nt{font-size:11px;color:var(--grey)}
+  .noshelf{color:var(--amber);font-size:11px;font-style:italic}
+  .av-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:12px;font-weight:600;font-variant-numeric:tabular-nums}
+  .av-badge.av-ok{background:#d1e7dd;color:#0f5132}
+  .av-badge.av-low{background:#fff3cd;color:#664d03}
+  .av-badge.av-zero{background:#f8d7da;color:#842029}
+  .st-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-inline-end:5px;background:var(--grey);vertical-align:middle}
+  .st-dot.st-on{background:var(--green)}
+  .st-dot.st-off{background:var(--red)}
+  .inv-row{cursor:pointer}
+  .inv-row.sel{background:var(--pale)}
+
+  /* Inventory drawer */
+  .dwr-scrim{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;opacity:0;pointer-events:none;transition:opacity .2s}
+  .dwr-scrim.open{opacity:1;pointer-events:auto}
+  .dwr{position:fixed;top:0;bottom:0;inset-inline-end:0;width:460px;max-width:92vw;background:var(--panel);z-index:201;box-shadow:-6px 0 24px rgba(0,0,0,.15);transform:translateX(100%);transition:transform .25s ease;overflow-y:auto}
+  html[dir="rtl"] .dwr{box-shadow:6px 0 24px rgba(0,0,0,.15);transform:translateX(-100%)}
+  .dwr.open{transform:translateX(0)}
+  .dwr-head{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between}
+  .dwr-head .code{font-family:monospace;font-weight:700;color:var(--navy);font-size:12px;letter-spacing:.3px}
+  .dwr-head h3{margin:6px 0 2px;color:var(--txt);font-size:15px;font-weight:600}
+  .dwr-head .en{color:var(--grey);font-size:12px}
+  .dwr-x{background:transparent;border:none;font-size:22px;cursor:pointer;color:var(--grey);line-height:1}
+  .dwr-body{padding:16px 20px}
+  .dwr-img-block{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+  .dwr-img{width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid var(--border);cursor:zoom-in}
+  .dwr-img-ph{width:80px;height:80px;border-radius:8px;background:var(--panel-alt);border:1px dashed var(--border);display:flex;align-items:center;justify-content:center;flex-direction:column;font-size:26px;color:var(--grey)}
+  .dwr-img-ph span{font-size:10px;margin-top:2px}
+  .dwr-img-btn{display:inline-block;padding:6px 12px;border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:12px;background:var(--panel-alt);color:var(--txt)}
+  .dwr-img-btn:hover{background:var(--pale)}
+  .dwr-img-btn.busy{opacity:.6;pointer-events:none}
+  .dwr-sep{height:1px;background:var(--border);margin:10px 0}
+  .dwr-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .dwr-f{display:flex;flex-direction:column;gap:3px}
+  .dwr-f.full{grid-column:1 / -1}
+  .dwr-f .lb{font-size:10px;color:var(--grey);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+  .dwr-f .vl{color:var(--txt);font-size:13px}
+  .dwr-shelf-row{display:flex;gap:6px;align-items:center}
+  .dwr-shelf-row select{padding:5px 8px;border:1px solid var(--border);border-radius:5px;background:var(--panel);font:inherit;font-size:13px;flex:1}
+  .btn-sm{padding:4px 10px;font-size:12px;border-radius:5px;border:1px solid var(--border);background:var(--panel);cursor:pointer;color:var(--txt)}
+  .btn-sm:hover{background:var(--pale)}
+  .btn-sm.pri{background:var(--navy);color:#fff;border-color:var(--navy)}
+
+  /* Catalog */
+  .cat-sub{color:var(--grey);font-size:12px;margin-top:2px}
+  .whm-newbox{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:12px;box-shadow:var(--shadow)}
+  .whm-newbox h3{margin:0 0 10px;color:var(--navy);font-size:14px}
+  .whm-newfoot{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
+  .rc-in{width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font:inherit;background:var(--panel);color:var(--text);margin-bottom:8px}
+  .rc-in:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 2px rgba(62,110,158,.15)}
+  .rc-lbl{display:block;font-size:12px;color:var(--grey);font-weight:500;margin-bottom:3px}
+  .rc-err{background:#f8d7da;color:#842029;padding:8px 10px;border-radius:6px;border:1px solid #f5c2c7;font-size:12px;margin-top:6px}
+  .rc-cancel{padding:7px 14px;border:1px solid var(--border);border-radius:6px;background:var(--panel);cursor:pointer;font:inherit}
+  .rc-save{padding:7px 14px;border:none;border-radius:6px;background:var(--navy);color:#fff;cursor:pointer;font:inherit;font-weight:600}
+  .rc-save:disabled{opacity:.5;cursor:not-allowed}
+  .cat-img-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .cat-img-prev{width:60px;height:60px;object-fit:cover;border-radius:6px;border:1px solid var(--border);cursor:zoom-in}
+  .cat-img-ph{width:60px;height:60px;background:var(--panel-alt);border:1px dashed var(--border);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:24px;color:var(--grey)}
+  .cat-img-btn{display:inline-block;padding:6px 12px;border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:12px;background:var(--panel-alt)}
+  .cat-img-btn.busy{opacity:.6;pointer-events:none}
+  .cat-img-btn input{display:none}
+  .cat-toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+  .cat-search{max-width:320px}
+  .cat-filters{display:flex;gap:5px}
+  .cat-fbtn{padding:6px 12px;border:1px solid var(--border);background:var(--panel);border-radius:6px;cursor:pointer;font-size:12px;color:var(--txt)}
+  .cat-fbtn.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .cat-count{font-size:11px;color:var(--grey);margin-bottom:8px}
+  .cat-tablewrap{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);overflow-x:auto}
+  .cat-table{width:100%;border-collapse:collapse;font-size:13px}
+  .cat-table th{background:var(--head);color:var(--navy);font-weight:600;padding:9px 12px;text-align:start;border-bottom:1px solid var(--border);font-size:12px}
+  .cat-table td{padding:9px 12px;border-bottom:1px solid var(--border)}
+  .cat-table .cat-th-img{width:44px}
+  .cat-table .cat-code{font-family:monospace;color:var(--navy);font-weight:600;white-space:nowrap}
+  .cat-table .cat-num{text-align:end;font-variant-numeric:tabular-nums}
+  .cat-table .cat-empty{padding:40px;text-align:center;color:var(--muted)}
+  .cat-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600}
+  .cat-badge.on{background:#d1e7dd;color:#0f5132}
+  .cat-badge.off{background:#f8d7da;color:#842029}
+
+  /* Lightbox (image viewer) */
+  .lightbox-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:3000;display:flex;align-items:center;justify-content:center;padding:20px;cursor:zoom-out}
+  .lightbox-overlay img{max-width:100%;max-height:100%;object-fit:contain;box-shadow:0 6px 40px rgba(0,0,0,.6)}
 </style>
 </head>
 <body>
@@ -229,9 +384,9 @@ const sb = supabase.createClient(SB_URL, SB_KEY);
 /* Warehouse sub-navigation — mirror of index.html's WH_SUBNAV, driven live
    as phases land. `live` flips to true when a phase ships its screen. */
 const WH_SUBNAV = [
-  { key:'dashboard',   ic:'▦',  label_ar:'لوحة التحكم',       label_en:'Dashboard',          phase:1, live:false },
-  { key:'inventory',   ic:'📦', label_ar:'الأصناف في المخزون', label_en:'Inventory',          phase:1, live:false },
-  { key:'catalog',     ic:'📖', label_ar:'دليل الأصناف',      label_en:'Item Catalog',       phase:1, live:false },
+  { key:'dashboard',   ic:'▦',  label_ar:'لوحة التحكم',       label_en:'Dashboard',          phase:1, live:true  },
+  { key:'inventory',   ic:'📦', label_ar:'الأصناف في المخزون', label_en:'Inventory',          phase:1, live:true  },
+  { key:'catalog',     ic:'📖', label_ar:'دليل الأصناف',      label_en:'Item Catalog',       phase:1, live:true  },
   { key:'movements',   ic:'🔁', label_ar:'حركات المخزون',     label_en:'Stock Movements',    phase:3, live:false },
   { key:'materialreq', ic:'📝', label_ar:'موافقة الحركات',    label_en:'Movement Approvals', phase:4, live:false },
   { key:'shelves',     ic:'🗄', label_ar:'المستودعات والأرفف', label_en:'Warehouses & Shelves', phase:2, live:false },
@@ -265,6 +420,120 @@ const T = {
     phasePlaceholderTitle: 'قيد التسليم', phasePlaceholderDesc: 'هذه الشاشة ضمن نطاق Phase',
     errorOccurred: 'حصل خطأ', errNetwork: 'فشل الاتصال بالخادم', errNoAdmin: 'لا تملك صلاحية الوصول',
     savedSuccessfully: 'تم الحفظ بنجاح', deletedSuccessfully: 'تم الحذف بنجاح',
+
+    /* Phase-1 translation keys — Dashboard / Inventory / Catalog */
+    as_back: "الأصول",
+    cancel: "إلغاء",
+    catActive: "نشط",
+    catAll: "الكل",
+    catCategory: "التصنيف",
+    catCode: "الكود",
+    catCreate: "إنشاء الصنف",
+    catCreated: "تم إنشاء الصنف",
+    catErrGeneric: "تعذّر إنشاء الصنف. حاول مجدداً.",
+    catH1: "الأصناف",
+    catImgErr: "فشل رفع الصورة. حاول مجدداً.",
+    catImgLbl: "صورة",
+    catImgRequired: "الصورة إلزامية.",
+    catInactive: "معطّل",
+    catLoading: "جاري تحميل الكتالوج…",
+    catName: "الاسم",
+    catNew: "صنف جديد",
+    catNewTitle: "تعريف صنف جديد",
+    catNoRows: "لا أصناف مطابقة.",
+    catResults: "صنف",
+    catSearchPh: "بحث بالكود أو الاسم…",
+    catStatus: "الحالة",
+    catSubtitle: "كتالوج الأصناف الرئيسي",
+    catType: "النوع",
+    catUnit: "الوحدة",
+    catWhCount: "المستودعات",
+    dashAllWh: "كل المستودعات",
+    dashAvailable: "المتاح",
+    dashCActor: "بواسطة",
+    dashCDate: "التاريخ",
+    dashCItem: "الصنف",
+    dashCQty: "الكمية",
+    dashCType: "النوع",
+    dashCWh: "المستودع",
+    dashCatCat: "التصنيف",
+    dashCatItems: "الأصناف",
+    dashCatOpen: "فتح في المخزون",
+    dashCatTitle: "التوزيع حسب التصنيف",
+    dashExpiring: "دفعات قرب الانتهاء",
+    dashEye: "نظرة تنفيذية",
+    dashH1: "لوحة المعلومات",
+    dashLoading: "جاري تحميل اللوحة…",
+    dashLow: "مخزون منخفض",
+    dashNoCat: "لا توجد تصنيفات.",
+    dashNoMv: "لا توجد حركات بعد.",
+    dashNoShelf: "بدون رف",
+    dashNone: "لا توجد بيانات.",
+    dashOnHand: "إجمالي الكمية",
+    dashOut: "نافد المخزون",
+    dashRecent: "آخر الحركات",
+    dashReserved: "المحجوز",
+    dashTotalItems: "إجمالي الأصناف",
+    invActive: "نشط",
+    invAddImg: "📷 إضافة صورة",
+    invAllCat: "كل التصنيفات",
+    invAllWh: "كل المستودعات",
+    invAvail: "المتاح",
+    invCat: "التصنيف",
+    invChangeImg: "📷 تغيير الصورة",
+    invChangeShelf: "تغيير الرف",
+    invCode: "الكود",
+    invEye: "المستودع",
+    invH1: "المخزون",
+    invImgErr: "تعذّر تحديث الصورة:",
+    invImgUploading: "جاري الرفع…",
+    invInactive: "معطّل",
+    invItems: "صنف",
+    invLoading: "جاري تحميل المخزون…",
+    invLow: "مخزون منخفض",
+    invMin: "الحد الأدنى",
+    invName: "الاسم",
+    invNoImg: "بلا صورة",
+    invNoMatch: "ما في أصناف تطابق هذه الفلاتر.",
+    invNoShelf: "بلا رف",
+    invNoShelfF: "بلا رف",
+    invNoShelvesWh: "ما في أرفف بهذا المستودع",
+    invOnHand: "المتوفّر",
+    invOutF: "نافد",
+    invP: "الأرصدة الحيّة في كل المستودعات.",
+    invReserved: "محجوز",
+    invSearchPh: "ابحث بالكود أو الاسم…",
+    invSetShelf: "تعيين رف",
+    invShelf: "الرف",
+    invStatus: "الحالة",
+    invType: "النوع",
+    invUnit: "الوحدة",
+    invWh: "المستودع",
+    mvEye: "نظام المستودعات",
+    mvIsSaving: "جاري التسجيل…",
+    mvRcCancel: "إلغاء",
+    mvRcNote: "ملاحظة",
+    save: "حفظ",
+    whmAiCat: "التصنيف",
+    whmAiCatSel: "اختر التصنيف…",
+    whmAiErrCat: "الرجاء اختيار التصنيف.",
+    whmAiErrType: "الرجاء اختيار نوع الصنف.",
+    whmAiErrUnit: "الرجاء اختيار الوحدة.",
+    whmAiNameAr: "الاسم (عربي)",
+    whmAiNameEn: "الاسم (إنجليزي)",
+    whmAiType: "نوع الصنف",
+    whmAiTypeSel: "اختر النوع…",
+    whmAiUnit: "الوحدة",
+    whmAiUnitSel: "اختر الوحدة…",
+    whmErr_name_ar_required: "الاسم بالعربي إلزامي.",
+    mvT_RECEIPT: "استلام",
+    mvT_ISSUE: "صرف",
+    mvT_RETURN: "إرجاع",
+    mvT_TRANSFER_IN: "تحويل وارد",
+    mvT_TRANSFER_OUT: "تحويل صادر",
+    mvT_DISPOSAL: "إتلاف",
+    mvT_ADJUSTMENT: "تسوية",
+    mvT_OPENING_BALANCE: "رصيد افتتاحي",
   },
   en: {
     modName: 'Warehouse System', brandTitle: 'Warehouse System',
@@ -280,6 +549,120 @@ const T = {
     phasePlaceholderTitle: 'Coming soon', phasePlaceholderDesc: 'This screen ships in Phase',
     errorOccurred: 'An error occurred', errNetwork: 'Network error', errNoAdmin: 'You do not have access',
     savedSuccessfully: 'Saved', deletedSuccessfully: 'Deleted',
+
+    /* Phase-1 translation keys — Dashboard / Inventory / Catalog */
+    as_back: "Assets",
+    cancel: "Cancel",
+    catActive: "Active",
+    catAll: "All",
+    catCategory: "Category",
+    catCode: "Code",
+    catCreate: "Create Item",
+    catCreated: "Item created",
+    catErrGeneric: "Could not create the item. Please try again.",
+    catH1: "Items",
+    catImgErr: "Image upload failed. Try again.",
+    catImgLbl: "Photo",
+    catImgRequired: "A photo is required.",
+    catInactive: "Inactive",
+    catLoading: "Loading catalog…",
+    catName: "Name",
+    catNew: "New Item",
+    catNewTitle: "New Item",
+    catNoRows: "No items match.",
+    catResults: "items",
+    catSearchPh: "Search by code or name…",
+    catStatus: "Status",
+    catSubtitle: "Central item catalog",
+    catType: "Type",
+    catUnit: "Unit",
+    catWhCount: "Warehouses",
+    dashAllWh: "All warehouses",
+    dashAvailable: "Available",
+    dashCActor: "By",
+    dashCDate: "Date",
+    dashCItem: "Item",
+    dashCQty: "Qty",
+    dashCType: "Type",
+    dashCWh: "Warehouse",
+    dashCatCat: "Category",
+    dashCatItems: "Items",
+    dashCatOpen: "Open in Inventory",
+    dashCatTitle: "Category Distribution",
+    dashExpiring: "Expiring Batches",
+    dashEye: "Executive overview",
+    dashH1: "Dashboard",
+    dashLoading: "Loading dashboard…",
+    dashLow: "Low Stock",
+    dashNoCat: "No categories to show.",
+    dashNoMv: "No movements yet.",
+    dashNoShelf: "Without Shelf",
+    dashNone: "No data available.",
+    dashOnHand: "Total On Hand",
+    dashOut: "Out of Stock",
+    dashRecent: "Recent Movements",
+    dashReserved: "Reserved",
+    dashTotalItems: "Total Items",
+    invActive: "Active",
+    invAddImg: "📷 Add photo",
+    invAllCat: "All categories",
+    invAllWh: "All warehouses",
+    invAvail: "Available",
+    invCat: "Category",
+    invChangeImg: "📷 Change photo",
+    invChangeShelf: "Change Shelf",
+    invCode: "Code",
+    invEye: "WAREHOUSE",
+    invH1: "Inventory",
+    invImgErr: "Could not update the image:",
+    invImgUploading: "Uploading…",
+    invInactive: "Inactive",
+    invItems: "items",
+    invLoading: "Loading inventory…",
+    invLow: "Low stock",
+    invMin: "Min Level",
+    invName: "Name",
+    invNoImg: "No image",
+    invNoMatch: "No items match these filters.",
+    invNoShelf: "No shelf",
+    invNoShelfF: "No shelf",
+    invNoShelvesWh: "No shelves in this warehouse",
+    invOnHand: "On Hand",
+    invOutF: "Out of Stock",
+    invP: "Live stock across all warehouses.",
+    invReserved: "Reserved",
+    invSearchPh: "Search by code or name…",
+    invSetShelf: "Set Shelf",
+    invShelf: "Shelf",
+    invStatus: "Status",
+    invType: "Type",
+    invUnit: "Unit",
+    invWh: "Warehouse",
+    mvEye: "WAREHOUSE SYSTEM",
+    mvIsSaving: "Posting…",
+    mvRcCancel: "Cancel",
+    mvRcNote: "Note",
+    save: "Save",
+    whmAiCat: "Category",
+    whmAiCatSel: "Choose category…",
+    whmAiErrCat: "Please choose a category.",
+    whmAiErrType: "Please choose an item type.",
+    whmAiErrUnit: "Please choose a unit.",
+    whmAiNameAr: "Name (Arabic)",
+    whmAiNameEn: "Name (English)",
+    whmAiType: "Item type",
+    whmAiTypeSel: "Choose type…",
+    whmAiUnit: "Unit",
+    whmAiUnitSel: "Choose unit…",
+    whmErr_name_ar_required: "Arabic name is required.",
+    mvT_RECEIPT: "Receipt",
+    mvT_ISSUE: "Issue",
+    mvT_RETURN: "Return",
+    mvT_TRANSFER_IN: "Transfer In",
+    mvT_TRANSFER_OUT: "Transfer Out",
+    mvT_DISPOSAL: "Disposal",
+    mvT_ADJUSTMENT: "Adjustment",
+    mvT_OPENING_BALANCE: "Opening",
   }
 };
 function t(k){ return (T[LANG] && T[LANG][k]) || (T.en && T.en[k]) || k; }
@@ -478,6 +861,7 @@ function currentAccessToken(){
   return s && s.access_token;
 }
 async function currentSignOut(){
+  resetPhase1Caches();
   if(CTX.mode === 'admin') await admSignOut();
   else if(CTX.mode === 'asset') await assetSignOut();
   const from = urlFromParam();
@@ -586,7 +970,7 @@ async function warehouseRpc(fn, args){
    { path } on success. Never uses the anon key — always the current JWT. */
 async function uploadWarehouseImage(file, path){
   const okSess = await ensureCurrentSession();
-  if(!okSess) throw new Error(translateError('not_admin'));
+  if(!okSess) throw new Error(translateError('session'));
   const { error: upErr } = await sb.storage.from(CFG.imagesBucket).upload(path, file, { contentType: file.type });
   if(upErr) throw new Error(translateStorageError(upErr));
   return { path };
@@ -595,7 +979,7 @@ async function uploadWarehouseImage(file, path){
 /* Create a short-lived signed URL for viewing an image. */
 async function getWarehouseImageSignedUrl(path, expiresIn){
   const okSess = await ensureCurrentSession();
-  if(!okSess) throw new Error(translateError('not_admin'));
+  if(!okSess) throw new Error(translateError('session'));
   const { data, error } = await sb.storage.from(CFG.imagesBucket).createSignedUrl(path, expiresIn || 300);
   if(error) throw new Error(translateStorageError(error));
   return data.signedUrl;
@@ -766,8 +1150,9 @@ function currentTab(){
 
 /* =====================================================================
    ROUTE — renders the tab body from currentTab()
-   Phase 0: all tabs render a placeholder. Later phases replace the
-   body rendering with their real screen implementation.
+   Dispatches to the ported viewWhDashboard / viewInventory /
+   viewItemCatalog screens when the tab is live; falls back to the
+   placeholder for later-phase tabs.
    ===================================================================== */
 async function route(){
   if(!CTX.mode){ showAccessScreen('no_context'); return; }
@@ -783,8 +1168,16 @@ async function route(){
     renderPhasePlaceholder(el, tab);
     return;
   }
-  // Real screens will go here in later phases — dispatched by tab.key
-  el.innerHTML = `<div class="empty">screen "${esc(tab.key)}" is marked live but has no renderer wired yet</div>`;
+  // Real screen dispatch — view functions are pure string renderers that
+  // trigger their own data loads on first call; loaders call the matching
+  // renderer again when data arrives.
+  switch(tab.key){
+    case 'dashboard': el.innerHTML = viewWhDashboard(); break;
+    case 'inventory': el.innerHTML = viewInventory();   break;
+    case 'catalog':   el.innerHTML = viewItemCatalog(); break;
+    default:
+      el.innerHTML = `<div class="empty">screen "${esc(tab.key)}" is marked live but has no renderer wired yet</div>`;
+  }
 }
 
 function renderPhasePlaceholder(el, tab){
@@ -796,6 +1189,482 @@ function renderPhasePlaceholder(el, tab){
       <div class="phase-name">${esc(label)}</div>
       <div class="detail">${esc(t('phasePlaceholderDesc'))} ${tab.phase}.</div>
     </div>`;
+}
+
+
+/* =====================================================================
+   PHASE 1 — Dashboard / Inventory / Catalog (read-only port)
+   -----
+   Ported from index.html with adaptations:
+     • `L`                           → `LANG`
+     • `dashRpc/invRpc/catRpc`       → `warehouseRpc`
+     • `state.role==='admin'`        → `CTX.mode === 'admin'`
+     • `assetRole==='admin'`         → `CTX.mode === 'admin'`
+     • `dashIsAsset()/invIsAsset()`  → `CTX.mode === 'asset'` (kept as local aliases)
+     • `render()/renderAsset()`      → local `dashRender/invRender/catRender`
+                                      (each re-sets #content.innerHTML only when
+                                       their own tab is currently active)
+     • `go('inventory')`             → `location.hash = 'inventory'`
+                                      (route() runs on hashchange)
+     • `res && res.ok===false`       → try/catch (warehouseRpc throws)
+     • `admOpError(res)`             → toast(e.message) — messages come translated
+                                      from warehouseRpc's translateError() layer
+
+   READ-ONLY SCOPE (Phase 1 boundary — write actions defer to a later phase):
+     • Dashboard    — fully ported (all read-only)
+     • Inventory    — list + drawer *view mode only*
+                      (NOT PORTED: invEditShelf, invSaveShelf, invCancelShelf,
+                       invUploadImage, invShelves state)
+     • Catalog      — list + status filter + local search
+                      (NOT PORTED: "+ New Item" panel, catToggleNew,
+                       catNewUploadImage, catNewSet, catSubmitNew, catLoadRef,
+                       catNew/catRef/catImgBusy/catNewBusy/catNewErr/catNewOpen state)
+
+   NOTE ON IMAGE STORAGE:
+     Existing item image URLs stored in the DB were uploaded to the public
+     `request-images` bucket by the legacy index.html flow; those URLs
+     continue to render correctly as-is. New uploads are OUT OF SCOPE for
+     Phase 1 and will move to the private `warehouse-images` bucket
+     (created + RLS'd in Phase 0) once the write actions are ported.
+   ===================================================================== */
+
+/* ---------- Lightbox (used by Dashboard/Inventory/Catalog for image previews) ---------- */
+function openLightbox(url){
+  const mount = document.getElementById('modal-mount');
+  const ov = document.createElement('div');
+  ov.className = 'lightbox-overlay';
+  ov.innerHTML = `<img src="${esc(url)}" alt=""/>`;
+  const onKey = (e) => { if(e.key === 'Escape'){ ov.remove(); document.removeEventListener('keydown', onKey); } };
+  ov.addEventListener('click', () => { ov.remove(); document.removeEventListener('keydown', onKey); });
+  document.addEventListener('keydown', onKey);
+  mount.appendChild(ov);
+}
+
+/* ---------- Context helpers (parity aliases for the ported functions) ---------- */
+function dashIsAsset(){ return CTX.mode === 'asset'; }
+function invIsAsset(){  return CTX.mode === 'asset'; }
+
+/* ---------- Integer-aware number formatter (matches index.html's fmtNum) ---------- */
+/* Local to Phase 1 so we don't affect the shared decimal-forcing fmtNum(). */
+function fmtInt(n){
+  if(n == null) return '—';
+  const num = Number(n);
+  if(Number.isInteger(num)) return num.toLocaleString('en-US');
+  return num.toLocaleString('en-US', { maximumFractionDigits: 6 });
+}
+
+/* ---------- State (mirrors index.html declarations that Phase 1 needs) ---------- */
+let dashData    = null;
+let dashLoaded  = false;
+let dashLoading = false;
+let dashWh      = '';
+
+let invData    = [];
+let invLoaded  = false;
+let invLoading = false;
+let invSel     = null;
+let invFilters = { q:'', warehouse:'', category:'', low:false, out:false, noshelf:false };
+
+let catData         = [];
+let catLoaded       = false;
+let catLoading      = false;
+let catQuery        = '';
+let catStatusFilter = 'all';
+
+/* =====================================================================
+   DASHBOARD
+   ===================================================================== */
+async function loadDashboard(force){
+  if(dashLoaded && !force){ dashRender(); return; }
+  if(dashLoading) return;
+  dashLoading = true;
+  try{
+    dashData = await warehouseRpc('warehouse_dashboard', { p_warehouse_id: dashWh || null });
+    dashLoaded = true;
+  }catch(e){
+    dashData = null; dashLoaded = true;
+    toast(e.message || t('errorOccurred'), 'error');
+  }finally{
+    dashLoading = false;
+  }
+  dashRender();
+}
+function dashRender(){
+  const el = document.getElementById('content');
+  if(el && currentTab() === 'dashboard') el.innerHTML = viewWhDashboard();
+}
+function dashSetWh(v){ dashWh = v; dashLoaded = false; loadDashboard(true); }
+
+/* Cross-tab jumps from Dashboard KPI cards → Inventory with a single filter set,
+   clearing all others; keeps the dashboard's selected warehouse as context. */
+function dashGoInv(setFilter){
+  invFilters.low = false; invFilters.out = false; invFilters.noshelf = false; invFilters.category = '';
+  if(setFilter) invFilters[setFilter] = true;
+  invFilters.warehouse = dashWh || '';
+  location.hash = 'inventory';
+}
+function dashGoCat(catId){
+  invFilters.low = false; invFilters.out = false; invFilters.noshelf = false;
+  invFilters.category = catId || '';
+  invFilters.warehouse = dashWh || '';
+  location.hash = 'inventory';
+}
+
+function viewWhDashboard(){
+  if(!dashLoaded){ loadDashboard(); return `<div class="empty">${t('dashLoading')}</div>`; }
+  if(!dashData || !dashData.kpis){ return `<div class="empty">${t('dashNone')}</div>`; }
+  const k = dashData.kpis;
+  const mv = Array.isArray(dashData.recent_movements) ? dashData.recent_movements : [];
+  const n = v => fmtInt(v);
+
+  // warehouse filter (populated from the RPC's own warehouses list — independent of Inventory data)
+  let whOpts = `<option value="">${t('dashAllWh')}</option>`;
+  const whList = Array.isArray(dashData.warehouses) ? dashData.warehouses : [];
+  whList.forEach(w => {
+    const nm = (LANG==='ar') ? (w.name_ar || w.code) : (w.name_en || w.code);
+    whOpts += `<option value="${w.id}" ${dashWh===w.id?'selected':''}>${esc(nm)}</option>`;
+  });
+
+  const card = (label, val, cls, click) => `<div class="kpi ${cls||''} ${click?'clickable':''}" ${click?`onclick="${click}"`:''}>
+    <div class="kpi-v">${val}</div><div class="kpi-l">${label}</div></div>`;
+
+  const row1 = `<div class="kpi-row">
+    ${card(t('dashTotalItems'), n(k.total_items),     'k-navy')}
+    ${card(t('dashOnHand'),     n(k.total_on_hand),   'k-navy')}
+    ${card(t('dashAvailable'),  n(k.total_available), 'k-navy')}
+    ${card(t('dashReserved'),   n(k.total_reserved),  'k-navy')}
+  </div>`;
+  const row2 = `<div class="kpi-row">
+    ${card(t('dashLow'),      n(k.low_stock),     'k-amber', "dashGoInv('low')")}
+    ${card(t('dashOut'),      n(k.out_of_stock),  'k-red',   "dashGoInv('out')")}
+    ${card(t('dashNoShelf'),  n(k.without_shelf), 'k-grey',  "dashGoInv('noshelf')")}
+    ${card(t('dashExpiring'), n(k.expiring_soon), 'k-amber')}
+  </div>`;
+
+  // Category breakdown — table with inline bars, follows the warehouse filter
+  const cats = Array.isArray(dashData.category_breakdown) ? dashData.category_breakdown : [];
+  const maxOnHand = cats.reduce((mx, c) => Math.max(mx, Number(c.on_hand) || 0), 0) || 1;
+  const catRows = cats.length ? cats.map(c => {
+    const nm = (LANG==='ar') ? (c.category_name_ar || c.category_name_en) : (c.category_name_en || c.category_name_ar);
+    const oh = Number(c.on_hand) || 0;
+    const pct = Math.round((oh / maxOnHand) * 100);
+    return `<tr class="cat-row" onclick="dashGoCat('${c.category_id}')" title="${t('dashCatOpen')}">
+      <td class="cat-nm">${esc(nm || '')}<div class="cat-bar"><span style="width:${pct}%"></span></div></td>
+      <td class="cat-n">${n(c.item_count)}</td>
+      <td class="cat-n">${n(c.on_hand)}</td>
+      <td class="cat-n">${n(c.available)}</td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="4" class="empty">${t('dashNoCat')}</td></tr>`;
+  const catPanel = `<div class="panel cat-panel">
+    <div class="phead sm"><h2>${t('dashCatTitle')}</h2></div>
+    <div class="tbl-wrap"><table class="tbl cat-tbl">
+      <thead><tr>
+        <th>${t('dashCatCat')}</th><th class="cat-n">${t('dashCatItems')}</th>
+        <th class="cat-n">${t('dashOnHand')}</th><th class="cat-n">${t('dashAvailable')}</th>
+      </tr></thead>
+      <tbody>${catRows}</tbody>
+    </table></div>
+  </div>`;
+
+  // Recent movements panel
+  const typeLabel = mt => t('mvT_' + mt) || mt;
+  const typeCls = mt => ({RECEIPT:'mv-in',OPENING_BALANCE:'mv-in',RETURN:'mv-in',TRANSFER_IN:'mv-in',ISSUE:'mv-out',TRANSFER_OUT:'mv-out',DISPOSAL:'mv-out',ADJUSTMENT:'mv-adj'})[mt] || '';
+  const showActor = mv.some(m => m.actor_email);
+  const rowsHtml = mv.length ? mv.map(m => {
+    const nm = (LANG==='ar') ? (m.item_name_ar || m.item_code) : (m.item_name_en || m.item_name_ar || m.item_code);
+    const wh = (LANG==='ar') ? (m.warehouse_name_ar || m.warehouse_code) : (m.warehouse_name_en || m.warehouse_code);
+    const dt = new Date(m.created_at);
+    const loc = (LANG==='ar') ? 'ar' : 'en-GB';
+    const dstr = dt.toLocaleDateString(loc, {day:'2-digit', month:'short'}) + ' ' + dt.toLocaleTimeString(loc, {hour:'2-digit', minute:'2-digit'});
+    const q = Number(m.qty);
+    const qCls = q > 0 ? 'q-pos' : (q < 0 ? 'q-neg' : '');
+    return `<tr>
+      <td class="mv-dt">${dstr}</td>
+      <td><span class="mv-badge ${typeCls(m.movement_type)}">${typeLabel(m.movement_type)}</span></td>
+      <td class="mv-item"><span class="mv-code">${esc(m.item_code || '')}</span> ${esc(nm || '')}</td>
+      <td class="mv-q ${qCls}">${q > 0 ? '+' : ''}${n(q)}</td>
+      <td>${esc(wh || '')}</td>
+      ${showActor ? `<td class="mv-actor">${esc(m.actor_email || '')}</td>` : ''}
+    </tr>`;
+  }).join('') : `<tr><td colspan="${showActor ? 6 : 5}" class="empty">${t('dashNoMv')}</td></tr>`;
+
+  const mvPanel = `<div class="panel mv-panel">
+    <div class="phead sm"><h2>${t('dashRecent')}</h2></div>
+    <div class="tbl-wrap"><table class="tbl mv-tbl">
+      <thead><tr>
+        <th>${t('dashCDate')}</th><th>${t('dashCType')}</th><th>${t('dashCItem')}</th>
+        <th>${t('dashCQty')}</th><th>${t('dashCWh')}</th>${showActor ? `<th>${t('dashCActor')}</th>` : ''}
+      </tr></thead>
+      <tbody>${rowsHtml}</tbody>
+    </table></div>
+  </div>`;
+
+  return `
+    <div class="dash-head">
+      <div><div class="eyebrow">${t('dashEye')}</div><h1>${t('dashH1')}</h1></div>
+      <div class="dash-wh"><select onchange="dashSetWh(this.value)">${whOpts}</select></div>
+    </div>
+    ${row1}
+    ${row2}
+    ${catPanel}
+    ${mvPanel}`;
+}
+
+/* =====================================================================
+   INVENTORY  (Phase 1: read-only — no shelf edit, no image upload)
+   ===================================================================== */
+async function loadInventory(force){
+  if(invLoaded && !force){ invRender(); return; }
+  if(invLoading) return;
+  invLoading = true;
+  try{
+    const res = await warehouseRpc('inventory_list', {});
+    invData = Array.isArray(res) ? res : [];
+    invLoaded = true;
+  }catch(e){
+    invData = []; invLoaded = true;
+    toast(e.message || t('errorOccurred'), 'error');
+  }finally{
+    invLoading = false;
+  }
+  invRender();
+}
+function invRender(){
+  const el = document.getElementById('content');
+  if(el && currentTab() === 'inventory') el.innerHTML = viewInventory();
+}
+
+/* Filter-source pickers: derive warehouse/category options from loaded data
+   (only options that exist in the current dataset appear). */
+function invWarehouses(){
+  const m = {};
+  invData.forEach(r => {
+    if(r.warehouse_id) m[r.warehouse_id] = ((LANG==='ar') ? r.warehouse_name_ar : r.warehouse_name_en) || r.warehouse_code;
+  });
+  return Object.entries(m).map(([id, name]) => ({id, name}));
+}
+function invCategories(){
+  const m = {};
+  invData.forEach(r => {
+    if(r.category_id) m[r.category_id] = ((LANG==='ar') ? r.category_name_ar : r.category_name_en) || r.category_name_ar;
+  });
+  return Object.entries(m).map(([id, name]) => ({id, name})).sort((a,b) => a.name.localeCompare(b.name));
+}
+function invApply(){
+  const f = invFilters, q = (f.q || '').trim().toLowerCase();
+  return invData.filter(r => {
+    if(f.warehouse && r.warehouse_id !== f.warehouse) return false;
+    if(f.category  && r.category_id  !== f.category ) return false;
+    if(f.low       && !r.is_low_stock              ) return false;
+    if(f.out       && Number(r.available) > 0      ) return false;
+    if(f.noshelf   && r.shelf_id                   ) return false;
+    if(q){
+      const hay = ((r.item_code || '') + ' ' + (r.name_ar || '') + ' ' + (r.name_en || '')).toLowerCase();
+      if(!hay.includes(q)) return false;
+    }
+    return true;
+  });
+}
+function invSet(k, v){ invFilters[k] = v; invRender(); }
+function invToggle(k){ invFilters[k] = !invFilters[k]; invRender(); }
+function invOpen(id){ invSel = id; invRender(); }
+function invClose(){ invSel = null; invRender(); }
+
+/* Drawer — view mode only in Phase 1. Shelf-edit + image-upload UI is
+   intentionally NOT rendered here even for admin; those are write actions
+   that will land in the follow-up phase (Phase 1.5 or Phase 2 wave). */
+function invDrawer(){
+  const r = invData.find(x => x.item_warehouse_id === invSel);
+  if(!r) return `<div class="dwr-scrim" onclick="invClose()"></div><aside class="dwr"></aside>`;
+  const avCls = (Number(r.available) <= 0) ? 'av-zero' : (r.is_low_stock ? 'av-low' : 'av-ok');
+  const shelfVal = r.shelf_id ? esc(r.shelf_name) : `<span class="noshelf">${t('invNoShelf')}</span>`;
+  return `<div class="dwr-scrim open" onclick="invClose()"></div>
+  <aside class="dwr open">
+    <div class="dwr-head">
+      <div><span class="code">${esc(r.item_code)}</span><h3>${esc(r.name_ar)}</h3>${r.name_en ? `<div class="en">${esc(r.name_en)}</div>` : ''}</div>
+      <button class="dwr-x" onclick="invClose()">×</button>
+    </div>
+    <div class="dwr-body">
+      <div class="dwr-img-block">
+        ${r.image_url
+          ? `<img class="dwr-img" src="${esc(r.image_url)}" onclick="openLightbox('${esc(r.image_url)}')" alt=""/>`
+          : `<div class="dwr-img-ph">📦<span>${t('invNoImg')}</span></div>`}
+      </div>
+      <div class="dwr-sep"></div>
+      <div class="dwr-grid">
+        <div class="dwr-f"><span class="lb">${t('invCat')}</span><span class="vl">${esc((LANG==='ar')?r.category_name_ar:(r.category_name_en||r.category_name_ar))}</span></div>
+        <div class="dwr-f"><span class="lb">${t('invType')}</span><span class="vl">${esc((LANG==='ar')?r.item_type_name_ar:(r.item_type_name_en||r.item_type_name_ar))}</span></div>
+        <div class="dwr-f"><span class="lb">${t('invUnit')}</span><span class="vl">${esc((LANG==='ar')?r.unit_name_ar:(r.unit_name_en||r.unit_name_ar))}</span></div>
+        <div class="dwr-f"><span class="lb">${t('invWh')}</span><span class="vl">${esc((LANG==='ar')?r.warehouse_name_ar:(r.warehouse_name_en||r.warehouse_code))}</span></div>
+      </div>
+      <div class="dwr-sep"></div>
+      <div class="dwr-grid">
+        <div class="dwr-f"><span class="lb">${t('invOnHand')}</span><span class="vl">${fmtInt(r.on_hand)}</span></div>
+        <div class="dwr-f"><span class="lb">${t('invReserved')}</span><span class="vl">${fmtInt(r.reserved)}</span></div>
+        <div class="dwr-f"><span class="lb">${t('invAvail')}</span><span class="vl"><span class="av-badge ${avCls}">${fmtInt(r.available)}</span></span></div>
+        <div class="dwr-f"><span class="lb">${t('invMin')}</span><span class="vl">${r.min_level == null ? '—' : fmtInt(r.min_level)}</span></div>
+      </div>
+      <div class="dwr-sep"></div>
+      <div class="dwr-grid">
+        <div class="dwr-f full"><span class="lb">${t('invShelf')}</span><div class="dwr-shelf-row"><span class="vl">${shelfVal}</span></div></div>
+        <div class="dwr-f full"><span class="lb">${t('invStatus')}</span><span class="vl">${r.item_active ? `<span class="st-dot st-on"></span>${t('invActive')}` : `<span class="st-dot st-off"></span>${t('invInactive')}`}</span></div>
+      </div>
+    </div>
+  </aside>`;
+}
+
+function viewInventory(){
+  if(!invLoaded){ loadInventory(); return `<div class="empty">${t('invLoading')}</div>`; }
+  const rows = invApply();
+  const whs = invWarehouses(), cats = invCategories();
+  const whOpts = `<option value="">${t('invAllWh')}</option>` + whs.map(w => `<option value="${w.id}" ${invFilters.warehouse===w.id?'selected':''}>${esc(w.name)}</option>`).join('');
+  const catOpts = `<option value="">${t('invAllCat')}</option>` + cats.map(c => `<option value="${c.id}" ${invFilters.category===c.id?'selected':''}>${esc(c.name)}</option>`).join('');
+  const body = rows.length ? `<div class="tbl-wrap"><table class="tbl">
+    <thead><tr>
+      <th class="inv-th-img"></th><th>${t('invCode')}</th><th>${t('invName')}</th><th>${t('invCat')}</th><th>${t('invType')}</th><th>${t('invUnit')}</th>
+      <th class="num">${t('invOnHand')}</th><th class="num">${t('invReserved')}</th><th class="num">${t('invAvail')}</th>
+      <th>${t('invWh')}</th><th>${t('invShelf')}</th><th>${t('invStatus')}</th>
+    </tr></thead><tbody>` + rows.map(r => {
+      const avCls = (Number(r.available) <= 0) ? 'av-zero' : (r.is_low_stock ? 'av-low' : 'av-ok');
+      const shelf = r.shelf_id ? esc(r.shelf_name) : `<span class="noshelf">${t('invNoShelf')}</span>`;
+      const nm = `<div class="ttl">${esc(r.name_ar)}</div>` + (r.name_en ? `<div class="nt">${esc(r.name_en)}</div>` : '');
+      const st = r.item_active ? `<span class="st-dot st-on"></span>${t('invActive')}` : `<span class="st-dot st-off"></span>${t('invInactive')}`;
+      const thumb = r.image_url
+        ? `<img class="inv-thumb" src="${esc(r.image_url)}" onclick="event.stopPropagation();openLightbox('${esc(r.image_url)}')" alt=""/>`
+        : `<span class="inv-thumb inv-thumb-ph">📦</span>`;
+      return `<tr class="inv-row ${invSel===r.item_warehouse_id?'sel':''}" onclick="invOpen('${r.item_warehouse_id}')">
+        <td class="c-thumb">${thumb}</td>
+        <td class="c-id">${esc(r.item_code)}</td><td class="c-title">${nm}</td>
+        <td>${esc((LANG==='ar')?r.category_name_ar:(r.category_name_en||r.category_name_ar))}</td>
+        <td>${esc((LANG==='ar')?r.item_type_name_ar:(r.item_type_name_en||r.item_type_name_ar))}</td>
+        <td>${esc((LANG==='ar')?r.unit_name_ar:(r.unit_name_en||r.unit_name_ar))}</td>
+        <td class="num">${fmtInt(r.on_hand)}</td><td class="num">${fmtInt(r.reserved)}</td>
+        <td class="num"><span class="av-badge ${avCls}">${fmtInt(r.available)}</span></td>
+        <td>${esc(r.warehouse_code)}</td><td>${shelf}</td><td>${st}</td>
+      </tr>`;
+    }).join('') + `</tbody></table></div>` : `<div class="empty">${t('invNoMatch')}</div>`;
+
+  return `<div class="phead"><div class="eyebrow">${t('invEye')}</div><h1>${t('invH1')}</h1><p>${t('invP')}</p></div>
+  <div class="inv-toolbar">
+    <div class="inv-search"><span class="si">🔍</span>
+      <input type="text" value="${esc(invFilters.q)}" placeholder="${t('invSearchPh')}" oninput="invSet('q',this.value)"></div>
+    <div class="inv-filters">
+      <select onchange="invSet('warehouse',this.value)">${whOpts}</select>
+      <select onchange="invSet('category',this.value)">${catOpts}</select>
+      <div class="toggle ${invFilters.low?'on':''}" onclick="invToggle('low')">⚠ ${t('invLow')}</div>
+      <div class="toggle ${invFilters.out?'on':''}" onclick="invToggle('out')">⛔ ${t('invOutF')}</div>
+      <div class="toggle ${invFilters.noshelf?'on':''}" onclick="invToggle('noshelf')">📍 ${t('invNoShelfF')}</div>
+    </div>
+  </div>
+  <div class="filterbar" style="margin-top:-4px"><div class="spacer"></div><span class="count-chip">${rows.length} / ${invData.length} ${t('invItems')}</span></div>
+  ${body}
+  ${invDrawer()}`;
+}
+
+/* =====================================================================
+   ITEM CATALOG  (Phase 1: read-only — no "+ New Item" creation)
+   ===================================================================== */
+async function loadCatalog(force){
+  if(catLoaded && !force){ catRender(); return; }
+  if(catLoading) return;
+  catLoading = true;
+  try{
+    const res = await warehouseRpc('item_catalog_list', {});
+    catData = Array.isArray(res) ? res : [];
+    catLoaded = true;
+  }catch(e){
+    catData = []; catLoaded = true;
+    toast(e.message || t('errorOccurred'), 'error');
+  }finally{
+    catLoading = false;
+  }
+  catRender();
+}
+function catRender(){
+  const el = document.getElementById('content');
+  if(el && currentTab() === 'catalog') el.innerHTML = viewItemCatalog();
+}
+function catSearch(v){
+  catQuery = v; catRender();
+  // Focus restoration — search input is rebuilt on each keystroke; put the
+  // caret back at the end so typing keeps working smoothly.
+  setTimeout(() => {
+    const el = document.getElementById('catSearch');
+    if(el){ el.focus(); el.setSelectionRange(el.value.length, el.value.length); }
+  }, 0);
+}
+function catSetStatus(v){ catStatusFilter = v; catRender(); }
+
+function viewItemCatalog(){
+  if(!catLoaded){ loadCatalog(); return `<div class="empty">${t('catLoading')}</div>`; }
+  const rows = Array.isArray(catData) ? catData : [];
+  const n = v => fmtInt(v);
+
+  const q = (catQuery || '').trim().toLowerCase();
+  const filtered = rows.filter(r => {
+    if(catStatusFilter === 'active'   && !r.is_active) return false;
+    if(catStatusFilter === 'inactive' &&  r.is_active) return false;
+    if(q){
+      return (r.item_code || '').toLowerCase().includes(q)
+          || (r.name_ar   || '').toLowerCase().includes(q)
+          || (r.name_en   || '').toLowerCase().includes(q);
+    }
+    return true;
+  });
+
+  const head = `<tr>
+    <th class="cat-th-img"></th><th>${t('catCode')}</th><th>${t('catName')}</th><th>${t('catCategory')}</th>
+    <th>${t('catType')}</th><th>${t('catUnit')}</th><th>${t('catWhCount')}</th><th>${t('catStatus')}</th>
+  </tr>`;
+  const body = filtered.length ? filtered.map(r => {
+    const nm  = (LANG==='ar') ? (r.name_ar || r.name_en) : (r.name_en || r.name_ar);
+    const cat = (LANG==='ar') ? (r.category_name_ar  || '') : (r.category_name_en  || r.category_name_ar  || '');
+    const typ = (LANG==='ar') ? (r.item_type_name_ar || '') : (r.item_type_name_en || r.item_type_name_ar || '');
+    const unit= (LANG==='ar') ? (r.unit_name_ar      || '') : (r.unit_name_en      || r.unit_name_ar      || '');
+    const status = r.is_active ? `<span class="cat-badge on">${t('catActive')}</span>` : `<span class="cat-badge off">${t('catInactive')}</span>`;
+    const thumb = r.image_url
+      ? `<img class="inv-thumb" src="${esc(r.image_url)}" onclick="openLightbox('${esc(r.image_url)}')" alt=""/>`
+      : `<span class="inv-thumb inv-thumb-ph">📦</span>`;
+    return `<tr>
+      <td class="c-thumb">${thumb}</td>
+      <td class="cat-code">${esc(r.item_code || '')}</td>
+      <td>${esc(nm || '')}</td>
+      <td>${esc(cat)}</td>
+      <td>${esc(typ)}</td>
+      <td>${esc(unit)}</td>
+      <td class="cat-num">${n(r.warehouses_count)}</td>
+      <td>${status}</td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="8" class="cat-empty">${t('catNoRows')}</td></tr>`;
+
+  const statusTabs = `<div class="cat-filters">
+    <button class="cat-fbtn ${catStatusFilter==='all'     ?'on':''}" onclick="catSetStatus('all')">${t('catAll')}</button>
+    <button class="cat-fbtn ${catStatusFilter==='active'  ?'on':''}" onclick="catSetStatus('active')">${t('catActive')}</button>
+    <button class="cat-fbtn ${catStatusFilter==='inactive'?'on':''}" onclick="catSetStatus('inactive')">${t('catInactive')}</button>
+  </div>`;
+
+  return `
+    <div class="dash-head">
+      <div><div class="eyebrow">${t('mvEye')}</div><h1>${t('catH1')}</h1><div class="cat-sub">${t('catSubtitle')}</div></div>
+    </div>
+    <div class="cat-toolbar">
+      <input id="catSearch" class="rc-in cat-search" placeholder="${t('catSearchPh')}" value="${esc(catQuery)}" oninput="catSearch(this.value)"/>
+      ${statusTabs}
+    </div>
+    <div class="cat-count">${n(filtered.length)} ${t('catResults')}</div>
+    <div class="cat-tablewrap"><table class="cat-table"><thead>${head}</thead><tbody>${body}</tbody></table></div>`;
+}
+
+/* =====================================================================
+   Reset Phase-1 caches on sign-out / context change so a subsequent
+   login (or portal switch) always re-fetches fresh data.
+   ===================================================================== */
+function resetPhase1Caches(){
+  dashData = null;    dashLoaded  = false; dashLoading  = false; dashWh = '';
+  invData  = [];      invLoaded   = false; invLoading   = false; invSel = null;
+  invFilters = { q:'', warehouse:'', category:'', low:false, out:false, noshelf:false };
+  catData  = [];      catLoaded   = false; catLoading   = false;
+  catQuery = '';      catStatusFilter = 'all';
 }
 
 /* =====================================================================
