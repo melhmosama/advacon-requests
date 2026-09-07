@@ -750,6 +750,72 @@
   body.printing-report .rep-print-footer{ display:block !important; margin-top:14px; padding-top:8px; border-top:1px solid #999; font-size:10px; color:#555; text-align:center; }
 }
 
+
+  /* ======================================================================
+     PHASE 6.5 — ITEM MASTER & DETAILS
+     Central item profile: clickable catalog rows, responsive detail drawer,
+     image management, warehouse footprint and admin editing.
+     ====================================================================== */
+  .cat-table tbody tr.cat-click{cursor:pointer;transition:background .12s}
+  .cat-table tbody tr.cat-click:hover{background:var(--head)}
+  .cat-openmark{font-size:18px;color:var(--grey);font-weight:700;text-align:end}
+  .cat-table th.cat-openmark{width:28px}
+  .imd-scrim{position:fixed;inset:0;background:rgba(7,20,35,.48);z-index:700;backdrop-filter:blur(1px)}
+  .imd{position:fixed;top:0;bottom:0;inset-inline-end:0;width:min(720px,96vw);background:var(--panel);z-index:701;box-shadow:-12px 0 36px rgba(0,0,0,.18);overflow:auto}
+  html[dir="rtl"] .imd{box-shadow:12px 0 36px rgba(0,0,0,.18)}
+  .imd-head{position:sticky;top:0;z-index:2;background:var(--panel);border-bottom:1px solid var(--border);padding:18px 22px;display:flex;align-items:flex-start;justify-content:space-between;gap:14px}
+  .imd-code{font-family:monospace;font-size:12px;font-weight:800;color:var(--accent);letter-spacing:.4px}
+  .imd-title{margin:5px 0 2px;font-size:22px;color:var(--navy);line-height:1.25}
+  .imd-subtitle{font-size:13px;color:var(--grey)}
+  .imd-x{border:0;background:transparent;font-size:28px;color:var(--grey);cursor:pointer;line-height:1;padding:2px 6px}
+  .imd-body{padding:20px 22px 32px}
+  .imd-hero{display:grid;grid-template-columns:150px 1fr;gap:20px;align-items:start;margin-bottom:18px}
+  .imd-photo{width:150px;height:150px;border-radius:14px;object-fit:cover;border:1px solid var(--border);cursor:zoom-in;background:var(--panel-alt)}
+  .imd-photo-ph{width:150px;height:150px;border-radius:14px;border:1px dashed var(--border);background:var(--panel-alt);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:42px;color:var(--grey)}
+  .imd-photo-ph span{font-size:11px;margin-top:5px}
+  .imd-photo-actions{margin-top:9px;display:flex;gap:7px;flex-wrap:wrap}
+  .imd-upload{display:inline-flex;align-items:center;justify-content:center;padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--panel);font-size:12px;font-weight:700;cursor:pointer;color:var(--navy)}
+  .imd-upload.busy{opacity:.55;pointer-events:none}
+  .imd-upload input{display:none}
+  .imd-statusline{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+  .imd-stat{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:20px;background:var(--head);font-size:12px;color:var(--txt)}
+  .imd-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .imd-btn{border:1px solid var(--border);background:var(--panel);color:var(--navy);border-radius:8px;padding:8px 13px;font-weight:700;font-size:12px;cursor:pointer}
+  .imd-btn.pri{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .imd-btn:disabled{opacity:.5;cursor:not-allowed}
+  .imd-sec{border:1px solid var(--border);border-radius:12px;background:var(--panel);margin-top:14px;overflow:hidden}
+  .imd-sec-h{padding:12px 15px;background:var(--head);font-size:13px;font-weight:800;color:var(--navy);border-bottom:1px solid var(--border)}
+  .imd-sec-b{padding:14px 15px}
+  .imd-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 18px}
+  .imd-f{min-width:0}
+  .imd-f.full{grid-column:1/-1}
+  .imd-lb{display:block;font-size:10.5px;text-transform:uppercase;letter-spacing:.35px;color:var(--grey);font-weight:700;margin-bottom:4px}
+  .imd-v{font-size:13px;color:var(--txt);font-weight:600;overflow-wrap:anywhere}
+  .imd-note{white-space:pre-wrap;font-weight:400;line-height:1.55}
+  .imd-form{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .imd-form .full{grid-column:1/-1}
+  .imd-form label{font-size:11px;font-weight:700;color:var(--grey)}
+  .imd-form input,.imd-form select,.imd-form textarea{width:100%;margin-top:5px;border:1px solid var(--border);border-radius:8px;background:var(--panel);color:var(--txt);padding:9px 10px;font:inherit;font-size:13px}
+  .imd-form textarea{resize:vertical;min-height:74px}
+  .imd-err{margin-top:10px;padding:9px 11px;border-radius:8px;background:#fbeceb;color:var(--red);font-size:12px}
+  .imd-wh-table{width:100%;border-collapse:collapse;font-size:12px;min-width:620px}
+  .imd-wh-table th{background:var(--head);color:var(--grey);font-size:10.5px;text-transform:uppercase;padding:8px;text-align:start;border-bottom:1px solid var(--border)}
+  .imd-wh-table td{padding:9px 8px;border-bottom:1px solid var(--border)}
+  .imd-wh-table tr:last-child td{border-bottom:0}
+  .imd-scroll{overflow-x:auto}
+  .imd-empty{padding:12px;color:var(--grey);font-size:12px;text-align:center}
+  .imd-backend-note{font-size:11px;color:var(--grey);line-height:1.5;margin-top:8px}
+  @media(max-width:640px){
+    .imd{width:100vw;max-width:none}
+    .imd-head,.imd-body{padding-inline:16px}
+    .imd-hero{grid-template-columns:96px 1fr;gap:14px}
+    .imd-photo,.imd-photo-ph{width:96px;height:96px;border-radius:11px}
+    .imd-photo-ph{font-size:30px}
+    .imd-title{font-size:18px}
+    .imd-grid,.imd-form{grid-template-columns:1fr}
+    .imd-f.full,.imd-form .full{grid-column:auto}
+  }
+
 </style>
 </head>
 <body>
@@ -2204,8 +2270,6 @@ function catRender(){
 }
 function catSearch(v){
   catQuery = v; catRender();
-  // Focus restoration — search input is rebuilt on each keystroke; put the
-  // caret back at the end so typing keeps working smoothly.
   setTimeout(() => {
     const el = document.getElementById('catSearch');
     if(el){ el.focus(); el.setSelectionRange(el.value.length, el.value.length); }
@@ -2213,64 +2277,281 @@ function catSearch(v){
 }
 function catSetStatus(v){ catStatusFilter = v; catRender(); }
 
+/* Phase 6.5 — Item Master state */
+let catDetailId = null;
+let catDetailInventory = null;
+let catDetailInvLoading = false;
+let catDetailEdit = false;
+let catDetailBusy = false;
+let catDetailErr = '';
+let catDetailDraft = {};
+let catDetailRef = null;
+let catDetailRefLoading = false;
+let catDetailImgBusy = false;
+let catNewOpen = false, catNewBusy = false, catNewErr = '', catNewImgBusy = false;
+let catNew = {name_ar:'',name_en:'',category_id:'',item_type_id:'',base_unit_id:'',notes:'',image_url:''};
+
+function catIsAdmin(){ return CTX.mode === 'admin'; }
+function catItemId(r){ return r && (r.item_id || r.id || r.item_master_id); }
+function catSelected(){ return (catData||[]).find(r => String(catItemId(r)) === String(catDetailId)); }
+function catRefName(list,id){
+  const x=(list||[]).find(v=>String(v.id)===String(id));
+  return x ? (LANG==='ar'?(x.name_ar||x.name_en):(x.name_en||x.name_ar)) : '';
+}
+function catOpen(id){
+  catDetailId=id; catDetailEdit=false; catDetailErr=''; catDetailDraft={};
+  catEnsureInventory(); catRender();
+}
+function catClose(){
+  if(catDetailBusy||catDetailImgBusy) return;
+  catDetailId=null; catDetailEdit=false; catDetailErr=''; catDetailDraft={}; catRender();
+}
+async function catEnsureInventory(force){
+  if(catDetailInvLoading) return;
+  if(catDetailInventory!==null && !force) return;
+  catDetailInvLoading=true; catRender();
+  try{
+    const r=await warehouseRpc('inventory_list',{});
+    catDetailInventory=Array.isArray(r)?r:[];
+  }catch(e){
+    catDetailInventory=[]; toast(e.message||t('errorOccurred'),'error');
+  }finally{catDetailInvLoading=false;catRender();}
+}
+async function catEnsureRef(){
+  if(catDetailRef!==null||catDetailRefLoading) return;
+  catDetailRefLoading=true; catRender();
+  try{
+    const r=await warehouseRpc('reference_lists',{});
+    catDetailRef=(r&&typeof r==='object'&&!Array.isArray(r))?r:{categories:[],item_types:[],units:[],items:[]};
+  }catch(e){
+    catDetailRef={categories:[],item_types:[],units:[],items:[]}; toast(e.message||t('errorOccurred'),'error');
+  }finally{catDetailRefLoading=false;catRender();}
+}
+function catStartEdit(){
+  if(!catIsAdmin()) return;
+  const r=catSelected(); if(!r) return;
+  catDetailDraft={
+    name_ar:r.name_ar||'', name_en:r.name_en||'', notes:r.notes||'',
+    category_id:r.category_id||'', item_type_id:r.item_type_id||'', base_unit_id:r.base_unit_id||r.unit_id||''
+  };
+  catDetailErr=''; catDetailEdit=true; catEnsureRef(); catRender();
+}
+function catCancelEdit(){if(catDetailBusy)return;catDetailEdit=false;catDetailErr='';catDetailDraft={};catRender();}
+function catEditSet(k,v){catDetailDraft[k]=v;catDetailErr='';}
+function catFriendlyBackendMissing(e){
+  const m=String((e&&e.message)||e||'').toLowerCase();
+  return m.includes('admin_update_item_master') && (m.includes('could not find')||m.includes('schema cache')||m.includes('404')||m.includes('http_'));
+}
+function catInvalidateAfterMasterChange(){
+  catLoaded=false; invLoaded=false; dashLoaded=false; whmLoaded=false;
+  mvItemList=null; mvRef=null; batList=null; repState.data=null; repState.regData=null;
+  catDetailInventory=null;
+}
+async function catSaveEdit(){
+  if(!catIsAdmin()||catDetailBusy) return;
+  const r=catSelected(); if(!r) return;
+  const a=catDetailDraft;
+  if(!(a.name_ar||'').trim()){catDetailErr=t('imdNameRequired');catRender();return;}
+  if(!a.category_id||!a.item_type_id||!a.base_unit_id){catDetailErr=t('imdRefsRequired');catRender();return;}
+  catDetailBusy=true;catDetailErr='';catRender();
+  try{
+    await warehouseRpc('admin_update_item_master',{
+      p_item_id:catItemId(r),
+      p_name_ar:(a.name_ar||'').trim(),
+      p_name_en:(a.name_en||'').trim()||null,
+      p_category_id:a.category_id,
+      p_item_type_id:a.item_type_id,
+      p_base_unit_id:a.base_unit_id,
+      p_notes:(a.notes||'').trim()||null
+    });
+    catDetailEdit=false; catInvalidateAfterMasterChange();
+    await loadCatalog(true); await catEnsureInventory(true);
+    toast(t('imdSaved'),'success');
+  }catch(e){
+    catDetailErr=catFriendlyBackendMissing(e)?t('imdBackendNeeded'):(e.message||t('imdSaveErr'));
+    catRender();
+  }finally{catDetailBusy=false;catRender();}
+}
+function catImagePath(itemId,file){
+  const ext=((file&&file.name||'').split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'')||'jpg';
+  return `items/${itemId}/${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;
+}
+async function catUploadExistingImage(itemId,inputEl){
+  if(!catIsAdmin()||catDetailImgBusy)return;
+  const file=inputEl&&inputEl.files&&inputEl.files[0]; if(!file)return;
+  catDetailImgBusy=true;catDetailErr='';catRender();
+  let path=null;
+  try{
+    const up=await uploadWarehouseImage(file,catImagePath(itemId,file)); path=up.path;
+    const signed=await getWarehouseImageSignedUrl(path,31536000);
+    await warehouseRpc('admin_set_item_image',{p_item_id:itemId,p_image_url:signed});
+    catInvalidateAfterMasterChange();
+    await loadCatalog(true); await catEnsureInventory(true);
+    toast(t('imdImageSaved'),'success');
+  }catch(e){
+    if(path) await removeWarehouseImages([path]);
+    catDetailErr=e.message||t('imdImageErr'); catRender();
+  }finally{catDetailImgBusy=false;catRender();}
+}
+async function catDisplayImage(raw){
+  if(!raw) return null;
+  if(/^https?:\/\//i.test(raw)) return raw;
+  try{return await getWarehouseImageSignedUrl(raw,900);}catch(_){return null;}
+}
+/* Resolve private object paths lazily after render. */
+async function catHydratePrivateImages(){
+  const nodes=[...document.querySelectorAll('[data-whimg]')];
+  await Promise.all(nodes.map(async el=>{
+    const raw=el.getAttribute('data-whimg'); if(!raw||/^https?:\/\//i.test(raw))return;
+    const u=await catDisplayImage(raw); if(u){el.src=u;el.onclick=(ev)=>{ev&&ev.stopPropagation();openLightbox(u);};}
+  }));
+}
+function catToggleNew(){
+  if(!catIsAdmin())return;
+  catNewOpen=!catNewOpen;catNewErr='';
+  if(catNewOpen){catNew={name_ar:'',name_en:'',category_id:'',item_type_id:'',base_unit_id:'',notes:'',image_url:''};catEnsureRef();}
+  catRender();
+}
+function catNewSet(k,v){catNew[k]=v;catNewErr='';}
+async function catNewUploadImage(inputEl){
+  const file=inputEl&&inputEl.files&&inputEl.files[0];if(!file)return;
+  catNewImgBusy=true;catNewErr='';catRender();
+  try{
+    /* New item has no UUID yet, so use a staging path. It remains private. */
+    const ext=(file.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'')||'jpg';
+    const path=`items/new/${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;
+    await uploadWarehouseImage(file,path);catNew.image_url=path;catRender();
+  }catch(e){catNew.image_url='';catNewErr=e.message||t('imdImageErr');}
+  finally{catNewImgBusy=false;catRender();}
+}
+async function catSubmitNew(){
+  if(!catIsAdmin()||catNewBusy)return;
+  const a=catNew;
+  if(!(a.name_ar||'').trim()){catNewErr=t('imdNameRequired');catRender();return;}
+  if(!a.category_id||!a.item_type_id||!a.base_unit_id){catNewErr=t('imdRefsRequired');catRender();return;}
+  if(!a.image_url){catNewErr=t('catImgRequired');catRender();return;}
+  catNewBusy=true;catNewErr='';catRender();
+  try{
+    const res=await warehouseRpc('create_item_master',{
+      p_category_id:a.category_id,p_item_type_id:a.item_type_id,p_base_unit_id:a.base_unit_id,
+      p_name_ar:a.name_ar.trim(),p_name_en:(a.name_en||'').trim()||null,
+      p_notes:(a.notes||'').trim()||null,p_image_url:a.image_url
+    });
+    catNewOpen=false;catInvalidateAfterMasterChange();await loadCatalog(true);
+    toast(t('catCreated'),'success');
+  }catch(e){catNewErr=e.message||t('catErrGeneric');catRender();}
+  finally{catNewBusy=false;catRender();}
+}
+function catImgTag(raw,cls,alt,click){
+  if(!raw)return `<div class="${cls} imd-photo-ph">📦<span>${t('invNoImg')}</span></div>`;
+  if(/^https?:\/\//i.test(raw))return `<img class="${cls}" src="${esc(raw)}" ${click?`onclick="event.stopPropagation();openLightbox('${esc(raw)}')"`:''} alt="${esc(alt||'')}"/>`;
+  return `<img class="${cls}" data-whimg="${esc(raw)}" src="" alt="${esc(alt||'')}"/>`;
+}
+function catDetailDrawer(){
+  const r=catSelected();if(!r)return '';
+  setTimeout(catHydratePrivateImages,0);
+  const id=catItemId(r), admin=catIsAdmin();
+  const inv=(catDetailInventory||[]).filter(x=>String(x.item_id||x.item_master_id)===String(id));
+  const on=inv.reduce((a,x)=>a+Number(x.on_hand||0),0),res=inv.reduce((a,x)=>a+Number(x.reserved||0),0),av=inv.reduce((a,x)=>a+Number(x.available||0),0);
+  const status=r.is_active?`<span class="cat-badge on">${t('catActive')}</span>`:`<span class="cat-badge off">${t('catInactive')}</span>`;
+  let edit='';
+  if(catDetailEdit){
+    const ref=catDetailRef||{categories:[],item_types:[],units:[]},a=catDetailDraft;
+    const opts=(arr,val,ph)=>`<option value="">${t(ph)}</option>`+(arr||[]).map(x=>`<option value="${x.id}" ${String(val)===String(x.id)?'selected':''}>${esc(LANG==='ar'?(x.name_ar||x.name_en):(x.name_en||x.name_ar))}</option>`).join('');
+    edit=`<div class="imd-sec"><div class="imd-sec-h">${t('imdEdit')}</div><div class="imd-sec-b">
+      ${catDetailRefLoading?`<div class="imd-empty">${t('loading')}</div>`:`<div class="imd-form">
+        <label>${t('whmAiNameAr')} *<input value="${esc(a.name_ar||'')}" oninput="catEditSet('name_ar',this.value)"/></label>
+        <label>${t('whmAiNameEn')}<input value="${esc(a.name_en||'')}" oninput="catEditSet('name_en',this.value)"/></label>
+        <label>${t('whmAiCat')} *<select onchange="catEditSet('category_id',this.value)">${opts(ref.categories,a.category_id,'whmAiCatSel')}</select></label>
+        <label>${t('whmAiType')} *<select onchange="catEditSet('item_type_id',this.value)">${opts(ref.item_types,a.item_type_id,'whmAiTypeSel')}</select></label>
+        <label>${t('whmAiUnit')} *<select onchange="catEditSet('base_unit_id',this.value)">${opts(ref.units,a.base_unit_id,'whmAiUnitSel')}</select></label>
+        <label class="full">${t('mvRcNote')}<textarea oninput="catEditSet('notes',this.value)">${esc(a.notes||'')}</textarea></label>
+      </div>`}
+      ${catDetailErr?`<div class="imd-err">${esc(catDetailErr)}</div>`:''}
+      <div class="imd-actions"><button class="imd-btn" onclick="catCancelEdit()" ${catDetailBusy?'disabled':''}>${t('cancel')}</button><button class="imd-btn pri" onclick="catSaveEdit()" ${catDetailBusy||catDetailRefLoading?'disabled':''}>${catDetailBusy?t('imdSaving'):t('save')}</button></div>
+    </div></div>`;
+  }
+  const whRows=inv.length?inv.map(x=>{
+    const wn=LANG==='ar'?(x.warehouse_name_ar||x.warehouse_code):(x.warehouse_name_en||x.warehouse_name_ar||x.warehouse_code);
+    const st=Number(x.available)<=0?t('invOut'):(x.is_low_stock?t('invLow'):t('imdHealthy'));
+    return `<tr><td>${esc(wn||'')}</td><td>${esc(x.shelf_name||'—')}</td><td>${fmtInt(x.on_hand)}</td><td>${fmtInt(x.reserved)}</td><td>${fmtInt(x.available)}</td><td>${x.min_level==null?'—':fmtInt(x.min_level)}</td><td>${esc(st)}</td></tr>`;
+  }).join(''):`<tr><td colspan="7" class="imd-empty">${t('imdNoWarehouses')}</td></tr>`;
+  const cat=LANG==='ar'?(r.category_name_ar||r.category_name_en):(r.category_name_en||r.category_name_ar);
+  const typ=LANG==='ar'?(r.item_type_name_ar||r.item_type_name_en):(r.item_type_name_en||r.item_type_name_ar);
+  const unit=LANG==='ar'?(r.unit_name_ar||r.unit_name_en):(r.unit_name_en||r.unit_name_ar);
+  return `<div class="imd-scrim" onclick="catClose()"></div><aside class="imd">
+    <div class="imd-head"><div><div class="imd-code">${esc(r.item_code||'')}</div><h2 class="imd-title">${esc(LANG==='ar'?(r.name_ar||r.name_en):(r.name_en||r.name_ar))}</h2>${r.name_ar&&r.name_en?`<div class="imd-subtitle">${esc(LANG==='ar'?r.name_en:r.name_ar)}</div>`:''}</div><button class="imd-x" onclick="catClose()">×</button></div>
+    <div class="imd-body">
+      <div class="imd-hero"><div>
+        ${catImgTag(r.image_url,'imd-photo',r.item_code,true)}
+        ${admin?`<div class="imd-photo-actions"><label class="imd-upload ${catDetailImgBusy?'busy':''}">${catDetailImgBusy?t('invImgUploading'):(r.image_url?t('invChangeImg'):t('invAddImg'))}<input type="file" accept="image/*" capture="environment" onchange="catUploadExistingImage('${esc(id)}',this)"/></label></div>`:''}
+      </div><div>
+        <div class="imd-statusline">${status}<span class="imd-stat">${fmtInt(inv.length)} ${t('catWhCount')}</span></div>
+        <div class="imd-grid">
+          <div class="imd-f"><span class="imd-lb">${t('invOnHand')}</span><span class="imd-v">${fmtInt(on)}</span></div>
+          <div class="imd-f"><span class="imd-lb">${t('invReserved')}</span><span class="imd-v">${fmtInt(res)}</span></div>
+          <div class="imd-f"><span class="imd-lb">${t('invAvail')}</span><span class="imd-v">${fmtInt(av)}</span></div>
+        </div>
+        ${admin&&!catDetailEdit?`<div class="imd-actions"><button class="imd-btn pri" onclick="catStartEdit()">✎ ${t('imdEdit')}</button></div>`:''}
+      </div></div>
+      ${catDetailErr&&!catDetailEdit?`<div class="imd-err">${esc(catDetailErr)}</div>`:''}
+      ${edit}
+      <div class="imd-sec"><div class="imd-sec-h">${t('imdBasic')}</div><div class="imd-sec-b"><div class="imd-grid">
+        <div class="imd-f"><span class="imd-lb">${t('whmAiNameAr')}</span><span class="imd-v">${esc(r.name_ar||'—')}</span></div>
+        <div class="imd-f"><span class="imd-lb">${t('whmAiNameEn')}</span><span class="imd-v">${esc(r.name_en||'—')}</span></div>
+        <div class="imd-f"><span class="imd-lb">${t('catCategory')}</span><span class="imd-v">${esc(cat||'—')}</span></div>
+        <div class="imd-f"><span class="imd-lb">${t('catType')}</span><span class="imd-v">${esc(typ||'—')}</span></div>
+        <div class="imd-f"><span class="imd-lb">${t('catUnit')}</span><span class="imd-v">${esc(unit||'—')}</span></div>
+        <div class="imd-f"><span class="imd-lb">${t('catStatus')}</span><span class="imd-v">${status}</span></div>
+        <div class="imd-f full"><span class="imd-lb">${t('mvRcNote')}</span><span class="imd-v imd-note">${esc(r.notes||t('imdNoNotes'))}</span></div>
+      </div></div></div>
+      <div class="imd-sec"><div class="imd-sec-h">${t('imdWarehouses')}</div><div class="imd-sec-b imd-scroll">
+        ${catDetailInvLoading?`<div class="imd-empty">${t('loading')}</div>`:`<table class="imd-wh-table"><thead><tr><th>${t('invWh')}</th><th>${t('invShelf')}</th><th>${t('invOnHand')}</th><th>${t('invReserved')}</th><th>${t('invAvail')}</th><th>${t('invMin')}</th><th>${t('invStatus')}</th></tr></thead><tbody>${whRows}</tbody></table>`}
+      </div></div>
+    </div></aside>`;
+}
+function catNewPanel(){
+  if(!catNewOpen||!catIsAdmin())return '';
+  const ref=catDetailRef||{categories:[],item_types:[],units:[]},a=catNew;
+  const opts=(arr,val,ph)=>`<option value="">${t(ph)}</option>`+(arr||[]).map(x=>`<option value="${x.id}" ${String(val)===String(x.id)?'selected':''}>${esc(LANG==='ar'?(x.name_ar||x.name_en):(x.name_en||x.name_ar))}</option>`).join('');
+  return `<div class="panel whm-newbox"><h3>${t('catNewTitle')}</h3>
+    ${catDetailRefLoading?`<div class="empty">${t('loading')}</div>`:`<div class="imd-form">
+      <label class="full">${t('catImgLbl')} *<div class="imd-photo-actions">${a.image_url?`<span class="cat-badge on">${t('imdImageReady')}</span>`:''}<label class="imd-upload ${catNewImgBusy?'busy':''}">${catNewImgBusy?t('invImgUploading'):(a.image_url?t('invChangeImg'):t('invAddImg'))}<input type="file" accept="image/*" capture="environment" onchange="catNewUploadImage(this)"/></label></div></label>
+      <label>${t('whmAiNameAr')} *<input value="${esc(a.name_ar)}" oninput="catNewSet('name_ar',this.value)"/></label>
+      <label>${t('whmAiNameEn')}<input value="${esc(a.name_en)}" oninput="catNewSet('name_en',this.value)"/></label>
+      <label>${t('whmAiCat')} *<select onchange="catNewSet('category_id',this.value)">${opts(ref.categories,a.category_id,'whmAiCatSel')}</select></label>
+      <label>${t('whmAiType')} *<select onchange="catNewSet('item_type_id',this.value)">${opts(ref.item_types,a.item_type_id,'whmAiTypeSel')}</select></label>
+      <label>${t('whmAiUnit')} *<select onchange="catNewSet('base_unit_id',this.value)">${opts(ref.units,a.base_unit_id,'whmAiUnitSel')}</select></label>
+      <label class="full">${t('mvRcNote')}<textarea oninput="catNewSet('notes',this.value)">${esc(a.notes)}</textarea></label>
+    </div>`}
+    ${catNewErr?`<div class="imd-err">${esc(catNewErr)}</div>`:''}
+    <div class="imd-actions"><button class="imd-btn" onclick="catToggleNew()" ${catNewBusy?'disabled':''}>${t('cancel')}</button><button class="imd-btn pri" onclick="catSubmitNew()" ${catNewBusy||catNewImgBusy?'disabled':''}>${catNewBusy?t('imdSaving'):t('catCreate')}</button></div>
+  </div>`;
+}
+
 function viewItemCatalog(){
   if(!catLoaded){ loadCatalog(); return `<div class="empty">${t('catLoading')}</div>`; }
-  const rows = Array.isArray(catData) ? catData : [];
-  const n = v => fmtInt(v);
-
-  const q = (catQuery || '').trim().toLowerCase();
-  const filtered = rows.filter(r => {
-    if(catStatusFilter === 'active'   && !r.is_active) return false;
-    if(catStatusFilter === 'inactive' &&  r.is_active) return false;
-    if(q){
-      return (r.item_code || '').toLowerCase().includes(q)
-          || (r.name_ar   || '').toLowerCase().includes(q)
-          || (r.name_en   || '').toLowerCase().includes(q);
-    }
-    return true;
+  const rows=Array.isArray(catData)?catData:[],n=v=>fmtInt(v);
+  const q=(catQuery||'').trim().toLowerCase();
+  const filtered=rows.filter(r=>{
+    if(catStatusFilter==='active'&&!r.is_active)return false;
+    if(catStatusFilter==='inactive'&&r.is_active)return false;
+    return !q||(r.item_code||'').toLowerCase().includes(q)||(r.name_ar||'').toLowerCase().includes(q)||(r.name_en||'').toLowerCase().includes(q);
   });
-
-  const head = `<tr>
-    <th class="cat-th-img"></th><th>${t('catCode')}</th><th>${t('catName')}</th><th>${t('catCategory')}</th>
-    <th>${t('catType')}</th><th>${t('catUnit')}</th><th>${t('catWhCount')}</th><th>${t('catStatus')}</th>
-  </tr>`;
-  const body = filtered.length ? filtered.map(r => {
-    const nm  = (LANG==='ar') ? (r.name_ar || r.name_en) : (r.name_en || r.name_ar);
-    const cat = (LANG==='ar') ? (r.category_name_ar  || '') : (r.category_name_en  || r.category_name_ar  || '');
-    const typ = (LANG==='ar') ? (r.item_type_name_ar || '') : (r.item_type_name_en || r.item_type_name_ar || '');
-    const unit= (LANG==='ar') ? (r.unit_name_ar      || '') : (r.unit_name_en      || r.unit_name_ar      || '');
-    const status = r.is_active ? `<span class="cat-badge on">${t('catActive')}</span>` : `<span class="cat-badge off">${t('catInactive')}</span>`;
-    const thumb = r.image_url
-      ? `<img class="inv-thumb" src="${esc(r.image_url)}" onclick="openLightbox('${esc(r.image_url)}')" alt=""/>`
-      : `<span class="inv-thumb inv-thumb-ph">📦</span>`;
-    return `<tr>
-      <td class="c-thumb">${thumb}</td>
-      <td class="cat-code">${esc(r.item_code || '')}</td>
-      <td>${esc(nm || '')}</td>
-      <td>${esc(cat)}</td>
-      <td>${esc(typ)}</td>
-      <td>${esc(unit)}</td>
-      <td class="cat-num">${n(r.warehouses_count)}</td>
-      <td>${status}</td>
-    </tr>`;
-  }).join('') : `<tr><td colspan="8" class="cat-empty">${t('catNoRows')}</td></tr>`;
-
-  const statusTabs = `<div class="cat-filters">
-    <button class="cat-fbtn ${catStatusFilter==='all'     ?'on':''}" onclick="catSetStatus('all')">${t('catAll')}</button>
-    <button class="cat-fbtn ${catStatusFilter==='active'  ?'on':''}" onclick="catSetStatus('active')">${t('catActive')}</button>
-    <button class="cat-fbtn ${catStatusFilter==='inactive'?'on':''}" onclick="catSetStatus('inactive')">${t('catInactive')}</button>
-  </div>`;
-
-  return `
-    <div class="dash-head">
-      <div><div class="eyebrow">${t('mvEye')}</div><h1>${t('catH1')}</h1><div class="cat-sub">${t('catSubtitle')}</div></div>
-    </div>
-    <div class="cat-toolbar">
-      <input id="catSearch" class="rc-in cat-search" placeholder="${t('catSearchPh')}" value="${esc(catQuery)}" oninput="catSearch(this.value)"/>
-      ${statusTabs}
-    </div>
-    <div class="cat-count">${n(filtered.length)} ${t('catResults')}</div>
-    <div class="cat-tablewrap"><table class="cat-table"><thead>${head}</thead><tbody>${body}</tbody></table></div>`;
+  const head=`<tr><th class="cat-th-img"></th><th>${t('catCode')}</th><th>${t('catName')}</th><th>${t('catCategory')}</th><th>${t('catType')}</th><th>${t('catUnit')}</th><th>${t('catWhCount')}</th><th>${t('catStatus')}</th><th class="cat-openmark"></th></tr>`;
+  const body=filtered.length?filtered.map(r=>{
+    const id=catItemId(r),nm=LANG==='ar'?(r.name_ar||r.name_en):(r.name_en||r.name_ar);
+    const cat=LANG==='ar'?(r.category_name_ar||''):(r.category_name_en||r.category_name_ar||'');
+    const typ=LANG==='ar'?(r.item_type_name_ar||''):(r.item_type_name_en||r.item_type_name_ar||'');
+    const unit=LANG==='ar'?(r.unit_name_ar||''):(r.unit_name_en||r.unit_name_ar||'');
+    const status=r.is_active?`<span class="cat-badge on">${t('catActive')}</span>`:`<span class="cat-badge off">${t('catInactive')}</span>`;
+    const thumb=r.image_url?( /^https?:\/\//i.test(r.image_url)?`<img class="inv-thumb" src="${esc(r.image_url)}" onclick="event.stopPropagation();openLightbox('${esc(r.image_url)}')" alt=""/>`:`<img class="inv-thumb" data-whimg="${esc(r.image_url)}" src="" alt=""/>`):`<span class="inv-thumb inv-thumb-ph">📦</span>`;
+    return `<tr class="cat-click" onclick="catOpen('${esc(id)}')"><td class="c-thumb">${thumb}</td><td class="cat-code">${esc(r.item_code||'')}</td><td>${esc(nm||'')}</td><td>${esc(cat)}</td><td>${esc(typ)}</td><td>${esc(unit)}</td><td class="cat-num">${n(r.warehouses_count)}</td><td>${status}</td><td class="cat-openmark">›</td></tr>`;
+  }).join(''):`<tr><td colspan="9" class="cat-empty">${t('catNoRows')}</td></tr>`;
+  const statusTabs=`<div class="cat-filters"><button class="cat-fbtn ${catStatusFilter==='all'?'on':''}" onclick="catSetStatus('all')">${t('catAll')}</button><button class="cat-fbtn ${catStatusFilter==='active'?'on':''}" onclick="catSetStatus('active')">${t('catActive')}</button><button class="cat-fbtn ${catStatusFilter==='inactive'?'on':''}" onclick="catSetStatus('inactive')">${t('catInactive')}</button></div>`;
+  setTimeout(catHydratePrivateImages,0);
+  return `<div class="dash-head"><div><div class="eyebrow">${t('mvEye')}</div><h1>${t('catH1')}</h1><div class="cat-sub">${t('catSubtitle')}</div></div></div><div class="cat-toolbar"><input id="catSearch" class="rc-in cat-search" placeholder="${t('catSearchPh')}" value="${esc(catQuery)}" oninput="catSearch(this.value)"/>${statusTabs}</div>
+    <div class="cat-count">${n(filtered.length)} ${t('catResults')}</div><div class="cat-tablewrap"><table class="cat-table"><thead>${head}</thead><tbody>${body}</tbody></table></div>${catDetailDrawer()}`;
 }
 
 /* =====================================================================
@@ -2283,6 +2564,10 @@ function resetPhase1Caches(){
   invFilters = { q:'', warehouse:'', category:'', low:false, out:false, noshelf:false };
   catData  = [];      catLoaded   = false; catLoading   = false;
   catQuery = '';      catStatusFilter = 'all';
+  catDetailId=null; catDetailInventory=null; catDetailInvLoading=false; catDetailEdit=false;
+  catDetailBusy=false; catDetailErr=''; catDetailDraft={}; catDetailRef=null; catDetailRefLoading=false; catDetailImgBusy=false;
+  catNewOpen=false; catNewBusy=false; catNewErr=''; catNewImgBusy=false;
+  catNew={name_ar:'',name_en:'',category_id:'',item_type_id:'',base_unit_id:'',notes:'',image_url:''};
 }
 
 
@@ -3079,6 +3364,29 @@ document.addEventListener('DOMContentLoaded', async () => {
   await route();
 });
 
+
+
+/* Phase 6.5 — Item Master & Details labels */
+Object.assign(T.en,{
+  imdEdit:'Edit Item',imdBasic:'Basic Information',imdWarehouses:'Warehouse Availability',
+  imdHealthy:'Healthy',imdNoWarehouses:'This item is not stocked in any warehouse.',
+  imdNoNotes:'No notes.',imdSaved:'Item updated successfully.',imdSaving:'Saving…',
+  imdSaveErr:'Could not update the item.',imdNameRequired:'Arabic name is required.',
+  imdRefsRequired:'Category, item type and unit are required.',
+  imdImageSaved:'Item image updated.',imdImageErr:'Could not update the item image.',
+  imdImageReady:'Image ready',
+  imdBackendNeeded:'The Item Details screen is ready, but editing names/details requires the backend RPC admin_update_item_master. Apply the supplied SQL migration, then retry.'
+});
+Object.assign(T.ar,{
+  imdEdit:'تعديل الصنف',imdBasic:'المعلومات الأساسية',imdWarehouses:'توفر الصنف في المستودعات',
+  imdHealthy:'سليم',imdNoWarehouses:'هذا الصنف غير مضاف لأي مستودع حالياً.',
+  imdNoNotes:'لا توجد ملاحظات.',imdSaved:'تم تحديث الصنف بنجاح.',imdSaving:'جاري الحفظ…',
+  imdSaveErr:'تعذر تحديث الصنف.',imdNameRequired:'اسم الصنف بالعربية مطلوب.',
+  imdRefsRequired:'التصنيف ونوع الصنف والوحدة مطلوبة.',
+  imdImageSaved:'تم تحديث صورة الصنف.',imdImageErr:'تعذر تحديث صورة الصنف.',
+  imdImageReady:'الصورة جاهزة',
+  imdBackendNeeded:'واجهة تفاصيل الصنف جاهزة، لكن تعديل الاسم والبيانات يحتاج RPC باسم admin_update_item_master. طبّق ملف SQL المرفق ثم أعد المحاولة.'
+});
 
 /* Phase 6 report labels */
 Object.assign(T.en,{awh_reports:'Reports',repPToday:'Today',repPYesterday:'Yesterday',repPWeek:'This Week',repPLastWeek:'Last Week',repPMonth:'This Month',repPLastMonth:'Last Month',repPCustom:'Custom',repFrom:'From',repTo:'To',repAllWh:'All Warehouses',repOneWh:'One Warehouse',repPreset:'Report Type',repRepFull:'Full Report',repRepDaily:'Daily',repRepWeekly:'Weekly',repRepMonthly:'Monthly',repRepInventory:'Inventory',repRepMovement:'Movements',repRepExpiry:'Expiry',repRepApprovals:'Approvals',repMoreFilters:'More Filters',repCompare:'Compare with previous period',repPeriod:'Period',repWarehouses:'Warehouses',repGenerate:'Generate Report',repPickDates:'Select both dates.',repBadRange:'End date must not be before start date.',repGenerating:'Generating report…',repStartHint:'Choose the period and scope, then generate the report.',repReportTitle:'Warehouse Management Report',repScope:'Scope',repGenerated:'Generated',repExportPdf:'Save PDF',repExportExcel:'Excel',repPrint:'Print',repPdfHint:'Use the browser print dialog and choose Save as PDF',repSoon:'Coming later',repFooterSys:'Warehouse Management System',repExecSummary:'Executive Summary',repActiveWh:'Active Warehouses',repDistinctItems:'Distinct Items',repWithStock:'Items with Stock',repOutStock:'Out of Stock',repLowStock:'Low Stock',repNoShelf:'Without Shelf',repTotalMv:'Total Movements',repPendingAppr:'Pending Approvals',repObservations:'Observations',repMovementSummary:'Movement Summary',repMvType:'Movement Type',repCount:'Count',repPrevCount:'Previous',repChange:'Change',repCompareVs:'Compared with',repWarehouseSummary:'Warehouse Summary',repWh:'Warehouse',repItems:'Items',repMvTotal:'Movements',repExpired:'Expired',repInventoryHealth:'Inventory Health',repHealthy:'Healthy',repReserved:'With Reservations',repNoImage:'Without Image',repNoMove90:'No Movement 90d',repMultiWh:'Multi-Warehouse Items',repItemSummary:'Item Summary',repNoItems:'No items to show.',repCode:'Code',repItem:'Item',repUnit:'Unit',repOpening:'Opening',repClosing:'Closing',repStatus:'Status',repBatchesSummary:'Batches / Expiry',repCurrentExpiry:'current status',repNoBatches:'No real batches to show.',repExp30:'Expiring ≤30d',repExp60:'Expiring ≤60d',repExp90:'Expiring ≤90d',repNoExpiry:'No Expiry',repApprovalsSummary:'Movement Approvals',repApPending:'Pending',repApApproved:'Approved',repApRejected:'Rejected',repApCancelled:'Cancelled',repApModified:'Admin Modified',repApTurnaround:'Avg. turnaround',repApOldest:'Oldest pending',repMaterialSummary:'Material Requests',repMrPending:'Pending',repMrAllocated:'Allocated',repMrIssued:'Issued',repMrRejected:'Rejected',repMrCancelled:'Cancelled',repMrShort:'Short Approved Lines',repMrPendingNote:'Current material-request status.',repExceptions:'Exceptions',repNoExceptions:'No exceptions.',repResOverHand:'Reserved > On Hand',repAuditSummary:'Audit Summary',repNoAudit:'No audit events.',repAuditEvents:'Events',repAuditActors:'Actors',repAuditAction:'Action',repMovementRegister:'Movement Register',repMovements:'movements',repViewRegister:'View Register',repNoMovements:'No movements.',repLoading:'Loading…',repDate:'Date',repQty:'Qty',repBatch:'Batch',repActor:'Actor',repNote:'Note',repErrGeneric:'Could not generate the report.'});
