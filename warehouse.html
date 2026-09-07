@@ -340,8 +340,8 @@
      ====================================================================== */
   .whm-grid{
     display:grid;
-    grid-template-columns:repeat(auto-fill,minmax(310px,1fr));
-    gap:14px;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:16px;
     align-items:stretch;
   }
   .whm-card{
@@ -356,11 +356,12 @@
     min-width:0;
   }
   .whm-card.is-inactive{opacity:.72;background:var(--panel-alt)}
-  .whm-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
-  .whm-card-title{font-size:15px;font-weight:700;color:var(--navy);min-width:0;overflow-wrap:anywhere}
+  .whm-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}
+  .whm-card-title{font-size:16px;font-weight:700;color:var(--navy);min-width:0;overflow-wrap:anywhere;line-height:1.35}
+  .whm-title-block{min-width:0;flex:1}
   .whm-code{
     display:inline-block;
-    margin-inline-start:7px;
+    margin-top:6px;
     padding:2px 7px;
     border-radius:5px;
     background:var(--head);
@@ -384,8 +385,8 @@
   }
   .whm-card-stats>div{padding:9px 8px;text-align:center;border-inline-end:1px solid var(--border)}
   .whm-card-stats>div:last-child{border-inline-end:none}
-  .whm-card-stats span{display:block;color:var(--grey);font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .whm-card-stats b{display:block;margin-top:3px;color:var(--navy);font-size:14px;font-variant-numeric:tabular-nums}
+  .whm-card-stats span{display:block;color:var(--grey);font-size:11px;line-height:1.35;min-height:30px;white-space:normal;overflow:visible;text-overflow:clip}
+  .whm-card-stats b{display:block;margin-top:4px;color:var(--navy);font-size:16px;font-variant-numeric:tabular-nums}
   .whm-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:auto;padding-top:2px}
   .whm-btn{
     appearance:none;
@@ -458,7 +459,10 @@
   .whd-un-ctrl .rc-in{margin:0;min-width:0}
   .whd-un-noshelf{font-size:11px;color:var(--amber);font-weight:600}
 
-  @media (max-width:1100px){
+  @media (max-width:1250px){
+    .whm-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  }
+  @media (max-width:900px){
     .whm-card-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
     .whm-card-stats>div:nth-child(2){border-inline-end:none}
     .whm-card-stats>div:nth-child(-n+2){border-bottom:1px solid var(--border)}
@@ -2212,7 +2216,10 @@ function viewWarehouses(){
 
     return `<div class="whm-card ${w.is_active?'':'is-inactive'}">
       <div class="whm-card-head">
-        <div class="whm-card-title">${esc(nm)} <span class="whm-code">${esc(w.code)}</span></div>
+        <div class="whm-title-block">
+          <div class="whm-card-title">${esc(nm)}</div>
+          <span class="whm-code">${esc(w.code)}</span>
+        </div>
         <div class="whm-badges">${actBadge}${openBadge}</div>
       </div>
       <div class="whm-card-stats">
