@@ -247,9 +247,9 @@
     <span class="text-muted" data-t="modName">Housing &amp; Offices</span>
     <span class="spacer"></span>
     <span id="userInfo" class="user-info"></span>
-    <button class="btn btn-sm" id="auditBtn" title="Audit log / سجل الحذف">🕐</button>
+    <button class="btn btn-sm" id="auditBtn" title="Activity / سجل النشاط">🕐</button>
     <button class="btn btn-sm" id="langToggleBtn" title="Language">عربي / EN</button>
-    <button class="btn btn-sm btn-ghost" id="logoutBtn" data-t="logout">Sign out</button>
+    <button class="btn btn-sm btn-ghost" id="contextExitBtn">Sign out</button>
   </header>
 
   <aside class="sidebar" id="sidebar">
@@ -279,6 +279,7 @@ const CFG = {
   supabaseUrl: 'https://abnfwabpqnwnscwyfqbm.supabase.co',
   supabaseAnonKey: 'sb_publishable_yeLa2U3cUo9MSn2H0pOlXQ_roSY8_Zx',
   adminSessionKey: 'advacon_admin_sess',
+  assetSessionKey: 'advacon_asset_sess',
   langKey: 'housing_lang',
 };
 const sb = supabase.createClient(CFG.supabaseUrl, CFG.supabaseAnonKey);
@@ -292,7 +293,7 @@ const T = {
     logout: 'تسجيل خروج', loading: 'جاري التحميل...',
     dashboard: 'لوحة التحكم', properties: 'الوحدات', contracts: 'العقود', meters: 'العدادات',
     bills: 'الفواتير', residents: 'الساكنون', expenses: 'المصاريف', reports: 'التقارير', settings: 'الإعدادات',
-    landlords: 'الملاك', landlordType: 'نوع المالك', individual: 'فرد', organization: 'مؤسسة',
+    landlords: 'الملاك', approvals:'الموافقات', permissions:'الصلاحيات', activity:'سجل النشاط', landlordType: 'نوع المالك', individual: 'فرد', organization: 'مؤسسة',
     email: 'البريد الإلكتروني', phone: 'الهاتف', nationalId: 'رقم الهوية',
     add: 'إضافة', edit: 'تعديل', delete: 'حذف', save: 'حفظ', cancel: 'إلغاء', close: 'إغلاق',
     yes: 'نعم', no: 'لا', ok: 'موافق', back: 'رجوع', view: 'عرض', activate: 'تفعيل', deactivate: 'إيقاف',
@@ -335,7 +336,7 @@ const T = {
     logout: 'Sign out', loading: 'Loading…',
     dashboard: 'Dashboard', properties: 'Properties', contracts: 'Contracts', meters: 'Meters',
     bills: 'Bills', residents: 'Residents', expenses: 'Expenses', reports: 'Reports', settings: 'Settings',
-    landlords: 'Landlords', landlordType: 'Type', individual: 'Individual', organization: 'Organization',
+    landlords: 'Landlords', approvals:'Approvals', permissions:'Permissions', activity:'Activity Log', landlordType: 'Type', individual: 'Individual', organization: 'Organization',
     email: 'Email', phone: 'Phone', nationalId: 'National ID',
     add: 'Add', edit: 'Edit', delete: 'Delete', save: 'Save', cancel: 'Cancel', close: 'Close',
     yes: 'Yes', no: 'No', ok: 'OK', back: 'Back', view: 'View', activate: 'Activate', deactivate: 'Deactivate',
@@ -394,6 +395,50 @@ function toggleLang() {
 /* =====================================================================
    SESSION
    ===================================================================== */
+/* =====================================================================
+   STRICT CONTEXT — ?from=admin or ?from=asset selects the intended portal.
+   It never grants authority; the selected session is verified server-side.
+   ===================================================================== */
+const ENTRY_FROM = new URLSearchParams(location.search).get('from');
+const CTX = { mode: ENTRY_FROM === 'asset' ? 'asset' : null, role: null, permissions: {} };
+
+function assetGetSession(){
+  try { const raw=sessionStorage.getItem(CFG.assetSessionKey); if(!raw)return null; const s=JSON.parse(raw); return s&&s.access_token?s:null; }
+  catch(e){ return null; }
+}
+function assetSetSession(s){ try{sessionStorage.setItem(CFG.assetSessionKey,JSON.stringify(s));}catch(e){} }
+function assetClearSession(){ try{sessionStorage.removeItem(CFG.assetSessionKey);}catch(e){} CTX.role=null; CTX.permissions={}; }
+async function assetRefresh(refreshToken){
+  try{
+    const r=await fetch(SB_URL+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{'apikey':SB_KEY,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:refreshToken})});
+    const j=await r.json(); if(!r.ok||!j.access_token)return null;
+    return {access_token:j.access_token,refresh_token:j.refresh_token||refreshToken,expires_at:j.expires_at||null,user_id:(j.user&&j.user.id)||null};
+  }catch(e){return null;}
+}
+async function tokenRpc(accessToken, fn, args={}){
+  const r=await fetch(SB_URL+'/rest/v1/rpc/'+fn,{method:'POST',headers:{'apikey':SB_KEY,'Authorization':'Bearer '+accessToken,'Content-Type':'application/json'},body:JSON.stringify(args||{})});
+  if(!r.ok)return {ok:false,http:r.status}; return {ok:true,data:await r.json()};
+}
+async function assetEnsureSession(){
+  let sess=assetGetSession(); if(!sess||!sess.access_token||!sess.refresh_token){assetClearSession();return false;}
+  const nowSec=Math.floor(Date.now()/1000), exp=Number(sess.expires_at||0);
+  if(!exp||exp<=nowSec+60){ const fresh=await assetRefresh(sess.refresh_token); if(!fresh){assetClearSession();return false;} assetSetSession(fresh); sess=fresh; }
+  const roleR=await tokenRpc(sess.access_token,'asset_my_role',{});
+  const permR=await tokenRpc(sess.access_token,'asset_my_permissions',{p_module_key:'housing'});
+  if(!roleR.ok||roleR.data!=='housing_manager'||!permR.ok||!permR.data){assetClearSession();return false;}
+  const perms=permR.data||{};
+  if(!Object.values(perms).some(v=>v&&v!=='deny')){assetClearSession();return false;}
+  CTX.role=roleR.data; CTX.permissions=perms;
+  await syncSbAuth(sess); return true;
+}
+async function assetSignOut(){
+  const sess=assetGetSession();
+  if(sess&&sess.access_token){try{await fetch(SB_URL+'/auth/v1/logout',{method:'POST',headers:{'apikey':SB_KEY,'Authorization':'Bearer '+sess.access_token,'Content-Type':'application/json'},body:'{}'});}catch(e){}}
+  assetClearSession();
+}
+function permissionMode(key){ return CTX.mode==='admin'?'direct':(CTX.permissions[key]||'deny'); }
+function can(key){ return permissionMode(key)!=='deny'; }
+
 /* =====================================================================
    ADMIN SESSION — aligned with index.html patterns
    (refresh via /auth/v1/token?grant_type=refresh_token, verify with is_admin())
@@ -492,14 +537,13 @@ async function admSignOut() {
   admClearSession();
 }
 
-async function requireAdmin() {
-  const ok = await admEnsureSession();
-  if (!ok) { showSignInRequired('no_session_or_not_admin'); return false; }
-  // Populate user info in the header
-  const sess = admGetSession();
-  const uid = sess && sess.user_id;
-  const el = document.getElementById('userInfo');
-  if (el) el.textContent = uid ? uid.slice(0, 8) + '…' : 'admin';
+async function requireContext() {
+  // Housing is Asset-only. Admin sessions are never accepted here.
+  if(CTX.mode !== 'asset'){ showSignInRequired('asset_context_required'); return false; }
+  const ok = await assetEnsureSession();
+  if (!ok) { showSignInRequired('no_housing_manager_session'); return false; }
+  const el=document.getElementById('userInfo');
+  if(el) el.textContent = CTX.role || 'housing_manager';
   return true;
 }
 
@@ -512,7 +556,7 @@ function showSignInRequired(reason) {
         <div style="text-align:start; background:var(--panel-alt); padding:10px 14px; border-radius:var(--radius); font-size:12px; margin-bottom:16px; font-family:monospace; color:var(--muted);">
           reason: ${escapeHtml(reason||'unknown')}
         </div>
-        <a href="/admin" class="btn btn-primary">/admin</a>
+        <a href="/asset" class="btn btn-primary">/asset</a>
       </div>
     </div>`;
 }
@@ -523,7 +567,7 @@ function showSignInRequired(reason) {
    sync with our localStorage-managed one before storage calls.
    ===================================================================== */
 async function getAdminSession() {
-  const sess = admGetSession();
+  const sess = assetGetSession();
   if (!sess || !sess.access_token) return null;
   try {
     await sb.auth.setSession({ access_token: sess.access_token, refresh_token: sess.refresh_token || '' });
@@ -632,8 +676,8 @@ async function uploadAndRegisterAttachment({ entityType, entityId, file, kindKey
   const safeName = file.name.replace(/[^\w.-]/g,'_');
   const path = `${entityType}/${entityId}/${Date.now()}_${safeName}`;
   // Fail-closed: never proceed to Storage without a valid admin session
-  const okSess = await admEnsureSession();
-  if (!okSess) throw new Error(translateError('not_admin'));
+  const okSess = await assetEnsureSession();
+  if (!okSess) throw new Error(LANG==='ar'?'جلسة مسؤول الإسكان غير صالحة':'Housing manager session is invalid');
 
   // Step 1: upload to storage
   const { error: upErr } = await sb.storage.from('housing-attachments').upload(path, file, { contentType: file.type });
@@ -651,7 +695,7 @@ async function uploadAndRegisterAttachment({ entityType, entityId, file, kindKey
     // Compensating action: remove the just-uploaded file
     let compensationFailed = null;
     try {
-      const okC = await admEnsureSession();
+      const okC = await assetEnsureSession();
       if (!okC) throw new Error('session_expired_during_compensation');
       const { error: remErr } = await sb.storage.from('housing-attachments').remove([path]);
       if (remErr) compensationFailed = remErr;
@@ -689,7 +733,7 @@ async function removeStorageFilesWithFallback(paths, context) {
   try {
     // Fail-closed: no valid admin session means we should not attempt Storage;
     // treat as an ordinary failure so the paths get logged for later cleanup.
-    const okSess = await admEnsureSession();
+    const okSess = await assetEnsureSession();
     if (!okSess) throw new Error('session_expired');
     const { error } = await sb.storage.from('housing-attachments').remove(paths);
     if (error) failed = error;
@@ -713,39 +757,43 @@ async function removeStorageFilesWithFallback(paths, context) {
   }
 }
 
-async function rpc(fn, args = {}) {
-  // Prefer our fetch-based path (better error handling than sb.rpc)
-  const okSess = await admEnsureSession();
-  if (!okSess) { showSignInRequired('session_expired'); throw new Error(translateError('not_admin')); }
-  const sess = admGetSession();
-  let res;
-  try {
-    res = await fetch(SB_URL + '/rest/v1/rpc/' + fn, {
-      method: 'POST',
-      headers: {'apikey': SB_KEY, 'Authorization': 'Bearer ' + sess.access_token, 'Content-Type': 'application/json'},
-      body: JSON.stringify(args || {})
-    });
-  } catch(e) {
-    throw new Error(LANG==='ar' ? 'فشل الاتصال بالخادم' : 'Network error');
+const HOUSING_RPC_ACTION = {
+  housing_create_property:'properties.create', housing_update_property:'properties.edit', housing_toggle_property_active:'properties.activate', housing_delete_property:'properties.delete',
+  housing_create_space:'spaces.manage', housing_update_space:'spaces.manage', housing_delete_space:'spaces.manage', housing_move_space:'spaces.manage',
+  housing_create_landlord:'landlords.create', housing_update_landlord:'landlords.edit', housing_delete_landlord:'landlords.delete',
+  housing_create_contract:'contracts.create', housing_update_contract:'contracts.edit', housing_change_contract_status:'contracts.edit', housing_delete_contract:'contracts.delete',
+  housing_create_meter:'meters.create', housing_update_meter:'meters.edit', housing_toggle_meter_active:'meters.edit', housing_assign_meter:'meters.assign', housing_unassign_meter:'meters.assign', housing_add_reading:'meters.reading.create', housing_delete_reading:'meters.reading.delete', housing_delete_meter:'meters.delete',
+  housing_create_bill:'bills.create', housing_update_bill:'bills.edit', housing_mark_bill_paid:'bills.mark_paid', housing_bulk_mark_bills_paid:'bills.bulk_mark_paid', housing_amend_bill:'bills.amend', housing_delete_bill:'bills.delete',
+  housing_create_resident:'residents.create', housing_update_resident:'residents.edit', housing_toggle_resident_active:'residents.edit', housing_assign_resident:'residents.assign', housing_unassign_resident:'residents.assign', housing_delete_resident:'residents.delete',
+  housing_create_expense:'expenses.create', housing_update_expense:'expenses.edit', housing_toggle_expense_active:'expenses.edit', housing_delete_expense:'expenses.delete',
+  housing_register_attachment:'attachments.upload', housing_delete_attachment:'attachments.delete'
+};
+async function rawRpc(fn,args={}){
+  const okSess = await assetEnsureSession();
+  if(!okSess){showSignInRequired('session_expired');throw new Error('Housing access denied');}
+  const sess=assetGetSession();
+  let res; try{res=await fetch(SB_URL+'/rest/v1/rpc/'+fn,{method:'POST',headers:{'apikey':SB_KEY,'Authorization':'Bearer '+sess.access_token,'Content-Type':'application/json'},body:JSON.stringify(args||{})});}
+  catch(e){throw new Error(LANG==='ar'?'فشل الاتصال بالخادم':'Network error');}
+  if(res.status===401||res.status===403){ await assetSignOut(); showSignInRequired('http_'+res.status); throw new Error('Session expired'); }
+  if(!res.ok){let msg='http_'+res.status;try{const b=await res.json();msg=(b&&(b.message||b.error||b.details||b.hint))||msg;}catch(_){} throw new Error(String(msg).trim());}
+  return await res.json();
+}
+async function rpc(fn,args={}){
+  if(CTX.mode==='asset'){
+    const action=HOUSING_RPC_ACTION[fn];
+    if(action){
+      const mode=permissionMode(action);
+      if(mode==='deny') throw new Error(LANG==='ar'?'لا تملك صلاحية تنفيذ هذه العملية':'You do not have permission for this action');
+      if(mode==='approval'){
+        const entityId=args.p_id||args.p_entity_id||args.p_property_id||args.p_contract_id||args.p_meter_id||args.p_resident_id||args.p_bill_id||args.p_expense_id||null;
+        const entityType=action.split('.')[0].replace(/ies$/,'y').replace(/s$/,'');
+        const out=await rawRpc('asset_housing_request',{p_rpc_name:fn,p_payload:args||{},p_entity_type:entityType,p_entity_id:entityId?String(entityId):null,p_before_data:null});
+        toast(LANG==='ar'?'تم إرسال الطلب لموافقة الإدارة':'Request submitted for Admin approval','success');
+        return {...(out||{}),pending_approval:true};
+      }
+    }
   }
-  if (res.status === 401 || res.status === 403) {
-    await admSignOut();
-    showSignInRequired('http_' + res.status);
-    throw new Error(translateError('not_admin'));
-  }
-  if (!res.ok) {
-    let msg = 'http_' + res.status;
-    try {
-      const b = await res.json();
-      // Postgres errors surface as { message: 'error_code' } or { message: 'context: error_code' }
-      msg = (b && (b.message || b.error || b.details || b.hint)) || msg;
-    } catch(_) {}
-    // If message contains a known code as a substring, translate it
-    const key = String(msg).trim();
-    throw new Error(translateError(key));
-  }
-  const data = await res.json();
-  return data;
+  try{return await rawRpc(fn,args);}catch(e){throw new Error(translateError(e.message||String(e)));}
 }
 
 /* =====================================================================
@@ -980,11 +1028,25 @@ const NAV_ITEMS = [
   { key: 'expenses', route: 'expenses', icon: '⟳' },
   { key: 'reports', route: 'reports', icon: '▦' },
   { key: 'settings', route: 'settings', icon: '⚙' },
+  { key: 'approvals', route: 'approvals', icon: '✓', adminOnly: true },
+  { key: 'permissions', route: 'permissions', icon: '🔐', adminOnly: true },
+  { key: 'activity', route: 'activity', icon: '🕐', adminOnly: true },
 ];
 
+function navAllowed(item){
+  if(item.adminOnly) return CTX.mode==='admin';
+  if(CTX.mode==='admin') return true;
+  const viewMap={
+    '':'dashboard.view', properties:'properties.view', landlords:'landlords.view', contracts:'contracts.view',
+    meters:'meters.view', bills:'bills.view', residents:'residents.view', expenses:'expenses.view',
+    reports:'reports.view', settings:'settings.manage'
+  };
+  const key=viewMap[item.route];
+  return !key || can(key);
+}
 function renderNav(activeRoute) {
   const nav = document.getElementById('mainNav');
-  nav.innerHTML = NAV_ITEMS.map(item => `
+  nav.innerHTML = NAV_ITEMS.filter(navAllowed).map(item => `
     <a class="nav-item ${item.route === activeRoute ? 'active' : ''}" href="#${item.route}">
       <span class="icon">${item.icon}</span>
       <span>${escapeHtml(t(item.key))}</span>
@@ -1017,6 +1079,9 @@ async function route() {
       case 'residents': await screenResidents(content); break;
       case 'expenses': await screenExpenses(content); break;
       case 'reports': await screenReports(content); break;
+      case 'approvals': if(CTX.mode!=='admin') throw new Error('not_admin'); await screenApprovals(content); break;
+      case 'permissions': if(CTX.mode!=='admin') throw new Error('not_admin'); await screenPermissions(content); break;
+      case 'activity': if(CTX.mode!=='admin') throw new Error('not_admin'); await screenActivity(content); break;
       case 'settings': await screenSettings(content); break;
       default:
         content.innerHTML = `<div class="error-box">Unknown route: ${escapeHtml(mainRoute)}</div>`;
@@ -1647,8 +1712,8 @@ async function openContractForm(existing, propId, onSaved) {
     // Wire up actions
     attListEl.querySelectorAll('[data-att-dl]').forEach(b => b.addEventListener('click', async (e) => {
       const path = e.currentTarget.getAttribute('data-att-dl');
-      const okS = await admEnsureSession();
-      if (!okS) { toast(translateError('not_admin'),'error'); return; }
+      const okS = await assetEnsureSession();
+      if (!okS) { toast(LANG==='ar'?'جلسة مسؤول الإسكان غير صالحة':'Housing manager session is invalid','error'); return; }
       const { data, error } = await sb.storage.from('housing-attachments').createSignedUrl(path, 300);
       if (error) { toast(translateStorageError(error),'error'); return; }
       window.open(data.signedUrl, '_blank');
@@ -2094,8 +2159,8 @@ async function renderPropTabAttachments(container, p, refresh) {
   });
   container.querySelectorAll('[data-att-dl]').forEach(b => b.addEventListener('click', async (e) => {
     const path = e.currentTarget.getAttribute('data-path');
-    const okS = await admEnsureSession();
-    if (!okS) { toast(translateError('not_admin'),'error'); return; }
+    const okS = await assetEnsureSession();
+    if (!okS) { toast(LANG==='ar'?'جلسة مسؤول الإسكان غير صالحة':'Housing manager session is invalid','error'); return; }
     const { data, error } = await sb.storage.from('housing-attachments').createSignedUrl(path, 300);
     if (error) { toast(translateStorageError(error), 'error'); return; }
     window.open(data.signedUrl, '_blank');
@@ -3519,129 +3584,37 @@ async function openTemplateForm(existing, onSaved) {
    AUDIT LOG VIEWER — recent deletions, edits, and other actions
    ===================================================================== */
 async function openAuditLog() {
-  const PAGE_SIZE = 50;
-  let currentOffset = 0;
-  let currentActionFilter = 'delete';  // default: show deletions
-
-  const body = document.createElement('div');
-  body.innerHTML = `
-    <div class="filters" style="margin-bottom:12px;">
-      <div class="field"><label>${LANG==='ar'?'النوع':'Action'}</label>
-        <select id="alAction">
-          <option value="delete">${LANG==='ar'?'الحذف فقط':'Deletions only'}</option>
-          <option value="update">${LANG==='ar'?'التعديلات':'Updates'}</option>
-          <option value="create">${LANG==='ar'?'الإنشاء':'Creations'}</option>
-          <option value="all">${LANG==='ar'?'الكل':'All actions'}</option>
-        </select>
-      </div>
-      <div class="field"><label>${LANG==='ar'?'من':'From'}</label><input id="alFrom" type="date"></div>
-      <div class="field"><label>${LANG==='ar'?'إلى':'To'}</label><input id="alTo" type="date"></div>
-    </div>
-    <div id="alList" style="max-height:60vh; overflow-y:auto;"><div class="loading">${t('loading')}</div></div>
-    <div id="alPager" class="flex" style="justify-content:center; gap:12px; align-items:center; margin-top:12px;"></div>`;
-
-  const modal = openModal({ title: LANG==='ar'?'سجل الإجراءات':'Audit Log', body, footer: null, wide: true });
-
-  const load = async () => {
-    const listEl  = body.querySelector('#alList');
-    const pagerEl = body.querySelector('#alPager');
-    listEl.innerHTML = `<div class="loading">${t('loading')}</div>`;
-    pagerEl.innerHTML = '';
-    try {
-      const args = { p_limit: PAGE_SIZE, p_offset: currentOffset };
-      const actVal = body.querySelector('#alAction').value;
-      if (actVal !== 'all') args.p_action_like = '%.' + actVal;
-      if (body.querySelector('#alFrom').value) args.p_from_date = body.querySelector('#alFrom').value;
-      if (body.querySelector('#alTo').value)   args.p_to_date   = body.querySelector('#alTo').value;
-      const res = await rpc('housing_get_audit_log', args);
-      const items = res.items || [];
-      const total = res.total_count || 0;
-
-      if (!items.length) {
-        listEl.innerHTML = `<div class="empty" style="padding:40px; text-align:center; color:var(--muted);">${t('noItems')}</div>`;
-        return;
-      }
-
-      listEl.innerHTML = items.map(a => {
-        const p = a.payload || {};
-        // Extract a friendly label depending on entity + payload
-        const parts = [];
-        if (p.code) parts.push(`<span class="code-cell">${escapeHtml(p.code)}</span>`);
-        if (p.name_ar) parts.push(escapeHtml(p.name_ar));
-        if (p.name) parts.push(escapeHtml(p.name));
-        if (p.description) parts.push(escapeHtml(p.description));
-        if (p.meter_number) parts.push(escapeHtml(p.meter_number));
-        // Cascade summary for deletions
-        let cascadeStr = '';
-        if (a.action.endsWith('.delete') && p.deleted && typeof p.deleted === 'object') {
-          const bits = [];
-          for (const [k, v] of Object.entries(p.deleted)) {
-            if (v && v > 0) bits.push(`${v} ${k}`);
-          }
-          if (bits.length) cascadeStr = ` <span class="text-muted" style="font-size:11px;">(+ ${bits.join(', ')})</span>`;
-        }
-        // Storage orphan entries — show the paths as the label and offer resolve
-        let orphanExtra = '';
-        const isOrphan = a.action === 'storage.orphan_upload' || a.action === 'storage.orphan_delete';
-        if (isOrphan) {
-          const paths = Array.isArray(p.paths) ? p.paths : [];
-          if (paths.length) {
-            orphanExtra = `<div style="font-family:monospace; font-size:11px; color:var(--muted); margin-top:4px; word-break:break-all;">${paths.map(escapeHtml).join('<br>')}</div>`;
-          }
-          orphanExtra += `<button class="btn btn-sm" style="margin-top:6px;" data-resolve-orphan="${a.id}">${LANG==='ar'?'✓ علّم كمُنظَّف':'✓ Mark cleaned'}</button>`;
-        }
-        // Resolution entries — show what was resolved
-        if (a.action === 'storage.orphan_resolved') {
-          const oid = p.orphan_audit_id;
-          const notes = p.notes ? ` — ${escapeHtml(p.notes)}` : '';
-          orphanExtra = `<div class="text-muted" style="font-size:11px; margin-top:2px;">resolved #${oid}${notes}</div>`;
-        }
-        const label = parts.join(' — ') || (a.entity_id ? a.entity_id.slice(0,8) : '');
-        const actionColor = a.action.endsWith('.delete') ? 'var(--red)'
-                          : a.action.endsWith('.create') ? 'var(--green, #16a34a)'
-                          : isOrphan ? '#a16207'
-                          : 'var(--muted)';
-        return `
-          <div style="padding:8px 12px; border-bottom:1px solid var(--border); font-size:13px;">
-            <div class="flex" style="gap:8px; align-items:baseline;">
-              <span style="color:${actionColor}; font-family:monospace; font-size:11px; min-width:180px;">${escapeHtml(a.action)}</span>
-              <span style="flex:1;">${label}${cascadeStr}${orphanExtra}</span>
-              <span class="text-muted" style="font-size:11px; white-space:nowrap;">${fmtDateTime(a.created_at)}</span>
-            </div>
-          </div>`;
-      }).join('');
-
-      // Wire resolve buttons
-      listEl.querySelectorAll('[data-resolve-orphan]').forEach(btn => btn.addEventListener('click', async (e) => {
-        const oid = e.currentTarget.getAttribute('data-resolve-orphan');
-        const notes = prompt(LANG==='ar' ? 'ملاحظات (اختياري):' : 'Notes (optional):');
-        if (notes === null) return;  // user cancelled
-        try {
-          await rpc('housing_resolve_storage_orphan', { p_audit_id: parseInt(oid,10), p_notes: notes || null });
-          toast(LANG==='ar'?'تم تعليم Orphan كمُنظَّف':'Orphan marked cleaned','success');
-          load();  // refresh list
-        } catch(err) { toast(err.message||err,'error'); }
-      }));
-
-      // Pager
-      if (total > PAGE_SIZE) {
-        const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
-        const currentPage = Math.floor(currentOffset / PAGE_SIZE) + 1;
-        pagerEl.innerHTML = `
-          <button class="btn btn-sm" id="alPrev" ${currentOffset<=0?'disabled':''}>‹ ${LANG==='ar'?'السابق':'Prev'}</button>
-          <span class="text-muted" style="font-size:12px;">${LANG==='ar'?'صفحة':'Page'} ${currentPage} / ${pageCount} · ${currentOffset+1}–${Math.min(currentOffset+items.length,total)} ${LANG==='ar'?'من':'of'} ${total}</span>
-          <button class="btn btn-sm" id="alNext" ${currentOffset+PAGE_SIZE>=total?'disabled':''}>${LANG==='ar'?'التالي':'Next'} ›</button>`;
-        body.querySelector('#alPrev').addEventListener('click', () => { if (currentOffset > 0) { currentOffset = Math.max(0, currentOffset - PAGE_SIZE); load(); } });
-        body.querySelector('#alNext').addEventListener('click', () => { if (currentOffset + PAGE_SIZE < total) { currentOffset += PAGE_SIZE; load(); } });
-      }
-    } catch(e) { listEl.innerHTML = `<div class="error-box">${escapeHtml(e.message||e)}</div>`; }
-  };
-
-  ['alAction','alFrom','alTo'].forEach(id => body.querySelector('#'+id).addEventListener('input', () => { currentOffset = 0; load(); }));
-  await load();
+  if(CTX.mode==='admin'){ location.hash='activity'; return; }
+  try{
+    const res=await rawRpc('asset_housing_my_requests',{p_limit:100});
+    const items=res.items||[];
+    const body=document.createElement('div');
+    body.innerHTML=items.length?items.map(x=>`<div class="card" style="margin-bottom:8px;padding:12px"><b>${escapeHtml(x.action_key||'')}</b><div class="text-muted">${escapeHtml(x.status||'')} · ${fmtDateTime(x.requested_at)}</div></div>`).join(''):`<div class="empty">${t('noItems')}</div>`;
+    openModal({title:LANG==='ar'?'طلباتي':'My Requests',body,footer:null,wide:true});
+  }catch(e){toast(e.message,'error');}
 }
 
-/* small helper for the audit viewer */
+async function screenApprovals(content){
+  const res=await rawRpc('asset_admin_housing_pending_approvals',{p_limit:200}); const items=res.items||[];
+  content.innerHTML=`<div class="page-head"><div><h1>${LANG==='ar'?'الموافقات المعلقة':'Pending Approvals'}</h1><p class="text-muted">${items.length} ${LANG==='ar'?'طلب':'request(s)'}</p></div></div><div id="approvalList"></div>`;
+  const box=content.querySelector('#approvalList');
+  box.innerHTML=items.length?items.map(x=>`<div class="card" style="margin-bottom:10px;padding:16px"><div class="flex" style="justify-content:space-between;gap:12px;align-items:start"><div><b>${escapeHtml(x.action_key||'')}</b><div class="text-muted">${escapeHtml(x.requester_email||x.requested_by||'')} · ${fmtDateTime(x.requested_at)}</div><div class="text-muted">${escapeHtml(x.entity_type||'')} ${escapeHtml(x.entity_id||'')}</div></div><div class="flex"><button class="btn btn-primary" data-ap="${x.id}">${LANG==='ar'?'موافقة':'Approve'}</button><button class="btn" data-rj="${x.id}">${LANG==='ar'?'رفض':'Reject'}</button></div></div></div>`).join(''):`<div class="card empty">${LANG==='ar'?'لا توجد موافقات معلقة':'No pending approvals'}</div>`;
+  box.querySelectorAll('[data-ap]').forEach(b=>b.onclick=async()=>{try{await rawRpc('asset_admin_approve_housing_request',{p_request_id:Number(b.dataset.ap),p_review_notes:null});toast(LANG==='ar'?'تمت الموافقة':'Approved','success');await screenApprovals(content);}catch(e){toast(e.message,'error')}});
+  box.querySelectorAll('[data-rj]').forEach(b=>b.onclick=async()=>{const note=prompt(LANG==='ar'?'سبب الرفض':'Rejection note')||'';if(!note)return;try{await rawRpc('asset_admin_reject_housing_request',{p_request_id:Number(b.dataset.rj),p_review_notes:note});toast(LANG==='ar'?'تم الرفض':'Rejected','success');await screenApprovals(content);}catch(e){toast(e.message,'error')}});
+}
+
+async function screenActivity(content){
+  const res=await rawRpc('asset_admin_housing_activity',{p_limit:500}); const items=res.items||[];
+  content.innerHTML=`<div class="page-head"><div><h1>${LANG==='ar'?'سجل النشاط':'Activity Log'}</h1><p class="text-muted">${LANG==='ar'?'كل حركات الإسكان والموافقات وتغييرات الصلاحيات':'Housing actions, approvals and permission changes'}</p></div></div><div>${items.map(x=>`<div class="card" style="margin-bottom:8px;padding:12px"><b>${escapeHtml(x.action_key||'')}</b> <span class="badge">${escapeHtml(x.outcome||'')}</span><div class="text-muted">${escapeHtml(x.actor_email||x.actor_role||'')} · ${fmtDateTime(x.created_at)}</div><div class="text-muted">${escapeHtml(x.entity_type||'')} ${escapeHtml(x.entity_id||'')}</div></div>`).join('')||`<div class="card empty">${t('noItems')}</div>`}</div>`;
+}
+
+async function screenPermissions(content){
+  const usersR=await rawRpc('asset_admin_list_users',{p_module_key:'housing'}); const users=usersR.items||[];
+  content.innerHTML=`<div class="page-head"><div><h1>${LANG==='ar'?'الصلاحيات':'Access & Permissions'}</h1><p class="text-muted">${LANG==='ar'?'Role defaults + user overrides — التغييرات فورية':'Role defaults + user overrides — changes apply immediately'}</p></div></div><div class="card" style="padding:16px"><div class="field"><label>${LANG==='ar'?'المستخدم':'User'}</label><select id="permUser"><option value="">${LANG==='ar'?'اختر مستخدم':'Select user'}</option>${users.map(u=>`<option value="${u.user_id}">${escapeHtml(u.email||u.user_id)} — ${escapeHtml(u.role||'')}</option>`).join('')}</select></div><div id="permMatrix" style="margin-top:16px"></div></div>`;
+  const sel=content.querySelector('#permUser'), matrix=content.querySelector('#permMatrix');
+  sel.onchange=async()=>{if(!sel.value){matrix.innerHTML='';return;} matrix.innerHTML=`<div class="loading">${t('loading')}</div>`;try{const r=await rawRpc('asset_admin_permission_matrix',{p_module_key:'housing',p_user_id:sel.value});const items=r.items||[];matrix.innerHTML=items.map(x=>`<div style="display:grid;grid-template-columns:minmax(220px,1fr) 180px;gap:12px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line)"><div><b>${escapeHtml(LANG==='ar'?x.label_ar:x.label_en)}</b><div class="text-muted" style="font-size:11px">${escapeHtml(x.action_key)} · ${LANG==='ar'?'افتراضي':'default'}: ${escapeHtml(x.role_mode||'deny')}</div></div><select data-pk="${x.action_key}"><option value="inherit" ${x.override_mode==null?'selected':''}>${LANG==='ar'?'وراثة الافتراضي':'Inherit role default'}</option><option value="deny" ${x.override_mode==='deny'?'selected':''}>DENY</option><option value="direct" ${x.override_mode==='direct'?'selected':''}>DIRECT</option>${x.supports_approval?`<option value="approval" ${x.override_mode==='approval'?'selected':''}>APPROVAL</option>`:''}</select></div>`).join('');matrix.querySelectorAll('[data-pk]').forEach(c=>c.onchange=async()=>{try{if(c.value==='inherit')await rawRpc('asset_admin_clear_user_permission',{p_user_id:sel.value,p_module_key:'housing',p_action_key:c.dataset.pk});else await rawRpc('asset_admin_set_user_permission',{p_user_id:sel.value,p_module_key:'housing',p_action_key:c.dataset.pk,p_mode:c.value});toast(LANG==='ar'?'تم تحديث الصلاحية':'Permission updated','success');}catch(e){toast(e.message,'error')}});}catch(e){matrix.innerHTML=`<div class="empty">${escapeHtml(e.message)}</div>`;}};
+}
+
 function fmtDateTime(iso) {
   if (!iso) return '—';
   const d = new Date(iso);
@@ -3655,9 +3628,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   applyLang();
   document.getElementById('langToggleBtn').addEventListener('click', toggleLang);
   document.getElementById('auditBtn').addEventListener('click', openAuditLog);
-  document.getElementById('logoutBtn').addEventListener('click', async () => {
-    await admSignOut();
-    location.href = '/admin';
+  document.getElementById('contextExitBtn').addEventListener('click', async () => {
+    await assetSignOut(); location.href='/asset';
   });
 
   // Mobile drawer wiring — hamburger + backdrop + Escape + auto-close on nav click
@@ -3681,7 +3653,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   window.addEventListener('resize', () => { if (window.innerWidth > 900) closeDrawer(); });
 
   window.addEventListener('hashchange', route);
-  const ok = await requireAdmin();
+  const exitBtn=document.getElementById('contextExitBtn');
+  exitBtn.textContent=(LANG==='ar'?'تسجيل خروج':'Logout');
+  const ok = await requireContext();
   if (ok) await route();
 });
 
