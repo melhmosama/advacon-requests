@@ -173,13 +173,9 @@
   .access-shell .portal-card .desc{font-size:12px;color:var(--muted);margin-top:4px}
 
   /* Phase-0 placeholder for sub-nav tab bodies */
-  .phase-placeholder{background:var(--panel);border:2px dashed var(--border);border-radius:var(--radius);padding:60px 30px;text-align:center;color:var(--muted)}
-  .phase-placeholder .icon{font-size:56px;margin-bottom:16px;opacity:.5}
-  .phase-placeholder .phase-name{font-size:15px;color:var(--navy);font-weight:600;margin-bottom:6px}
-  .phase-placeholder .detail{font-size:12px}
 
   /* ======================================================================
-     PHASE 1 — Dashboard / Inventory / Catalog screens (ported from index.html)
+     DASHBOARD / INVENTORY / CATALOG
      Design tokens and class names preserved for parity.
      ====================================================================== */
   .phead{margin:0 0 14px}
@@ -335,7 +331,7 @@
 
 
   /* ======================================================================
-     PHASE 2 — Warehouses & Shelves UI
+     WAREHOUSES & SHELVES
      Functional logic is unchanged; this block only restores the dedicated
      list/detail presentation that was missing from the standalone extract.
      ====================================================================== */
@@ -490,7 +486,7 @@
 
 
   /* ======================================================================
-     PHASE 3 — Stock Movements
+     STOCK MOVEMENTS
      ====================================================================== */
   .mv-new{background:var(--navy);color:#fff;border:none;border-radius:7px;padding:8px 14px;font:inherit;font-weight:700;font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
   .mv-new:hover{background:var(--navy2)}
@@ -544,7 +540,7 @@
 
 
   /* ======================================================================
-     PHASE 4 — Movement Approvals
+     MOVEMENT APPROVALS
      ====================================================================== */
   .apr-filters{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 16px}
   .apr-chip{padding:7px 14px;border:1px solid var(--border);background:var(--panel);color:var(--med);border-radius:20px;font-size:13px;font-weight:600;cursor:pointer}
@@ -579,7 +575,7 @@
 
 
   /* ======================================================================
-     PHASE 5 — Batches & Expiry
+     BATCHES & EXPIRY
      Read-only operational view; mirrors index (2).html with responsive polish.
      ====================================================================== */
   .bat-controls{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-bottom:16px}
@@ -753,7 +749,7 @@
 
 
   /* ======================================================================
-     PHASE 6.5 — ITEM MASTER & DETAILS
+     ITEM MASTER & DETAILS
      Central item profile: clickable catalog rows, responsive detail drawer,
      image management, warehouse footprint and admin editing.
      ====================================================================== */
@@ -877,17 +873,16 @@ const SB_URL = CFG.supabaseUrl;
 const SB_KEY = CFG.supabaseAnonKey;
 const sb = supabase.createClient(SB_URL, SB_KEY);
 
-/* Warehouse sub-navigation — mirror of index.html's WH_SUBNAV, driven live
-   as phases land. `live` flips to true when a phase ships its screen. */
+/* Warehouse navigation */
 const WH_SUBNAV = [
-  { key:'dashboard',   ic:'▦',  label_ar:'لوحة التحكم',       label_en:'Dashboard',          phase:1, live:true  },
-  { key:'inventory',   ic:'📦', label_ar:'الأصناف في المخزون', label_en:'Inventory',          phase:1, live:true  },
-  { key:'catalog',     ic:'📖', label_ar:'دليل الأصناف',      label_en:'Item Catalog',       phase:1, live:true  },
-  { key:'movements',   ic:'🔁', label_ar:'حركات المخزون',     label_en:'Stock Movements',    phase:3, live:true  },
-  { key:'materialreq', ic:'📝', label_ar:'موافقة الحركات',    label_en:'Movement Approvals', phase:4, live:true  },
-  { key:'shelves',     ic:'🗄', label_ar:'المستودعات والأرفف', label_en:'Warehouses & Shelves', phase:2, live:true  },
-  { key:'batches',     ic:'⏳', label_ar:'الدفعات والصلاحية',  label_en:'Batches & Expiry',   phase:5, live:true  },
-  { key:'reports',     ic:'📈', label_ar:'التقارير',          label_en:'Reports',            phase:6, live:true  },
+  { key:'dashboard',   ic:'▦',  label_ar:'لوحة التحكم',        label_en:'Dashboard' },
+  { key:'inventory',   ic:'📦', label_ar:'الأصناف في المخزون', label_en:'Inventory' },
+  { key:'catalog',     ic:'📖', label_ar:'دليل الأصناف',       label_en:'Item Catalog' },
+  { key:'movements',   ic:'🔁', label_ar:'حركات المخزون',      label_en:'Stock Movements' },
+  { key:'materialreq', ic:'📝', label_ar:'موافقة الحركات',     label_en:'Movement Approvals' },
+  { key:'shelves',     ic:'🗄', label_ar:'المستودعات والأرفف',  label_en:'Warehouses & Shelves' },
+  { key:'batches',     ic:'⏳', label_ar:'الدفعات والصلاحية',   label_en:'Batches & Expiry' },
+  { key:'reports',     ic:'📈', label_ar:'التقارير',           label_en:'Reports' },
 ];
 
 /* Storekeeper permission map for /asset entry (mirrors index.html) */
@@ -913,11 +908,10 @@ const T = {
     portalAdmin: 'بوابة المدير', portalAdminDesc: 'للمدراء / الحسابات الإدارية',
     portalAsset: 'بوابة الأصول', portalAssetDesc: 'لأمناء المستودعات',
     ctxAdmin: 'وصول إداري', ctxAsset: 'أمين مستودع',
-    phasePlaceholderTitle: 'قيد التسليم', phasePlaceholderDesc: 'هذه الشاشة ضمن نطاق Phase',
     errorOccurred: 'حصل خطأ', errNetwork: 'فشل الاتصال بالخادم', errNoAdmin: 'لا تملك صلاحية الوصول',
     savedSuccessfully: 'تم الحفظ بنجاح', deletedSuccessfully: 'تم الحذف بنجاح',
 
-    /* Phase-1 translation keys — Dashboard / Inventory / Catalog */
+    /* Dashboard / Inventory / Catalog */
     as_back: "الأصول",
     cancel: "إلغاء",
     catActive: "نشط",
@@ -1022,11 +1016,7 @@ const T = {
     whmAiUnit: "الوحدة",
     whmAiUnitSel: "اختر الوحدة…",
 
-    /* Phase-2 translation keys — Warehouses & Shelves */
-    as_back: "الأصول",
-    mvEye: "نظام المستودعات",
-    mvIsSaving: "جاري التسجيل…",
-    mvRcCancel: "إلغاء",
+    /* Warehouses & Shelves */
     mvRcOnHand: "الرصيد الحالي",
     rcvBtn: "إدخال بضاعة",
     whBcAllWh: "كل المستودعات",
@@ -1109,7 +1099,6 @@ const T = {
     whmErr_warehouse_has_stock: "لا يمكن التعطيل: المستودع فيه رصيد.",
     whmErr_warehouse_has_reservations: "لا يمكن التعطيل: المستودع فيه حجوزات نشطة.",
     whmErr_not_authorized: "لا تملك الصلاحية.",
-    whmErr_name_ar_required: "الاسم بالعربي إلزامي.",
     mvT_RECEIPT: "استلام",
     mvT_ISSUE: "صرف",
     mvT_RETURN: "إرجاع",
@@ -1130,11 +1119,10 @@ const T = {
     portalAdmin: 'Admin Portal', portalAdminDesc: 'For administrators',
     portalAsset: 'Asset Portal', portalAssetDesc: 'For storekeepers',
     ctxAdmin: 'Admin access', ctxAsset: 'Storekeeper',
-    phasePlaceholderTitle: 'Coming soon', phasePlaceholderDesc: 'This screen ships in Phase',
     errorOccurred: 'An error occurred', errNetwork: 'Network error', errNoAdmin: 'You do not have access',
     savedSuccessfully: 'Saved', deletedSuccessfully: 'Deleted',
 
-    /* Phase-1 translation keys — Dashboard / Inventory / Catalog */
+    /* Dashboard / Inventory / Catalog */
     as_back: "Assets",
     cancel: "Cancel",
     catActive: "Active",
@@ -1239,11 +1227,7 @@ const T = {
     whmAiUnit: "Unit",
     whmAiUnitSel: "Choose unit…",
 
-    /* Phase-2 translation keys — Warehouses & Shelves */
-    as_back: "Assets",
-    mvEye: "WAREHOUSE SYSTEM",
-    mvIsSaving: "Posting…",
-    mvRcCancel: "Cancel",
+    /* Warehouses & Shelves */
     mvRcOnHand: "On hand",
     rcvBtn: "Receive Stock",
     whBcAllWh: "All warehouses",
@@ -1326,7 +1310,6 @@ const T = {
     whmErr_warehouse_has_stock: "Cannot deactivate: warehouse still has stock.",
     whmErr_warehouse_has_reservations: "Cannot deactivate: warehouse has active reservations.",
     whmErr_not_authorized: "You are not authorized.",
-    whmErr_name_ar_required: "Arabic name is required.",
     mvT_RECEIPT: "Receipt",
     mvT_ISSUE: "Issue",
     mvT_RETURN: "Return",
@@ -1581,14 +1564,14 @@ function translateError(code){
   if(!code) return code;
   const table = (LANG === 'ar') ? ERR_AR : ERR_EN;
   if(table[code]) return table[code];
-  // Phase 3 domain errors reuse the original movement translation keys.
+  // Domain errors reuse the existing movement translation keys.
   // t() is resolved at call time, after the translation table is initialized.
   const prefixes=['mvRcErr_','mvIsErr_','mvDpErr_','mvAjErr_','mvRtErr_','mvTfErr_','whmErr_'];
   for(const p of prefixes){
     const k=p+code, v=(typeof t==='function')?t(k):k;
     if(v && v!==k) return v;
   }
-  return code;
+  return (typeof t==='function') ? t('errorOccurred') : ((LANG==='ar') ? 'حصل خطأ' : 'An error occurred');
 }
 
 /* Translate Supabase Storage errors — bucket-not-found is the most common
@@ -1809,17 +1792,15 @@ function renderSidebar(){
   nav.innerHTML = WH_SUBNAV.map(tab => {
     const label = (LANG==='ar') ? tab.label_ar : tab.label_en;
     const activeClass = (currentTab() === tab.key) ? 'active' : '';
-    const disabledClass = tab.live ? '' : 'disabled';
     return `
-      <div class="nav-item ${activeClass} ${disabledClass}" data-tab="${esc(tab.key)}">
+      <div class="nav-item ${activeClass}" data-tab="${esc(tab.key)}">
         <span class="ic">${tab.ic}</span>
         <span>${esc(label)}</span>
-        ${tab.key==='materialreq' && tab.live && CTX.mode==='admin' && aprPendingCount>0 ? `<span class="apr-pending-badge">${aprPendingCount}</span>` : (tab.live ? '' : `<span class="soon">P${tab.phase}</span>`)}
+        ${tab.key==='materialreq' && CTX.mode==='admin' && aprPendingCount>0 ? `<span class="apr-pending-badge">${aprPendingCount}</span>` : ''}
       </div>`;
   }).join('');
   nav.querySelectorAll('.nav-item').forEach(item => {
     item.addEventListener('click', () => {
-      if(item.classList.contains('disabled')) return;
       const tab = item.getAttribute('data-tab');
       location.hash = tab;
     });
@@ -1840,13 +1821,13 @@ function renderSidebar(){
 
 function currentTab(){
   const h = (location.hash || '').replace(/^#/, '');
-  if(!h) return WH_SUBNAV.find(x => x.live)?.key || 'dashboard';
+  if(!h) return WH_SUBNAV[0]?.key || 'dashboard';
   return h;
 }
 
 
 /* =====================================================================
-   PHASE 7 — CROSS-FEATURE NAVIGATION
+   CROSS-FEATURE NAVIGATION
    One item identity across Catalog / Inventory / Movements / Batches /
    Approvals / Reports. No duplicate detail implementation.
    ===================================================================== */
@@ -1882,10 +1863,7 @@ function whGoBatches(warehouseId){
 }
 
 /* =====================================================================
-   ROUTE — renders the tab body from currentTab()
-   Dispatches to the ported viewWhDashboard / viewInventory /
-   viewItemCatalog screens when the tab is live; falls back to the
-   placeholder for later-phase tabs.
+   ROUTING
    ===================================================================== */
 async function route(){
   if(!CTX.mode){ showAccessScreen('no_context'); return; }
@@ -1897,41 +1875,22 @@ async function route(){
     el.innerHTML = `<div class="empty">${esc((LANG==='ar')?'شاشة غير معروفة':'Unknown screen')}</div>`;
     return;
   }
-  if(!tab.live){
-    renderPhasePlaceholder(el, tab);
-    return;
-  }
-  // Real screen dispatch — view functions are pure string renderers that
-  // trigger their own data loads on first call; loaders call the matching
-  // renderer again when data arrives.
   switch(tab.key){
-    case 'dashboard': el.innerHTML = viewWhDashboard(); break;
-    case 'inventory': el.innerHTML = viewInventory();   break;
-    case 'catalog':   el.innerHTML = viewItemCatalog(); if(catDetailId){catEnsureInventory();catEnsureMovements();} break;
-    case 'movements': el.innerHTML = viewMovements();  break;
+    case 'dashboard':   el.innerHTML = viewWhDashboard(); break;
+    case 'inventory':   el.innerHTML = viewInventory(); break;
+    case 'catalog':     el.innerHTML = viewItemCatalog(); if(catDetailId){ catEnsureInventory(); catEnsureMovements(); } break;
+    case 'movements':   el.innerHTML = viewMovements(); break;
     case 'materialreq': el.innerHTML = viewApprovals(); break;
-    case 'shelves':   el.innerHTML = viewWarehouses(); break;
-    case 'batches':   el.innerHTML = viewBatches();    break;
-    case 'reports':   el.innerHTML = viewWhReports();  break;
-    default:
-      el.innerHTML = `<div class="empty">screen "${esc(tab.key)}" is marked live but has no renderer wired yet</div>`;
+    case 'shelves':     el.innerHTML = viewWarehouses(); break;
+    case 'batches':     el.innerHTML = viewBatches(); break;
+    case 'reports':     el.innerHTML = viewWhReports(); break;
+    default:            el.innerHTML = `<div class="empty">${esc((LANG==='ar')?'شاشة غير معروفة':'Unknown screen')}</div>`;
   }
-}
-
-function renderPhasePlaceholder(el, tab){
-  const label = (LANG==='ar') ? tab.label_ar : tab.label_en;
-  el.innerHTML = `
-    <div class="breadcrumb">${esc((LANG==='ar')?'المستودعات':'Warehouse')} / ${esc(label)}</div>
-    <div class="phase-placeholder">
-      <div class="icon">${tab.ic}</div>
-      <div class="phase-name">${esc(label)}</div>
-      <div class="detail">${esc(t('phasePlaceholderDesc'))} ${tab.phase}.</div>
-    </div>`;
 }
 
 
 /* =====================================================================
-   PHASE 1 — Dashboard / Inventory / Catalog (read-only port)
+   DASHBOARD / INVENTORY / CATALOG
    -----
    Ported from index.html with adaptations:
      • `L`                           → `LANG`
@@ -2653,7 +2612,7 @@ function resetPhase1Caches(){
 
 
 /* =====================================================================
-   PHASE 3 — Stock Movements
+   STOCK MOVEMENTS
    Functional parity with index (2).html, adapted to warehouseRpc + CTX.
    Admin: read + post movements. Storekeeper: read-only.
    Receipt is launched from Warehouse Detail (same pattern as original app).
@@ -2743,7 +2702,7 @@ function resetPhase3Caches(){mvData=null;mvTotal=0;mvLoaded=false;mvLoading=fals
 
 
 /* =====================================================================
-   PHASE 2 — Warehouses & Shelves (list + detail: overview, shelves, unassigned)
+   WAREHOUSES & SHELVES
    -----
    Ported from index.html (viewWarehouses + whmDetailPage) with the same
    adaptations documented in Phase 1's header.
@@ -3218,7 +3177,7 @@ function whmDetailPage(isAdmin){
 
 
 /* =====================================================================
-   PHASE 4 — MOVEMENT APPROVALS
+   MOVEMENT APPROVALS
    Storekeeper requests; Admin reviews/edits final values then executes.
    ===================================================================== */
 Object.assign(T.ar,{
@@ -3291,7 +3250,7 @@ function resetPhase4Caches(){aprList=null;aprLoading=false;aprFilter='pending';a
 
 
 /* =====================================================================
-   PHASE 5 — BATCHES & EXPIRY
+   BATCHES & EXPIRY
    Read-only for both Admin and Storekeeper.
    Backend: warehouses_list + batches_expiry_list.
    ===================================================================== */
@@ -3468,8 +3427,8 @@ Object.assign(T.ar,{
 });
 
 /* Phase 6 report labels */
-Object.assign(T.en,{awh_reports:'Reports',repPToday:'Today',repPYesterday:'Yesterday',repPWeek:'This Week',repPLastWeek:'Last Week',repPMonth:'This Month',repPLastMonth:'Last Month',repPCustom:'Custom',repFrom:'From',repTo:'To',repAllWh:'All Warehouses',repOneWh:'One Warehouse',repPreset:'Report Type',repRepFull:'Full Report',repRepDaily:'Daily',repRepWeekly:'Weekly',repRepMonthly:'Monthly',repRepInventory:'Inventory',repRepMovement:'Movements',repRepExpiry:'Expiry',repRepApprovals:'Approvals',repMoreFilters:'More Filters',repCompare:'Compare with previous period',repPeriod:'Period',repWarehouses:'Warehouses',repGenerate:'Generate Report',repPickDates:'Select both dates.',repBadRange:'End date must not be before start date.',repGenerating:'Generating report…',repStartHint:'Choose the period and scope, then generate the report.',repReportTitle:'Warehouse Management Report',repScope:'Scope',repGenerated:'Generated',repExportPdf:'Save PDF',repExportExcel:'Excel',repPrint:'Print',repPdfHint:'Use the browser print dialog and choose Save as PDF',repSoon:'Coming later',repFooterSys:'Warehouse Management System',repExecSummary:'Executive Summary',repActiveWh:'Active Warehouses',repDistinctItems:'Distinct Items',repWithStock:'Items with Stock',repOutStock:'Out of Stock',repLowStock:'Low Stock',repNoShelf:'Without Shelf',repTotalMv:'Total Movements',repPendingAppr:'Pending Approvals',repObservations:'Observations',repMovementSummary:'Movement Summary',repMvType:'Movement Type',repCount:'Count',repPrevCount:'Previous',repChange:'Change',repCompareVs:'Compared with',repWarehouseSummary:'Warehouse Summary',repWh:'Warehouse',repItems:'Items',repMvTotal:'Movements',repExpired:'Expired',repInventoryHealth:'Inventory Health',repHealthy:'Healthy',repReserved:'With Reservations',repNoImage:'Without Image',repNoMove90:'No Movement 90d',repMultiWh:'Multi-Warehouse Items',repItemSummary:'Item Summary',repNoItems:'No items to show.',repCode:'Code',repItem:'Item',repUnit:'Unit',repOpening:'Opening',repClosing:'Closing',repStatus:'Status',repBatchesSummary:'Batches / Expiry',repCurrentExpiry:'current status',repNoBatches:'No real batches to show.',repExp30:'Expiring ≤30d',repExp60:'Expiring ≤60d',repExp90:'Expiring ≤90d',repNoExpiry:'No Expiry',repApprovalsSummary:'Movement Approvals',repApPending:'Pending',repApApproved:'Approved',repApRejected:'Rejected',repApCancelled:'Cancelled',repApModified:'Admin Modified',repApTurnaround:'Avg. turnaround',repApOldest:'Oldest pending',repMaterialSummary:'Material Requests',repMrPending:'Pending',repMrAllocated:'Allocated',repMrIssued:'Issued',repMrRejected:'Rejected',repMrCancelled:'Cancelled',repMrShort:'Short Approved Lines',repMrPendingNote:'Current material-request status.',repExceptions:'Exceptions',repNoExceptions:'No exceptions.',repResOverHand:'Reserved > On Hand',repAuditSummary:'Audit Summary',repNoAudit:'No audit events.',repAuditEvents:'Events',repAuditActors:'Actors',repAuditAction:'Action',repMovementRegister:'Movement Register',repMovements:'movements',repViewRegister:'View Register',repNoMovements:'No movements.',repLoading:'Loading…',repDate:'Date',repQty:'Qty',repBatch:'Batch',repActor:'Actor',repNote:'Note',repErrGeneric:'Could not generate the report.'});
-Object.assign(T.ar,{awh_reports:'التقارير',repPToday:'اليوم',repPYesterday:'أمس',repPWeek:'هذا الأسبوع',repPLastWeek:'الأسبوع الماضي',repPMonth:'هذا الشهر',repPLastMonth:'الشهر الماضي',repPCustom:'مخصص',repFrom:'من',repTo:'إلى',repAllWh:'كل المستودعات',repOneWh:'مستودع واحد',repPreset:'نوع التقرير',repRepFull:'تقرير كامل',repRepDaily:'يومي',repRepWeekly:'أسبوعي',repRepMonthly:'شهري',repRepInventory:'المخزون',repRepMovement:'الحركات',repRepExpiry:'الصلاحية',repRepApprovals:'الموافقات',repMoreFilters:'فلاتر إضافية',repCompare:'مقارنة بالفترة السابقة',repPeriod:'الفترة',repWarehouses:'المستودعات',repGenerate:'إنشاء التقرير',repPickDates:'اختر تاريخ البداية والنهاية.',repBadRange:'تاريخ النهاية يجب ألا يسبق البداية.',repGenerating:'جاري إنشاء التقرير…',repStartHint:'اختر الفترة والنطاق ثم أنشئ التقرير.',repReportTitle:'تقرير إدارة المستودعات',repScope:'النطاق',repGenerated:'تاريخ الإنشاء',repExportPdf:'حفظ PDF',repExportExcel:'Excel',repPrint:'طباعة',repPdfHint:'اختر Save as PDF من نافذة الطباعة',repSoon:'لاحقاً',repFooterSys:'نظام إدارة المستودعات',repExecSummary:'الملخص التنفيذي',repActiveWh:'المستودعات النشطة',repDistinctItems:'الأصناف المختلفة',repWithStock:'أصناف متوفرة',repOutStock:'نفد المخزون',repLowStock:'مخزون منخفض',repNoShelf:'بدون رف',repTotalMv:'إجمالي الحركات',repPendingAppr:'موافقات معلقة',repObservations:'ملاحظات',repMovementSummary:'ملخص الحركات',repMvType:'نوع الحركة',repCount:'العدد',repPrevCount:'السابق',repChange:'التغيير',repCompareVs:'مقارنة مع',repWarehouseSummary:'ملخص المستودعات',repWh:'المستودع',repItems:'الأصناف',repMvTotal:'الحركات',repExpired:'منتهية',repInventoryHealth:'صحة المخزون',repHealthy:'سليم',repReserved:'عليه حجوزات',repNoImage:'بدون صورة',repNoMove90:'بدون حركة 90 يوم',repMultiWh:'أصناف متعددة المستودعات',repItemSummary:'ملخص الأصناف',repNoItems:'لا توجد أصناف للعرض.',repCode:'الكود',repItem:'الصنف',repUnit:'الوحدة',repOpening:'الرصيد الافتتاحي',repClosing:'الرصيد الختامي',repStatus:'الحالة',repBatchesSummary:'ملخص الدفعات والصلاحية',repCurrentExpiry:'الحالة الحالية',repNoBatches:'لا توجد دفعات فعلية للعرض.',repExp30:'تنتهي خلال 30 يوم',repExp60:'تنتهي خلال 60 يوم',repExp90:'تنتهي خلال 90 يوم',repNoExpiry:'بدون صلاحية',repApprovalsSummary:'موافقات الحركات',repApPending:'معلقة',repApApproved:'معتمدة',repApRejected:'مرفوضة',repApCancelled:'ملغاة',repApModified:'عدّلها المدير',repApTurnaround:'متوسط زمن المعالجة',repApOldest:'أقدم طلب معلق',repMaterialSummary:'طلبات المواد',repMrPending:'معلقة',repMrAllocated:'مخصصة',repMrIssued:'مصروفة',repMrRejected:'مرفوضة',repMrCancelled:'ملغاة',repMrShort:'بنود معتمدة بنقص',repMrPendingNote:'الحالة الحالية لطلبات المواد.',repExceptions:'الاستثناءات',repNoExceptions:'لا توجد استثناءات.',repResOverHand:'المحجوز أكبر من الرصيد',repAuditSummary:'ملخص التدقيق',repNoAudit:'لا توجد أحداث تدقيق.',repAuditEvents:'الأحداث',repAuditActors:'المستخدمون',repAuditAction:'الإجراء',repMovementRegister:'سجل الحركات',repMovements:'حركة',repViewRegister:'عرض السجل',repNoMovements:'لا توجد حركات.',repLoading:'جاري التحميل…',repDate:'التاريخ',repQty:'الكمية',repBatch:'الدفعة',repActor:'المستخدم',repNote:'الملاحظة',repErrGeneric:'تعذّر إنشاء التقرير.'});
+Object.assign(T.en,{awh_reports:'Reports',repPToday:'Today',repPYesterday:'Yesterday',repPWeek:'This Week',repPLastWeek:'Last Week',repPMonth:'This Month',repPLastMonth:'Last Month',repPCustom:'Custom',repFrom:'From',repTo:'To',repAllWh:'All Warehouses',repOneWh:'One Warehouse',repPreset:'Report Type',repRepFull:'Full Report',repRepDaily:'Daily',repRepWeekly:'Weekly',repRepMonthly:'Monthly',repRepInventory:'Inventory',repRepMovement:'Movements',repRepExpiry:'Expiry',repRepApprovals:'Approvals',repMoreFilters:'More Filters',repCompare:'Compare with previous period',repPeriod:'Period',repWarehouses:'Warehouses',repGenerate:'Generate Report',repPickDates:'Select both dates.',repBadRange:'End date must not be before start date.',repGenerating:'Generating report…',repStartHint:'Choose the period and scope, then generate the report.',repReportTitle:'Warehouse Management Report',repScope:'Scope',repGenerated:'Generated',repExportPdf:'Save PDF',repPrint:'Print',repPdfHint:'Use the browser print dialog and choose Save as PDF',repFooterSys:'Warehouse Management System',repExecSummary:'Executive Summary',repActiveWh:'Active Warehouses',repDistinctItems:'Distinct Items',repWithStock:'Items with Stock',repOutStock:'Out of Stock',repLowStock:'Low Stock',repNoShelf:'Without Shelf',repTotalMv:'Total Movements',repPendingAppr:'Pending Approvals',repObservations:'Observations',repMovementSummary:'Movement Summary',repMvType:'Movement Type',repCount:'Count',repPrevCount:'Previous',repChange:'Change',repCompareVs:'Compared with',repWarehouseSummary:'Warehouse Summary',repWh:'Warehouse',repItems:'Items',repMvTotal:'Movements',repExpired:'Expired',repInventoryHealth:'Inventory Health',repHealthy:'Healthy',repReserved:'With Reservations',repNoImage:'Without Image',repNoMove90:'No Movement 90d',repMultiWh:'Multi-Warehouse Items',repItemSummary:'Item Summary',repNoItems:'No items to show.',repCode:'Code',repItem:'Item',repUnit:'Unit',repOpening:'Opening',repClosing:'Closing',repStatus:'Status',repBatchesSummary:'Batches / Expiry',repCurrentExpiry:'current status',repNoBatches:'No real batches to show.',repExp30:'Expiring ≤30d',repExp60:'Expiring ≤60d',repExp90:'Expiring ≤90d',repNoExpiry:'No Expiry',repApprovalsSummary:'Movement Approvals',repApPending:'Pending',repApApproved:'Approved',repApRejected:'Rejected',repApCancelled:'Cancelled',repApModified:'Admin Modified',repApTurnaround:'Avg. turnaround',repApOldest:'Oldest pending',repMaterialSummary:'Material Requests',repMrPending:'Pending',repMrAllocated:'Allocated',repMrIssued:'Issued',repMrRejected:'Rejected',repMrCancelled:'Cancelled',repMrShort:'Short Approved Lines',repMrPendingNote:'Current material-request status.',repExceptions:'Exceptions',repNoExceptions:'No exceptions.',repResOverHand:'Reserved > On Hand',repAuditSummary:'Audit Summary',repNoAudit:'No audit events.',repAuditEvents:'Events',repAuditActors:'Actors',repAuditAction:'Action',repMovementRegister:'Movement Register',repMovements:'movements',repViewRegister:'View Register',repNoMovements:'No movements.',repLoading:'Loading…',repDate:'Date',repQty:'Qty',repBatch:'Batch',repActor:'Actor',repNote:'Note',repErrGeneric:'Could not generate the report.'});
+Object.assign(T.ar,{awh_reports:'التقارير',repPToday:'اليوم',repPYesterday:'أمس',repPWeek:'هذا الأسبوع',repPLastWeek:'الأسبوع الماضي',repPMonth:'هذا الشهر',repPLastMonth:'الشهر الماضي',repPCustom:'مخصص',repFrom:'من',repTo:'إلى',repAllWh:'كل المستودعات',repOneWh:'مستودع واحد',repPreset:'نوع التقرير',repRepFull:'تقرير كامل',repRepDaily:'يومي',repRepWeekly:'أسبوعي',repRepMonthly:'شهري',repRepInventory:'المخزون',repRepMovement:'الحركات',repRepExpiry:'الصلاحية',repRepApprovals:'الموافقات',repMoreFilters:'فلاتر إضافية',repCompare:'مقارنة بالفترة السابقة',repPeriod:'الفترة',repWarehouses:'المستودعات',repGenerate:'إنشاء التقرير',repPickDates:'اختر تاريخ البداية والنهاية.',repBadRange:'تاريخ النهاية يجب ألا يسبق البداية.',repGenerating:'جاري إنشاء التقرير…',repStartHint:'اختر الفترة والنطاق ثم أنشئ التقرير.',repReportTitle:'تقرير إدارة المستودعات',repScope:'النطاق',repGenerated:'تاريخ الإنشاء',repExportPdf:'حفظ PDF',repPrint:'طباعة',repPdfHint:'اختر Save as PDF من نافذة الطباعة',repFooterSys:'نظام إدارة المستودعات',repExecSummary:'الملخص التنفيذي',repActiveWh:'المستودعات النشطة',repDistinctItems:'الأصناف المختلفة',repWithStock:'أصناف متوفرة',repOutStock:'نفد المخزون',repLowStock:'مخزون منخفض',repNoShelf:'بدون رف',repTotalMv:'إجمالي الحركات',repPendingAppr:'موافقات معلقة',repObservations:'ملاحظات',repMovementSummary:'ملخص الحركات',repMvType:'نوع الحركة',repCount:'العدد',repPrevCount:'السابق',repChange:'التغيير',repCompareVs:'مقارنة مع',repWarehouseSummary:'ملخص المستودعات',repWh:'المستودع',repItems:'الأصناف',repMvTotal:'الحركات',repExpired:'منتهية',repInventoryHealth:'صحة المخزون',repHealthy:'سليم',repReserved:'عليه حجوزات',repNoImage:'بدون صورة',repNoMove90:'بدون حركة 90 يوم',repMultiWh:'أصناف متعددة المستودعات',repItemSummary:'ملخص الأصناف',repNoItems:'لا توجد أصناف للعرض.',repCode:'الكود',repItem:'الصنف',repUnit:'الوحدة',repOpening:'الرصيد الافتتاحي',repClosing:'الرصيد الختامي',repStatus:'الحالة',repBatchesSummary:'ملخص الدفعات والصلاحية',repCurrentExpiry:'الحالة الحالية',repNoBatches:'لا توجد دفعات فعلية للعرض.',repExp30:'تنتهي خلال 30 يوم',repExp60:'تنتهي خلال 60 يوم',repExp90:'تنتهي خلال 90 يوم',repNoExpiry:'بدون صلاحية',repApprovalsSummary:'موافقات الحركات',repApPending:'معلقة',repApApproved:'معتمدة',repApRejected:'مرفوضة',repApCancelled:'ملغاة',repApModified:'عدّلها المدير',repApTurnaround:'متوسط زمن المعالجة',repApOldest:'أقدم طلب معلق',repMaterialSummary:'طلبات المواد',repMrPending:'معلقة',repMrAllocated:'مخصصة',repMrIssued:'مصروفة',repMrRejected:'مرفوضة',repMrCancelled:'ملغاة',repMrShort:'بنود معتمدة بنقص',repMrPendingNote:'الحالة الحالية لطلبات المواد.',repExceptions:'الاستثناءات',repNoExceptions:'لا توجد استثناءات.',repResOverHand:'المحجوز أكبر من الرصيد',repAuditSummary:'ملخص التدقيق',repNoAudit:'لا توجد أحداث تدقيق.',repAuditEvents:'الأحداث',repAuditActors:'المستخدمون',repAuditAction:'الإجراء',repMovementRegister:'سجل الحركات',repMovements:'حركة',repViewRegister:'عرض السجل',repNoMovements:'لا توجد حركات.',repLoading:'جاري التحميل…',repDate:'التاريخ',repQty:'الكمية',repBatch:'الدفعة',repActor:'المستخدم',repNote:'الملاحظة',repErrGeneric:'تعذّر إنشاء التقرير.'});
 function resetPhase6Caches(){repState={period:'today',from:null,to:null,whMode:'all',whId:'',preset:'full',compare:true,showFilters:false,loading:false,data:null,error:null,wh:null,regOpen:false,regLoading:false,regData:null,regError:null,regType:'',regLimit:100,regOffset:0};}
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -4018,7 +3977,6 @@ function repPreview(){
     </div>
     <div class="rph-export">
       <button class="rep-exp" onclick="repPrintReport()" title="${t('repPdfHint')}">${t('repExportPdf')}</button>
-      <button class="rep-exp" disabled title="${t('repSoon')}">${t('repExportExcel')}</button>
       <button class="rep-exp" onclick="repPrintReport()">${t('repPrint')}</button>
     </div>
   </div>`;
