@@ -6252,8 +6252,8 @@ async function doStaffDone(id){
 /* Asset access is intentionally independent from Admin. Warehouse itself lives
    only at /warehouse; this page authenticates storekeepers and redirects them. */
 const ASSET_MODULES = [
-  { key:'warehouses', ic:'📦', assetRoute:'/warehouse?from=asset' },
-  { key:'housing',    ic:'🏠', assetRoute:'/housing?from=asset' }
+  { key:'warehouses', ic:'📦', adminRoute:'/warehouse?from=admin', assetRoute:'/warehouse?from=asset' },
+  { key:'housing',    ic:'🏠', adminRoute:'/housing?from=admin',   assetRoute:'/housing?from=asset' }
 ];
 
 function assetModuleAccess(role, perms=assetPermissions){
@@ -6273,20 +6273,19 @@ function whereDoesRoleBelong(role){
 function assetModuleByKey(key){ return ASSET_MODULES.find(m=>m.key===key) || null; }
 
 function viewAssets(){
-  // Security boundary: Admin can see the active Asset modules, but cannot enter them.
-  // Each module is operated only by its dedicated Asset account through /asset.
+  // Admin is already authenticated in /admin. These cards enter each Asset
+  // module in verified Admin context without a second login.
   const cards=ASSET_MODULES.map(m=>{
     const label=t('am_'+m.key);
-    return `<div class="asset-card" style="cursor:default;opacity:.92"><span class="ac-ic">${m.ic}</span><span class="ac-lb">${label}</span><span class="ac-soon" style="background:rgba(91,122,153,.12);color:#5B7A99">🔒</span></div>`;
+    return `<button class="asset-card" onclick="location.href='${m.adminRoute}'"><span class="ac-ic">${m.ic}</span><span class="ac-lb">${label}</span></button>`;
   }).join('');
-  const note=L==='ar'?'الدخول التشغيلي للأصول متاح فقط لحساب مسؤول الأصل المخصص.':'Operational Asset access is restricted to the assigned Asset account.';
-  return `<div class="phead"><div class="eyebrow">${t('as_eye')}</div><h1>${t('as_h1')}</h1><p>${t('as_p')}</p><p style="color:var(--grey);font-size:13px;margin-top:8px">${note}</p></div><div class="asset-grid" style="max-width:640px">${cards}</div>`;
+  return `<div class="phead"><div class="eyebrow">${t('as_eye')}</div><h1>${t('as_h1')}</h1><p>${t('as_p')}</p></div><div class="asset-grid" style="max-width:640px">${cards}</div>`;
 }
 
 let assetRole=null, assetPermissions={}, assetView='landing', assetModule=null;
-function assetGetSession(){try{const raw=sessionStorage.getItem('advacon_asset_sess');if(!raw)return null;const s=JSON.parse(raw);return s&&s.access_token?s:null;}catch(e){return null;}}
-function assetSetSession(s){try{sessionStorage.setItem('advacon_asset_sess',JSON.stringify(s));}catch(e){}}
-function assetClearSession(){try{sessionStorage.removeItem('advacon_asset_sess');}catch(e){}assetRole=null;assetPermissions={};}
+function assetGetSession(){try{const raw=localStorage.getItem('advacon_asset_sess');if(!raw)return null;const s=JSON.parse(raw);return s&&s.access_token?s:null;}catch(e){return null;}}
+function assetSetSession(s){try{localStorage.setItem('advacon_asset_sess',JSON.stringify(s));}catch(e){}}
+function assetClearSession(){try{localStorage.removeItem('advacon_asset_sess');}catch(e){}assetRole=null;assetPermissions={};}
 async function assetRefresh(refreshToken){try{const r=await fetch(SB_URL+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{'apikey':SB_KEY,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:refreshToken})});const j=await r.json();if(!r.ok||!j.access_token)return null;return {access_token:j.access_token,refresh_token:j.refresh_token||refreshToken,expires_at:j.expires_at||null,user_id:(j.user&&j.user.id)||null};}catch(e){return null;}}
 async function assetFetchRole(accessToken){try{const r=await fetch(SB_URL+'/rest/v1/rpc/get_my_role',{method:'POST',headers:{'apikey':SB_KEY,'Authorization':'Bearer '+accessToken,'Content-Type':'application/json'},body:'{}'});if(!r.ok)return null;const v=await r.json();return (typeof v==='string'&&v)?v:null;}catch(e){return null;}}
 async function assetFetchHousingPermissions(accessToken){try{const r=await fetch(SB_URL+'/rest/v1/rpc/asset_my_permissions',{method:'POST',headers:{'apikey':SB_KEY,'Authorization':'Bearer '+accessToken,'Content-Type':'application/json'},body:JSON.stringify({p_module_key:'housing'})});if(!r.ok)return {};const v=await r.json();return (v&&typeof v==='object'&&!Array.isArray(v))?v:{};}catch(e){return {};}}
@@ -6320,10 +6319,10 @@ function renderAsset(){const gate=document.getElementById('gate'),app=document.g
     else { openAdmin(); }          // no data load until PIN passes (see tryAdmin)
   }
   else if(p.indexOf('/asset')>=0){
-    // Asset portal — independent session. If a valid asset session exists, go straight in.
-    const okAsset=await assetEnsureSession();
-    if(okAsset){ assetView='landing'; assetModule=null; renderAsset(); }
-    else { assetView='login'; assetModule=null; renderAsset(); }
+    // Always open on the two-module landing. Login is requested only after
+    // the user chooses Warehouse or Housing.
+    await assetEnsureSession(); // restore a valid Asset session if one exists
+    assetView='landing'; assetModule=null; renderAsset();
   }
   else if(p.indexOf('/staff')>=0){
     await load('staff');
