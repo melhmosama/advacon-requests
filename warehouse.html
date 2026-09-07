@@ -331,6 +331,157 @@
   /* Lightbox (image viewer) */
   .lightbox-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:3000;display:flex;align-items:center;justify-content:center;padding:20px;cursor:zoom-out}
   .lightbox-overlay img{max-width:100%;max-height:100%;object-fit:contain;box-shadow:0 6px 40px rgba(0,0,0,.6)}
+
+
+  /* ======================================================================
+     PHASE 2 — Warehouses & Shelves UI
+     Functional logic is unchanged; this block only restores the dedicated
+     list/detail presentation that was missing from the standalone extract.
+     ====================================================================== */
+  .whm-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(310px,1fr));
+    gap:14px;
+    align-items:stretch;
+  }
+  .whm-card{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:16px;
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+    min-width:0;
+  }
+  .whm-card.is-inactive{opacity:.72;background:var(--panel-alt)}
+  .whm-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+  .whm-card-title{font-size:15px;font-weight:700;color:var(--navy);min-width:0;overflow-wrap:anywhere}
+  .whm-code{
+    display:inline-block;
+    margin-inline-start:7px;
+    padding:2px 7px;
+    border-radius:5px;
+    background:var(--head);
+    color:var(--steel);
+    font:600 11px/1.4 ui-monospace,SFMono-Regular,Consolas,monospace;
+    vertical-align:middle;
+  }
+  .whm-badges,.whd-badges{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+  .whm-badge{display:inline-flex;align-items:center;padding:3px 8px;border-radius:999px;font-size:10px;font-weight:700;white-space:nowrap}
+  .whm-badge.on{background:#d1e7dd;color:#0f5132}
+  .whm-badge.off{background:#f8d7da;color:#842029}
+  .whm-badge.open{background:#dce9f7;color:var(--navy)}
+  .whm-badge.closed{background:var(--head);color:var(--grey)}
+  .whm-card-stats{
+    display:grid;
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    border:1px solid var(--border);
+    border-radius:7px;
+    overflow:hidden;
+    background:var(--panel-alt);
+  }
+  .whm-card-stats>div{padding:9px 8px;text-align:center;border-inline-end:1px solid var(--border)}
+  .whm-card-stats>div:last-child{border-inline-end:none}
+  .whm-card-stats span{display:block;color:var(--grey);font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .whm-card-stats b{display:block;margin-top:3px;color:var(--navy);font-size:14px;font-variant-numeric:tabular-nums}
+  .whm-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:auto;padding-top:2px}
+  .whm-btn{
+    appearance:none;
+    border:1px solid var(--border);
+    background:var(--panel);
+    color:var(--txt);
+    border-radius:6px;
+    padding:6px 10px;
+    cursor:pointer;
+    font:600 12px/1.35 inherit;
+    transition:background .15s,border-color .15s,color .15s,transform .05s;
+  }
+  .whm-btn:hover:not(:disabled){background:var(--pale);border-color:var(--steel)}
+  .whm-btn:active:not(:disabled){transform:translateY(1px)}
+  .whm-btn:disabled{opacity:.5;cursor:not-allowed}
+  .whm-btn.manage{background:var(--navy);border-color:var(--navy);color:#fff}
+  .whm-btn.manage:hover:not(:disabled){background:var(--navy2);border-color:var(--navy2)}
+  .whm-btn.danger{color:var(--red);border-color:rgba(176,80,74,.35);background:#fff}
+  .whm-btn.danger:hover:not(:disabled){background:#f8d7da;border-color:var(--red)}
+  .rc-hint2{font-size:11px;color:var(--grey);margin:-4px 0 8px}
+
+  /* Warehouse detail */
+  .whd-tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin:4px 0 14px;overflow-x:auto}
+  .whd-tab{
+    border:none;
+    border-bottom:3px solid transparent;
+    background:transparent;
+    color:var(--grey);
+    padding:9px 13px;
+    cursor:pointer;
+    font:600 12px/1.3 inherit;
+    white-space:nowrap;
+  }
+  .whd-tab:hover{color:var(--navy);background:var(--lgray)}
+  .whd-tab.on{color:var(--navy);border-bottom-color:var(--navy);background:var(--panel)}
+  .whd-body{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:16px;
+    min-height:150px;
+  }
+  .whd-overview{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+  .whd-ov-row{background:var(--panel-alt);border:1px solid var(--border);border-radius:7px;padding:12px;min-width:0}
+  .whd-ov-row span{display:block;color:var(--grey);font-size:10px;margin-bottom:4px}
+  .whd-ov-row b{color:var(--navy);font-size:15px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+  .whd-shelfhead{display:flex;justify-content:flex-end;align-items:center;margin-bottom:10px}
+  .whd-shelf-list{display:flex;flex-direction:column;border:1px solid var(--border);border-radius:7px;overflow:hidden}
+  .whd-shelf-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 13px;border-bottom:1px solid var(--border)}
+  .whd-shelf-row:last-child{border-bottom:none}
+  .whd-shelf-row:hover{background:var(--pale)}
+  .whd-shelf-name{font-weight:650;color:var(--txt)}
+  .whd-shelf-count{font-size:11px;color:var(--grey);background:var(--head);padding:3px 8px;border-radius:999px;white-space:nowrap}
+  .whd-un-list{display:flex;flex-direction:column;border:1px solid var(--border);border-radius:7px;overflow:hidden}
+  .whd-un-row{
+    display:grid;
+    grid-template-columns:minmax(220px,1fr) 130px minmax(210px,320px);
+    align-items:center;
+    gap:12px;
+    padding:10px 12px;
+    border-bottom:1px solid var(--border);
+  }
+  .whd-un-row:last-child{border-bottom:none}
+  .whd-un-row:hover{background:var(--pale)}
+  .whd-un-info{min-width:0;overflow-wrap:anywhere}
+  .whd-un-code{display:inline-block;margin-inline-end:7px;color:var(--navy);font:700 11px/1.3 ui-monospace,SFMono-Regular,Consolas,monospace}
+  .whd-un-qty{text-align:end;font-variant-numeric:tabular-nums;color:var(--txt);white-space:nowrap}
+  .whd-un-ctrl{display:flex;align-items:center;justify-content:flex-end;gap:6px;min-width:0}
+  .whd-un-ctrl .rc-in{margin:0;min-width:0}
+  .whd-un-noshelf{font-size:11px;color:var(--amber);font-weight:600}
+
+  @media (max-width:1100px){
+    .whm-card-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .whm-card-stats>div:nth-child(2){border-inline-end:none}
+    .whm-card-stats>div:nth-child(-n+2){border-bottom:1px solid var(--border)}
+    .whd-un-row{grid-template-columns:minmax(180px,1fr) 100px minmax(180px,260px)}
+  }
+  @media (max-width:700px){
+    .whm-grid{grid-template-columns:1fr}
+    .whm-card-head{flex-direction:column}
+    .whm-actions{display:grid;grid-template-columns:1fr 1fr;width:100%}
+    .whm-actions .whm-btn.manage{grid-column:1/-1}
+    .whd-overview{grid-template-columns:1fr 1fr}
+    .whd-un-row{grid-template-columns:1fr;gap:7px}
+    .whd-un-qty{text-align:start}
+    .whd-un-ctrl{justify-content:flex-start;flex-wrap:wrap}
+    .whd-un-ctrl .rc-in{flex:1 1 180px}
+  }
+  @media (max-width:430px){
+    .whm-card-stats,.whd-overview{grid-template-columns:1fr 1fr}
+    .whm-actions{grid-template-columns:1fr}
+    .whm-actions .whm-btn.manage{grid-column:auto}
+    .whm-btn{width:100%}
+  }
+
 </style>
 </head>
 <body>
