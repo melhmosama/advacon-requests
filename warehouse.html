@@ -389,7 +389,7 @@ const WH_SUBNAV = [
   { key:'catalog',     ic:'📖', label_ar:'دليل الأصناف',      label_en:'Item Catalog',       phase:1, live:true  },
   { key:'movements',   ic:'🔁', label_ar:'حركات المخزون',     label_en:'Stock Movements',    phase:3, live:false },
   { key:'materialreq', ic:'📝', label_ar:'موافقة الحركات',    label_en:'Movement Approvals', phase:4, live:false },
-  { key:'shelves',     ic:'🗄', label_ar:'المستودعات والأرفف', label_en:'Warehouses & Shelves', phase:2, live:false },
+  { key:'shelves',     ic:'🗄', label_ar:'المستودعات والأرفف', label_en:'Warehouses & Shelves', phase:2, live:true  },
   { key:'batches',     ic:'⏳', label_ar:'الدفعات والصلاحية',  label_en:'Batches & Expiry',   phase:5, live:false },
   { key:'reports',     ic:'📈', label_ar:'التقارير',          label_en:'Reports',            phase:6, live:false },
 ];
@@ -525,6 +525,94 @@ const T = {
     whmAiTypeSel: "اختر النوع…",
     whmAiUnit: "الوحدة",
     whmAiUnitSel: "اختر الوحدة…",
+
+    /* Phase-2 translation keys — Warehouses & Shelves */
+    as_back: "الأصول",
+    mvEye: "نظام المستودعات",
+    mvIsSaving: "جاري التسجيل…",
+    mvRcCancel: "إلغاء",
+    mvRcOnHand: "الرصيد الحالي",
+    rcvBtn: "إدخال بضاعة",
+    whBcAllWh: "كل المستودعات",
+    whmActivate: "تفعيل المستودع",
+    whmActivated: "تم تفعيل المستودع",
+    whmActive: "نشط",
+    whmAddShelf: "إضافة رف",
+    whmAddShelfFirst: "أضف رفاً أولاً",
+    whmAssign: "تعيين",
+    whmAssigned: "تم تعيين الرف",
+    whmClose: "إغلاق",
+    whmClosed: "تم إغلاق المستودع",
+    whmClosed2: "مغلق",
+    whmCode: "الكود",
+    whmCodeHint: "٣–١٢ خانة: حروف وأرقام وشرطة (مثل SAK، RYD-1).",
+    whmConfirmDeact: "تعطيل هذا المستودع؟ يجب أن يكون مغلقاً وفارغاً (لا رصيد ولا حجوزات).",
+    whmCreate: "إنشاء المستودع",
+    whmCreated: "تم إنشاء المستودع",
+    whmDeactivate: "تعطيل المستودع",
+    whmDeactivated: "تم تعطيل المستودع",
+    whmErrCode: "الكود ٣–١٢ خانة: حروف وأرقام وشرطة.",
+    whmErrGeneric: "فشل الإجراء. حاول مجدداً.",
+    whmErrNameAr: "الاسم بالعربي إلزامي.",
+    whmErr_shelf_not_found: "الرف غير موجود.",
+    whmErr_warehouse_inactive: "المستودع معطّل — فعّله أولاً.",
+    whmErr_warehouse_not_found: "المستودع غير موجود.",
+    whmH1: "المستودعات والأرفف",
+    whmInactive: "معطّل",
+    whmItems: "الأصناف",
+    whmLoading: "جاري تحميل المستودعات…",
+    whmManage: "إدارة",
+    whmNameAr: "الاسم (عربي)",
+    whmNameEn: "الاسم (إنجليزي)",
+    whmNew: "مستودع جديد",
+    whmNewTitle: "مستودع جديد",
+    whmNoShelves: "لا توجد أرفف بعد. أضف رفاً لبدء التنظيم.",
+    whmNone: "لا توجد مستودعات بعد.",
+    whmOpen: "مفتوح",
+    whmOpenBtn: "فتح",
+    whmOpened: "تم فتح المستودع",
+    whmPickShelf: "اختر رفاً…",
+    whmPickShelfFirst: "اختر رفاً أولاً.",
+    whmReserved: "محجوز",
+    whmShelfAdded: "تم إضافة الرف",
+    whmShelfItems: "صنف",
+    whmShelfName: "اسم الرف",
+    whmShelfNameReq: "اسم الرف إلزامي.",
+    whmShelves: "الأرفف",
+    whmStatusActive: "الحالة",
+    whmStatusOpen: "التشغيل",
+    whmTabOverview: "نظرة عامة",
+    whmTabShelves: "الأرفف",
+    whmTabUnassigned: "أصناف بلا رف",
+    whmUnSearchPh: "بحث بالكود أو الاسم…",
+    whmUnassignedNone: "كل أصناف هذا المستودع على أرفف.",
+    whmView: "عرض",
+    whmErr_item_already_in_warehouse: "الصنف موجود في هذا المستودع مسبقاً.",
+    whmErr_invalid_opening_balance: "الرصيد الافتتاحي غير صحيح.",
+    whmErr_invalid_min_level: "الحد الأدنى غير صحيح.",
+    whmErr_item_not_found: "الصنف غير موجود.",
+    whmErr_item_inactive: "الصنف غير نشط.",
+    whmErr_category_not_found: "التصنيف غير موجود.",
+    whmErr_category_inactive: "التصنيف غير نشط.",
+    whmErr_item_type_not_found: "نوع الصنف غير موجود.",
+    whmErr_item_type_inactive: "نوع الصنف غير نشط.",
+    whmErr_unit_not_found: "الوحدة غير موجودة.",
+    whmErr_unit_inactive: "الوحدة غير نشطة.",
+    whmErr_sequence_not_found: "تسلسل كود التصنيف غير موجود.",
+    whmErr_shelf_required: "الرجاء اختيار رف.",
+    whmErr_shelf_inactive: "هذا الرف غير نشط.",
+    whmErr_shelf_wrong_warehouse: "هذا الرف يخص مستودعاً آخر.",
+    whmErr_item_warehouse_not_found: "الصنف غير موجود.",
+    whmErr_shelf_name_required: "اسم الرف إلزامي.",
+    whmErr_duplicate_shelf_name: "يوجد رف بنفس الاسم.",
+    whmErr_warehouse_required: "المستودع مطلوب.",
+    whmErr_invalid_warehouse_code: "كود المستودع غير صحيح.",
+    whmErr_name_ar_required: "الاسم بالعربي إلزامي.",
+    whmErr_duplicate_warehouse_code: "هذا الكود مستخدم مسبقاً.",
+    whmErr_warehouse_must_be_closed_first: "أغلق المستودع قبل تعطيله.",
+    whmErr_warehouse_has_stock: "لا يمكن التعطيل: المستودع فيه رصيد.",
+    whmErr_warehouse_has_reservations: "لا يمكن التعطيل: المستودع فيه حجوزات نشطة.",
+    whmErr_not_authorized: "لا تملك الصلاحية.",
     whmErr_name_ar_required: "الاسم بالعربي إلزامي.",
     mvT_RECEIPT: "استلام",
     mvT_ISSUE: "صرف",
@@ -654,6 +742,94 @@ const T = {
     whmAiTypeSel: "Choose type…",
     whmAiUnit: "Unit",
     whmAiUnitSel: "Choose unit…",
+
+    /* Phase-2 translation keys — Warehouses & Shelves */
+    as_back: "Assets",
+    mvEye: "WAREHOUSE SYSTEM",
+    mvIsSaving: "Posting…",
+    mvRcCancel: "Cancel",
+    mvRcOnHand: "On hand",
+    rcvBtn: "Receive Stock",
+    whBcAllWh: "All warehouses",
+    whmActivate: "Activate Warehouse",
+    whmActivated: "Warehouse activated",
+    whmActive: "Active",
+    whmAddShelf: "Add Shelf",
+    whmAddShelfFirst: "Add a shelf first",
+    whmAssign: "Assign",
+    whmAssigned: "Shelf assigned",
+    whmClose: "Close",
+    whmClosed: "Warehouse closed",
+    whmClosed2: "Closed",
+    whmCode: "Code",
+    whmCodeHint: "3–12 chars: letters, digits, hyphen (e.g. SAK, RYD-1).",
+    whmConfirmDeact: "Deactivate this warehouse? It must be closed and empty (no stock, no reservations).",
+    whmCreate: "Create Warehouse",
+    whmCreated: "Warehouse created",
+    whmDeactivate: "Deactivate Warehouse",
+    whmDeactivated: "Warehouse deactivated",
+    whmErrCode: "Code must be 3–12 chars: letters, digits, hyphen.",
+    whmErrGeneric: "Action failed. Please try again.",
+    whmErrNameAr: "Arabic name is required.",
+    whmErr_shelf_not_found: "Shelf not found.",
+    whmErr_warehouse_inactive: "Warehouse is inactive — activate it first.",
+    whmErr_warehouse_not_found: "Warehouse not found.",
+    whmH1: "Warehouses & Shelves",
+    whmInactive: "Inactive",
+    whmItems: "Items",
+    whmLoading: "Loading warehouses…",
+    whmManage: "Manage",
+    whmNameAr: "Name (Arabic)",
+    whmNameEn: "Name (English)",
+    whmNew: "New Warehouse",
+    whmNewTitle: "New Warehouse",
+    whmNoShelves: "No shelves yet. Add one to start organizing.",
+    whmNone: "No warehouses yet.",
+    whmOpen: "Open",
+    whmOpenBtn: "Open",
+    whmOpened: "Warehouse opened",
+    whmPickShelf: "Choose shelf…",
+    whmPickShelfFirst: "Choose a shelf first.",
+    whmReserved: "Reserved",
+    whmShelfAdded: "Shelf added",
+    whmShelfItems: "items",
+    whmShelfName: "Shelf name",
+    whmShelfNameReq: "Shelf name is required.",
+    whmShelves: "Shelves",
+    whmStatusActive: "Status",
+    whmStatusOpen: "Operational",
+    whmTabOverview: "Overview",
+    whmTabShelves: "Shelves",
+    whmTabUnassigned: "Unassigned Items",
+    whmUnSearchPh: "Search by code or name…",
+    whmUnassignedNone: "All items in this warehouse have a shelf.",
+    whmView: "View",
+    whmErr_item_already_in_warehouse: "This item is already in this warehouse.",
+    whmErr_invalid_opening_balance: "Opening quantity is invalid.",
+    whmErr_invalid_min_level: "Minimum level is invalid.",
+    whmErr_item_not_found: "Item not found.",
+    whmErr_item_inactive: "That item is inactive.",
+    whmErr_category_not_found: "Category not found.",
+    whmErr_category_inactive: "That category is inactive.",
+    whmErr_item_type_not_found: "Item type not found.",
+    whmErr_item_type_inactive: "That item type is inactive.",
+    whmErr_unit_not_found: "Unit not found.",
+    whmErr_unit_inactive: "That unit is inactive.",
+    whmErr_sequence_not_found: "Category code sequence missing.",
+    whmErr_shelf_required: "Please choose a shelf.",
+    whmErr_shelf_inactive: "That shelf is inactive.",
+    whmErr_shelf_wrong_warehouse: "That shelf belongs to another warehouse.",
+    whmErr_item_warehouse_not_found: "Item not found.",
+    whmErr_shelf_name_required: "Shelf name is required.",
+    whmErr_duplicate_shelf_name: "A shelf with this name already exists.",
+    whmErr_warehouse_required: "Warehouse is required.",
+    whmErr_invalid_warehouse_code: "Invalid warehouse code.",
+    whmErr_name_ar_required: "Arabic name is required.",
+    whmErr_duplicate_warehouse_code: "This code is already used.",
+    whmErr_warehouse_must_be_closed_first: "Close the warehouse before deactivating.",
+    whmErr_warehouse_has_stock: "Cannot deactivate: warehouse still has stock.",
+    whmErr_warehouse_has_reservations: "Cannot deactivate: warehouse has active reservations.",
+    whmErr_not_authorized: "You are not authorized.",
     whmErr_name_ar_required: "Arabic name is required.",
     mvT_RECEIPT: "Receipt",
     mvT_ISSUE: "Issue",
@@ -862,6 +1038,7 @@ function currentAccessToken(){
 }
 async function currentSignOut(){
   resetPhase1Caches();
+  resetPhase2Caches();
   if(CTX.mode === 'admin') await admSignOut();
   else if(CTX.mode === 'asset') await assetSignOut();
   const from = urlFromParam();
@@ -1175,6 +1352,7 @@ async function route(){
     case 'dashboard': el.innerHTML = viewWhDashboard(); break;
     case 'inventory': el.innerHTML = viewInventory();   break;
     case 'catalog':   el.innerHTML = viewItemCatalog(); break;
+    case 'shelves':   el.innerHTML = viewWarehouses(); break;
     default:
       el.innerHTML = `<div class="empty">screen "${esc(tab.key)}" is marked live but has no renderer wired yet</div>`;
   }
@@ -1665,6 +1843,489 @@ function resetPhase1Caches(){
   invFilters = { q:'', warehouse:'', category:'', low:false, out:false, noshelf:false };
   catData  = [];      catLoaded   = false; catLoading   = false;
   catQuery = '';      catStatusFilter = 'all';
+}
+
+
+/* =====================================================================
+   PHASE 2 — Warehouses & Shelves (list + detail: overview, shelves, unassigned)
+   -----
+   Ported from index.html (viewWarehouses + whmDetailPage) with the same
+   adaptations documented in Phase 1's header.
+
+   READ scope (both admin + storekeeper):
+     • List of warehouses (cards) with Active/Open status and stats
+     • Detail page → Overview / Shelves list / Unassigned items list
+
+   ADMIN-ONLY writes (rendered only when CTX.mode === 'admin'):
+     • admin_create_warehouse       — from "+ New Warehouse" panel
+     • admin_set_warehouse_active   — Deactivate needs confirm()
+     • admin_set_warehouse_open     — Open/Close (only when active)
+     • admin_add_shelf              — from Shelves tab
+     • admin_set_item_warehouse_shelf — from Unassigned tab (per-item)
+
+   OUT OF SCOPE for Phase 2 (deferred to Phase 3):
+     • "+ Receive" button in detail page (calls whmReceiveModal — that's
+       stock movements = Phase 3)
+
+   Cache invalidation (per user's explicit ask):
+     • Any warehouse write            → whmLoaded=false; loadWarehouses(true)
+     • admin_add_shelf                → whmShelves=null; whmLoadShelves();
+                                        whmLoaded=false; loadWarehouses(true)
+                                        (Overview + top card shelves_count)
+     • admin_set_item_warehouse_shelf → whmItems=null; whmLoadItems();
+                                        invLoaded=false; dashLoaded=false
+                                        (Inventory list + dashboard without_shelf KPI)
+   ===================================================================== */
+
+/* ---------- State (mirrors whm* / whD* declarations that Phase 2 needs) ---------- */
+let whmData          = null;
+let whmLoaded        = false;
+let whmLoading       = false;
+let whmBusy          = null;   // warehouse_id currently mid-write (open/close/active)
+
+let whmNew           = { code:'', name_ar:'', name_en:'' };
+let whmNewOpen       = false;
+let whmNewErr        = '';
+let whmNewBusy       = false;
+
+let whView           = 'list'; // 'list' | 'detail'
+let whDetailId       = null;
+let whDetailTab      = 'overview'; // 'overview' | 'shelves' | 'unassigned'
+
+let whmShelves         = null;
+let whmShelvesLoading  = false;
+let whmItems           = null;
+let whmItemsLoading    = false;
+let whmItemsError      = false;
+
+let whmAddShelfOpen    = false;
+let whmAddShelfName    = '';
+let whmAddShelfBusy    = false;
+let whmAddShelfErr     = '';
+
+let whmAssign          = {};    // { [item_warehouse_id]: shelf_id } — pending shelf picks
+let whmAssignBusy      = null;
+let whmUnQuery         = '';
+
+/* =====================================================================
+   LIST — loadWarehouses + viewWarehouses
+   ===================================================================== */
+async function loadWarehouses(force){
+  if(whmLoaded && !force){ whmRender(); return; }
+  if(whmLoading) return;
+  whmLoading = true;
+  try{
+    const res = await warehouseRpc('warehouses_list', {});
+    whmData = Array.isArray(res) ? res : [];
+    whmLoaded = true;
+  }catch(e){
+    whmData = []; whmLoaded = true;
+    toast(e.message || t('errorOccurred'), 'error');
+  }finally{
+    whmLoading = false;
+  }
+  whmRender();
+}
+function whmRender(){
+  const el = document.getElementById('content');
+  if(el && currentTab() === 'shelves') el.innerHTML = viewWarehouses();
+}
+
+/* ---------- Create Warehouse (admin) ---------- */
+function whmToggleNew(){
+  whmNewOpen = !whmNewOpen;
+  whmNewErr = '';
+  if(whmNewOpen){ whmNew = { code:'', name_ar:'', name_en:'' }; }
+  whmRender();
+}
+function whmNewSet(k, v){ whmNew[k] = v; whmNewErr = ''; }
+
+async function whmSubmitNew(){
+  if(whmNewBusy) return;
+  whmNewErr = '';
+  const code = (whmNew.code || '').trim().toUpperCase();
+  const nameAr = (whmNew.name_ar || '').trim();
+  if(!code || !/^[A-Z0-9-]{3,12}$/.test(code)){ whmNewErr = t('whmErrCode'); whmRender(); return; }
+  if(!nameAr){ whmNewErr = t('whmErrNameAr'); whmRender(); return; }
+  whmNewBusy = true; whmRender();
+  try{
+    await warehouseRpc('admin_create_warehouse', {
+      p_code: code,
+      p_name_ar: nameAr,
+      p_name_en: (whmNew.name_en || '').trim() || null,
+      p_sort_order: 0
+    });
+    whmNewBusy = false;
+    whmNewOpen = false;
+    toast(t('whmCreated'), 'success');
+    whmLoaded = false;
+    loadWarehouses(true);
+  }catch(e){
+    whmNewBusy = false;
+    whmNewErr = e.message || t('whmErrGeneric');
+    whmRender();
+  }
+}
+
+/* ---------- Open/Close (admin, only when warehouse active) ---------- */
+async function whmSetOpen(id, isOpen){
+  if(whmBusy) return;
+  whmBusy = id; whmRender();
+  try{
+    await warehouseRpc('admin_set_warehouse_open', { p_warehouse_id: id, p_is_open: isOpen });
+    whmBusy = null;
+    toast(isOpen ? t('whmOpened') : t('whmClosed'), 'success');
+    whmLoaded = false;
+    loadWarehouses(true);
+  }catch(e){
+    whmBusy = null;
+    toast(e.message || t('whmErrGeneric'), 'error');
+    whmRender();
+  }
+}
+
+/* ---------- Activate/Deactivate (admin, deactivate needs confirm) ---------- */
+async function whmSetActive(id, isActive){
+  if(!isActive){
+    const ok = await confirmAction({ title: t('whmDeactivate'), message: t('whmConfirmDeact'), danger: true });
+    if(!ok) return;
+  }
+  if(whmBusy) return;
+  whmBusy = id; whmRender();
+  try{
+    await warehouseRpc('admin_set_warehouse_active', { p_warehouse_id: id, p_is_active: isActive });
+    whmBusy = null;
+    toast(isActive ? t('whmActivated') : t('whmDeactivated'), 'success');
+    whmLoaded = false;
+    loadWarehouses(true);
+  }catch(e){
+    whmBusy = null;
+    toast(e.message || t('whmErrGeneric'), 'error');
+    whmRender();
+  }
+}
+
+function viewWarehouses(){
+  const isAdmin = (CTX.mode === 'admin');
+  if(whView === 'detail') return whmDetailPage(isAdmin);
+  if(!whmLoaded){ loadWarehouses(); return `<div class="empty">${t('whmLoading')}</div>`; }
+  const rows = Array.isArray(whmData) ? whmData : [];
+  const n = v => fmtInt(v);
+
+  // New Warehouse panel (admin only)
+  let newPanel = '';
+  if(isAdmin && whmNewOpen){
+    const errBlock = whmNewErr ? `<div class="rc-err">${esc(whmNewErr)}</div>` : '';
+    const busy = whmNewBusy;
+    newPanel = `<div class="panel whm-newbox">
+      <h3>${t('whmNewTitle')}</h3>
+      <label class="rc-lbl">${t('whmCode')} *</label>
+      <input class="rc-in" type="text" value="${esc(whmNew.code)}" placeholder="SAK, RYD-1…" oninput="whmNewSet('code',this.value)" ${busy?'disabled':''}/>
+      <div class="rc-hint2">${t('whmCodeHint')}</div>
+      <label class="rc-lbl">${t('whmNameAr')} *</label>
+      <input class="rc-in" type="text" value="${esc(whmNew.name_ar)}" oninput="whmNewSet('name_ar',this.value)" ${busy?'disabled':''}/>
+      <label class="rc-lbl">${t('whmNameEn')}</label>
+      <input class="rc-in" type="text" value="${esc(whmNew.name_en)}" oninput="whmNewSet('name_en',this.value)" ${busy?'disabled':''}/>
+      ${errBlock}
+      <div class="whm-newfoot">
+        <button class="rc-cancel" onclick="whmToggleNew()" ${busy?'disabled':''}>${t('mvRcCancel')}</button>
+        <button class="rc-save" onclick="whmSubmitNew()" ${busy?'disabled':''}>${busy ? t('mvIsSaving') : t('whmCreate')}</button>
+      </div>
+    </div>`;
+  }
+
+  // Cards
+  const cards = rows.length ? rows.map(w => {
+    const nm = (LANG==='ar') ? (w.name_ar || w.code) : (w.name_en || w.name_ar || w.code);
+    const busy = whmBusy === w.warehouse_id;
+    const actBadge  = w.is_active ? `<span class="whm-badge on">${t('whmActive')}</span>`       : `<span class="whm-badge off">${t('whmInactive')}</span>`;
+    const openBadge = w.is_open   ? `<span class="whm-badge open">${t('whmOpen')}</span>`      : `<span class="whm-badge closed">${t('whmClosed2')}</span>`;
+
+    let actions = '';
+    if(isAdmin){
+      const manage = `<button class="whm-btn manage" onclick="whmOpenDetail('${w.warehouse_id}')">${t('whmManage')}</button>`;
+      // Open/Close only when active
+      let oc = '';
+      if(w.is_active){
+        oc = w.is_open
+          ? `<button class="whm-btn" onclick="whmSetOpen('${w.warehouse_id}',false)" ${busy?'disabled':''}>${t('whmClose')}</button>`
+          : `<button class="whm-btn" onclick="whmSetOpen('${w.warehouse_id}',true)"  ${busy?'disabled':''}>${t('whmOpenBtn')}</button>`;
+      }
+      const act = w.is_active
+        ? `<button class="whm-btn danger" onclick="whmSetActive('${w.warehouse_id}',false)" ${busy?'disabled':''}>${t('whmDeactivate')}</button>`
+        : `<button class="whm-btn" onclick="whmSetActive('${w.warehouse_id}',true)"  ${busy?'disabled':''}>${t('whmActivate')}</button>`;
+      actions = `<div class="whm-actions">${manage}${oc}${act}</div>`;
+    } else {
+      actions = `<div class="whm-actions"><button class="whm-btn manage" onclick="whmOpenDetail('${w.warehouse_id}')">${t('whmView')}</button></div>`;
+    }
+
+    return `<div class="whm-card ${w.is_active?'':'is-inactive'}">
+      <div class="whm-card-head">
+        <div class="whm-card-title">${esc(nm)} <span class="whm-code">${esc(w.code)}</span></div>
+        <div class="whm-badges">${actBadge}${openBadge}</div>
+      </div>
+      <div class="whm-card-stats">
+        <div><span>${t('whmItems')}</span><b>${n(w.items_count)}</b></div>
+        <div><span>${t('whmShelves')}</span><b>${n(w.shelves_count)}</b></div>
+        <div><span>${t('mvRcOnHand')}</span><b>${n(w.on_hand)}</b></div>
+        <div><span>${t('whmReserved')}</span><b>${n(w.reserved)}</b></div>
+      </div>
+      ${actions}
+    </div>`;
+  }).join('') : `<div class="empty">${t('whmNone')}</div>`;
+
+  const addBtn = isAdmin && !whmNewOpen ? `<button class="mv-new" onclick="whmToggleNew()">+ ${t('whmNew')}</button>` : '';
+
+  return `
+    <div class="dash-head">
+      <div><div class="eyebrow">${t('mvEye')}</div><h1>${t('whmH1')}</h1></div>
+      ${addBtn}
+    </div>
+    ${newPanel}
+    <div class="whm-grid">${cards}</div>`;
+}
+
+/* =====================================================================
+   DETAIL — whmDetailPage (Overview / Shelves / Unassigned)
+   NOTE: the "+ Receive" button from index.html is intentionally omitted
+   (deferred to Phase 3 — stock movements).
+   ===================================================================== */
+function whmOpenDetail(id){
+  whView = 'detail'; whDetailId = id; whDetailTab = 'overview';
+  whmShelves = null; whmItems = null;
+  whmUnQuery = ''; whmAssign = {}; whmAddShelfOpen = false;
+  whmRender();
+}
+function whmBackToList(){
+  whView = 'list'; whDetailId = null; whDetailTab = 'overview';
+  whmRender();
+}
+function whmSetDetailTab(tab){
+  whDetailTab = tab; whmRender();
+  if((tab==='shelves' || tab==='unassigned') && whmShelves === null) whmLoadShelves();
+  if((tab==='shelves' || tab==='unassigned') && whmItems   === null) whmLoadItems();
+}
+
+async function whmLoadShelves(){
+  if(!whDetailId) return;
+  whmShelvesLoading = true; whmRender();
+  try{
+    const res = await warehouseRpc('warehouse_shelves', { p_warehouse_id: whDetailId });
+    whmShelves = Array.isArray(res) ? res : [];
+  }catch(e){
+    whmShelves = [];
+    toast(e.message || t('errorOccurred'), 'error');
+  }finally{
+    whmShelvesLoading = false;
+  }
+  whmRender();
+}
+async function whmLoadItems(){
+  if(!whDetailId) return;
+  whmItemsLoading = true; whmItemsError = false; whmRender();
+  try{
+    const res = await warehouseRpc('inventory_list', {});
+    if(!Array.isArray(res)){
+      // Defensive: RPC returned something unexpected. Do NOT treat as empty
+      // warehouse (would misread every item as first-receipt in later phases).
+      whmItemsError = true; whmItems = null;
+    } else {
+      whmItemsError = false;
+      whmItems = res.filter(r => r.warehouse_id === whDetailId);   // this warehouse only
+    }
+  }catch(e){
+    whmItemsError = true; whmItems = null;
+    toast(e.message || t('errorOccurred'), 'error');
+  }finally{
+    whmItemsLoading = false;
+  }
+  whmRender();
+}
+
+/* ---------- Add Shelf (admin, inside Shelves tab) ---------- */
+function whmToggleAddShelf(){
+  whmAddShelfOpen = !whmAddShelfOpen;
+  whmAddShelfName = '';
+  whmAddShelfErr = '';
+  whmRender();
+}
+function whmAddShelfSet(v){ whmAddShelfName = v; whmAddShelfErr = ''; }
+
+async function whmSubmitShelf(){
+  if(whmAddShelfBusy) return;
+  whmAddShelfErr = '';
+  const nm = (whmAddShelfName || '').trim();
+  if(!nm){ whmAddShelfErr = t('whmShelfNameReq'); whmRender(); return; }
+  whmAddShelfBusy = true; whmRender();
+  try{
+    await warehouseRpc('admin_add_shelf', { p_warehouse_id: whDetailId, p_name: nm, p_sort_order: 0 });
+    whmAddShelfBusy = false;
+    whmAddShelfOpen = false;
+    toast(t('whmShelfAdded'), 'success');
+    // Per Phase 2 cache-invalidation contract:
+    //   • refresh THIS detail's shelves list (whmShelves)
+    //   • refresh top-level warehouses_list so shelves_count on card + Overview tab updates
+    whmShelves = null; whmLoadShelves();
+    whmLoaded  = false; loadWarehouses(true);
+  }catch(e){
+    whmAddShelfBusy = false;
+    whmAddShelfErr = e.message || t('whmErrGeneric');
+    whmRender();
+  }
+}
+
+/* ---------- Unassigned tab (admin can assign a shelf to an item) ---------- */
+function whmSetAssign(iwId, shelfId){ whmAssign[iwId] = shelfId; whmRender(); }
+function whmUnSearch(v){
+  whmUnQuery = v; whmRender();
+  setTimeout(() => {
+    const el = document.getElementById('whmUnSearch');
+    if(el){ el.focus(); el.setSelectionRange(el.value.length, el.value.length); }
+  }, 0);
+}
+
+async function whmAssignShelf(iwId){
+  const shelfId = whmAssign[iwId];
+  if(!shelfId){ toast(t('whmPickShelfFirst'), 'error'); return; }
+  if(whmAssignBusy) return;
+  whmAssignBusy = iwId; whmRender();
+  try{
+    await warehouseRpc('admin_set_item_warehouse_shelf', {
+      p_item_warehouse_id: iwId, p_shelf_id: shelfId, p_note: null
+    });
+    whmAssignBusy = null;
+    toast(t('whmAssigned'), 'success');
+    // Cross-screen cache invalidation:
+    //   • Inventory list (shelf column changed)
+    //   • Dashboard without_shelf KPI
+    //   • This detail's items (both Shelves per-shelf count and Unassigned list update)
+    invLoaded  = false;
+    dashLoaded = false;
+    delete whmAssign[iwId];
+    whmItems = null; whmLoadItems();
+  }catch(e){
+    whmAssignBusy = null;
+    toast(e.message || t('whmErrGeneric'), 'error');
+    whmRender();
+  }
+}
+
+function whmDetailPage(isAdmin){
+  const w = (Array.isArray(whmData) ? whmData : []).find(x => x.warehouse_id === whDetailId);
+  if(!w){ whView = 'list'; return viewWarehouses(); }
+  const nm = (LANG==='ar') ? (w.name_ar || w.code) : (w.name_en || w.name_ar || w.code);
+  const n = v => fmtInt(v);
+  const actBadge  = w.is_active ? `<span class="whm-badge on">${t('whmActive')}</span>`   : `<span class="whm-badge off">${t('whmInactive')}</span>`;
+  const openBadge = w.is_open   ? `<span class="whm-badge open">${t('whmOpen')}</span>`  : `<span class="whm-badge closed">${t('whmClosed2')}</span>`;
+
+  const tab = (k, lbl) => `<button class="whd-tab ${whDetailTab===k?'on':''}" onclick="whmSetDetailTab('${k}')">${lbl}</button>`;
+  const tabs = `<div class="whd-tabs">${tab('overview', t('whmTabOverview'))}${tab('shelves', t('whmTabShelves'))}${tab('unassigned', t('whmTabUnassigned'))}</div>`;
+
+  let body = '';
+  if(whDetailTab === 'overview'){
+    body = `<div class="whd-overview">
+      <div class="whd-ov-row"><span>${t('whmStatusActive')}</span><b>${w.is_active ? t('whmActive') : t('whmInactive')}</b></div>
+      <div class="whd-ov-row"><span>${t('whmStatusOpen')}</span><b>${w.is_open ? t('whmOpen') : t('whmClosed2')}</b></div>
+      <div class="whd-ov-row"><span>${t('whmItems')}</span><b>${n(w.items_count)}</b></div>
+      <div class="whd-ov-row"><span>${t('whmShelves')}</span><b>${n(w.shelves_count)}</b></div>
+      <div class="whd-ov-row"><span>${t('mvRcOnHand')}</span><b>${n(w.on_hand)}</b></div>
+      <div class="whd-ov-row"><span>${t('whmReserved')}</span><b>${n(w.reserved)}</b></div>
+    </div>`;
+  } else if(whDetailTab === 'shelves'){
+    if(whmShelvesLoading || whmShelves === null || whmItems === null){
+      body = `<div class="empty">${t('whmLoading')}</div>`;
+    } else {
+      // Count items per shelf from whmItems
+      const cnt = {};
+      whmItems.forEach(r => { if(r.shelf_id){ cnt[r.shelf_id] = (cnt[r.shelf_id] || 0) + 1; } });
+      const addBtn = isAdmin ? `<button class="whm-btn manage" onclick="whmToggleAddShelf()">+ ${t('whmAddShelf')}</button>` : '';
+      let addPanel = '';
+      if(isAdmin && whmAddShelfOpen){
+        const errBlock = whmAddShelfErr ? `<div class="rc-err">${esc(whmAddShelfErr)}</div>` : '';
+        const busy = whmAddShelfBusy;
+        addPanel = `<div class="panel whm-newbox" style="margin:12px 0">
+          <label class="rc-lbl">${t('whmShelfName')} *</label>
+          <input class="rc-in" type="text" value="${esc(whmAddShelfName)}" oninput="whmAddShelfSet(this.value)" ${busy?'disabled':''}/>
+          ${errBlock}
+          <div class="whm-newfoot">
+            <button class="rc-cancel" onclick="whmToggleAddShelf()" ${busy?'disabled':''}>${t('mvRcCancel')}</button>
+            <button class="rc-save" onclick="whmSubmitShelf()" ${busy?'disabled':''}>${busy ? t('mvIsSaving') : t('whmAddShelf')}</button>
+          </div>
+        </div>`;
+      }
+      const list = whmShelves.length
+        ? `<div class="whd-shelf-list">` + whmShelves.map(sh => `
+          <div class="whd-shelf-row">
+            <span class="whd-shelf-name">${esc(sh.shelf_name)}</span>
+            <span class="whd-shelf-count">${n(cnt[sh.shelf_id] || 0)} ${t('whmShelfItems')}</span>
+          </div>`).join('') + `</div>`
+        : `<div class="empty">${t('whmNoShelves')}</div>`;
+      body = `<div class="whd-shelfhead">${addBtn}</div>${addPanel}${list}`;
+    }
+  } else if(whDetailTab === 'unassigned'){
+    if(whmItemsLoading || whmItems === null || whmShelvesLoading || whmShelves === null){
+      body = `<div class="empty">${t('whmLoading')}</div>`;
+    } else {
+      const un = whmItems.filter(r => !r.shelf_id);
+      const q = (whmUnQuery || '').trim().toLowerCase();
+      const filtered = q ? un.filter(r =>
+        ((r.item_code || '').toLowerCase().includes(q)
+         || (r.name_ar || '').toLowerCase().includes(q)
+         || (r.name_en || '').toLowerCase().includes(q))
+      ) : un;
+      const hasShelves = Array.isArray(whmShelves) && whmShelves.length > 0;
+      const search = `<input id="whmUnSearch" class="rc-in" style="max-width:340px;margin-bottom:12px" placeholder="${t('whmUnSearchPh')}" value="${esc(whmUnQuery)}" oninput="whmUnSearch(this.value)"/>`;
+      let rows;
+      if(un.length === 0){
+        rows = `<div class="empty">${t('whmUnassignedNone')}</div>`;
+      } else {
+        rows = `<div class="whd-un-list">` + filtered.map(r => {
+          const inm = (LANG==='ar') ? (r.name_ar || r.name_en) : (r.name_en || r.name_ar);
+          const unit = (LANG==='ar') ? (r.unit_name_ar || '') : (r.unit_name_en || '');
+          const busy = whmAssignBusy === r.item_warehouse_id;
+          let ctrl = '';
+          if(isAdmin){
+            if(!hasShelves){
+              ctrl = `<span class="whd-un-noshelf">${t('whmAddShelfFirst')}</span>`;
+            } else {
+              const opts = `<option value="">${t('whmPickShelf')}</option>`
+                + whmShelves.map(sh => `<option value="${sh.shelf_id}" ${whmAssign[r.item_warehouse_id]===sh.shelf_id?'selected':''}>${esc(sh.shelf_name)}</option>`).join('');
+              ctrl = `<select class="rc-in whd-un-sel" onchange="whmSetAssign('${r.item_warehouse_id}',this.value)" ${busy?'disabled':''}>${opts}</select>
+                <button class="whm-btn manage" onclick="whmAssignShelf('${r.item_warehouse_id}')" ${busy?'disabled':''}>${busy ? t('mvIsSaving') : t('whmAssign')}</button>`;
+            }
+          }
+          return `<div class="whd-un-row">
+            <div class="whd-un-info"><span class="whd-un-code">${esc(r.item_code || '')}</span> ${esc(inm || '')}</div>
+            <div class="whd-un-qty">${n(r.on_hand)} ${esc(unit)}</div>
+            <div class="whd-un-ctrl">${ctrl}</div>
+          </div>`;
+        }).join('') + `</div>`;
+      }
+      body = `${search}${rows}`;
+    }
+  }
+
+  // "+ Receive" button intentionally NOT rendered in Phase 2 (deferred to Phase 3).
+  return `<button onclick="whmBackToList()" class="dash-back">‹ ${t('whBcAllWh')}</button>
+    <div class="dash-head">
+      <div><div class="eyebrow">${esc(w.code)}</div><h1>${esc(nm)}</h1>
+        <div class="whd-badges">${actBadge}${openBadge}</div></div>
+    </div>
+    ${tabs}
+    <div class="whd-body">${body}</div>`;
+}
+
+/* Extend the sign-out cache reset with Phase-2 state so a switch of portal
+   (admin ↔ storekeeper) always sees a fresh warehouses list. */
+function resetPhase2Caches(){
+  whmData = null; whmLoaded = false; whmLoading = false; whmBusy = null;
+  whmNew = { code:'', name_ar:'', name_en:'' };
+  whmNewOpen = false; whmNewErr = ''; whmNewBusy = false;
+  whView = 'list'; whDetailId = null; whDetailTab = 'overview';
+  whmShelves = null; whmShelvesLoading = false;
+  whmItems = null;   whmItemsLoading = false; whmItemsError = false;
+  whmAddShelfOpen = false; whmAddShelfName = ''; whmAddShelfBusy = false; whmAddShelfErr = '';
+  whmAssign = {}; whmAssignBusy = null; whmUnQuery = '';
 }
 
 /* =====================================================================
