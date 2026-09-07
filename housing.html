@@ -117,6 +117,7 @@
   .field .hint { color: var(--faint); font-size: 11px; }
   .field .err { color: var(--red); font-size: 12px; }
   .field input[readonly] { background: var(--panel-alt); color: var(--muted); }
+  .field select.readonly-select { background: var(--panel-alt); color: var(--muted); cursor: not-allowed; opacity: 1; }
   .form-actions { display: flex; gap: 8px; justify-content: flex-end; padding-top: 12px; border-top: 1px solid var(--border); margin-top: 16px; }
 
   /* ------- FILTERS BAR ------- */
@@ -913,7 +914,18 @@ function buildForm(schema, values = {}) {
     }
     inp.name = f.name;
     inp.dataset.field = f.name;
-    if (f.readonly) inp.readOnly = true;
+    // "readonly" support: <input>/<textarea> support the readOnly property,
+    // but <select> does not — for selects we use `disabled` and add a class
+    // to match the visual. readForm() still reads disabled fields because
+    // it queries by data-field, not by form serialization.
+    if (f.readonly) {
+      if (inp.tagName === 'SELECT') {
+        inp.disabled = true;
+        inp.classList.add('readonly-select');
+      } else {
+        inp.readOnly = true;
+      }
+    }
     field.appendChild(inp);
     if (f.hint) {
       const h = document.createElement('div');
@@ -1129,7 +1141,8 @@ async function screenProperties(el) {
       listEl.innerHTML = `<div class="error-box">${escapeHtml(e.message)}</div>`;
     }
   };
-  ['fSearch','fCategory','fUse','fActive'].forEach(id => document.getElementById(id).addEventListener('input', load));
+  document.getElementById('fSearch').addEventListener('input', debounce(load, 300));
+  ['fCategory','fUse','fActive'].forEach(id => document.getElementById(id).addEventListener('input', load));
   document.getElementById('btnClear').addEventListener('click', () => {
     ['fSearch','fCategory','fUse','fActive'].forEach(id => document.getElementById(id).value = '');
     load();
@@ -1941,6 +1954,17 @@ function localDateISO(d) {
   return `${y}-${m}-${day}`;
 }
 
+/* Debounce helper — collapses rapid successive calls into one, fired
+   after the last call has been idle for `ms` milliseconds. Used to keep
+   fast typing in text-search filters from hammering the RPC endpoint. */
+function debounce(fn, ms) {
+  let timer = null;
+  return function(...args) {
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(() => { timer = null; fn.apply(this, args); }, ms);
+  };
+}
+
 /* Generic safe-delete flow used by meter / resident / expense list rows.
    Contract: probe with p_dry_run=true, show confirmation with counts,
    then delete with p_cascade set based on has_dependents.
@@ -2221,7 +2245,8 @@ async function screenLandlords(el) {
       listEl.innerHTML = `<div class="error-box">${escapeHtml(e.message || e)}</div>`;
     }
   };
-  ['fSearch','fType','fActive'].forEach(id => document.getElementById(id).addEventListener('input', load));
+  document.getElementById('fSearch').addEventListener('input', debounce(load, 300));
+  ['fType','fActive'].forEach(id => document.getElementById(id).addEventListener('input', load));
   document.getElementById('btnClear').addEventListener('click', () => {
     ['fSearch','fType','fActive'].forEach(id => document.getElementById(id).value = '');
     load();
@@ -2332,7 +2357,8 @@ async function screenContracts(el) {
         </table>`;
     } catch(e) { listEl.innerHTML = `<div class="error-box">${escapeHtml(e.message)}</div>`; }
   };
-  ['fSearch','fStatus'].forEach(id => document.getElementById(id).addEventListener('input', load));
+  document.getElementById('fSearch').addEventListener('input', debounce(load, 300));
+  ['fStatus'].forEach(id => document.getElementById(id).addEventListener('input', load));
   document.getElementById('btnClear').addEventListener('click', () => {
     ['fSearch','fStatus'].forEach(id => document.getElementById(id).value = '');
     load();
@@ -2414,7 +2440,8 @@ async function screenMeters(el) {
       }));
     } catch(e) { listEl.innerHTML = `<div class="error-box">${escapeHtml(e.message)}</div>`; }
   };
-  ['fSearch','fType','fActive'].forEach(id => document.getElementById(id).addEventListener('input', load));
+  document.getElementById('fSearch').addEventListener('input', debounce(load, 300));
+  ['fType','fActive'].forEach(id => document.getElementById(id).addEventListener('input', load));
   document.getElementById('btnClear').addEventListener('click', () => {
     ['fSearch','fType','fActive'].forEach(id => document.getElementById(id).value = '');
     load();
@@ -2923,7 +2950,8 @@ async function screenResidents(el) {
       }));
     } catch(e) { document.getElementById('list').innerHTML = `<div class="error-box">${escapeHtml(e.message)}</div>`; }
   };
-  ['fSearch','fType','fActive'].forEach(id => document.getElementById(id).addEventListener('input', load));
+  document.getElementById('fSearch').addEventListener('input', debounce(load, 300));
+  ['fType','fActive'].forEach(id => document.getElementById(id).addEventListener('input', load));
   document.getElementById('btnClear').addEventListener('click', () => {
     ['fSearch','fType','fActive'].forEach(id => document.getElementById(id).value = '');
     load();
