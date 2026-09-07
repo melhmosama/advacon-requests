@@ -6251,30 +6251,36 @@ async function doStaffDone(id){
 /* ===== ASSET PORTAL (/asset) ===== */
 /* Asset access is intentionally independent from Admin. Warehouse itself lives
    only at /warehouse; this page authenticates storekeepers and redirects them. */
+const ASSET_MODULES = [
+  { key:'warehouses', ic:'📦', adminRoute:'/warehouse?from=admin', assetRoute:'/warehouse?from=asset' },
+  { key:'housing',    ic:'🏠', adminRoute:'/housing?from=admin',   assetRoute:'/housing?from=asset' }
+];
+
 function assetModuleAccess(role){
-  const map = { storekeeper: ['warehouses'] };
-  return map[role] || [];
+  // Admin is intentionally excluded: admins enter Assets through /admin.
+  // Non-admin access is role-based and fail-closed.
+  const map = {
+    storekeeper: ['warehouses'],
+    manager: ['housing'],
+    housing_manager: ['housing']
+  };
+  const allowed=map[role] || [];
+  return allowed.filter(key=>ASSET_MODULES.some(m=>m.key===key));
 }
 function whereDoesRoleBelong(role){
   if(role === 'admin') return '/admin';
   if(assetModuleAccess(role).length > 0) return '/asset';
   return null;
 }
-const ASSET_MODULES = [
-  { key:'warehouses', ic:'📦', live:true },
-  { key:'fleet',      ic:'🚚', live:false },
-  { key:'equipment',  ic:'🛠️', live:false },
-  { key:'other',      ic:'📁', live:false }
-];
+function assetModuleByKey(key){ return ASSET_MODULES.find(m=>m.key===key) || null; }
 
 function viewAssets(){
+  // Admin always sees every currently enabled Asset module, in Admin context.
   const cards=ASSET_MODULES.map(m=>{
     const label=t('am_'+m.key);
-    if(m.key==='warehouses') return `<a class="asset-card" href="/warehouse?from=admin" style="text-decoration:none;color:inherit"><span class="ac-ic">${m.ic}</span><span class="ac-lb">${label}</span><span class="ac-soon" style="background:rgba(60,125,90,.12);color:#3C7D5A">↗</span></a>`;
-    return `<div class="asset-card soon"><span class="ac-ic">${m.ic}</span><span class="ac-lb">${label}</span><span class="ac-soon">${t('am_soon')}</span></div>`;
+    return `<a class="asset-card" href="${m.adminRoute}" style="text-decoration:none;color:inherit"><span class="ac-ic">${m.ic}</span><span class="ac-lb">${label}</span><span class="ac-soon" style="background:rgba(60,125,90,.12);color:#3C7D5A">↗</span></a>`;
   }).join('');
-  const housingCard=`<a class="asset-card" href="/housing" target="_blank" rel="noopener" style="text-decoration:none;color:inherit"><span class="ac-ic">🏠</span><span class="ac-lb">${t('am_housing')}</span><span class="ac-soon" style="background:rgba(60,125,90,.12);color:#3C7D5A">↗</span></a>`;
-  return `<div class="phead"><div class="eyebrow">${t('as_eye')}</div><h1>${t('as_h1')}</h1><p>${t('as_p')}</p></div><div class="asset-grid" style="max-width:640px">${cards}${housingCard}</div>`;
+  return `<div class="phead"><div class="eyebrow">${t('as_eye')}</div><h1>${t('as_h1')}</h1><p>${t('as_p')}</p></div><div class="asset-grid" style="max-width:640px">${cards}</div>`;
 }
 
 let assetRole=null, assetView='landing', assetModule=null;
@@ -6289,12 +6295,12 @@ async function assetSignIn(email,password){
   const sess={access_token:login.access_token,refresh_token:login.refresh_token,expires_at:login.expires_at||null,user_id:(login.user&&login.user.id)||null,role};assetSetSession(sess);assetRole=role;return {ok:true,session:sess,role};
 }
 async function assetEnsureSession(){let sess=assetGetSession();if(!sess||!sess.access_token||!sess.refresh_token){assetClearSession();return false;}const nowSec=Math.floor(Date.now()/1000),exp=Number(sess.expires_at||0);if(!exp||exp<=nowSec+60){const fresh=await assetRefresh(sess.refresh_token);if(!fresh){assetClearSession();return false;}fresh.role=sess.role;assetSetSession(fresh);sess=fresh;}const role=await assetFetchRole(sess.access_token);if(!role||assetModuleAccess(role).length===0){assetClearSession();return false;}sess.role=role;assetSetSession(sess);assetRole=role;return true;}
-function assetLanding(){const cards=ASSET_MODULES.map(m=>{const label=t('am_'+m.key);if(m.live)return `<button class="asset-card" onclick="assetPickModule('${m.key}')"><span class="ac-ic">${m.ic}</span><span class="ac-lb">${label}</span></button>`;return `<div class="asset-card soon"><span class="ac-ic">${m.ic}</span><span class="ac-lb">${label}</span><span class="ac-soon">${t('am_soon')}</span></div>`;}).join('');return `<div class="gate"><div class="asset-wrap"><img class="asset-logo" src="data:image/png;base64,${LOGO_B64}"/><div class="co">ADVANCED CONCEPTS CONTRACTING CO. LTD.</div><h2 class="asset-h">${t('am_title')}</h2><div class="asset-sub">${t('am_subtitle')}</div><div class="asset-grid">${cards}</div></div></div>`;}
+function assetLanding(){const allowed=assetRole?assetModuleAccess(assetRole):ASSET_MODULES.map(m=>m.key);const cards=ASSET_MODULES.filter(m=>allowed.indexOf(m.key)>=0).map(m=>{const label=t('am_'+m.key);return `<button class="asset-card" onclick="assetPickModule('${m.key}')"><span class="ac-ic">${m.ic}</span><span class="ac-lb">${label}</span></button>`;}).join('');return `<div class="gate"><div class="asset-wrap"><img class="asset-logo" src="data:image/png;base64,${LOGO_B64}"/><div class="co">ADVANCED CONCEPTS CONTRACTING CO. LTD.</div><h2 class="asset-h">${t('am_title')}</h2><div class="asset-sub">${t('am_subtitle')}</div><div class="asset-grid">${cards}</div></div></div>`;}
 async function assetPickModule(key){const acc=assetRole?assetModuleAccess(assetRole):[];if(assetGetSession()&&acc.indexOf(key)>=0){assetEnterModule(key);return;}assetView='login';assetModule=key;renderAsset();}
 function assetLogin(){return `<div class="gate"><div class="gate-card"><img src="data:image/png;base64,${LOGO_B64}"/><div class="co">ADVANCED CONCEPTS CONTRACTING CO. LTD.</div><h2 style="margin-top:14px">${t('am_login_title')}</h2><div class="sub" style="margin-bottom:18px">${t('am_login_sub')}</div><input id="asEmail" type="email" autocomplete="off" placeholder="Email · البريد الإلكتروني" style="text-align:center;margin-bottom:10px" dir="ltr" onkeydown="if(event.key==='Enter')assetTryLogin()"/><input id="asPw" type="password" autocomplete="off" placeholder="Password · كلمة المرور" style="text-align:center;margin-bottom:14px" dir="ltr" onkeydown="if(event.key==='Enter')assetTryLogin()"/><div id="asErr" style="color:var(--red);font-size:13px;min-height:18px;margin-bottom:8px"></div><div class="lang-btns"><button onclick="assetTryLogin()" style="flex-direction:row;justify-content:center"><span class="big" style="font-size:16px">${t('am_signin')}</span></button></div><button onclick="assetBackLanding()" style="margin-top:12px;background:none;border:none;color:var(--grey);font-size:12.5px;cursor:pointer;font-family:inherit">← ${t('am_back')}</button></div></div>`;}
 async function assetTryLogin(){const emEl=document.getElementById('asEmail'),pwEl=document.getElementById('asPw'),errEl=document.getElementById('asErr');const email=(emEl?emEl.value:'').trim(),pw=pwEl?pwEl.value:'';if(!email||!pw){if(errEl)errEl.textContent=L==='ar'?'أدخل البريد وكلمة المرور':'Enter email and password';return;}if(errEl)errEl.textContent=L==='ar'?'جارٍ الدخول…':'Signing in…';const r=await assetSignIn(email,pw);if(pwEl)pwEl.value='';if(!r.ok){let msg;if(r.error==='use_admin')msg=L==='ar'?'هذا حساب مدير — الدخول عبر /admin':'This is an administrator account — sign in at /admin';else if(r.error==='no_access')msg=L==='ar'?'هذا الحساب لا يملك صلاحية على الأصول.':'This account has no asset access.';else if(r.error==='network')msg=L==='ar'?'مشكلة بالاتصال. حاول مجدداً.':'Connection problem. Try again.';else msg=L==='ar'?'بريد أو كلمة مرور غير صحيحة.':'Invalid email or password.';if(errEl)errEl.textContent=msg;return;}const target=assetModule||'warehouses';if(assetModuleAccess(r.role).indexOf(target)<0){assetView='landing';renderAsset();return;}assetEnterModule(target);}
 function assetBackLanding(){assetView='landing';assetModule=null;renderAsset();}
-function assetEnterModule(key){if(key==='warehouses'){location.href='/warehouse?from=asset';return;}assetView='landing';assetModule=null;renderAsset();}
+function assetEnterModule(key){const mod=assetModuleByKey(key),allowed=assetRole?assetModuleAccess(assetRole):[];if(!mod||allowed.indexOf(key)<0){assetView='landing';assetModule=null;renderAsset();return;}location.href=mod.assetRoute;}
 function renderAsset(){const gate=document.getElementById('gate'),app=document.getElementById('app');if(app){app.style.display='none';app.innerHTML='';}if(gate)gate.innerHTML=assetView==='login'?assetLogin():assetLanding();applyDir();if(assetView==='login')setTimeout(()=>{const p=document.getElementById('asEmail');if(p)p.focus();},100);}
 
 /* ===== boot — MOVED to end: runs after ALL Asset Portal state/const/fn are initialized (fixes TDZ on assetRole) ===== */
@@ -6312,8 +6318,8 @@ function renderAsset(){const gate=document.getElementById('gate'),app=document.g
   else if(p.indexOf('/asset')>=0){
     // Asset portal — independent session. If a valid asset session exists, go straight in.
     const okAsset=await assetEnsureSession();
-    if(okAsset && assetModuleAccess(assetRole).indexOf('warehouses')>=0){ assetEnterModule('warehouses'); }
-    else { assetView='landing'; renderAsset(); }
+    if(okAsset){ assetView='landing'; assetModule=null; renderAsset(); }
+    else { assetView='landing'; assetModule=null; renderAsset(); }
   }
   else if(p.indexOf('/staff')>=0){
     await load('staff');
