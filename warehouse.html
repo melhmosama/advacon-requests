@@ -1398,9 +1398,9 @@ async function admSignOut(){
 }
 
 /* -- ASSET session (storekeeper etc.) -- */
-function assetGetSession(){ try{ const r=localStorage.getItem(CFG.assetSessionKey); if(!r) return null; const s=JSON.parse(r); return (s && s.access_token) ? s : null; }catch(_){ return null; } }
-function assetSetSession(s){ try{ localStorage.setItem(CFG.assetSessionKey, JSON.stringify(s)); }catch(_){} }
-function assetClearSession(){ try{ localStorage.removeItem(CFG.assetSessionKey); }catch(_){} }
+function assetGetSession(){ try{ const r=sessionStorage.getItem(CFG.assetSessionKey); if(!r) return null; const s=JSON.parse(r); return (s && s.access_token) ? s : null; }catch(_){ return null; } }
+function assetSetSession(s){ try{ sessionStorage.setItem(CFG.assetSessionKey, JSON.stringify(s)); }catch(_){} }
+function assetClearSession(){ try{ sessionStorage.removeItem(CFG.assetSessionKey); }catch(_){} }
 async function assetRefresh(refreshToken){
   try{
     const r = await fetch(SB_URL+'/auth/v1/token?grant_type=refresh_token',{
@@ -1432,11 +1432,11 @@ async function assetEnsureSession(){
     fresh.role = s.role; assetSetSession(fresh); s = fresh;
   }
   const role = await assetFetchRole(s.access_token);
-  if(!role || assetModuleAccess(role).length === 0){
+  if(role !== 'storekeeper'){
     const fresh = await assetRefresh(s.refresh_token);
     if(fresh){
       const r2 = await assetFetchRole(fresh.access_token);
-      if(r2 && assetModuleAccess(r2).length > 0){
+      if(r2 === 'storekeeper'){
         fresh.role = r2; assetSetSession(fresh);
         await syncSbAuth(fresh); return true;
       }
@@ -1484,42 +1484,19 @@ function urlFromParam(){
 }
 
 async function detectContext(){
+  // Warehouse is Asset-only. Only a verified storekeeper Asset session is valid.
+  // Admin sessions and ?from=admin are deliberately rejected.
   const from = urlFromParam();
-  if(from === 'admin'){
-    if(await admEnsureSession()){
-      const s = admGetSession(); CTX.mode = 'admin'; CTX.role = 'admin'; CTX.userId = s && s.user_id;
-      return true;
-    }
-    return false;
-  }
-  if(from === 'asset'){
-    if(await assetEnsureSession()){
-      const s = assetGetSession(); CTX.mode = 'asset'; CTX.role = (s && s.role) || 'storekeeper'; CTX.userId = s && s.user_id;
-      return true;
-    }
-    return false;
-  }
-  // No ?from → try admin first, then asset (admin priority when both valid)
-  if(await admEnsureSession()){
-    const s = admGetSession(); CTX.mode = 'admin'; CTX.role = 'admin'; CTX.userId = s && s.user_id;
-    return true;
-  }
-  if(await assetEnsureSession()){
-    const s = assetGetSession(); CTX.mode = 'asset'; CTX.role = (s && s.role) || 'storekeeper'; CTX.userId = s && s.user_id;
-    return true;
-  }
-  return false;
+  if(from !== 'asset') return false;
+  if(!await assetEnsureSession()) return false;
+  const sess = assetGetSession();
+  if(!sess || sess.role !== 'storekeeper') return false;
+  CTX.mode = 'asset'; CTX.role = 'storekeeper'; CTX.userId = sess.user_id || null;
+  return true;
 }
 
-async function ensureCurrentSession(){
-  if(CTX.mode === 'admin') return admEnsureSession();
-  if(CTX.mode === 'asset') return assetEnsureSession();
-  return false;
-}
-function currentAccessToken(){
-  const s = (CTX.mode === 'admin') ? admGetSession() : (CTX.mode === 'asset') ? assetGetSession() : null;
-  return s && s.access_token;
-}
+async function ensureCurrentSession(){ return CTX.mode === 'asset' ? assetEnsureSession() : false; }
+function currentAccessToken(){ const s = CTX.mode === 'asset' ? assetGetSession() : null; return s && s.access_token; }
 async function currentSignOut(){
   resetPhase1Caches();
   resetPhase2Caches();
@@ -1527,11 +1504,10 @@ async function currentSignOut(){
   resetPhase4Caches();
   resetPhase5Caches();
   resetPhase6Caches();
-  if(CTX.mode === 'admin') await admSignOut();
-  else if(CTX.mode === 'asset') await assetSignOut();
-  const from = urlFromParam();
-  location.href = (from === 'asset' || CTX.mode === 'asset') ? '/asset' : '/admin';
+  await assetSignOut();
+  location.href = '/asset';
 }
+
 
 /* =====================================================================
    ERROR TRANSLATIONS  (extended as later phases add domain errors)
@@ -1764,15 +1740,10 @@ function showAccessScreen(reason){
         <h2>${esc(t('accessTitle'))}</h2>
         <p class="text-muted">${esc(t('accessDesc'))}</p>
         <div class="portal-grid">
-          <a class="portal-card" href="/admin">
-            <div class="icon">🛡️</div>
-            <div class="name">${esc(t('portalAdmin'))}</div>
-            <div class="desc">${esc(t('portalAdminDesc'))}</div>
-          </a>
           <a class="portal-card" href="/asset">
             <div class="icon">📦</div>
             <div class="name">${esc(t('portalAsset'))}</div>
-            <div class="desc">${esc(t('portalAssetDesc'))}</div>
+            <div class="desc">${LANG==='ar'?'يتطلب حساب مسؤول المستودع':'Storekeeper account required'}</div>
           </a>
         </div>
         ${reason ? `<div style="margin-top:20px;font-size:11px;color:var(--muted);font-family:monospace">reason: ${esc(reason)}</div>` : ''}
