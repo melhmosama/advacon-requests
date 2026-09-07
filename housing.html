@@ -400,14 +400,14 @@ function toggleLang() {
    It never grants authority; the selected session is verified server-side.
    ===================================================================== */
 const ENTRY_FROM = new URLSearchParams(location.search).get('from');
-const CTX = { mode: ENTRY_FROM === 'asset' ? 'asset' : null, role: null, permissions: {} };
+const CTX = { mode: (ENTRY_FROM==='admin'||ENTRY_FROM==='asset') ? ENTRY_FROM : null, role: null, permissions: {} };
 
 function assetGetSession(){
-  try { const raw=sessionStorage.getItem(CFG.assetSessionKey); if(!raw)return null; const s=JSON.parse(raw); return s&&s.access_token?s:null; }
+  try { const raw=localStorage.getItem(CFG.assetSessionKey); if(!raw)return null; const s=JSON.parse(raw); return s&&s.access_token?s:null; }
   catch(e){ return null; }
 }
-function assetSetSession(s){ try{sessionStorage.setItem(CFG.assetSessionKey,JSON.stringify(s));}catch(e){} }
-function assetClearSession(){ try{sessionStorage.removeItem(CFG.assetSessionKey);}catch(e){} CTX.role=null; CTX.permissions={}; }
+function assetSetSession(s){ try{localStorage.setItem(CFG.assetSessionKey,JSON.stringify(s));}catch(e){} }
+function assetClearSession(){ try{localStorage.removeItem(CFG.assetSessionKey);}catch(e){} CTX.role=null; CTX.permissions={}; }
 async function assetRefresh(refreshToken){
   try{
     const r=await fetch(SB_URL+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{'apikey':SB_KEY,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:refreshToken})});
@@ -538,14 +538,26 @@ async function admSignOut() {
 }
 
 async function requireContext() {
-  // Housing is Asset-only. Admin sessions are never accepted here.
-  if(CTX.mode !== 'asset'){ showSignInRequired('asset_context_required'); return false; }
-  const ok = await assetEnsureSession();
-  if (!ok) { showSignInRequired('no_housing_manager_session'); return false; }
+  // ?from= chooses the intended portal; the selected JWT is verified server-side.
+  if(CTX.mode==='admin'){
+    const ok=await admEnsureSession();
+    if(!ok){ showSignInRequired('no_admin_session'); return false; }
+    CTX.role='admin'; CTX.permissions={};
+  }else if(CTX.mode==='asset'){
+    const ok=await assetEnsureSession();
+    if(!ok){ showSignInRequired('no_housing_manager_session'); return false; }
+  }else{
+    showSignInRequired('context_required'); return false;
+  }
   const el=document.getElementById('userInfo');
-  if(el) el.textContent = CTX.role || 'housing_manager';
+  if(el) el.textContent=CTX.role || (CTX.mode==='admin'?'admin':'housing_manager');
   return true;
 }
+
+async function ensureHousingSession(){
+  return CTX.mode==='admin' ? admEnsureSession() : (CTX.mode==='asset' ? assetEnsureSession() : false);
+}
+function housingSession(){ return CTX.mode==='admin' ? admGetSession() : (CTX.mode==='asset' ? assetGetSession() : null); }
 
 function showSignInRequired(reason) {
   document.getElementById('content').innerHTML = `
@@ -676,7 +688,7 @@ async function uploadAndRegisterAttachment({ entityType, entityId, file, kindKey
   const safeName = file.name.replace(/[^\w.-]/g,'_');
   const path = `${entityType}/${entityId}/${Date.now()}_${safeName}`;
   // Fail-closed: never proceed to Storage without a valid admin session
-  const okSess = await assetEnsureSession();
+  const okSess = await ensureHousingSession();
   if (!okSess) throw new Error(LANG==='ar'?'جلسة مسؤول الإسكان غير صالحة':'Housing manager session is invalid');
 
   // Step 1: upload to storage
@@ -695,7 +707,7 @@ async function uploadAndRegisterAttachment({ entityType, entityId, file, kindKey
     // Compensating action: remove the just-uploaded file
     let compensationFailed = null;
     try {
-      const okC = await assetEnsureSession();
+      const okC = await ensureHousingSession();
       if (!okC) throw new Error('session_expired_during_compensation');
       const { error: remErr } = await sb.storage.from('housing-attachments').remove([path]);
       if (remErr) compensationFailed = remErr;
@@ -733,7 +745,7 @@ async function removeStorageFilesWithFallback(paths, context) {
   try {
     // Fail-closed: no valid admin session means we should not attempt Storage;
     // treat as an ordinary failure so the paths get logged for later cleanup.
-    const okSess = await assetEnsureSession();
+    const okSess = await ensureHousingSession();
     if (!okSess) throw new Error('session_expired');
     const { error } = await sb.storage.from('housing-attachments').remove(paths);
     if (error) failed = error;
@@ -769,12 +781,12 @@ const HOUSING_RPC_ACTION = {
   housing_register_attachment:'attachments.upload', housing_delete_attachment:'attachments.delete'
 };
 async function rawRpc(fn,args={}){
-  const okSess = await assetEnsureSession();
+  const okSess = await ensureHousingSession();
   if(!okSess){showSignInRequired('session_expired');throw new Error('Housing access denied');}
-  const sess=assetGetSession();
+  const sess=housingSession();
   let res; try{res=await fetch(SB_URL+'/rest/v1/rpc/'+fn,{method:'POST',headers:{'apikey':SB_KEY,'Authorization':'Bearer '+sess.access_token,'Content-Type':'application/json'},body:JSON.stringify(args||{})});}
   catch(e){throw new Error(LANG==='ar'?'فشل الاتصال بالخادم':'Network error');}
-  if(res.status===401||res.status===403){ await assetSignOut(); showSignInRequired('http_'+res.status); throw new Error('Session expired'); }
+  if(res.status===401||res.status===403){ if(CTX.mode==='admin') admClearSession(); else await assetSignOut(); showSignInRequired('http_'+res.status); throw new Error('Session expired'); }
   if(!res.ok){let msg='http_'+res.status;try{const b=await res.json();msg=(b&&(b.message||b.error||b.details||b.hint))||msg;}catch(_){} throw new Error(String(msg).trim());}
   return await res.json();
 }
@@ -1712,7 +1724,7 @@ async function openContractForm(existing, propId, onSaved) {
     // Wire up actions
     attListEl.querySelectorAll('[data-att-dl]').forEach(b => b.addEventListener('click', async (e) => {
       const path = e.currentTarget.getAttribute('data-att-dl');
-      const okS = await assetEnsureSession();
+      const okS = await ensureHousingSession();
       if (!okS) { toast(LANG==='ar'?'جلسة مسؤول الإسكان غير صالحة':'Housing manager session is invalid','error'); return; }
       const { data, error } = await sb.storage.from('housing-attachments').createSignedUrl(path, 300);
       if (error) { toast(translateStorageError(error),'error'); return; }
@@ -2159,7 +2171,7 @@ async function renderPropTabAttachments(container, p, refresh) {
   });
   container.querySelectorAll('[data-att-dl]').forEach(b => b.addEventListener('click', async (e) => {
     const path = e.currentTarget.getAttribute('data-path');
-    const okS = await assetEnsureSession();
+    const okS = await ensureHousingSession();
     if (!okS) { toast(LANG==='ar'?'جلسة مسؤول الإسكان غير صالحة':'Housing manager session is invalid','error'); return; }
     const { data, error } = await sb.storage.from('housing-attachments').createSignedUrl(path, 300);
     if (error) { toast(translateStorageError(error), 'error'); return; }
@@ -3629,6 +3641,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('langToggleBtn').addEventListener('click', toggleLang);
   document.getElementById('auditBtn').addEventListener('click', openAuditLog);
   document.getElementById('contextExitBtn').addEventListener('click', async () => {
+    if(CTX.mode==='admin'){ location.href='/admin'; return; }
     await assetSignOut(); location.href='/asset';
   });
 
@@ -3654,7 +3667,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   window.addEventListener('hashchange', route);
   const exitBtn=document.getElementById('contextExitBtn');
-  exitBtn.textContent=(LANG==='ar'?'تسجيل خروج':'Logout');
+  exitBtn.textContent=CTX.mode==='admin'?(LANG==='ar'?'← العودة للإدارة':'← Back to Admin'):(LANG==='ar'?'تسجيل خروج':'Logout');
   const ok = await requireContext();
   if (ok) await route();
 });
