@@ -13,25 +13,26 @@
    active?.close();active=null;
    const result=original.apply(this,args);
    const node=document.querySelector(selector);if(!node)return result;
-   const overlay=node.closest('.modal-bg')||node.previousElementSibling?.matches('.mv-scrim')&&node.previousElementSibling;
+   const overlay=node.closest('.modal-bg')||node.previousElementSibling?.matches('.mv-scrim,.imd-scrim')&&node.previousElementSibling;
    const titleNode=node.querySelector('h2,h3'),title=titleNode?.textContent||ui.text('تفاصيل','Details');
    const same=title===lastTitle;lastTitle=title;
    const buttons=[...node.querySelectorAll('button')];
    const cancel=buttons.find(b=>/^(إلغاء|اغلاق|إغلاق|cancel|close)$/i.test(b.textContent.trim()));
-   const closeControl=node.querySelector('.mv-modal-x,.modal-close')||cancel;
-   const head=node.querySelector('.mv-modal-head');
+   const closeControl=node.querySelector('.mv-modal-x,.modal-close,.imd-x')||cancel;
+   const head=node.querySelector('.mv-modal-head,.imd-head');
    if(head)head.remove();else titleNode?.remove();
-   let body=node.querySelector(':scope > .mv-modal-body')||node;
+   let body=node.querySelector(':scope > .mv-modal-body,:scope > .imd-body')||node;
    let footer=node.querySelector(':scope > .mv-modal-foot,:scope > .btnrow:last-child');
    if(footer){footer.classList.add('au-actions');footer.classList.add('au-adopted-footer');}
    if(body===node){node.classList.remove('modal','mv-modal');node.classList.add('au-adopted-content');node.style.maxWidth='none';node.style.width='100%';node.removeAttribute('role');node.removeAttribute('aria-modal');}
    const api=ui.modal({title,body,footer:footer||null,wide:!head,initialDirty:same&&dirty,initialFocus:!focus,
-    onDismiss:()=>{
+    onDismiss:async()=>{
      if(closeControl?.disabled)return false;
      bypass=true;const before=revision;
      try{
       // The shared shell has already confirmed discarding changes.
       if(name==='renderModal'&&typeof window.clearDirty==='function')window.clearDirty();
+      if(name==='catRender')return await window.catClose(true)!==false;
       if(closeControl)closeControl.click();else if(overlay&&typeof overlay.onclick==='function')overlay.click();else return false;
      }finally{bypass=false;}
      // A legacy busy guard can refuse closing; keep the shell open in that case.
@@ -53,6 +54,7 @@
  document.addEventListener('DOMContentLoaded',()=>{
   install('renderModal','#modal .modal');
   install('staffMarkDone','#staff-modal-host .modal','closeStaffConfirm');
+  install('catRender','#content > .imd');
   for(const name of ['mvRender','aprRender','whmRender'])install(name,'#content > .mv-modal');
  });
 })();

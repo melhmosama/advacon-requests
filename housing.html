@@ -241,6 +241,7 @@
 <link rel="stylesheet" href="/advacon-ui.css">
 <script src="/advacon-ui.js"></script>
 <script src="/advacon-dialogs.js"></script>
+<script src="/advacon-experience.js"></script>
 </head>
 <body>
 
@@ -740,6 +741,7 @@ async function rpc(fn,args={}){
         const out=await rawRpc('asset_housing_request',{p_rpc_name:fn,p_payload:args||{},p_entity_type:entityType,p_entity_id:entityId?String(entityId):null,p_before_data:null},true);
         if(out?.ok===false)throw new Error(out.error||'approval_request_failed');
         originatingDialog?.close();
+        AdvaconExperience.requestReceipt(out,()=>openAuditLog());
         throw new HousingApprovalPending(out);
       }
     }
@@ -890,7 +892,12 @@ function buildForm(schema, values = {}) {
 
 function readForm(formEl) {
   const invalid=[...formEl.querySelectorAll('[data-field]')].find(input=>!input.disabled&&!input.readOnly&&!input.checkValidity());
-  if(invalid){invalid.reportValidity();const name=invalid.labels?.[0]?.textContent?.replace('*','').trim()||t('requiredField');throw new Error(t('requiredField')+': '+name);}
+  if(invalid){
+    const name=invalid.labels?.[0]?.textContent?.replace('*','').trim()||t('requiredField');
+    const errorId=invalid.id+'-error';let error=formEl.querySelector('[id="'+errorId+'"]');
+    if(!error){error=document.createElement('p');error.id=errorId;error.className='au-field-error';error.setAttribute('role','alert');invalid.after(error);const previous=invalid.getAttribute('aria-describedby')||'';invalid.setAttribute('aria-describedby',(previous+' '+errorId).trim());invalid.addEventListener('input',()=>{error.remove();invalid.removeAttribute('aria-invalid');if(previous)invalid.setAttribute('aria-describedby',previous);else invalid.removeAttribute('aria-describedby');},{once:true});}
+    error.textContent=invalid.validity.valueMissing?t('requiredField'):AdvaconUI.text('راجع قيمة هذا الحقل.','Check this field’s value.');invalid.setAttribute('aria-invalid','true');invalid.focus();invalid.reportValidity();throw new Error(error.textContent+': '+name);
+  }
   const out = {};
   formEl.querySelectorAll('[data-field]').forEach(el => {
     if (el.type === 'checkbox') out[el.dataset.field] = el.checked;
@@ -905,18 +912,23 @@ function readForm(formEl) {
    REF CACHE
    ===================================================================== */
 const REF_CACHE = {};
+const REF_CACHE_TIME = {};
+let refCacheVersion=0;
 async function getRefList(key) {
-  if (REF_CACHE[key]) return REF_CACHE[key];
-  const res = await rpc('housing_list_refs', { p_list_key: key });
-  const items = res?.list?.items || [];
-  REF_CACHE[key] = items.filter(x => x.is_active);
-  return REF_CACHE[key];
+  if (REF_CACHE[key]&&Date.now()-(REF_CACHE_TIME[key]||0)<300000) return REF_CACHE[key];
+  const version=refCacheVersion;
+  return AdvaconUI.singleFlight('housing-reference:'+key+':'+version,async()=>{
+    const res=await rpc('housing_list_refs',{p_list_key:key});
+    const items=(res?.list?.items||[]).filter(x=>x.is_active);
+    if(version===refCacheVersion){REF_CACHE[key]=items;REF_CACHE_TIME[key]=Date.now();}
+    return items;
+  });
 }
 async function getRefOptions(key) {
   const items = await getRefList(key);
   return items.map(i => ({ value: i.key, label: LANG === 'ar' ? i.name_ar : i.name_en }));
 }
-function clearRefCache() { Object.keys(REF_CACHE).forEach(k => delete REF_CACHE[k]); }
+function clearRefCache() { refCacheVersion++;Object.keys(REF_CACHE).forEach(k => delete REF_CACHE[k]);Object.keys(REF_CACHE_TIME).forEach(k=>delete REF_CACHE_TIME[k]); }
 
 /* =====================================================================
    ROUTER
@@ -1136,6 +1148,7 @@ async function screenProperties(el) {
     </div>
     <div id="propList" class="table-wrap"><div class="loading">${t('loading')}</div></div>`;
   const listEl = el.querySelector('#propList');
+  AdvaconExperience.rememberFilters(el,location.pathname+location.hash);
   let loadSerial=0, searchCache=null;
   const load = async (localSearch=false) => {
     const version=++loadSerial;
@@ -1150,14 +1163,15 @@ async function screenProperties(el) {
       const requestArgs=args, signature=JSON.stringify(requestArgs);
       const res=localSearch&&searchCache?.signature===signature?searchCache.data:await rpc('housing_list_properties',requestArgs);
       if(version!==loadSerial||!el.isConnected)return;
-      searchCache={signature,data:res};
+      searchCache={signature,data:res,time:localSearch&&searchCache?.signature===signature?searchCache.time:Date.now()};
+      AdvaconExperience.dataStatus(el,searchCache.time);
       let items = res.items || [];
       const q = el.querySelector('#fSearch').value.trim().toLowerCase();
       if (q) items = items.filter(p => (p.code||'').toLowerCase().includes(q) || (p.name_ar||'').toLowerCase().includes(q) || (p.name_en||'').toLowerCase().includes(q) || (p.location||'').toLowerCase().includes(q));
       if (activeVal === 'false') items = items.filter(p => !p.is_active);
-      renderPropTable(listEl, items);
+      renderPropTable(listEl, items);AdvaconUI.enhance(listEl);
     } catch(e) { if(version!==loadSerial||!el.isConnected)return;
-      listEl.innerHTML = `<div class="error-box">${escapeHtml(e.message)}</div>`;
+      AdvaconUI.errorState(listEl,e,()=>load());
     }
   };
   el.querySelector('#fSearch').addEventListener('input', debounce(()=>load(true), 200));
@@ -1610,6 +1624,13 @@ async function openContractForm(existing, propId, onSaved) {
   } : {};
   const formEl = buildForm(schema, initial);
 
+  // -----------------------------------------------------------------------
+  AdvaconExperience.groupForm(formEl,[
+    [AdvaconUI.text('بيانات العقد والأطراف','Contract and parties'),['p_landlord_id','p_contract_no','p_ejar_ref','p_status_key']],
+    [AdvaconUI.text('مدة العقد','Contract dates'),['p_start_date','p_end_date','p_duration_label']],
+    [AdvaconUI.text('الإيجار والدفع','Rent and payment'),['p_payment_method_key','p_monthly_rent','p_total_value','p_next_payment_due','p_account_ref','p_payment_status_note']],
+    [AdvaconUI.text('ملاحظات','Notes'),['p_notes']]
+  ]);
   // -----------------------------------------------------------------------
   // Attachments section (PDF or any file) — optional, works for new + edit
   //   - EXISTING contract: existing attachments listed, immediate upload/delete
@@ -2191,6 +2212,7 @@ async function screenLandlords(el) {
     </div>
     <div id="list" class="table-wrap"><div class="loading">${t('loading')}</div></div>`;
   const listEl = el.querySelector('#list');
+  AdvaconExperience.rememberFilters(el,location.pathname+location.hash);
   let loadSerial=0, searchCache=null;
   const load = async (localSearch=false) => {
     const version=++loadSerial;
@@ -2203,7 +2225,8 @@ async function screenLandlords(el) {
       const requestArgs=args, signature=JSON.stringify(requestArgs);
       const res=localSearch&&searchCache?.signature===signature?searchCache.data:await rpc('housing_list_landlords',requestArgs);
       if(version!==loadSerial||!el.isConnected)return;
-      searchCache={signature,data:res};
+      searchCache={signature,data:res,time:localSearch&&searchCache?.signature===signature?searchCache.time:Date.now()};
+      AdvaconExperience.dataStatus(el,searchCache.time);
       let items = res.items || [];
       if (activeVal === 'false') items = items.filter(l => !l.is_active);
       const typeVal = el.querySelector('#fType').value;
@@ -2357,6 +2380,7 @@ async function screenContracts(el) {
     </div>
     <div id="list" class="table-wrap"><div class="loading">${t('loading')}</div></div>`;
   const listEl = el.querySelector('#list');
+  AdvaconExperience.rememberFilters(el,location.pathname+location.hash);
   let loadSerial=0, searchCache=null;
   const load = async (localSearch=false) => {
     const version=++loadSerial;
@@ -2368,7 +2392,8 @@ async function screenContracts(el) {
       const requestArgs=args, signature=JSON.stringify(requestArgs);
       const res=localSearch&&searchCache?.signature===signature?searchCache.data:await rpc('housing_list_contracts',requestArgs);
       if(version!==loadSerial||!el.isConnected)return;
-      searchCache={signature,data:res};
+      searchCache={signature,data:res,time:localSearch&&searchCache?.signature===signature?searchCache.time:Date.now()};
+      AdvaconExperience.dataStatus(el,searchCache.time);
       let items = res.items || [];
       const q = el.querySelector('#fSearch').value.trim().toLowerCase();
       if (q) items = items.filter(c => (c.contract_no||'').toLowerCase().includes(q) || (c.property?.code||'').toLowerCase().includes(q) || (c.landlord?.name||'').toLowerCase().includes(q));
@@ -2396,7 +2421,7 @@ async function screenContracts(el) {
             </tr>`;
           }).join('')}</tbody>
         </table>`;
-    } catch(e) { if(version!==loadSerial||!el.isConnected)return; listEl.innerHTML = `<div class="error-box">${escapeHtml(e.message)}</div>`; }
+    } catch(e) { if(version!==loadSerial||!el.isConnected)return; AdvaconUI.errorState(listEl,e,()=>load()); }
   };
   el.querySelector('#fSearch').addEventListener('input', debounce(()=>load(true), 200));
   ['fStatus'].forEach(id => el.querySelector('[id="'+id+'"]').addEventListener('input', load));
@@ -2430,6 +2455,7 @@ async function screenMeters(el) {
     </div>
     <div id="list" class="table-wrap"><div class="loading">${t('loading')}</div></div>`;
   const listEl = el.querySelector('#list');
+  AdvaconExperience.rememberFilters(el,location.pathname+location.hash);
   let loadSerial=0, searchCache=null;
   const load = async (localSearch=false) => {
     const version=++loadSerial;
@@ -2443,7 +2469,8 @@ async function screenMeters(el) {
       const requestArgs=args, signature=JSON.stringify(requestArgs);
       const res=localSearch&&searchCache?.signature===signature?searchCache.data:await rpc('housing_list_meters',requestArgs);
       if(version!==loadSerial||!el.isConnected)return;
-      searchCache={signature,data:res};
+      searchCache={signature,data:res,time:localSearch&&searchCache?.signature===signature?searchCache.time:Date.now()};
+      AdvaconExperience.dataStatus(el,searchCache.time);
       let items = res.items || [];
       if (activeVal === 'false') items = items.filter(m => !m.is_active);
       const q = el.querySelector('#fSearch').value.trim().toLowerCase();
@@ -2488,7 +2515,7 @@ async function screenMeters(el) {
           onDone: () => load(),
         });
       }));
-    } catch(e) { if(version!==loadSerial||!el.isConnected)return; listEl.innerHTML = `<div class="error-box">${escapeHtml(e.message)}</div>`; }
+    } catch(e) { if(version!==loadSerial||!el.isConnected)return; AdvaconUI.errorState(listEl,e,()=>load()); }
   };
   el.querySelector('#fSearch').addEventListener('input', debounce(()=>load(true), 200));
   ['fType','fActive'].forEach(id => el.querySelector('[id="'+id+'"]').addEventListener('input', load));
@@ -2620,7 +2647,8 @@ async function openReadingForm(meterId, onSaved) {
    ===================================================================== */
 async function screenBills(el) {
   const PAGE_SIZE = 100;
-  let currentOffset = 0;
+  const pageKey=location.pathname+location.hash;
+  let currentOffset = AdvaconExperience.page(pageKey);
   el.innerHTML = `
     <div class="page-header">
       <h1>${t('bills')}</h1>
@@ -2649,6 +2677,7 @@ async function screenBills(el) {
     return f;
   };
 
+  AdvaconExperience.rememberFilters(el,location.pathname+location.hash);
   let loadSerial=0, searchCache=null;
   const load = async (localSearch=false) => {
     const version=++loadSerial;
@@ -2657,10 +2686,11 @@ async function screenBills(el) {
     el.querySelector('#pager').innerHTML = '';
     try {
       const filters = buildFilters();
-      const requestArgs={ ...filters, p_limit: PAGE_SIZE, p_offset: currentOffset }, signature=JSON.stringify(requestArgs);
+      const requestArgs={ ...filters, p_limit: PAGE_SIZE, p_offset: AdvaconExperience.page(pageKey,currentOffset) }, signature=JSON.stringify(requestArgs);
       const res=localSearch&&searchCache?.signature===signature?searchCache.data:await rpc('housing_list_bills',requestArgs);
       if(version!==loadSerial||!el.isConnected)return;
-      searchCache={signature,data:res};
+      searchCache={signature,data:res,time:localSearch&&searchCache?.signature===signature?searchCache.time:Date.now()};
+      AdvaconExperience.dataStatus(el,searchCache.time);
       const items = res.items || [];
       const total = res.total_count || 0;
       el.querySelector('#summary').innerHTML = `
@@ -2958,6 +2988,7 @@ async function screenResidents(el) {
       <button class="btn btn-ghost" id="btnClear">↺</button>
     </div>
     <div id="list" class="table-wrap"><div class="loading">${t('loading')}</div></div>`;
+  AdvaconExperience.rememberFilters(el,location.pathname+location.hash);
   let loadSerial=0, searchCache=null;
   const load = async (localSearch=false) => {
     const version=++loadSerial;
@@ -2971,7 +3002,8 @@ async function screenResidents(el) {
       const requestArgs=args, signature=JSON.stringify(requestArgs);
       const res=localSearch&&searchCache?.signature===signature?searchCache.data:await rpc('housing_list_residents',requestArgs);
       if(version!==loadSerial||!el.isConnected)return;
-      searchCache={signature,data:res};
+      searchCache={signature,data:res,time:localSearch&&searchCache?.signature===signature?searchCache.time:Date.now()};
+      AdvaconExperience.dataStatus(el,searchCache.time);
       let items = res.items || [];
       if (activeVal === 'false') items = items.filter(r => !r.is_active);
       const q = el.querySelector('#fSearch').value.trim().toLowerCase();
@@ -3085,7 +3117,8 @@ async function screenExpenses(el) {
     getRefOptions('expense_categories'), getRefOptions('expense_frequencies')
   ]);
   const PAGE_SIZE = 100;
-  let currentOffset = 0;
+  const pageKey=location.pathname+location.hash;
+  let currentOffset = AdvaconExperience.page(pageKey);
   el.innerHTML = `
     <div class="page-header">
       <h1>${t('expenses')}</h1>
@@ -3102,6 +3135,7 @@ async function screenExpenses(el) {
     <div id="summary" class="mb-3"></div>
     <div id="list" class="table-wrap"><div class="loading">${t('loading')}</div></div>
     <div id="pager" class="flex mb-3" style="justify-content:center; gap:12px; align-items:center; margin-top:12px;"></div>`;
+  AdvaconExperience.rememberFilters(el,location.pathname+location.hash);
   let loadSerial=0, searchCache=null;
   const load = async (localSearch=false) => {
     const version=++loadSerial;
@@ -3109,7 +3143,7 @@ async function screenExpenses(el) {
     el.querySelector('#list').innerHTML = `<div class="loading">${t('loading')}</div>`;
     el.querySelector('#pager').innerHTML = '';
     try {
-      const args = { p_limit: PAGE_SIZE, p_offset: currentOffset };
+      const args = { p_limit: PAGE_SIZE, p_offset: AdvaconExperience.page(pageKey,currentOffset) };
       if (el.querySelector('#fEntity').value) args.p_entity_type = el.querySelector('#fEntity').value;
       if (el.querySelector('#fCat').value) args.p_category_key = el.querySelector('#fCat').value;
       if (el.querySelector('#fFreq').value) args.p_frequency_key = el.querySelector('#fFreq').value;
@@ -3118,7 +3152,8 @@ async function screenExpenses(el) {
       const requestArgs=args, signature=JSON.stringify(requestArgs);
       const res=localSearch&&searchCache?.signature===signature?searchCache.data:await rpc('housing_list_expenses',requestArgs);
       if(version!==loadSerial||!el.isConnected)return;
-      searchCache={signature,data:res};
+      searchCache={signature,data:res,time:localSearch&&searchCache?.signature===signature?searchCache.time:Date.now()};
+      AdvaconExperience.dataStatus(el,searchCache.time);
       const items = res.items || [];
       const total = res.total_count || 0;
       el.querySelector('#summary').innerHTML = `
@@ -3672,6 +3707,7 @@ async function screenApprovals(content){
   const cancel=document.createElement('button'),reject=document.createElement('button'),approve=document.createElement('button');
   cancel.className=reject.className='btn';approve.className='btn btn-primary';cancel.textContent=t('cancel');reject.textContent=tr('رفض الطلب','Reject request');approve.textContent=tr('اعتماد وتنفيذ','Approve and execute');footer.append(cancel,reject,approve);
   const dialog=openModal({title:'#'+item.id+' · '+housingActionName(item.action_key),body,footer,wide:true});let sending=false;
+  enrichHousingReview(body,item);
   cancel.onclick=()=>dialog.dismiss();
   async function submit(accept){
    if(sending)return;const note=notes.value.trim();if(!accept&&!note){notes.setCustomValidity(tr('اكتب سبب الرفض.','Enter a rejection reason.'));notes.reportValidity();notes.oninput=()=>notes.setCustomValidity('');return;}
@@ -3691,6 +3727,25 @@ async function screenApprovals(content){
  content.querySelector('#approvalSearch').oninput=render;content.querySelector('#approvalRefresh').onclick=e=>AdvaconUI.busy(e.currentTarget,()=>screenApprovals(content));render();
 }
 
+
+async function enrichHousingReview(body,item){
+ const panel=document.createElement('section');panel.className='au-review-note';panel.setAttribute('role','status');panel.textContent=AdvaconUI.text('جارٍ جلب تعريف السجل الحالي…','Loading current record context…');body.prepend(panel);
+ const type=String(item.entity_type||String(item.action_key||'').split('.')[0]).replace(/ies$/,'y').replace(/s$/,'');
+ const getters={property:'housing_get_property',contract:'housing_get_contract',landlord:'housing_get_landlord',meter:'housing_get_meter',bill:'housing_get_bill',expense:'housing_get_expense',resident:'housing_get_resident'};
+ const id=item.entity_id||item.payload?.p_id;
+ if(!id||!getters[type]){panel.textContent=AdvaconUI.text('راجع بيانات الطلب أدناه؛ قد يكون السجل جديدًا أو المرفق تابعًا لسجل آخر.','Review the requested data below; this may be a new record or an attachment to another record.');return;}
+ try{
+  const response=await rawRpc(getters[type],{p_id:id});if(!body.isConnected)return;
+  const record=response?.[type]||response?.item;if(!record)throw Error('record_unavailable');
+  panel.replaceChildren();const title=document.createElement('strong');title.textContent=AdvaconUI.text('السجل الحالي: ','Current record: ')+(record.name_ar||record.name_en||record.name||record.contract_no||record.code||String(id));panel.append(title);
+  const location=record.location||response.property?.name_ar||record.property?.name_ar;if(location){const p=document.createElement('p');p.textContent=String(location);panel.append(p);}
+  const note=document.createElement('p');note.textContent=AdvaconUI.text('هذه بيانات وقت المراجعة وليست لقطة تاريخية وقت تقديم الطلب.','This is current review-time data, not a historical snapshot from submission.');panel.append(note);
+  if(String(item.action_key).endsWith('.delete')&&['property','contract','landlord','meter','expense','resident'].includes(type)){
+   const preview=await rawRpc('housing_delete_'+type,{...(item.payload||{}),p_id:id,p_dry_run:true});if(!body.isConnected)return;
+   const p=document.createElement('p');p.textContent=AdvaconUI.text('معاينة التبعيات الحالية: ','Current dependency preview: ')+JSON.stringify(preview.counts||{has_dependents:preview.has_dependents});panel.append(p);
+  }
+ }catch{if(body.isConnected){if(!panel.childElementCount)panel.textContent='';const p=document.createElement('p');p.textContent=AdvaconUI.text('تعذر جلب السجل أو معاينة تبعياته؛ لا تعتبر ذلك دليلًا على عدم وجود بيانات مرتبطة.','Record or dependency preview unavailable; this does not establish that no linked data exists.');panel.append(p);}}
+}
 
 async function openLegacyAttachmentReview(){
  if(CTX.mode!=='admin')throw new Error('not_admin');
@@ -3794,3 +3849,4 @@ document.addEventListener('DOMContentLoaded',()=>{
 </script>
 </body>
 </html>
+

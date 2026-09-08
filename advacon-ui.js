@@ -101,7 +101,13 @@
  }
  function errorState(root,error,retry){root.replaceChildren();const panel=document.createElement('div');panel.className='au-state error';panel.setAttribute('role','alert');const p=document.createElement('p');p.textContent=humanError(error);panel.append(p);if(retry){const b=document.createElement('button');b.type='button';b.className='btn';b.textContent=text('إعادة المحاولة','Try again');b.onclick=()=>busy(b,retry);panel.append(b);}root.append(panel);}
  function enhance(root=document){
+  window.AdvaconExperience?.enhancePresentation(root);
   root.querySelectorAll('.field').forEach(field=>{const label=field.querySelector('label'),input=field.querySelector('input,select,textarea');if(label&&input&&!label.htmlFor){if(!input.id)input.id='au-field-'+(++serial);label.htmlFor=input.id;}});
+  root.querySelectorAll('label:not([for])').forEach(label=>{
+   const next=label.nextElementSibling;
+   const input=label.querySelector('input,select,textarea')||(next?.matches('input,select,textarea')?next:next?.querySelector('input,select,textarea'));
+   if(input){if(!input.id)input.id='au-field-'+(++serial);label.htmlFor=input.id;if(label.textContent.includes('*'))input.setAttribute('aria-required','true');}
+  });
   root.querySelectorAll('button').forEach(b=>{if(!b.getAttribute('type'))b.type='button';if(!b.getAttribute('aria-label')&&b.title)b.setAttribute('aria-label',b.title);if(b.textContent.trim()==='×'&&!b.getAttribute('aria-label'))b.setAttribute('aria-label',text('إغلاق','Close'));if(b.textContent.trim()==='↺')b.setAttribute('aria-label',text('مسح الفلاتر','Clear filters'));});
   root.querySelectorAll('a.nav-item').forEach(el=>{if(el.classList.contains('active')||el.classList.contains('on'))el.setAttribute('aria-current','page');else el.removeAttribute('aria-current');});
   root.querySelectorAll('div[onclick],span[onclick],tr[onclick]').forEach(el=>{if(!el.hasAttribute('role'))el.setAttribute('role','button');if(!el.hasAttribute('tabindex'))el.tabIndex=0;});
@@ -136,3 +142,4 @@
   });
  });
 })(window);
+

@@ -828,6 +828,7 @@
 <link rel="stylesheet" href="/advacon-ui.css">
 <script src="/advacon-ui.js"></script>
 <script src="/advacon-dialogs.js"></script>
+<script src="/advacon-experience.js"></script>
 </head>
 <body>
 
@@ -1546,7 +1547,7 @@ async function warehouseMovementRpc(type,args){
  const result=await warehouseRpc(pair[pending?1:0],args,true);
  return {result,pending_approval:pending};
 }
-function whMovementMessage(result,key){return result.pending_approval?t('aprReqFiled'):t(key);}
+function whMovementMessage(result,key){if(result.pending_approval)AdvaconExperience.requestReceipt(result.result,()=>{location.hash='materialreq';});return result.pending_approval?t('aprReqFiled'):t(key);}
 
 async function ensureCurrentSession(){ return AdvaconUI.singleFlight('warehouse-session-'+CTX.mode,()=>CTX.mode==='admin' ? admEnsureSession() : (CTX.mode==='asset' ? assetEnsureSession() : false)); }
 function currentAccessToken(){ const s=CTX.mode==='admin' ? admGetSession() : (CTX.mode==='asset' ? assetGetSession() : null); return s&&s.access_token; }
@@ -1806,7 +1807,7 @@ function renderSidebar(){
 function currentTab(){
   const h = (location.hash || '').replace(/^#/, '');
   if(!h) return WH_SUBNAV[0]?.key || 'dashboard';
-  return h;
+  return h.split('?')[0];
 }
 
 
@@ -1891,6 +1892,10 @@ async function route(){
     return;
   }
   if(!whTabAllowed(tab)){el.innerHTML='<div class="empty">'+esc(translateError('not_authorized'))+'</div>';return;}
+  if(tab.key==='catalog'){
+   const selected=new URLSearchParams(location.hash.split('?')[1]||'').get('item');
+   if(selected&&/^[0-9a-f-]{36}$/i.test(selected)&&selected!==catDetailId){catDetailId=selected;catDetailInventory=null;catDetailMovements=null;}
+  }
   switch(tab.key){
     case 'dashboard':   el.innerHTML = viewWhDashboard(); break;
     case 'inventory':   el.innerHTML = viewInventory(); break;
@@ -1945,6 +1950,7 @@ async function route(){
 
 /* ---------- Lightbox (used by Dashboard/Inventory/Catalog for image previews) ---------- */
 function openLightbox(url){
+  url=AdvaconExperience.safeURL(url);if(!url)return;
   const mount = document.getElementById('modal-mount');
   const ov = document.createElement('div');
   ov.className = 'lightbox-overlay';
@@ -2045,8 +2051,8 @@ function viewWhDashboard(){
     whOpts += `<option value="${w.id}" ${dashWh===w.id?'selected':''}>${esc(nm)}</option>`;
   });
 
-  const card = (label, val, cls, click) => `<div class="kpi ${cls||''} ${click?'clickable':''}" ${click?`onclick="${click}"`:''}>
-    <div class="kpi-v">${val}</div><div class="kpi-l">${label}</div></div>`;
+  const card = (label, val, cls, click) => `<${click?'button':'div'} class="kpi ${cls||''} ${click?'clickable':''}" ${click?`type="button" onclick="${click}"`:''}>
+    <div class="kpi-v">${val}</div><div class="kpi-l">${label}</div></${click?'button':'div'}>`;
 
   const row1 = `<div class="kpi-row">
     ${card(t('dashTotalItems'), n(k.total_items),     'k-navy')}
@@ -2064,21 +2070,18 @@ function viewWhDashboard(){
   const maxOnHand = cats.reduce((mx, c) => Math.max(mx, Number(c.on_hand) || 0), 0) || 1;
   const catRows = cats.length ? cats.map(c => {
     const nm = (LANG==='ar') ? (c.category_name_ar || c.category_name_en) : (c.category_name_en || c.category_name_ar);
-    const oh = Number(c.on_hand) || 0;
-    const pct = Math.round((oh / maxOnHand) * 100);
+    const oh = Number(c.item_count) || 0;
+    const pct = Math.round((oh / Math.max(1,...cats.map(x=>Number(x.item_count)||0))) * 100);
     return `<tr class="cat-row" onclick="dashGoCat('${c.category_id}')" title="${t('dashCatOpen')}">
       <td class="cat-nm">${esc(nm || '')}<div class="cat-bar"><span style="width:${pct}%"></span></div></td>
       <td class="cat-n">${n(c.item_count)}</td>
-      <td class="cat-n">${n(c.on_hand)}</td>
-      <td class="cat-n">${n(c.available)}</td>
     </tr>`;
-  }).join('') : `<tr><td colspan="4" class="empty">${t('dashNoCat')}</td></tr>`;
+  }).join('') : `<tr><td colspan="2" class="empty">${t('dashNoCat')}</td></tr>`;
   const catPanel = `<div class="panel cat-panel">
-    <div class="phead sm"><h2>${t('dashCatTitle')}</h2></div><p class="text-muted" style="padding:0 16px">${AdvaconUI.text('الكميات قد تجمع وحدات مختلفة؛ راجع وحدة كل صنف في المخزون.','Quantities may combine different units; check each item’s unit in Inventory.')}</p>
+    <div class="phead sm"><h2>${t('dashCatTitle')}</h2></div><p class="text-muted" style="padding:0 16px">${AdvaconUI.text('عدد الأصناف حسب التصنيف؛ الكميات ووحداتها في تفاصيل المخزون.','Item counts by category; see Inventory for quantities and units.')}</p>
     <div class="tbl-wrap"><table class="tbl cat-tbl">
       <thead><tr>
         <th>${t('dashCatCat')}</th><th class="cat-n">${t('dashCatItems')}</th>
-        <th class="cat-n">${t('dashOnHand')}</th><th class="cat-n">${t('dashAvailable')}</th>
       </tr></thead>
       <tbody>${catRows}</tbody>
     </table></div>
@@ -2132,6 +2135,7 @@ function viewWhDashboard(){
 /* =====================================================================
    INVENTORY  (Phase 1: read-only — no shelf edit, no image upload)
    ===================================================================== */
+let invError=null,invUpdated=0,catError=null,catUpdated=0;
 async function loadInventory(force){
   if(invLoaded && !force){ invRender(); return; }
   if(invLoading) return;
@@ -2139,9 +2143,9 @@ async function loadInventory(force){
   try{
     const res = await warehouseRpc('inventory_list', {});
     invData = Array.isArray(res) ? res : [];
-    invLoaded = true;
+    invLoaded = true; invError=null; invUpdated=Date.now();
   }catch(e){
-    invData = []; invLoaded = true;
+    invError=e; invLoaded = true;
     toast(e.message || t('errorOccurred'), 'error');
   }finally{
     invLoading = false;
@@ -2150,7 +2154,7 @@ async function loadInventory(force){
 }
 function invRender(){
   const el = document.getElementById('content');
-  if(el && currentTab() === 'inventory') el.innerHTML = viewInventory();
+  if(el && currentTab() === 'inventory'){el.innerHTML = viewInventory();AdvaconExperience.dataStatus(el,invUpdated,invError,()=>loadInventory(true));AdvaconUI.enhance(el);}
 }
 
 /* Filter-source pickers: derive warehouse/category options from loaded data
@@ -2184,7 +2188,14 @@ function invApply(){
     return true;
   });
 }
-function invSet(k, v){ invFilters[k] = v; invRender(); }
+function invSet(k, v){
+ invFilters[k]=v;
+ if(k!=='q'){invRender();return;}
+ const root=document.getElementById('content');if(!root||currentTab()!=='inventory')return;
+ const template=document.createElement('template');template.innerHTML=viewInventory();
+ for(const selector of ['.filterbar','.au-inventory-results']){const old=root.querySelector(selector),fresh=template.content.querySelector(selector);if(old&&fresh)old.replaceWith(fresh);}
+ AdvaconUI.enhance(root);
+}
 function invToggle(k){ invFilters[k] = !invFilters[k]; invRender(); }
 function invOpen(id){ invSel = id; invRender(); }
 function invClose(){ invSel = null; invRender(); }
@@ -2206,7 +2217,7 @@ function invDrawer(){
     <div class="dwr-body">
       <div class="dwr-img-block">
         ${r.image_url
-          ? `<img class="dwr-img" src="${esc(r.image_url)}" onclick="openLightbox('${esc(r.image_url)}')" alt=""/>`
+          ? `<img class="dwr-img" src="${esc(r.image_url)}" data-preview-url="${esc(r.image_url)}" alt=""/>`
           : `<div class="dwr-img-ph">📦<span>${t('invNoImg')}</span></div>`}
       </div>
       <div class="dwr-sep"></div>
@@ -2249,11 +2260,11 @@ function viewInventory(){
       const nm = `<div class="ttl">${esc(r.name_ar)}</div>` + (r.name_en ? `<div class="nt">${esc(r.name_en)}</div>` : '');
       const st = r.item_active ? `<span class="st-dot st-on"></span>${t('invActive')}` : `<span class="st-dot st-off"></span>${t('invInactive')}`;
       const thumb = r.image_url
-        ? `<img class="inv-thumb" src="${esc(r.image_url)}" onclick="event.stopPropagation();openLightbox('${esc(r.image_url)}')" alt=""/>`
+        ? `<img class="inv-thumb" src="${esc(r.image_url)}" data-preview-url="${esc(r.image_url)}" alt=""/>`
         : `<span class="inv-thumb inv-thumb-ph">📦</span>`;
       return `<tr class="inv-row ${invSel===r.item_warehouse_id?'sel':''}" onclick="invOpen('${r.item_warehouse_id}')">
         <td class="c-thumb">${thumb}</td>
-        <td class="c-id wh-xlink" onclick="event.stopPropagation();whOpenItem('${esc(r.item_id)}')" title="${t('imdEdit')}">${esc(r.item_code)}</td><td class="c-title wh-xlink" onclick="event.stopPropagation();whOpenItem('${esc(r.item_id)}')">${nm}</td>
+        <td class="c-id wh-xlink" onclick="event.stopPropagation();whOpenItem('${AdvaconExperience.jsSingle(r.item_id)}')" title="${t('imdEdit')}">${esc(r.item_code)}</td><td class="c-title wh-xlink" onclick="event.stopPropagation();whOpenItem('${AdvaconExperience.jsSingle(r.item_id)}')">${nm}</td>
         <td>${esc((LANG==='ar')?r.category_name_ar:(r.category_name_en||r.category_name_ar))}</td>
         <td>${esc((LANG==='ar')?r.item_type_name_ar:(r.item_type_name_en||r.item_type_name_ar))}</td>
         <td>${esc((LANG==='ar')?r.unit_name_ar:(r.unit_name_en||r.unit_name_ar))}</td>
@@ -2270,13 +2281,13 @@ function viewInventory(){
     <div class="inv-filters">
       <select onchange="invSet('warehouse',this.value)">${whOpts}</select>
       <select onchange="invSet('category',this.value)">${catOpts}</select>
-      <div class="toggle ${invFilters.low?'on':''}" onclick="invToggle('low')">⚠ ${t('invLow')}</div>
-      <div class="toggle ${invFilters.out?'on':''}" onclick="invToggle('out')">⛔ ${t('invOutF')}</div>
-      <div class="toggle ${invFilters.noshelf?'on':''}" onclick="invToggle('noshelf')">📍 ${t('invNoShelfF')}</div>
+      <button type="button" class="toggle ${invFilters.low?'on':''}" onclick="invToggle('low')">⚠ ${t('invLow')}</button>
+      <button type="button" class="toggle ${invFilters.out?'on':''}" onclick="invToggle('out')">⛔ ${t('invOutF')}</button>
+      <button type="button" class="toggle ${invFilters.noshelf?'on':''}" onclick="invToggle('noshelf')">📍 ${t('invNoShelfF')}</button>
     </div>
   </div>
   <div class="filterbar" style="margin-top:-4px"><div class="spacer"></div><span class="count-chip">${rows.length} / ${invData.length} ${t('invItems')}</span></div>
-  ${body}
+  <div class="au-inventory-results">${body}</div>
   ${invDrawer()}`;
 }
 
@@ -2290,9 +2301,9 @@ async function loadCatalog(force){
   try{
     const res = await warehouseRpc('item_catalog_list', {});
     catData = Array.isArray(res) ? res : [];
-    catLoaded = true;
+    catLoaded = true; catError=null; catUpdated=Date.now();
   }catch(e){
-    catData = []; catLoaded = true;
+    catError=e; catLoaded = true;
     toast(e.message || t('errorOccurred'), 'error');
   }finally{
     catLoading = false;
@@ -2301,7 +2312,7 @@ async function loadCatalog(force){
 }
 function catRender(){
   const el = document.getElementById('content');
-  if(el && currentTab() === 'catalog') el.innerHTML = viewItemCatalog();
+  if(el && currentTab() === 'catalog'){el.innerHTML = viewItemCatalog();AdvaconExperience.dataStatus(el,catUpdated,catError,()=>loadCatalog(true));AdvaconUI.enhance(el);}
 }
 function catSearch(v){
  catQuery=v;
@@ -2337,12 +2348,15 @@ function catRefName(list,id){
   return x ? (LANG==='ar'?(x.name_ar||x.name_en):(x.name_en||x.name_ar)) : '';
 }
 function catOpen(id){
+  history.replaceState(history.state,'',location.pathname+location.search+'#catalog?item='+encodeURIComponent(id));
   catDetailId=id; catDetailEdit=false; catDetailErr=''; catDetailDraft={};
   catDetailInventory=null; catDetailMovements=null;
   catEnsureInventory(); catEnsureMovements(); catRender();
 }
-function catClose(){
-  if(catDetailBusy||catDetailImgBusy) return;
+async function catClose(discardConfirmed=false){
+  if(catDetailBusy||catDetailImgBusy) return false;
+  if(!discardConfirmed&&catDraftDirty()&&!await AdvaconUI.confirm({title:AdvaconUI.text('تغييرات غير محفوظة','Unsaved changes'),message:AdvaconUI.text('ترك تعديل الصنف؟','Discard item edits?'),danger:true}))return;
+  history.replaceState(history.state,'',location.pathname+location.search+'#catalog');
   catDetailId=null; catDetailEdit=false; catDetailErr=''; catDetailDraft={}; catRender();
 }
 async function catEnsureInventory(force){
@@ -2358,18 +2372,20 @@ async function catEnsureInventory(force){
 }
 
 async function catEnsureMovements(force){
-  if(catDetailMovLoading||!catDetailId) return;
+  if(!catDetailId) return;
+  const selectedId=catDetailId;
   if(catDetailMovements!==null && !force) return;
   catDetailMovLoading=true; catRender();
   try{
     const r=await warehouseRpc('movements_list',{
-      p_warehouse_id:null,p_movement_type:null,p_item_id:catDetailId,
+      p_warehouse_id:null,p_movement_type:null,p_item_id:selectedId,
       p_date_from:null,p_date_to:null,p_limit:8,p_offset:0
     });
+    if(selectedId!==catDetailId)return;
     catDetailMovements=(r&&Array.isArray(r.movements))?r.movements:[];
   }catch(e){
-    catDetailMovements=[];
-  }finally{catDetailMovLoading=false;catRender();}
+    if(selectedId===catDetailId){catDetailMovements=[];toast(e.message,'error');}
+  }finally{if(selectedId===catDetailId){catDetailMovLoading=false;catRender();}}
 }
 async function catEnsureRef(){
   if(catDetailRef!==null||catDetailRefLoading) return;
@@ -2390,7 +2406,8 @@ function catStartEdit(){
   };
   catDetailErr=''; catDetailEdit=true; catEnsureRef(); catRender();
 }
-function catCancelEdit(){if(catDetailBusy)return;catDetailEdit=false;catDetailErr='';catDetailDraft={};catRender();}
+function catDraftDirty(){const r=catSelected();return catDetailEdit&&r&&Object.entries(catDetailDraft).some(([key,value])=>String(value??'')!==String((key==='base_unit_id'?(r.base_unit_id||r.unit_id):r[key])??''));}
+async function catCancelEdit(){if(catDetailBusy)return;if(catDraftDirty()&&!await AdvaconUI.confirm({title:AdvaconUI.text('تغييرات غير محفوظة','Unsaved changes'),message:AdvaconUI.text('ترك التعديلات؟','Discard changes?'),danger:true}))return;catDetailEdit=false;catDetailErr='';catDetailDraft={};catRender();}
 function catEditSet(k,v){catDetailDraft[k]=v;catDetailErr='';}
 function catFriendlyBackendMissing(e){
   const m=String((e&&e.message)||e||'').toLowerCase();
@@ -2501,7 +2518,7 @@ async function catSubmitNew(){
 }
 function catImgTag(raw,cls,alt,click){
   if(!raw)return `<div class="${cls} imd-photo-ph">📦<span>${t('invNoImg')}</span></div>`;
-  if(/^https?:\/\//i.test(raw))return `<img class="${cls}" src="${esc(raw)}" ${click?`onclick="event.stopPropagation();openLightbox('${esc(raw)}')"`:''} alt="${esc(alt||'')}"/>`;
+  if(/^https?:\/\//i.test(raw))return `<img class="${cls}" src="${esc(raw)}" ${click?`onclick="event.stopPropagation();openLightbox('${AdvaconExperience.jsSingle(raw)}')"`:''} alt="${esc(alt||'')}"/>`;
   return `<img class="${cls}" data-whimg="${esc(raw)}" src="" alt="${esc(alt||'')}"/>`;
 }
 function catDetailDrawer(){
@@ -2531,7 +2548,7 @@ function catDetailDrawer(){
   const whRows=inv.length?inv.map(x=>{
     const wn=LANG==='ar'?(x.warehouse_name_ar||x.warehouse_code):(x.warehouse_name_en||x.warehouse_name_ar||x.warehouse_code);
     const st=Number(x.available)<=0?t('invOut'):(x.is_low_stock?t('invLow'):t('imdHealthy'));
-    return `<tr class="wh-rowlink" onclick="whGoInventory('${esc(r.item_code||'')}','${esc(x.warehouse_id||'')}')"><td>${esc(wn||'')}</td><td>${esc(x.shelf_name||'—')}</td><td>${fmtInt(x.on_hand)}</td><td>${fmtInt(x.reserved)}</td><td>${fmtInt(x.available)}</td><td>${x.min_level==null?'—':fmtInt(x.min_level)}</td><td>${esc(st)}</td></tr>`;
+    return `<tr class="wh-rowlink" onclick="whGoInventory('${AdvaconExperience.jsSingle(r.item_code||'')}','${AdvaconExperience.jsSingle(x.warehouse_id||'')}')"><td>${esc(wn||'')}</td><td>${esc(x.shelf_name||'—')}</td><td>${fmtInt(x.on_hand)}</td><td>${fmtInt(x.reserved)}</td><td>${fmtInt(x.available)}</td><td>${x.min_level==null?'—':fmtInt(x.min_level)}</td><td>${esc(st)}</td></tr>`;
   }).join(''):`<tr><td colspan="7" class="imd-empty">${t('imdNoWarehouses')}</td></tr>`;
   const cat=LANG==='ar'?(r.category_name_ar||r.category_name_en):(r.category_name_en||r.category_name_ar);
   const typ=LANG==='ar'?(r.item_type_name_ar||r.item_type_name_en):(r.item_type_name_en||r.item_type_name_ar);
@@ -2541,7 +2558,7 @@ function catDetailDrawer(){
     <div class="imd-body">
       <div class="imd-hero"><div>
         ${catImgTag(r.image_url,'imd-photo',r.item_code,true)}
-        ${admin?`<div class="imd-photo-actions"><label class="imd-upload ${catDetailImgBusy?'busy':''}">${catDetailImgBusy?t('invImgUploading'):(r.image_url?t('invChangeImg'):t('invAddImg'))}<input type="file" accept="image/*" capture="environment" onchange="catUploadExistingImage('${esc(id)}',this)"/></label></div>`:''}
+        ${admin?`<div class="imd-photo-actions"><label class="imd-upload ${catDetailImgBusy?'busy':''}">${catDetailImgBusy?t('invImgUploading'):(r.image_url?t('invChangeImg'):t('invAddImg'))}<input type="file" accept="image/*" capture="environment" onchange="catUploadExistingImage('${AdvaconExperience.jsSingle(id)}',this)"/></label></div>`:''}
       </div><div>
         <div class="imd-statusline">${status}<span class="imd-stat">${fmtInt(inv.length)} ${t('catWhCount')}</span></div>
         <div class="imd-grid">
@@ -2554,8 +2571,10 @@ function catDetailDrawer(){
       ${catDetailErr&&!catDetailEdit?`<div class="imd-err">${esc(catDetailErr)}</div>`:''}
       ${edit}
       <div class="imd-quick">
-        <button class="imd-btn" onclick="whGoInventory('${esc(r.item_code||'')}','')">📦 ${t('awh_inventory')}</button>
-        <button class="imd-btn" onclick="whGoMovements('${esc(id)}','${esc((r.item_code||'')+' · '+(LANG==='ar'?(r.name_ar||r.name_en):(r.name_en||r.name_ar))).replace(/'/g,"\'")}')">🔁 ${t('awh_movements')}</button>
+        ${whCan('movements.receive')?`<button class="imd-btn pri" data-context-action="receipt" data-context-item="${esc(id)}">${t('mvT_RECEIPT')}</button>`:''}
+        ${whCan('movements.issue')?`<button class="imd-btn" data-context-action="issue" data-context-item="${esc(id)}">${t('mvT_ISSUE')}</button>`:''}
+        <button class="imd-btn" onclick="whGoInventory('${AdvaconExperience.jsSingle(r.item_code||'')}','')">📦 ${t('awh_inventory')}</button>
+        <button class="imd-btn" onclick="whGoMovements('${AdvaconExperience.jsSingle(id)}','${AdvaconExperience.jsSingle((r.item_code||'')+' · '+(LANG==='ar'?(r.name_ar||r.name_en):(r.name_en||r.name_ar))).replace(/'/g,"\'")}')">🔁 ${t('awh_movements')}</button>
       </div>
       <div class="imd-sec"><div class="imd-sec-h">${LANG==='ar'?'آخر الحركات':'Recent Movements'}</div><div class="imd-sec-b imd-scroll">
         ${catDetailMovLoading?`<div class="imd-empty">${t('loading')}</div>`:(catDetailMovements&&catDetailMovements.length?`<table class="imd-wh-table"><thead><tr><th>${t('dashCDate')}</th><th>${t('dashCType')}</th><th>${t('dashCWh')}</th><th>${t('dashCQty')}</th></tr></thead><tbody>${catDetailMovements.map(m=>{const d=new Date(m.created_at),wn=LANG==='ar'?(m.warehouse_name_ar||m.warehouse_code):(m.warehouse_name_en||m.warehouse_name_ar||m.warehouse_code),q=Number(m.qty)||0;return `<tr><td>${d.toLocaleDateString(LANG==='ar'?'ar-SA':'en-GB')}</td><td>${t('mvT_'+m.movement_type)}</td><td>${esc(wn||'')}</td><td class="num">${q>0?'+':''}${fmtInt(q)}</td></tr>`}).join('')}</tbody></table>`:`<div class="imd-empty">${LANG==='ar'?'لا توجد حركات مسجلة لهذا الصنف.':'No movements recorded for this item.'}</div>`)}
@@ -2609,8 +2628,8 @@ function viewItemCatalog(){
     const typ=LANG==='ar'?(r.item_type_name_ar||''):(r.item_type_name_en||r.item_type_name_ar||'');
     const unit=LANG==='ar'?(r.unit_name_ar||''):(r.unit_name_en||r.unit_name_ar||'');
     const status=r.is_active?`<span class="cat-badge on">${t('catActive')}</span>`:`<span class="cat-badge off">${t('catInactive')}</span>`;
-    const thumb=r.image_url?( /^https?:\/\//i.test(r.image_url)?`<img class="inv-thumb" src="${esc(r.image_url)}" onclick="event.stopPropagation();openLightbox('${esc(r.image_url)}')" alt=""/>`:`<img class="inv-thumb" data-whimg="${esc(r.image_url)}" src="" alt=""/>`):`<span class="inv-thumb inv-thumb-ph">📦</span>`;
-    return `<tr class="cat-click" onclick="catOpen('${esc(id)}')"><td class="c-thumb">${thumb}</td><td class="cat-code">${esc(r.item_code||'')}</td><td>${esc(nm||'')}</td><td>${esc(cat)}</td><td>${esc(typ)}</td><td>${esc(unit)}</td><td class="cat-num">${n(r.warehouses_count)}</td><td>${status}</td><td class="cat-openmark">›</td></tr>`;
+    const thumb=r.image_url?( /^https?:\/\//i.test(r.image_url)?`<img class="inv-thumb" src="${esc(r.image_url)}" data-preview-url="${esc(r.image_url)}" alt=""/>`:`<img class="inv-thumb" data-whimg="${esc(r.image_url)}" src="" alt=""/>`):`<span class="inv-thumb inv-thumb-ph">📦</span>`;
+    return `<tr class="cat-click" onclick="catOpen('${AdvaconExperience.jsSingle(id)}')"><td class="c-thumb">${thumb}</td><td class="cat-code">${esc(r.item_code||'')}</td><td>${esc(nm||'')}</td><td>${esc(cat)}</td><td>${esc(typ)}</td><td>${esc(unit)}</td><td class="cat-num">${n(r.warehouses_count)}</td><td>${status}</td><td class="cat-openmark">›</td></tr>`;
   }).join(''):`<tr><td colspan="9" class="cat-empty">${t('catNoRows')}</td></tr>`;
   const statusTabs=`<div class="cat-filters"><button class="cat-fbtn ${catStatusFilter==='all'?'on':''}" onclick="catSetStatus('all')">${t('catAll')}</button><button class="cat-fbtn ${catStatusFilter==='active'?'on':''}" onclick="catSetStatus('active')">${t('catActive')}</button><button class="cat-fbtn ${catStatusFilter==='inactive'?'on':''}" onclick="catSetStatus('inactive')">${t('catInactive')}</button></div>`;
   setTimeout(catHydratePrivateImages,0);
@@ -2657,13 +2676,15 @@ let mvRef=null,mvRefLoading=false;
 let whmRcvOpen=false,whmRcvBusy=false,whmRcvErr='',whmRcv={item_id:'',qty:'',shelf_id:'',min_level:'',batch_no:'',expiry_date:'',note:''},whmRcvPickOpen=false,whmRcvPickQuery='';
 
 function mvRender(){ const el=document.getElementById('content'); if(el&&currentTab()==='movements') el.innerHTML=viewMovements()+(whmRcvOpen?whmReceiveModal():''); }
+let movementVersion=0,movementError=null,movementUpdated=0;
 async function loadMovements(force){
-  if(mvLoaded&&!force){mvRender();return;} if(mvLoading)return; mvLoading=true;
+  if(mvLoaded&&!force){mvRender();return;} const version=++movementVersion; mvLoading=true;
   try{
     const res=await warehouseRpc('movements_list',{p_warehouse_id:mvFilters.warehouse||null,p_movement_type:mvFilters.type||null,p_item_id:mvFilters.item_id||null,p_date_from:mvFilters.date_from||null,p_date_to:mvFilters.date_to||null,p_limit:MV_PAGE_SIZE,p_offset:mvPage*MV_PAGE_SIZE});
+    if(version!==movementVersion)return; movementError=null;movementUpdated=Date.now();
     mvData=(res&&Array.isArray(res.movements))?res.movements:[]; mvTotal=(res&&Number.isFinite(Number(res.total_count)))?Number(res.total_count):0; mvLoaded=true;
-  }catch(e){mvData=[];mvTotal=0;mvLoaded=true;toast(e.message||t('errorOccurred'),'error');}
-  finally{mvLoading=false;} mvRender();
+  }catch(e){if(version!==movementVersion)return;movementError=e;mvLoaded=true;toast(e.message||t('errorOccurred'),'error');}
+  finally{if(version===movementVersion)mvLoading=false;} if(version===movementVersion){mvRender();const root=document.getElementById('content');if(currentTab()==='movements')AdvaconExperience.dataStatus(root,movementUpdated,movementError,()=>loadMovements(true));}
 }
 function mvApplyReload(){mvPage=0;mvLoaded=false;loadMovements(true)}
 function mvSetType(v){mvFilters.type=v;mvApplyReload()} function mvSetWh(v){mvFilters.warehouse=v;mvApplyReload()} function mvSetDateFrom(v){mvFilters.date_from=v;mvApplyReload()} function mvSetDateTo(v){mvFilters.date_to=v;mvApplyReload()}
@@ -2675,7 +2696,7 @@ function mvItemSearch(v){mvItemQuery=v;mvRender()} function mvPickItem(id,label)
 function mvOpenChooser(){if(!whAnyMovement())return;mvModal='chooser';if(mvWhList===null)mvEnsureWh().then(mvRender);mvRender()} function mvCloseModal(){if(mvIsSubmitting||mvDpSubmitting||mvAjSubmitting||mvRtSubmitting||mvTfSubmitting)return;mvModal=null;mvRender()}
 function mvInvalidate(){invLoaded=false;dashLoaded=false;whmLoaded=false;catLoaded=false;mvItemList=null;mvPage=0;mvLoaded=false;}
 function mvRowToState(r){const nm=LANG==='ar'?(r.name_ar||r.name_en):(r.name_en||r.name_ar);return {iw:r.item_warehouse_id,iwLabel:(r.item_code||'')+' · '+(nm||''),wh:LANG==='ar'?(r.warehouse_name_ar||r.warehouse_code):(r.warehouse_name_en||r.warehouse_code),onHand:r.on_hand,available:r.available,unit:LANG==='ar'?(r.unit_name_ar||''):(r.unit_name_en||r.unit_name_ar||'')}}
-function mvModalPicker(open,query,searchFn,pickFn){if(!open)return'';const q=(query||'').trim().toLowerCase();let list=mvItemList||[];if(q)list=list.filter(x=>((x.item_code||'').toLowerCase().includes(q)||(x.name_ar||'').toLowerCase().includes(q)||(x.name_en||'').toLowerCase().includes(q)));list=list.slice(0,30);const inner=list.length?list.map(x=>{const nm=LANG==='ar'?(x.name_ar||x.name_en):(x.name_en||x.name_ar),wh=LANG==='ar'?(x.warehouse_name_ar||x.warehouse_code):(x.warehouse_name_en||x.warehouse_code);return `<div class="mv-pick-row" onclick='${pickFn}(${JSON.stringify(x).replace(/'/g,"&#39;")})'><span class="mv-pick-code">${esc(x.item_code||'')}</span>${esc(nm||'')}<span class="mv-pick-wh">${esc(wh||'')}</span></div>`}).join(''):`<div class="mv-pick-load">${t('mvNoItems')}</div>`;return `<div class="mv-pick-dd" style="position:static;width:100%;box-shadow:none;margin-top:6px"><input class="mv-pick-search" placeholder="${t('mvItemPh')}" value="${esc(query)}" oninput="${searchFn}(this.value)" autofocus/><div class="mv-pick-list">${inner}</div></div>`}
+function mvModalPicker(open,query,searchFn,pickFn){if(!open)return'';const q=(query||'').trim().toLowerCase();let list=mvItemList||[];if(q)list=list.filter(x=>((x.item_code||'').toLowerCase().includes(q)||(x.name_ar||'').toLowerCase().includes(q)||(x.name_en||'').toLowerCase().includes(q)));list=list.slice(0,30);const inner=list.length?list.map(x=>{const nm=LANG==='ar'?(x.name_ar||x.name_en):(x.name_en||x.name_ar),wh=LANG==='ar'?(x.warehouse_name_ar||x.warehouse_code):(x.warehouse_name_en||x.warehouse_code);return `<div class="mv-pick-row" onclick='${pickFn}(${esc(JSON.stringify(x))})'><span class="mv-pick-code">${esc(x.item_code||'')}</span>${esc(nm||'')}<span class="mv-pick-wh">${esc(wh||'')}</span></div>`}).join(''):`<div class="mv-pick-load">${t('mvNoItems')}</div>`;return `<div class="mv-pick-dd" style="position:static;width:100%;box-shadow:none;margin-top:6px"><input class="mv-pick-search" placeholder="${t('mvItemPh')}" value="${esc(query)}" oninput="${searchFn}(this.value)" autofocus/><div class="mv-pick-list">${inner}</div></div>`}
 function mvModalInfo(r){return r.iw?`<div class="rc-info"><div><span>${t('mvRcWh')}</span><b>${esc(r.wh||'')}</b></div><div><span>${t('mvRcOnHand')}</span><b>${fmtInt(r.onHand)}</b></div><div><span>${t('mvRcAvail')}</span><b>${fmtInt(r.available)}</b></div><div><span>${t('mvRcUnit')}</span><b>${esc(r.unit||'—')}</b></div></div>`:''}
 
 function mvOpenIssue(){if(!whCan(WH_MOVE_ACTION.ISSUE))return;mvModal='issue';mvIs={iw:null,iwLabel:'',wh:'',onHand:'',available:'',unit:'',qty:'',batch_no:'',note:''};mvIsErr='';mvIsPickOpen=false;mvIsSubmitting=false;if(mvItemList===null)mvEnsureItems().then(mvRender);mvRender()}
@@ -2704,26 +2725,26 @@ function viewMovements(){
   if(!mvLoaded){loadMovements();return `<div class="empty">${t('mvLoading')}</div>`} const rows=mvData||[];
   let whOpts=`<option value="">${t('mvAllWh')}</option>`;let whList=(dashData&&Array.isArray(dashData.warehouses))?dashData.warehouses:[];if(!whList.length){const seen={};rows.forEach(r=>{if(r.warehouse_id&&!seen[r.warehouse_id]){seen[r.warehouse_id]=1;whList.push({id:r.warehouse_id,code:r.warehouse_code,name_ar:r.warehouse_name_ar,name_en:r.warehouse_name_en})}})}whList.forEach(w=>{const nm=LANG==='ar'?(w.name_ar||w.code):(w.name_en||w.name_ar||w.code);whOpts+=`<option value="${w.id}" ${mvFilters.warehouse===w.id?'selected':''}>${esc(nm)}</option>`});
   const TYPES=['OPENING_BALANCE','RECEIPT','ISSUE','RETURN','TRANSFER_IN','TRANSFER_OUT','DISPOSAL','ADJUSTMENT'];let typeOpts=`<option value="">${t('mvAllTypes')}</option>`;TYPES.forEach(tp=>typeOpts+=`<option value="${tp}" ${mvFilters.type===tp?'selected':''}>${t('mvT_'+tp)}</option>`);
-  let itemPicker;if(mvFilters.item_id)itemPicker=`<div class="mv-chip">${t('mvItem')}: ${esc(mvFilters.item_label)} <span class="mv-chip-x" onclick="mvClearItem()">×</span></div>`;else{let dd='';if(mvItemOpen){const q=(mvItemQuery||'').trim().toLowerCase();let list=mvItemList||[];if(q)list=list.filter(r=>((r.item_code||'').toLowerCase().includes(q)||(r.name_ar||'').toLowerCase().includes(q)||(r.name_en||'').toLowerCase().includes(q)));const uniq=new Map();list.forEach(r=>{if(r.item_id&&!uniq.has(r.item_id))uniq.set(r.item_id,r)});list=[...uniq.values()].slice(0,30);dd=`<div class="mv-pick-dd"><input class="mv-pick-search" placeholder="${t('mvItemPh')}" value="${esc(mvItemQuery)}" oninput="mvItemSearch(this.value)" autofocus/><div class="mv-pick-list">${list.length?list.map(r=>{const nm=LANG==='ar'?(r.name_ar||r.name_en):(r.name_en||r.name_ar);const lab=(r.item_code||'')+' · '+(nm||'');return `<div class="mv-pick-row" onclick="mvPickItem('${r.item_id}','${esc(lab).replace(/'/g,"\\'")}')"><span class="mv-pick-code">${esc(r.item_code||'')}</span>${esc(nm||'')}</div>`}).join(''):`<div class="mv-pick-load">${t('mvNoItems')}</div>`}</div></div>`}itemPicker=`<div class="mv-pick-wrap"><button class="mv-pick-btn" onclick="mvToggleItemPicker()">${t('mvItemPick')} ▾</button>${dd}</div>`}
-  const cls=x=>({RECEIPT:'mv-in',OPENING_BALANCE:'mv-in',RETURN:'mv-in',TRANSFER_IN:'mv-in',ISSUE:'mv-out',TRANSFER_OUT:'mv-out',DISPOSAL:'mv-out',ADJUSTMENT:'mv-adj'})[x]||'';const showActor=rows.some(m=>m.actor_email);const body=rows.length?rows.map(m=>{const nm=LANG==='ar'?(m.item_name_ar||m.item_code):(m.item_name_en||m.item_name_ar||m.item_code),wh=LANG==='ar'?(m.warehouse_name_ar||m.warehouse_code):(m.warehouse_name_en||m.warehouse_name_ar||m.warehouse_code),dt=new Date(m.created_at),ds=dt.toLocaleDateString(LANG==='ar'?'ar-SA':'en-GB',{day:'2-digit',month:'short',year:'2-digit'})+' '+dt.toLocaleTimeString(LANG==='ar'?'ar-SA':'en-GB',{hour:'2-digit',minute:'2-digit'}),q=Number(m.qty)||0;return `<tr><td class="mv-dt">${ds}</td><td><span class="mv-badge ${cls(m.movement_type)}">${t('mvT_'+m.movement_type)}</span></td><td class="mv-item wh-xlink" onclick="whOpenItem('${esc(m.item_id||'')}')"><span class="mv-code">${esc(m.item_code||'')}</span>${esc(nm||'')}</td><td class="mv-q ${q>0?'q-pos':q<0?'q-neg':''}">${q>0?'+':''}${fmtInt(q)}</td><td>${esc(wh||'')}</td>${showActor?`<td class="mv-actor">${esc(m.actor_email||'')}</td>`:''}</tr>`}).join(''):`<tr><td colspan="${showActor?6:5}" class="empty">${t('mvNone')}</td></tr>`;
+  let itemPicker;if(mvFilters.item_id)itemPicker=`<div class="mv-chip">${t('mvItem')}: ${esc(mvFilters.item_label)} <span class="mv-chip-x" onclick="mvClearItem()">×</span></div>`;else{let dd='';if(mvItemOpen){const q=(mvItemQuery||'').trim().toLowerCase();let list=mvItemList||[];if(q)list=list.filter(r=>((r.item_code||'').toLowerCase().includes(q)||(r.name_ar||'').toLowerCase().includes(q)||(r.name_en||'').toLowerCase().includes(q)));const uniq=new Map();list.forEach(r=>{if(r.item_id&&!uniq.has(r.item_id))uniq.set(r.item_id,r)});list=[...uniq.values()].slice(0,30);dd=`<div class="mv-pick-dd"><input class="mv-pick-search" placeholder="${t('mvItemPh')}" value="${esc(mvItemQuery)}" oninput="mvItemSearch(this.value)" autofocus/><div class="mv-pick-list">${list.length?list.map(r=>{const nm=LANG==='ar'?(r.name_ar||r.name_en):(r.name_en||r.name_ar);const lab=(r.item_code||'')+' · '+(nm||'');return `<div class="mv-pick-row" onclick="mvPickItem('${r.item_id}','${AdvaconExperience.jsSingle(lab).replace(/'/g,"\\'")}')"><span class="mv-pick-code">${esc(r.item_code||'')}</span>${esc(nm||'')}</div>`}).join(''):`<div class="mv-pick-load">${t('mvNoItems')}</div>`}</div></div>`}itemPicker=`<div class="mv-pick-wrap"><button class="mv-pick-btn" onclick="mvToggleItemPicker()">${t('mvItemPick')} ▾</button>${dd}</div>`}
+  const cls=x=>({RECEIPT:'mv-in',OPENING_BALANCE:'mv-in',RETURN:'mv-in',TRANSFER_IN:'mv-in',ISSUE:'mv-out',TRANSFER_OUT:'mv-out',DISPOSAL:'mv-out',ADJUSTMENT:'mv-adj'})[x]||'';const showActor=rows.some(m=>m.actor_email);const body=rows.length?rows.map(m=>{const nm=LANG==='ar'?(m.item_name_ar||m.item_code):(m.item_name_en||m.item_name_ar||m.item_code),wh=LANG==='ar'?(m.warehouse_name_ar||m.warehouse_code):(m.warehouse_name_en||m.warehouse_name_ar||m.warehouse_code),dt=new Date(m.created_at),ds=dt.toLocaleDateString(LANG==='ar'?'ar-SA':'en-GB',{day:'2-digit',month:'short',year:'2-digit'})+' '+dt.toLocaleTimeString(LANG==='ar'?'ar-SA':'en-GB',{hour:'2-digit',minute:'2-digit'}),q=Number(m.qty)||0;return `<tr><td class="mv-dt">${ds}</td><td><span class="mv-badge ${cls(m.movement_type)}">${t('mvT_'+m.movement_type)}</span></td><td class="mv-item wh-xlink" onclick="whOpenItem('${AdvaconExperience.jsSingle(m.item_id||'')}')"><span class="mv-code">${esc(m.item_code||'')}</span>${esc(nm||'')}</td><td class="mv-q ${q>0?'q-pos':q<0?'q-neg':''}">${q>0?'+':''}${fmtInt(q)}</td><td>${esc(wh||'')}</td>${showActor?`<td class="mv-actor">${esc(m.actor_email||'')}</td>`:''}</tr>`}).join(''):`<tr><td colspan="${showActor?6:5}" class="empty">${t('mvNone')}</td></tr>`;
   const from=mvTotal?mvPage*MV_PAGE_SIZE+1:0,to=Math.min((mvPage+1)*MV_PAGE_SIZE,mvTotal),pager=`<div class="mv-pager"><span class="mv-count">${from}–${to} ${t('mvOf')} ${fmtInt(mvTotal)}</span><div class="mv-pgbtns"><button ${mvPage>0?'':'disabled'} onclick="mvPrev()">‹ ${t('mvPrev')}</button><button ${(mvPage+1)*MV_PAGE_SIZE<mvTotal?'':'disabled'} onclick="mvNext()">${t('mvNext')} ›</button></div></div>`;
   return `<div class="dash-head"><div><div class="eyebrow">${t('mvEye')}</div><h1>${t('mvH1')}</h1></div>${whAnyMovement()?`<button class="mv-new" onclick="mvOpenChooser()">+ ${t('mvNew')}</button>`:''}</div><div class="mv-filters"><select onchange="mvSetType(this.value)">${typeOpts}</select><select onchange="mvSetWh(this.value)">${whOpts}</select><label class="mv-date">${t('mvFrom')} <input type="date" value="${esc(mvFilters.date_from)}" onchange="mvSetDateFrom(this.value)"/></label><label class="mv-date">${t('mvTo')} <input type="date" value="${esc(mvFilters.date_to)}" onchange="mvSetDateTo(this.value)"/></label>${itemPicker}</div><div class="panel"><div class="tbl-wrap"><table class="tbl mv-tbl"><thead><tr><th>${t('dashCDate')}</th><th>${t('dashCType')}</th><th>${t('dashCItem')}</th><th>${t('dashCQty')}</th><th>${t('dashCWh')}</th>${showActor?`<th>${t('dashCActor')}</th>`:''}</tr></thead><tbody>${body}</tbody></table></div>${pager}</div>${mvModal==='chooser'?mvChooserModal():''}${mvModal==='issue'?mvIssueModal():''}${mvModal==='disposal'?mvDisposalModal():''}${mvModal==='adjustment'?mvAdjustmentModal():''}${mvModal==='return'?mvReturnModal():''}${mvModal==='transfer'?mvTransferModal():''}`;
 }
-async function mvOpenReceipt(){
+async function mvOpenReceipt(warehouseId,itemId){
  if(!whCan('movements.receive'))return;
  const body=document.createElement('div'),field=document.createElement('div');field.className='field';
  const label=document.createElement('label'),select=document.createElement('select');label.textContent=AdvaconUI.text('المستودع المستلم','Receiving warehouse');
  const warehouses=mvOpenWarehouses();if(!warehouses.length){toast(AdvaconUI.text('لا يوجد مستودع نشط ومفتوح للاستلام.','No active open warehouse is available.'),'error');return;}
- warehouses.forEach(w=>{const option=document.createElement('option');option.value=w.warehouse_id||w.id;option.textContent=(LANG==='ar'?w.name_ar:w.name_en)||w.name_ar||w.code;select.append(option);});field.append(label,select);body.append(field);
+ warehouses.forEach(w=>{const option=document.createElement('option');option.value=w.warehouse_id||w.id;option.textContent=(LANG==='ar'?w.name_ar:w.name_en)||w.name_ar||w.code;select.append(option);});if(warehouseId&&warehouses.some(w=>String(w.warehouse_id||w.id)===String(warehouseId)))select.value=warehouseId;field.append(label,select);body.append(field);
  const next=document.createElement('button');next.className='btn btn-primary';next.textContent=AdvaconUI.text('متابعة للاستلام','Continue to receipt');
  mvCloseModal();const m=openModal({title:t('mvT_RECEIPT'),body,footer:next});
- next.onclick=()=>AdvaconUI.busy(next,async()=>{try{const id=select.value;if(!id)return;m.close();whDetailId=id;whmItems=null;whmShelves=null;await whmTryReceive();}catch(e){toast(e.message,'error');}});
+ next.onclick=()=>AdvaconUI.busy(next,async()=>{try{const id=select.value;if(!id)return;m.close();whDetailId=id;whmItems=null;whmShelves=null;await whmTryReceive();if(itemId){whmRcv.item_id=itemId;whmRender();}}catch(e){toast(e.message,'error');}});
 }
 function mvChooserModal(){const markup = `<div class="mv-scrim" onclick="mvCloseModal()"></div><div class="mv-modal"><div class="mv-modal-head"><h2>${t('mvNew')}</h2><button class="mv-modal-x" onclick="mvCloseModal()">×</button></div><div class="mv-modal-body"><div class="mv-choose"><button class="mv-choose-btn" onclick="mvOpenReceipt()"><span class="mc-ic">📥</span><span class="mc-lb">${t('mvT_RECEIPT')}</span><span class="mc-sub">${t('mvChooseReceipt')}</span></button><button class="mv-choose-btn" onclick="mvOpenIssue()"><span class="mc-ic">📤</span><span class="mc-lb">${t('mvT_ISSUE')}</span><span class="mc-sub">${t('mvChooseIssue')}</span></button>${mvTfCanTransfer()?`<button class="mv-choose-btn" onclick="mvOpenTransfer()"><span class="mc-ic">🔄</span><span class="mc-lb">${t('mvChooseTransfer')}</span><span class="mc-sub">${t('mvChooseTransferSub')}</span></button>`:`<button class="mv-choose-btn is-disabled" disabled><span class="mc-ic">🔄</span><span class="mc-lb">${t('mvChooseTransfer')}</span><span class="mc-sub mc-sub-warn">${t('mvTfNeedTwo')}</span></button>`}<button class="mv-choose-btn" onclick="mvOpenReturn()"><span class="mc-ic">↩️</span><span class="mc-lb">${t('mvT_RETURN')}</span><span class="mc-sub">${t('mvChooseReturn')}</span></button><button class="mv-choose-btn" onclick="mvOpenDisposal()"><span class="mc-ic">🗑️</span><span class="mc-lb">${t('mvT_DISPOSAL')}</span><span class="mc-sub">${t('mvChooseDisposal')}</span></button><button class="mv-choose-btn" onclick="mvOpenAdjustment()"><span class="mc-ic">⚖️</span><span class="mc-lb">${t('mvT_ADJUSTMENT')}</span><span class="mc-sub">${t('mvChooseAdjust')}</span></button></div></div></div>`;const tpl=document.createElement('template');tpl.innerHTML=markup;const actions={mvOpenReceipt:'RECEIPT',mvOpenIssue:'ISSUE',mvOpenTransfer:'TRANSFER',mvOpenReturn:'RETURN',mvOpenDisposal:'DISPOSAL',mvOpenAdjustment:'ADJUSTMENT'};tpl.content.querySelectorAll('button[onclick]').forEach(b=>{const fn=b.getAttribute('onclick').split('(')[0];if(actions[fn]&&!whCan(WH_MOVE_ACTION[actions[fn]]))b.remove();});return tpl.innerHTML;}
 function mvIssueModal(){const r=mvIs,b=mvIsSubmitting,dd=mvModalPicker(mvIsPickOpen,mvIsPickQuery,'mvIsPickSearch','mvIsPickItem'),item=r.iw?`<div class="rc-chip">${esc(r.iwLabel)}<span class="mv-chip-x" onclick="mvIsClearItem()">×</span></div>`:`<button class="mv-pick-btn" style="width:100%;text-align:start" onclick="mvIsTogglePick()">${t('mvRcSelItem')} ▾</button>${dd}`,err=mvIsErr?`<div class="rc-err">${esc(mvIsErr)}</div>`:'';return `<div class="mv-scrim"></div><div class="mv-modal"><div class="mv-modal-head"><h2>${t('mvT_ISSUE')}</h2><button class="mv-modal-x" onclick="mvCloseModal()">×</button></div><div class="mv-modal-body"><label class="rc-lbl">${t('mvRcItem')} *</label>${item}${mvModalInfo(r)}<label class="rc-lbl">${t('mvIsQty')} *</label><input class="rc-in" type="number" min="0" step="any" value="${esc(r.qty)}" oninput="mvIsSet('qty',this.value)"/><label class="rc-lbl">${t('mvIsBatch')}</label><input class="rc-in" value="${esc(r.batch_no)}" oninput="mvIsSet('batch_no',this.value)"/><label class="rc-lbl">${t('mvRcNote')}</label><textarea class="rc-in" rows="2" oninput="mvIsSet('note',this.value)">${esc(r.note)}</textarea>${err}</div><div class="mv-modal-foot"><button class="rc-cancel" onclick="mvCloseModal()">${t('mvRcCancel')}</button><button class="rc-save" onclick="mvSubmitIssue()" ${b?'disabled':''}>${b?t('mvIsSaving'):AdvaconUI.requestLabel(whPermissionMode(WH_MOVE_ACTION.ISSUE),t('mvIsPost'))}</button></div></div>`}
 function mvDisposalModal(){const r=mvDp,b=mvDpSubmitting,dd=mvModalPicker(mvDpPickOpen,mvDpPickQuery,'mvDpPickSearch','mvDpPickItem'),item=r.iw?`<div class="rc-chip">${esc(r.iwLabel)}<span class="mv-chip-x" onclick="mvDpClearItem()">×</span></div>`:`<button class="mv-pick-btn" style="width:100%;text-align:start" onclick="mvDpTogglePick()">${t('mvRcSelItem')} ▾</button>${dd}`,R=['storage_damage','expired','broken','unfit_for_use','other'],ro=`<option value="">${t('mvDpReasonSel')}</option>`+R.map(x=>`<option value="${x}" ${r.reason===x?'selected':''}>${t('mvDpR_'+x)}</option>`).join(''),err=mvDpErr?`<div class="rc-err">${esc(mvDpErr)}</div>`:'';return `<div class="mv-scrim"></div><div class="mv-modal"><div class="mv-modal-head"><h2>${t('mvT_DISPOSAL')}</h2><button class="mv-modal-x" onclick="mvCloseModal()">×</button></div><div class="mv-modal-body"><label class="rc-lbl">${t('mvRcItem')} *</label>${item}${mvModalInfo(r)}<label class="rc-lbl">${t('mvDpQty')} *</label><input class="rc-in" type="number" value="${esc(r.qty)}" oninput="mvDpSet('qty',this.value)"/><label class="rc-lbl">${t('mvDpReason')} *</label><select class="rc-in" onchange="mvDpSetReason(this.value)">${ro}</select><label class="rc-lbl">${t('mvRcNote')} *</label><textarea class="rc-in" rows="2" oninput="mvDpSet('note',this.value)">${esc(r.note)}</textarea>${err}</div><div class="mv-modal-foot"><button class="rc-cancel" onclick="mvCloseModal()">${t('mvRcCancel')}</button><button class="rc-save" onclick="mvSubmitDisposal()" ${b?'disabled':''}>${b?t('mvIsSaving'):AdvaconUI.requestLabel(whPermissionMode(WH_MOVE_ACTION.DISPOSAL),t('mvDpPost'))}</button></div></div>`}
 function mvAdjustmentModal(){const r=mvAj,b=mvAjSubmitting,dd=mvModalPicker(mvAjPickOpen,mvAjPickQuery,'mvAjPickSearch','mvAjPickItem'),item=r.iw?`<div class="rc-chip">${esc(r.iwLabel)}<span class="mv-chip-x" onclick="mvAjClearItem()">×</span></div>`:`<button class="mv-pick-btn" style="width:100%;text-align:start" onclick="mvAjTogglePick()">${t('mvRcSelItem')} ▾</button>${dd}`,R=['periodic_count','data_entry_correction','unexplained_variance','system_reconciliation','other'],ro=`<option value="">${t('mvDpReasonSel')}</option>`+R.map(x=>`<option value="${x}" ${r.reason===x?'selected':''}>${t('mvAjR_'+x)}</option>`).join(''),err=mvAjErr?`<div class="rc-err">${esc(mvAjErr)}</div>`:'';return `<div class="mv-scrim"></div><div class="mv-modal"><div class="mv-modal-head"><h2>${t('mvT_ADJUSTMENT')}</h2><button class="mv-modal-x" onclick="mvCloseModal()">×</button></div><div class="mv-modal-body"><label class="rc-lbl">${t('mvRcItem')} *</label>${item}${mvModalInfo(r)}<label class="rc-lbl">${t('mvAjDir')} *</label><div class="aj-dir"><button class="aj-dir-btn ${r.direction==='increase'?'on inc':''}" onclick="mvAjSetDir('increase')">▲ ${t('mvAjInc')}</button><button class="aj-dir-btn ${r.direction==='decrease'?'on dec':''}" onclick="mvAjSetDir('decrease')">▼ ${t('mvAjDec')}</button></div><label class="rc-lbl">${t('mvAjQty')} *</label><input class="rc-in" type="number" value="${esc(r.qty)}" oninput="mvAjSet('qty',this.value)"/><label class="rc-lbl">${t('mvAjReason')} *</label><select class="rc-in" onchange="mvAjSetReason(this.value)">${ro}</select><label class="rc-lbl">${t('mvRcNote')}${r.reason==='other'?' *':''}</label><textarea class="rc-in" rows="2" oninput="mvAjSet('note',this.value)">${esc(r.note)}</textarea>${err}</div><div class="mv-modal-foot"><button class="rc-cancel" onclick="mvCloseModal()">${t('mvRcCancel')}</button><button class="rc-save" onclick="mvSubmitAdjustment()" ${b?'disabled':''}>${b?t('mvIsSaving'):AdvaconUI.requestLabel(whPermissionMode(WH_MOVE_ACTION.ADJUSTMENT),t('mvAjPost'))}</button></div></div>`}
-function mvReturnModal(){const r=mvRt,b=mvRtSubmitting,dd=mvModalPicker(mvRtPickOpen,mvRtPickQuery,'mvRtPickSearch','mvRtPickItem'),item=r.iw?`<div class="rc-chip">${esc(r.iwLabel)}<span class="mv-chip-x" onclick="mvRtClearItem()">×</span></div>`:`<button class="mv-pick-btn" style="width:100%;text-align:start" onclick="mvRtTogglePick()">${t('mvRcSelItem')} ▾</button>${dd}`;let extra='';if(r.mode==='linked'){let p;if(!r.iw)p=`<div class="rt-hint">${t('mvRtPickItemFirst')}</div>`;else if(mvRtIssuesLoading)p=`<div class="mv-pick-load">${t('mvLoading')}</div>`;else if(!mvRtIssues||!mvRtIssues.length)p=`<div class="rt-none">${t('mvRtNoIssues')}</div>`;else if(r.ref)p=`<div class="rc-chip">${esc(r.refLabel)}<span class="mv-chip-x" onclick="mvRtPickRef(null,'','')">×</span></div>`;else p=`<div class="rt-issues">${mvRtIssues.map(x=>{const d=new Date(x.created_at).toLocaleDateString(LANG==='ar'?'ar-SA':'en-GB'),lab=`${d} · ${t('mvRtIssued')} ${fmtInt(x.qty_issued)} · ${t('mvRtRemain')} ${fmtInt(x.qty_returnable)}`;return `<div class="rt-issue-row" onclick="mvRtPickRef('${x.issue_movement_id}','${esc(lab).replace(/'/g,"\\'")}',${Number(x.qty_returnable)})"><div class="rt-ir-date">${d}</div><div class="rt-ir-nums"><span>${t('mvRtIssued')}: ${fmtInt(x.qty_issued)}</span><span>${t('mvRtReturned')}: ${fmtInt(x.qty_returned)}</span><span class="rt-ir-rem">${t('mvRtRemain')}: ${fmtInt(x.qty_returnable)}</span></div></div>`}).join('')}</div>`;extra=`<label class="rc-lbl">${t('mvRtIssue')} *</label>${p}<label class="rc-lbl">${t('mvRtQty')} *</label><input class="rc-in" type="number" value="${esc(r.qty)}" oninput="mvRtSet('qty',this.value)"/><label class="rc-lbl">${t('mvRcNote')}</label><textarea class="rc-in" rows="2" oninput="mvRtSet('note',this.value)">${esc(r.note)}</textarea>`}else extra=`<label class="rc-lbl">${t('mvRtQty')} *</label><input class="rc-in" type="number" value="${esc(r.qty)}" oninput="mvRtSet('qty',this.value)"/><label class="rc-lbl">${t('mvIsBatch')}</label><input class="rc-in" value="${esc(r.batch_no)}" oninput="mvRtSet('batch_no',this.value)"/><label class="rc-lbl">${t('mvRcNote')} *</label><textarea class="rc-in" rows="2" oninput="mvRtSet('note',this.value)">${esc(r.note)}</textarea><div class="rc-hint2">${t('mvRtUnlinkedHint')}</div>`;return `<div class="mv-scrim"></div><div class="mv-modal"><div class="mv-modal-head"><h2>${t('mvT_RETURN')}</h2><button class="mv-modal-x" onclick="mvCloseModal()">×</button></div><div class="mv-modal-body"><label class="rc-lbl">${t('mvRcItem')} *</label>${item}${mvModalInfo(r)}<div class="rt-mode"><button class="rt-mode-btn ${r.mode==='linked'?'on':''}" onclick="mvRtSetMode('linked')">${t('mvRtLinked')}</button><button class="rt-mode-btn ${r.mode==='unlinked'?'on':''}" onclick="mvRtSetMode('unlinked')">${t('mvRtUnlinked')}</button></div>${extra}${mvRtErr?`<div class="rc-err">${esc(mvRtErr)}</div>`:''}</div><div class="mv-modal-foot"><button class="rc-cancel" onclick="mvCloseModal()">${t('mvRcCancel')}</button><button class="rc-save" onclick="mvSubmitReturn()" ${b?'disabled':''}>${b?t('mvIsSaving'):AdvaconUI.requestLabel(whPermissionMode(WH_MOVE_ACTION.RETURN),t('mvRtPost'))}</button></div></div>`}
+function mvReturnModal(){const r=mvRt,b=mvRtSubmitting,dd=mvModalPicker(mvRtPickOpen,mvRtPickQuery,'mvRtPickSearch','mvRtPickItem'),item=r.iw?`<div class="rc-chip">${esc(r.iwLabel)}<span class="mv-chip-x" onclick="mvRtClearItem()">×</span></div>`:`<button class="mv-pick-btn" style="width:100%;text-align:start" onclick="mvRtTogglePick()">${t('mvRcSelItem')} ▾</button>${dd}`;let extra='';if(r.mode==='linked'){let p;if(!r.iw)p=`<div class="rt-hint">${t('mvRtPickItemFirst')}</div>`;else if(mvRtIssuesLoading)p=`<div class="mv-pick-load">${t('mvLoading')}</div>`;else if(!mvRtIssues||!mvRtIssues.length)p=`<div class="rt-none">${t('mvRtNoIssues')}</div>`;else if(r.ref)p=`<div class="rc-chip">${esc(r.refLabel)}<span class="mv-chip-x" onclick="mvRtPickRef(null,'','')">×</span></div>`;else p=`<div class="rt-issues">${mvRtIssues.map(x=>{const d=new Date(x.created_at).toLocaleDateString(LANG==='ar'?'ar-SA':'en-GB'),lab=`${d} · ${t('mvRtIssued')} ${fmtInt(x.qty_issued)} · ${t('mvRtRemain')} ${fmtInt(x.qty_returnable)}`;return `<div class="rt-issue-row" onclick="mvRtPickRef('${x.issue_movement_id}','${AdvaconExperience.jsSingle(lab).replace(/'/g,"\\'")}',${Number(x.qty_returnable)})"><div class="rt-ir-date">${d}</div><div class="rt-ir-nums"><span>${t('mvRtIssued')}: ${fmtInt(x.qty_issued)}</span><span>${t('mvRtReturned')}: ${fmtInt(x.qty_returned)}</span><span class="rt-ir-rem">${t('mvRtRemain')}: ${fmtInt(x.qty_returnable)}</span></div></div>`}).join('')}</div>`;extra=`<label class="rc-lbl">${t('mvRtIssue')} *</label>${p}<label class="rc-lbl">${t('mvRtQty')} *</label><input class="rc-in" type="number" value="${esc(r.qty)}" oninput="mvRtSet('qty',this.value)"/><label class="rc-lbl">${t('mvRcNote')}</label><textarea class="rc-in" rows="2" oninput="mvRtSet('note',this.value)">${esc(r.note)}</textarea>`}else extra=`<label class="rc-lbl">${t('mvRtQty')} *</label><input class="rc-in" type="number" value="${esc(r.qty)}" oninput="mvRtSet('qty',this.value)"/><label class="rc-lbl">${t('mvIsBatch')}</label><input class="rc-in" value="${esc(r.batch_no)}" oninput="mvRtSet('batch_no',this.value)"/><label class="rc-lbl">${t('mvRcNote')} *</label><textarea class="rc-in" rows="2" oninput="mvRtSet('note',this.value)">${esc(r.note)}</textarea><div class="rc-hint2">${t('mvRtUnlinkedHint')}</div>`;return `<div class="mv-scrim"></div><div class="mv-modal"><div class="mv-modal-head"><h2>${t('mvT_RETURN')}</h2><button class="mv-modal-x" onclick="mvCloseModal()">×</button></div><div class="mv-modal-body"><label class="rc-lbl">${t('mvRcItem')} *</label>${item}${mvModalInfo(r)}<div class="rt-mode"><button class="rt-mode-btn ${r.mode==='linked'?'on':''}" onclick="mvRtSetMode('linked')">${t('mvRtLinked')}</button><button class="rt-mode-btn ${r.mode==='unlinked'?'on':''}" onclick="mvRtSetMode('unlinked')">${t('mvRtUnlinked')}</button></div>${extra}${mvRtErr?`<div class="rc-err">${esc(mvRtErr)}</div>`:''}</div><div class="mv-modal-foot"><button class="rc-cancel" onclick="mvCloseModal()">${t('mvRcCancel')}</button><button class="rc-save" onclick="mvSubmitReturn()" ${b?'disabled':''}>${b?t('mvIsSaving'):AdvaconUI.requestLabel(whPermissionMode(WH_MOVE_ACTION.RETURN),t('mvRtPost'))}</button></div></div>`}
 function mvTransferModal(){if(mvWhList===null||mvItemList===null)return `<div class="mv-scrim"></div><div class="mv-modal"><div class="mv-modal-body"><div class="empty">${t('mvLoading')}</div></div></div>`;const open=mvOpenWarehouses(),src=`<option value="">${t('mvTfSrc')}</option>`+open.map(w=>`<option value="${w.warehouse_id||w.id}" ${mvTf.src_wh===(w.warehouse_id||w.id)?'selected':''}>${esc(LANG==='ar'?(w.name_ar||w.code):(w.name_en||w.name_ar||w.code))}</option>`).join(''),dest=`<option value="">${t('mvTfDest')}</option>`+open.filter(w=>(w.warehouse_id||w.id)!==mvTf.src_wh).map(w=>`<option value="${w.warehouse_id||w.id}" ${mvTf.dest_wh===(w.warehouse_id||w.id)?'selected':''}>${esc(LANG==='ar'?(w.name_ar||w.code):(w.name_en||w.name_ar||w.code))}</option>`).join('');let item='';if(mvTf.src_wh){const list=mvTfSourceItems(),chosen=mvTfChosenItem();if(chosen)item=`<div class="rc-chip">${esc(chosen.item_code)} · ${esc(LANG==='ar'?(chosen.name_ar||chosen.name_en):(chosen.name_en||chosen.name_ar))}<span class="mv-chip-x" onclick="mvTfSet('item_iw','')">×</span></div>`;else item=`<button class="mv-pick-btn" style="width:100%;text-align:start" onclick="mvTfToggleItem()">${t('mvRcSelItem')} ▾</button>${mvTfItemOpen?`<div class="mv-pick-dd" style="position:static;width:100%;box-shadow:none;margin-top:6px"><div class="mv-pick-list">${list.map(x=>`<div class="mv-pick-row" onclick="mvTfPickItem('${x.item_warehouse_id}')"><span class="mv-pick-code">${esc(x.item_code)}</span>${esc(LANG==='ar'?(x.name_ar||x.name_en):(x.name_en||x.name_ar))}</div>`).join('')}</div></div>`:''}`};let shelf='';if(mvTf.dest_wh&&!mvTfItemInDest()){const sh=mvShelves[mvTf.dest_wh];if(Array.isArray(sh))shelf=`<label class="rc-lbl">${t('whmAiShelf')} *</label><select class="rc-in" onchange="mvTfSet('dest_shelf',this.value)"><option value="">${t('whmAiShelfSel')}</option>${sh.map(x=>`<option value="${x.shelf_id}" ${mvTf.dest_shelf===x.shelf_id?'selected':''}>${esc(x.shelf_name)}</option>`).join('')}</select>`}return `<div class="mv-scrim"></div><div class="mv-modal"><div class="mv-modal-head"><h2>${t('mvChooseTransfer')}</h2><button class="mv-modal-x" onclick="mvCloseModal()">×</button></div><div class="mv-modal-body"><label class="rc-lbl">${t('mvTfSrc')} *</label><select class="rc-in" onchange="mvTfSet('src_wh',this.value)">${src}</select>${mvTf.src_wh?`<label class="rc-lbl">${t('mvRcItem')} *</label>${item}`:''}${mvTf.item_iw?`<label class="rc-lbl">${t('mvTfDest')} *</label><select class="rc-in" onchange="mvTfSet('dest_wh',this.value)">${dest}</select>`:''}${shelf}${mvTf.dest_wh?`<label class="rc-lbl">${t('mvTfQty')} *</label><input class="rc-in" type="number" value="${esc(mvTf.qty)}" oninput="mvTfSet('qty',this.value)"/><label class="rc-lbl">${t('mvIsBatch')}</label><input class="rc-in" value="${esc(mvTf.batch_no)}" oninput="mvTfSet('batch_no',this.value)"/><label class="rc-lbl">${t('mvRcNote')}</label><textarea class="rc-in" rows="2" oninput="mvTfSet('note',this.value)">${esc(mvTf.note)}</textarea>`:''}${mvTfErr?`<div class="rc-err">${esc(mvTfErr)}</div>`:''}</div><div class="mv-modal-foot"><button class="rc-cancel" onclick="mvCloseModal()">${t('mvRcCancel')}</button><button class="rc-save" onclick="mvSubmitTransfer()" ${mvTfSubmitting?'disabled':''}>${mvTfSubmitting?t('mvRcSaving'):AdvaconUI.requestLabel(whPermissionMode(WH_MOVE_ACTION.TRANSFER),t('mvTfPost'))}</button></div></div>`}
 
 /* Receipt from warehouse detail */
@@ -3260,7 +3281,7 @@ function aprReasonLabel(tp,v){if(tp==='DISPOSAL')return t('mvDpR_'+v)||v;if(tp==
 function aprSummaryOrig(r){const wh=LANG==='ar'?(r.warehouse_name_ar||r.warehouse_code||''):(r.warehouse_name_en||r.warehouse_code||'');const a=[`${t('aprQty')}: <b>${fmtInt(r.orig_qty)}</b>`];if(r.warehouse_code)a.push(`${t('dashCWh')}: ${esc(wh)}`);if(r.movement_type==='ADJUSTMENT'&&r.orig_direction)a.push(`${t('mvAjDir')}: ${t('mvAj'+(r.orig_direction==='increase'?'Inc':'Dec'))}`);if((r.movement_type==='DISPOSAL'||r.movement_type==='ADJUSTMENT')&&r.orig_reason_category)a.push(`${t('mvDpReason')}: ${aprReasonLabel(r.movement_type,r.orig_reason_category)}`);if(r.movement_type==='TRANSFER'&&r.orig_dest_warehouse_name_ar)a.push(`→ ${esc(LANG==='ar'?r.orig_dest_warehouse_name_ar:(r.orig_dest_warehouse_name_en||r.orig_dest_warehouse_name_ar))}`);if(r.movement_type==='RECEIPT'&&r.orig_shelf_name)a.push(`${t('whmShelfName')}: ${esc(r.orig_shelf_name)}`);if(r.orig_note)a.push(`${t('mvRcNote')}: ${esc(r.orig_note)}`);return a.join(' · ')}
 function aprSummaryFinal(r){const a=[`${t('aprQty')}: <b>${fmtInt(r.final_qty)}</b>`];if(r.movement_type==='ADJUSTMENT'&&r.final_direction)a.push(t('mvAj'+(r.final_direction==='increase'?'Inc':'Dec')));if((r.movement_type==='DISPOSAL'||r.movement_type==='ADJUSTMENT')&&r.final_reason_category)a.push(aprReasonLabel(r.movement_type,r.final_reason_category));if(r.movement_type==='TRANSFER'&&r.final_dest_warehouse_name_ar)a.push(`→ ${esc(LANG==='ar'?r.final_dest_warehouse_name_ar:(r.final_dest_warehouse_name_en||r.final_dest_warehouse_name_ar))}`);if(r.final_note)a.push(esc(r.final_note));return a.join(' · ')}
 function viewApprovals(){if(aprList===null&&!aprLoading)aprLoad();const admin=aprIsAdmin();const head=`<div class="dash-head"><div><div class="eyebrow">${t('dashEye')}</div><h1>${LANG==='ar'?'موافقة الحركات':'Movement Approvals'}</h1></div>${admin||!Object.values(WH_MOVE_ACTION).some(k=>whPermissionMode(k)==='approval')?'':`<button class="mv-new" onclick="aprOpenChooser()">＋ ${t('aprNewReq')}</button>`}</div>`;const chips=['pending','approved','rejected','cancelled','all'].map(f=>`<button class="apr-chip ${aprFilter===f?'on':''}" onclick="aprSetFilter('${f}')">${t('aprF_'+f)}</button>`).join('');const body=aprLoading?`<div class="empty">${t('aprLoading')}</div>`:(!aprList||!aprList.length)?`<div class="empty">${t('aprNone')}</div>`:`<div class="apr-list">${aprList.map(r=>aprCard(r,admin)).join('')}</div>`;return `${head}<div class="apr-filters">${chips}</div>${body}${aprModalHtml()}`}
-function aprCard(r,admin){const nm=aprItemName(r),img=r.image_url?`<img class="apr-thumb" src="${esc(r.image_url)}" onclick="openLightbox('${esc(r.image_url)}')"/>`:`<div class="apr-thumb apr-thumb-ph">📦</div>`,st=r.status,cl={pending:'apr-b-pending',approved:'apr-b-approved',rejected:'apr-b-rejected',cancelled:'apr-b-cancelled'}[st]||'',badge=`<span class="apr-badge ${cl}">${t('aprS_'+st)}</span>`;let extra='';if(st==='approved')extra=`<div class="apr-final">${t('aprFinalVals')}: ${aprSummaryFinal(r)}${r.reviewed_by_email?` · ${t('aprBy')} ${esc(r.reviewed_by_email)}`:''}</div>`;if(st==='rejected')extra=`<div class="apr-reject">${t('aprRejReason')}: ${esc(r.reject_reason||'')}${r.reviewed_by_email?` · ${esc(r.reviewed_by_email)}`:''}</div>`;let actions='';if(st==='pending'&&admin){actions=aprEditId===r.id?aprEditPanel(r):`<div class="apr-actions"><button class="btn-primary" onclick="aprStartEdit('${r.id}')">✓ ${t('aprApproveReview')}</button><button class="btn apr-rej" onclick="aprStartReject('${r.id}')">✗ ${t('aprReject')}</button></div>`;if(aprRejectId===r.id)actions=aprRejectPanel(r)}else if(st==='pending'&&!admin)actions=`<div class="apr-actions"><button class="btn" onclick="aprCancel('${r.id}')">${t('aprCancel')}</button></div>`;return `<div class="apr-card"><div class="apr-card-top">${img}<div class="apr-card-main"><div class="apr-card-hd"><span class="apr-type">${aprTypeLabel(r.movement_type)}</span>${badge}</div><div class="apr-card-item ${r.item_id?'wh-xlink':''}" ${r.item_id?`onclick="whOpenItem('${esc(r.item_id)}')"`:''}><b>${esc(r.item_code||'')}</b> ${esc(nm)}</div><div class="apr-card-orig">${aprSummaryOrig(r)}</div>${r.requested_by_email?`<div class="apr-card-who">${t('aprReqBy')}: <span class="apr-who">${esc(r.requested_by_email)}</span></div>`:''}${extra}</div></div>${actions}</div>`}
+function aprCard(r,admin){const nm=aprItemName(r),img=r.image_url?`<img class="apr-thumb" src="${esc(r.image_url)}" data-preview-url="${esc(r.image_url)}"/>`:`<div class="apr-thumb apr-thumb-ph">📦</div>`,st=r.status,cl={pending:'apr-b-pending',approved:'apr-b-approved',rejected:'apr-b-rejected',cancelled:'apr-b-cancelled'}[st]||'',badge=`<span class="apr-badge ${cl}">${t('aprS_'+st)}</span>`;let extra='';if(st==='approved')extra=`<div class="apr-final">${t('aprFinalVals')}: ${aprSummaryFinal(r)}${r.reviewed_by_email?` · ${t('aprBy')} ${esc(r.reviewed_by_email)}`:''}</div>`;if(st==='rejected')extra=`<div class="apr-reject">${t('aprRejReason')}: ${esc(r.reject_reason||'')}${r.reviewed_by_email?` · ${esc(r.reviewed_by_email)}`:''}</div>`;let actions='';if(st==='pending'&&admin){actions=aprEditId===r.id?aprEditPanel(r):`<div class="apr-actions"><button class="btn-primary" onclick="aprStartEdit('${r.id}')">✓ ${t('aprApproveReview')}</button><button class="btn apr-rej" onclick="aprStartReject('${r.id}')">✗ ${t('aprReject')}</button></div>`;if(aprRejectId===r.id)actions=aprRejectPanel(r)}else if(st==='pending'&&!admin)actions=`<div class="apr-actions"><button class="btn" onclick="aprCancel('${r.id}')">${t('aprCancel')}</button></div>`;return `<div class="apr-card"><div class="apr-card-top">${img}<div class="apr-card-main"><div class="apr-card-hd"><span class="apr-type">${aprTypeLabel(r.movement_type)}</span>${badge}</div><div class="apr-card-item ${r.item_id?'wh-xlink':''}" ${r.item_id?`onclick="whOpenItem('${AdvaconExperience.jsSingle(r.item_id)}')"`:''}><b>${esc(r.item_code||'')}</b> ${esc(nm)}</div><div class="apr-card-orig">${aprSummaryOrig(r)}</div>${r.requested_by_email?`<div class="apr-card-who">${t('aprReqBy')}: <span class="apr-who">${esc(r.requested_by_email)}</span></div>`:''}${extra}</div></div>${actions}</div>`}
 function aprStartEdit(id){const r=(aprList||[]).find(x=>x.id===id);if(!r)return;aprRejectId=null;aprEditId=id;aprErr='';aprEdit={qty:r.orig_qty!=null?String(r.orig_qty):'',note:r.orig_note||'',direction:r.orig_direction||'',reason:r.orig_reason_category||'',shelf_id:r.orig_shelf_id||'',clear_shelf:false,dest_wh:r.orig_dest_warehouse_id||'',dest_shelf:r.orig_dest_shelf_id||'',batch_no:r.orig_batch_no||'',expiry:r.orig_expiry_date||''};if(r.movement_type==='RECEIPT'&&r.orig_warehouse_id)aprLoadShelves(r.orig_warehouse_id);if(r.movement_type==='TRANSFER'){aprEnsureWh().then(()=>{if(aprEdit.dest_wh)aprLoadShelves(aprEdit.dest_wh);aprRender()})}aprRender()}
 function aprEditSet(k,v){aprEdit[k]=v;if(k==='dest_wh'){aprEdit.dest_shelf='';if(v)aprLoadShelves(v)}aprRender()} function aprEditSetQuiet(k,v){aprEdit[k]=v;aprErr=''} function aprCancelEdit(){aprEditId=null;aprEdit={};aprErr='';aprRender()}
 function aprReasonSelect(tp,val,reqMode=false){const list=tp==='DISPOSAL'?['storage_damage','expired','broken','unfit_for_use','other']:['periodic_count','data_entry_correction','unexplained_variance','system_reconciliation','other'],pfx=tp==='DISPOSAL'?'mvDpR_':'mvAjR_';let o=`<option value="">${t('mvDpReasonSel')}</option>`;list.forEach(x=>o+=`<option value="${x}" ${val===x?'selected':''}>${t(pfx+x)}</option>`);return `<label class="apr-l">${t('mvDpReason')}<select onchange="${reqMode?'aprReqSet':'aprEditSet'}('reason',this.value)">${o}</select></label>`}
@@ -3276,11 +3297,11 @@ function aprReqSet(k,v){aprReq[k]=v;if(k==='dest_wh'){aprReq.dest_shelf='';if(v)
 function aprPickItem(x){aprReq.iw=x.item_warehouse_id;aprReq.item_id=x.item_id;aprReq.warehouse_id=x.warehouse_id;const nm=LANG==='ar'?(x.name_ar||x.name_en):(x.name_en||x.name_ar);aprReq.iwLabel=`${x.item_code||''} ${nm||''}`;aprReq.wh=LANG==='ar'?(x.warehouse_name_ar||x.warehouse_code):(x.warehouse_name_en||x.warehouse_code);aprReq.onHand=x.on_hand;aprReq.available=x.available;aprReq.unit=LANG==='ar'?(x.unit_name_ar||x.unit_name_en):(x.unit_name_en||x.unit_name_ar);aprReq.shelf_id=x.shelf_id||'';aprPickOpen=false;aprPickQuery='';aprErr='';if(aprReq.type==='RETURN'&&aprReq.mode==='linked'){aprRtLoadIssues();return}aprRender()}
 function aprClearItem(){Object.assign(aprReq,{iw:null,iwLabel:'',item_id:'',warehouse_id:'',wh:'',onHand:'',available:'',unit:'',ref:'',refLabel:'',refRemaining:''});aprRtIssues=null;aprRender()}
 function aprChooserModal(){const I={RECEIPT:'📥',ISSUE:'📤',RETURN:'↩️',DISPOSAL:'🗑️',ADJUSTMENT:'⚖️',TRANSFER:'🔄'},opt=(tp,sub)=>whPermissionMode(WH_MOVE_ACTION[tp])!=='approval'?'':`<button class="mv-choose-btn" onclick="aprOpenReq('${tp}')"><span class="mc-ic">${I[tp]}</span><span class="mc-lb">${aprTypeLabel(tp)}</span><span class="mc-sub">${sub}</span></button>`,two=(aprWh||[]).filter(w=>w.is_active&&w.is_open).length>=2;return `<div class="mv-scrim" onclick="aprCloseModal()"></div><div class="mv-modal" style="width:420px"><div class="mv-modal-head"><h2>${t('aprNewReq')}</h2><button class="mv-modal-x" onclick="aprCloseModal()">×</button></div><div class="mv-modal-body"><div class="mv-choose">${opt('RECEIPT',t('mvChooseReceipt'))}${opt('ISSUE',t('mvChooseIssue'))}${opt('RETURN',t('mvChooseReturn'))}${opt('DISPOSAL',t('mvChooseDisposal'))}${opt('ADJUSTMENT',t('mvChooseAdjust'))}${two?opt('TRANSFER',t('mvChooseTransferSub')):`<button class="mv-choose-btn is-disabled" disabled><span class="mc-ic">🔄</span><span class="mc-lb">${aprTypeLabel('TRANSFER')}</span><span class="mc-sub mc-sub-warn">${t('mvTfNeedTwo')}</span></button>`}</div></div></div>`}
-function aprPickerDD(){if(!aprPickOpen)return'';const q=(aprPickQuery||'').trim().toLowerCase();let list=mvItemList||[];if(q)list=list.filter(x=>((x.item_code||'').toLowerCase().includes(q)||(x.name_ar||'').toLowerCase().includes(q)||(x.name_en||'').toLowerCase().includes(q)));list=list.slice(0,30);const inner=list.length?list.map(x=>{const nm=LANG==='ar'?(x.name_ar||x.name_en):(x.name_en||x.name_ar),wh=LANG==='ar'?(x.warehouse_name_ar||x.warehouse_code):(x.warehouse_name_en||x.warehouse_code);return `<div class="mv-pick-row" onclick='aprPickItem(${JSON.stringify(x).replace(/'/g,"&#39;")})'><span class="mv-pick-code">${esc(x.item_code||'')}</span> ${esc(nm||'')} <span class="mv-pick-wh">${esc(wh||'')}</span></div>`}).join(''):`<div class="mv-pick-load">${t('mvNoItems')}</div>`;return `<div class="mv-pick-dd" style="position:static;width:100%;box-shadow:none;margin-top:6px"><input class="mv-pick-search" placeholder="${t('mvItemPh')}" value="${esc(aprPickQuery)}" oninput="aprPickSearch(this.value)"/><div class="mv-pick-list">${inner}</div></div>`}
+function aprPickerDD(){if(!aprPickOpen)return'';const q=(aprPickQuery||'').trim().toLowerCase();let list=mvItemList||[];if(q)list=list.filter(x=>((x.item_code||'').toLowerCase().includes(q)||(x.name_ar||'').toLowerCase().includes(q)||(x.name_en||'').toLowerCase().includes(q)));list=list.slice(0,30);const inner=list.length?list.map(x=>{const nm=LANG==='ar'?(x.name_ar||x.name_en):(x.name_en||x.name_ar),wh=LANG==='ar'?(x.warehouse_name_ar||x.warehouse_code):(x.warehouse_name_en||x.warehouse_code);return `<div class="mv-pick-row" onclick='aprPickItem(${esc(JSON.stringify(x))})'><span class="mv-pick-code">${esc(x.item_code||'')}</span> ${esc(nm||'')} <span class="mv-pick-wh">${esc(wh||'')}</span></div>`}).join(''):`<div class="mv-pick-load">${t('mvNoItems')}</div>`;return `<div class="mv-pick-dd" style="position:static;width:100%;box-shadow:none;margin-top:6px"><input class="mv-pick-search" placeholder="${t('mvItemPh')}" value="${esc(aprPickQuery)}" oninput="aprPickSearch(this.value)"/><div class="mv-pick-list">${inner}</div></div>`}
 function aprReqInfo(){if(!aprReq.iw)return'';return `<div class="rc-info"><div><span>${t('mvRcWh')}</span><b>${esc(aprReq.wh||'')}</b></div><div><span>${t('mvRcOnHand')}</span><b>${fmtInt(aprReq.onHand)}</b></div><div><span>${t('mvRcAvail')}</span><b>${fmtInt(aprReq.available)}</b></div><div><span>${t('mvRcUnit')}</span><b>${esc(aprReq.unit||'—')}</b></div></div>`}
 async function aprRtLoadIssues(){const iw=aprReq.iw,seq=++aprRtIssuesSeq;if(!iw){aprRtIssues=null;aprRtIssuesLoading=false;aprRender();return}aprRtIssues=null;aprRtIssuesLoading=true;aprRender();try{const r=await warehouseRpc('returnable_issues',{p_item_warehouse_id:iw});if(seq===aprRtIssuesSeq&&aprReq.iw===iw)aprRtIssues=Array.isArray(r)?r:[]}catch(_){if(seq===aprRtIssuesSeq)aprRtIssues=[]}finally{if(seq===aprRtIssuesSeq){aprRtIssuesLoading=false;aprRender()}}}
 function aprRtSetMode(m){aprReq.mode=m;aprReq.ref='';aprReq.refLabel='';aprReq.refRemaining='';aprErr='';if(m==='linked'&&aprReq.iw)aprRtLoadIssues();else aprRender()} function aprRtPickRef(id,label,remaining){aprReq.ref=id;aprReq.refLabel=label;aprReq.refRemaining=remaining;aprErr='';aprRender()}
-function aprReqModal(tp){const r=aprReq,busy=aprSubmitting,item=r.iw?`<div class="rc-chip">${esc(r.iwLabel)} <span class="mv-chip-x" onclick="aprClearItem()">×</span></div>`:`<button class="mv-pick-btn" style="width:100%;text-align:start" onclick="aprTogglePick()">${t('mvRcSelItem')} ▾</button>${aprPickerDD()}`;let ret='';if(tp==='RETURN'){const tabs=`<div class="rt-mode"><button class="rt-mode-btn ${r.mode!=='unlinked'?'on':''}" onclick="aprRtSetMode('linked')">${t('mvRtLinked')}</button><button class="rt-mode-btn ${r.mode==='unlinked'?'on':''}" onclick="aprRtSetMode('unlinked')">${t('mvRtUnlinked')}</button></div>`;let ip='';if(r.mode!=='unlinked'){if(!r.iw)ip=`<div class="rt-hint">${t('mvRtPickItemFirst')}</div>`;else if(aprRtIssuesLoading)ip=`<div class="mv-pick-load">${t('mvLoading')}</div>`;else if(!aprRtIssues||!aprRtIssues.length)ip=`<div class="rt-none">${t('mvRtNoIssues')}</div>`;else if(r.ref)ip=`<div class="rc-chip">${esc(r.refLabel)} <span class="mv-chip-x" onclick="aprRtPickRef('','','')">×</span></div>`;else ip=`<div class="rt-issues">${aprRtIssues.map(x=>{const d=new Date(x.created_at),ds=d.toLocaleDateString(LANG==='ar'?'ar':'en-GB',{day:'2-digit',month:'short',year:'2-digit'}),lbl=`${ds} · ${t('mvRtIssued')} ${fmtInt(x.qty_issued)} · ${t('mvRtRemain')} ${fmtInt(x.qty_returnable)}`;return `<div class="rt-issue-row" onclick="aprRtPickRef('${x.issue_movement_id}','${esc(lbl).replace(/'/g,"\\'")}',${Number(x.qty_returnable)})"><div class="rt-ir-date">${ds}</div><div class="rt-ir-nums"><span>${t('mvRtIssued')}: ${fmtInt(x.qty_issued)}</span><span>${t('mvRtReturned')}: ${fmtInt(x.qty_returned)}</span><span class="rt-ir-rem">${t('mvRtRemain')}: ${fmtInt(x.qty_returnable)}</span></div></div>`}).join('')}</div>`;ip=`<label class="apr-l">${t('mvRtIssue')} *</label>${ip}`}else ip=`<div class="rt-hint">${t('mvRtUnlinkedHint')}</div>`;ret=tabs+ip}let fields=`<label class="apr-l">${t('aprQty')}<input type="number" min="0" step="any" value="${esc(r.qty)}" oninput="aprReqSetQuiet('qty',this.value)"/></label>`;if(tp==='ADJUSTMENT')fields+=`<label class="apr-l">${t('mvAjDir')}<select onchange="aprReqSet('direction',this.value)"><option value="increase" ${r.direction==='increase'?'selected':''}>${t('mvAjInc')}</option><option value="decrease" ${r.direction==='decrease'?'selected':''}>${t('mvAjDec')}</option></select></label>`+aprReasonSelect('ADJUSTMENT',r.reason,true);if(tp==='DISPOSAL')fields+=aprReasonSelect('DISPOSAL',r.reason,true);if(tp==='RECEIPT')fields+=`<label class="apr-l">${t('mvRcBatch')}<input value="${esc(r.batch_no)}" oninput="aprReqSetQuiet('batch_no',this.value)"/></label><label class="apr-l">${t('mvRcExpiry')}<input type="date" value="${esc(r.expiry)}" oninput="aprReqSetQuiet('expiry',this.value)"/></label>`;if(tp==='TRANSFER'){const wh=(aprWh||[]).filter(w=>w.is_active&&w.is_open&&w.warehouse_id!==r.warehouse_id);let wo=`<option value="">${t('mvTfSelDest')}</option>`;wh.forEach(w=>wo+=`<option value="${w.warehouse_id}" ${r.dest_wh===w.warehouse_id?'selected':''}>${esc(LANG==='ar'?(w.name_ar||w.code):(w.name_en||w.code))}</option>`);let so=`<option value="">${t('whmPickShelf')}</option>`;(aprShelves[r.dest_wh]||[]).forEach(x=>so+=`<option value="${x.shelf_id}" ${r.dest_shelf===x.shelf_id?'selected':''}>${esc(x.shelf_name||'')}</option>`);fields+=`<label class="apr-l">${t('mvTfDest')}<select onchange="aprReqSet('dest_wh',this.value)">${wo}</select></label><label class="apr-l">${t('whmShelfName')}<select onchange="aprReqSet('dest_shelf',this.value)">${so}</select></label>`}const req=(tp==='DISPOSAL'||(tp==='RETURN'&&r.mode==='unlinked'))?' *':'';fields+=`<label class="apr-l">${t('mvRcNote')}${req}<input value="${esc(r.note)}" oninput="aprReqSetQuiet('note',this.value)"/></label>`;return `<div class="mv-scrim" onclick="aprCloseModal()"></div><div class="mv-modal"><div class="mv-modal-head"><h2>${aprTypeLabel(tp)} — ${t('aprNewReq')}</h2><button class="mv-modal-x" onclick="aprCloseModal()">×</button></div><div class="mv-modal-body"><div class="apr-req-note">${t('aprReqHint')}</div><label class="apr-l">${t('mvRcItem')}</label>${item}${aprReqInfo()}${ret}<div class="apr-edit-grid" style="margin-top:10px">${fields}</div>${aprErr?`<div class="rc-err">${esc(aprErr)}</div>`:''}</div><div class="mv-modal-foot"><button class="btn" onclick="aprCloseModal()">${t('mvRcCancel')}</button><button class="btn-primary" onclick="aprSubmitReq()" ${busy?'disabled':''}>${busy?t('aprWorking'):t('aprSubmitReq')}</button></div></div>`}
+function aprReqModal(tp){const r=aprReq,busy=aprSubmitting,item=r.iw?`<div class="rc-chip">${esc(r.iwLabel)} <span class="mv-chip-x" onclick="aprClearItem()">×</span></div>`:`<button class="mv-pick-btn" style="width:100%;text-align:start" onclick="aprTogglePick()">${t('mvRcSelItem')} ▾</button>${aprPickerDD()}`;let ret='';if(tp==='RETURN'){const tabs=`<div class="rt-mode"><button class="rt-mode-btn ${r.mode!=='unlinked'?'on':''}" onclick="aprRtSetMode('linked')">${t('mvRtLinked')}</button><button class="rt-mode-btn ${r.mode==='unlinked'?'on':''}" onclick="aprRtSetMode('unlinked')">${t('mvRtUnlinked')}</button></div>`;let ip='';if(r.mode!=='unlinked'){if(!r.iw)ip=`<div class="rt-hint">${t('mvRtPickItemFirst')}</div>`;else if(aprRtIssuesLoading)ip=`<div class="mv-pick-load">${t('mvLoading')}</div>`;else if(!aprRtIssues||!aprRtIssues.length)ip=`<div class="rt-none">${t('mvRtNoIssues')}</div>`;else if(r.ref)ip=`<div class="rc-chip">${esc(r.refLabel)} <span class="mv-chip-x" onclick="aprRtPickRef('','','')">×</span></div>`;else ip=`<div class="rt-issues">${aprRtIssues.map(x=>{const d=new Date(x.created_at),ds=d.toLocaleDateString(LANG==='ar'?'ar':'en-GB',{day:'2-digit',month:'short',year:'2-digit'}),lbl=`${ds} · ${t('mvRtIssued')} ${fmtInt(x.qty_issued)} · ${t('mvRtRemain')} ${fmtInt(x.qty_returnable)}`;return `<div class="rt-issue-row" onclick="aprRtPickRef('${x.issue_movement_id}','${AdvaconExperience.jsSingle(lbl).replace(/'/g,"\\'")}',${Number(x.qty_returnable)})"><div class="rt-ir-date">${ds}</div><div class="rt-ir-nums"><span>${t('mvRtIssued')}: ${fmtInt(x.qty_issued)}</span><span>${t('mvRtReturned')}: ${fmtInt(x.qty_returned)}</span><span class="rt-ir-rem">${t('mvRtRemain')}: ${fmtInt(x.qty_returnable)}</span></div></div>`}).join('')}</div>`;ip=`<label class="apr-l">${t('mvRtIssue')} *</label>${ip}`}else ip=`<div class="rt-hint">${t('mvRtUnlinkedHint')}</div>`;ret=tabs+ip}let fields=`<label class="apr-l">${t('aprQty')}<input type="number" min="0" step="any" value="${esc(r.qty)}" oninput="aprReqSetQuiet('qty',this.value)"/></label>`;if(tp==='ADJUSTMENT')fields+=`<label class="apr-l">${t('mvAjDir')}<select onchange="aprReqSet('direction',this.value)"><option value="increase" ${r.direction==='increase'?'selected':''}>${t('mvAjInc')}</option><option value="decrease" ${r.direction==='decrease'?'selected':''}>${t('mvAjDec')}</option></select></label>`+aprReasonSelect('ADJUSTMENT',r.reason,true);if(tp==='DISPOSAL')fields+=aprReasonSelect('DISPOSAL',r.reason,true);if(tp==='RECEIPT')fields+=`<label class="apr-l">${t('mvRcBatch')}<input value="${esc(r.batch_no)}" oninput="aprReqSetQuiet('batch_no',this.value)"/></label><label class="apr-l">${t('mvRcExpiry')}<input type="date" value="${esc(r.expiry)}" oninput="aprReqSetQuiet('expiry',this.value)"/></label>`;if(tp==='TRANSFER'){const wh=(aprWh||[]).filter(w=>w.is_active&&w.is_open&&w.warehouse_id!==r.warehouse_id);let wo=`<option value="">${t('mvTfSelDest')}</option>`;wh.forEach(w=>wo+=`<option value="${w.warehouse_id}" ${r.dest_wh===w.warehouse_id?'selected':''}>${esc(LANG==='ar'?(w.name_ar||w.code):(w.name_en||w.code))}</option>`);let so=`<option value="">${t('whmPickShelf')}</option>`;(aprShelves[r.dest_wh]||[]).forEach(x=>so+=`<option value="${x.shelf_id}" ${r.dest_shelf===x.shelf_id?'selected':''}>${esc(x.shelf_name||'')}</option>`);fields+=`<label class="apr-l">${t('mvTfDest')}<select onchange="aprReqSet('dest_wh',this.value)">${wo}</select></label><label class="apr-l">${t('whmShelfName')}<select onchange="aprReqSet('dest_shelf',this.value)">${so}</select></label>`}const req=(tp==='DISPOSAL'||(tp==='RETURN'&&r.mode==='unlinked'))?' *':'';fields+=`<label class="apr-l">${t('mvRcNote')}${req}<input value="${esc(r.note)}" oninput="aprReqSetQuiet('note',this.value)"/></label>`;return `<div class="mv-scrim" onclick="aprCloseModal()"></div><div class="mv-modal"><div class="mv-modal-head"><h2>${aprTypeLabel(tp)} — ${t('aprNewReq')}</h2><button class="mv-modal-x" onclick="aprCloseModal()">×</button></div><div class="mv-modal-body"><div class="apr-req-note">${t('aprReqHint')}</div><label class="apr-l">${t('mvRcItem')}</label>${item}${aprReqInfo()}${ret}<div class="apr-edit-grid" style="margin-top:10px">${fields}</div>${aprErr?`<div class="rc-err">${esc(aprErr)}</div>`:''}</div><div class="mv-modal-foot"><button class="btn" onclick="aprCloseModal()">${t('mvRcCancel')}</button><button class="btn-primary" onclick="aprSubmitReq()" ${busy?'disabled':''}>${busy?t('aprWorking'):t('aprSubmitReq')}</button></div></div>`}
 async function aprSubmitReq(){if(aprSubmitting)return;const r=aprReq,tp=r.type;if(!r.iw){aprErr=t('mvRcErrItem');aprRender();return}const q=Number(r.qty);if(r.qty===''||isNaN(q)||q<=0){aprErr=t('mvRcErrQty');aprRender();return}if(tp==='DISPOSAL'&&!r.reason){aprErr=t('mvDpErrReason');aprRender();return}if(tp==='DISPOSAL'&&!(r.note||'').trim()){aprErr=t('mvDpErrNote');aprRender();return}if(tp==='ADJUSTMENT'&&!r.reason){aprErr=t('mvAjErrReason');aprRender();return}if(tp==='ADJUSTMENT'&&r.reason==='other'&&!(r.note||'').trim()){aprErr=t('mvAjErrNoteOther');aprRender();return}if(tp==='TRANSFER'&&!r.dest_wh){aprErr=t('mvTfErrDest');aprRender();return}if(tp==='RETURN'&&r.mode!=='unlinked'&&!r.ref){aprErr=t('mvRtErrRef');aprRender();return}if(tp==='RETURN'&&r.mode==='unlinked'&&!(r.note||'').trim()){aprErr=t('mvRtErrNote');aprRender();return}let fn,args;if(tp==='ISSUE'){fn='request_issue_approval';args={p_item_warehouse_id:r.iw,p_qty:q,p_note:(r.note||'').trim()||null,p_batch_no:null}}else if(tp==='RECEIPT'){fn='request_receipt_approval';args={p_item_id:r.item_id,p_warehouse_id:r.warehouse_id,p_shelf_id:r.shelf_id||null,p_qty:q,p_min_level:null,p_batch_no:(r.batch_no||'').trim()||null,p_expiry_date:r.expiry||null,p_note:(r.note||'').trim()||null}}else if(tp==='RETURN'){fn='request_return_approval';args={p_item_warehouse_id:r.iw,p_qty:q,p_ref_issue_movement_id:r.mode!=='unlinked'?(r.ref||null):null,p_note:(r.note||'').trim()||null,p_batch_no:null}}else if(tp==='DISPOSAL'){fn='request_disposal_approval';args={p_item_warehouse_id:r.iw,p_qty:q,p_reason_category:r.reason,p_note:r.note.trim(),p_batch_no:null}}else if(tp==='ADJUSTMENT'){fn='request_adjustment_approval';args={p_item_warehouse_id:r.iw,p_qty:q,p_direction:r.direction,p_reason_category:r.reason||null,p_note:(r.note||'').trim()||null,p_batch_no:null}}else if(tp==='TRANSFER'){fn='request_transfer_approval';args={p_source_iw_id:r.iw,p_dest_warehouse_id:r.dest_wh,p_dest_shelf_id:r.dest_shelf||null,p_qty:q,p_note:(r.note||'').trim()||null,p_batch_no:null}}else return;aprSubmitting=true;aprRender();try{await warehouseRpc(fn,args);aprModal=null;aprReq={};toast(t('aprReqFiled'),'success');aprList=null;aprLoad();aprLoadBadge()}catch(e){aprErr=e.message||t('aprErrGeneric');aprRender()}finally{aprSubmitting=false}}
 function aprModalHtml(){if(!aprModal)return'';return aprModal==='chooser'?aprChooserModal():aprReqModal(aprModal)}
 function resetPhase4Caches(){aprList=null;aprLoading=false;aprFilter='pending';aprModal=null;aprSubmitting=false;aprErr='';aprReq={};aprPickOpen=false;aprPickQuery='';aprRtIssues=null;aprRtIssuesLoading=false;aprWh=null;aprShelves={};aprEditId=null;aprEdit={};aprActing=false;aprRejectId=null;aprRejectReason='';aprPendingCount=0}
@@ -3365,7 +3386,7 @@ function batCard(b){
   else if(b.expiry_status==='ok' && Number.isFinite(days)) daysTxt=`<span class="bat-days">${t('batDaysLeft')} ${fmtInt(days)} ${t('batDaysUnit')}</span>`;
   const expTxt=b.expiry_date?esc(b.expiry_date):`<span class="bat-noexp">${t('batStNoExpiry')}</span>`;
   const shelf=b.shelf_name?`<span class="bat-shelf">🗄️ ${esc(b.shelf_name)}</span>`:'';
-  return `<div class="bat-card ${m.cls} ${b.item_id?'wh-cardlink':''}" ${b.item_id?`onclick="whOpenItem('${esc(b.item_id)}')"`:''}>
+  return `<div class="bat-card ${m.cls} ${b.item_id?'wh-cardlink':''}" ${b.item_id?`onclick="whOpenItem('${AdvaconExperience.jsSingle(b.item_id)}')"`:''}>
     ${b.image_url?img.replace('onclick="openLightbox','onclick="event.stopPropagation();openLightbox'):img}
     <div class="bat-main">
       <div class="bat-top"><span class="bat-code">${esc(b.item_code||'')}</span><span class="bat-name">${esc(nm||'')}</span></div>
@@ -3839,11 +3860,11 @@ function repItemSummary(items){
     const nm=LANG==='ar'?(it.name_ar||it.name_en):(it.name_en||it.name_ar);
     const wn=LANG==='ar'?(it.warehouse_name_ar||it.warehouse_code):(it.warehouse_name_en||it.warehouse_code);
     const un=LANG==='ar'?(it.unit_name_ar||it.unit_name_en):(it.unit_name_en||it.unit_name_ar);
-    const img=it.image_url?`<img class="rep-thumb" src="${esc(it.image_url)}" onclick="openLightbox('${esc(it.image_url)}')" alt=""/>`:`<div class="rep-thumb rep-thumb-none">📦</div>`;
+    const img=it.image_url?`<img class="rep-thumb" src="${esc(it.image_url)}" onclick="openLightbox('${AdvaconExperience.jsSingle(it.image_url)}')" alt=""/>`:`<div class="rep-thumb rep-thumb-none">📦</div>`;
     const st=it.stock_status;
     const stCls=st==='out'?'rep-c-crit':(st==='low'?'rep-c-warn':'rep-c-ok');
     const stLbl=st==='out'?t('repOutStock'):(st==='low'?t('repLowStock'):t('repHealthy'));
-    return `<tr class="${it.item_id?'wh-rowlink':''}" ${it.item_id?`onclick="whOpenItem('${esc(it.item_id)}')"`:''}><td>${img}</td><td>${esc(it.item_code||'')}</td><td>${esc(nm||'')}</td><td>${esc(wn||'')}</td><td>${esc(un||'')}</td>
+    return `<tr class="${it.item_id?'wh-rowlink':''}" ${it.item_id?`onclick="whOpenItem('${AdvaconExperience.jsSingle(it.item_id)}')"`:''}><td>${img}</td><td>${esc(it.item_code||'')}</td><td>${esc(nm||'')}</td><td>${esc(wn||'')}</td><td>${esc(un||'')}</td>
       <td>${fmtNum(it.opening)}</td><td>${fmtNum(it.receipts)}</td><td>${fmtNum(it.issues)}</td>
       <td><b>${fmtNum(it.closing)}</b></td><td class="${stCls}">${stLbl}</td></tr>`;
   }).join('');
@@ -3964,7 +3985,7 @@ function repRegisterCard(reg){
         const wn=LANG==='ar'?(m.warehouse_name_ar||m.warehouse_code):(m.warehouse_name_en||m.warehouse_code);
         const un=LANG==='ar'?(m.unit_name_ar||m.unit_name_en):(m.unit_name_en||m.unit_name_ar);
         const q=Number(m.qty); const qCls=q<0?'rep-q-neg':'rep-q-pos';
-        const img=m.image_url?`<img class="rep-thumb-sm" src="${esc(m.image_url)}" onclick="openLightbox('${esc(m.image_url)}')" alt=""/>`:'';
+        const img=m.image_url?`<img class="rep-thumb-sm" src="${esc(m.image_url)}" onclick="openLightbox('${AdvaconExperience.jsSingle(m.image_url)}')" alt=""/>`:'';
         return `<tr>
           <td>${repFmtDT(m.created_at)}</td>
           <td><span class="rep-mvtype rep-mv-${esc(m.movement_type)}">${t('mvT_'+m.movement_type)||m.movement_type}</span></td>
@@ -4074,5 +4095,28 @@ document.addEventListener('DOMContentLoaded',()=>{
  }
 });
 </script>
-</body>
-</html>
+
+
+
+
+<script>
+document.addEventListener('click',async event=>{
+ const button=event.target.closest('[data-context-action]');if(!button)return;
+ await AdvaconUI.busy(button,async()=>{try{
+  const item=button.dataset.contextItem,action=button.dataset.contextAction;
+  if(!whCan(action==='receipt'?'movements.receive':'movements.issue'))throw Error('not_authorized');
+  await catClose();if(catDetailId)return;
+  history.replaceState(history.state,'',location.pathname+location.search+'#movements');await route();
+  if(action==='receipt'){if(mvWhList===null)await mvEnsureWh();await mvOpenReceipt(null,item);return;}
+  await mvEnsureItems();const rows=(mvItemList||[]).filter(r=>String(r.item_id)===item);
+  if(!rows.length){toast(AdvaconUI.text('الصنف غير مرتبط بمستودع متاح للصرف.','No available warehouse stock record for this item.'),'error');return;}
+  const body=document.createElement('div'),label=document.createElement('label'),select=document.createElement('select');label.textContent=AdvaconUI.text('المستودع المصدر','Source warehouse');
+  rows.forEach((row,i)=>{const option=document.createElement('option');option.value=i;option.textContent=(LANG==='ar'?row.warehouse_name_ar:row.warehouse_name_en)||row.warehouse_code;select.append(option);});body.className='field';body.append(label,select);
+  const next=document.createElement('button');next.className='btn btn-primary';next.textContent=AdvaconUI.text('متابعة','Continue');const dialog=AdvaconUI.modal({title:AdvaconUI.text('صرف الصنف','Issue item'),body,footer:next});AdvaconUI.enhance(body);
+  next.onclick=()=>{const row=rows[Number(select.value)];dialog.close();mvOpenIssue();mvIsPickItem(row);};
+ }catch(error){toast(AdvaconUI.humanError(error),'error');}});
+});
+</script>
+
+</body></html>
+
