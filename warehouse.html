@@ -1774,9 +1774,9 @@ function showAccessScreen(reason){
    ===================================================================== */
 function renderSidebar(){
   const nav = document.getElementById('mainNav');
-  nav.innerHTML = WH_SUBNAV.filter(whTabAllowed).map(tab => {
-    const label = (LANG==='ar') ? tab.label_ar : tab.label_en;
-    const activeClass = (currentTab() === tab.key) ? 'active' : '';
+  nav.innerHTML = WH_SUBNAV.filter(whTabAllowed).filter(tab=>!(tab.key==='dashboard'&&whTabAllowed(WH_SUBNAV.find(x=>x.key==='shelves')))&&!(tab.key==='catalog'&&whTabAllowed(WH_SUBNAV.find(x=>x.key==='inventory')))).map(tab => {
+    const label = ['catalog','inventory'].includes(tab.key)?(LANG==='ar'?'الأصناف':'Items'):(LANG==='ar') ? tab.label_ar : tab.label_en;
+    const activeClass = (currentTab() === tab.key || currentTab()==='catalog'&&tab.key==='inventory') ? 'active' : '';
     return `
       <a class="nav-item ${activeClass}" href="#${esc(tab.key)}" data-tab="${esc(tab.key)}">
         <span class="ic">${tab.ic}</span>
@@ -1806,7 +1806,7 @@ function renderSidebar(){
 
 function currentTab(){
   const h = (location.hash || '').replace(/^#/, '');
-  if(!h) return WH_SUBNAV[0]?.key || 'dashboard';
+  if(!h) return WH_SUBNAV.find(whTabAllowed)?.key || 'dashboard';
   return h.split('?')[0];
 }
 
@@ -1898,8 +1898,8 @@ async function route(){
   }
   switch(tab.key){
     case 'dashboard':   el.innerHTML = viewWhDashboard(); break;
-    case 'inventory':   el.innerHTML = viewInventory(); break;
-    case 'catalog':     el.innerHTML = viewItemCatalog(); if(catDetailId){ catEnsureInventory(); catEnsureMovements(); } break;
+    case 'inventory':   el.innerHTML = warehouseItemTabs()+viewInventory(); break;
+    case 'catalog':     el.innerHTML = warehouseItemTabs()+viewItemCatalog(); if(catDetailId){ catEnsureInventory(); catEnsureMovements(); } break;
     case 'movements':   el.innerHTML = viewMovements(); break;
     case 'materialreq': el.innerHTML = viewApprovals(); break;
     case 'shelves':     el.innerHTML = viewWarehouses(); break;
@@ -2015,6 +2015,7 @@ async function loadDashboard(force){
   if(version===dashboardSequence)dashRender();
 }
 function dashRender(){
+  if(currentTab()==='shelves'){whmRender();return;}
   const el = document.getElementById('content');
   if(el && currentTab() === 'dashboard') el.innerHTML = viewWhDashboard();
 }
@@ -2154,7 +2155,7 @@ async function loadInventory(force){
 }
 function invRender(){
   const el = document.getElementById('content');
-  if(el && currentTab() === 'inventory'){el.innerHTML = viewInventory();AdvaconExperience.dataStatus(el,invUpdated,invError,()=>loadInventory(true));AdvaconUI.enhance(el);}
+  if(el && currentTab() === 'inventory'){el.innerHTML = warehouseItemTabs()+viewInventory();AdvaconExperience.dataStatus(el,invUpdated,invError,()=>loadInventory(true));AdvaconUI.enhance(el);}
 }
 
 /* Filter-source pickers: derive warehouse/category options from loaded data
@@ -2197,7 +2198,7 @@ function invSet(k, v){
  AdvaconUI.enhance(root);
 }
 function invToggle(k){ invFilters[k] = !invFilters[k]; invRender(); }
-function invOpen(id){ invSel = id; invRender(); }
+function invOpen(id){const row=invData.find(x=>x.item_warehouse_id===id);if(row)warehouseStockDetail(row);}
 function invClose(){ invSel = null; invRender(); }
 
 /* Drawer — view mode only in Phase 1. Shelf-edit + image-upload UI is
@@ -2264,7 +2265,7 @@ function viewInventory(){
         : `<span class="inv-thumb inv-thumb-ph">📦</span>`;
       return `<tr class="inv-row ${invSel===r.item_warehouse_id?'sel':''}" onclick="invOpen('${r.item_warehouse_id}')">
         <td class="c-thumb">${thumb}</td>
-        <td class="c-id wh-xlink" onclick="event.stopPropagation();whOpenItem('${AdvaconExperience.jsSingle(r.item_id)}')" title="${t('imdEdit')}">${esc(r.item_code)}</td><td class="c-title wh-xlink" onclick="event.stopPropagation();whOpenItem('${AdvaconExperience.jsSingle(r.item_id)}')">${nm}</td>
+        <td class="c-id">${esc(r.item_code)}</td><td class="c-title">${nm}</td>
         <td>${esc((LANG==='ar')?r.category_name_ar:(r.category_name_en||r.category_name_ar))}</td>
         <td>${esc((LANG==='ar')?r.item_type_name_ar:(r.item_type_name_en||r.item_type_name_ar))}</td>
         <td>${esc((LANG==='ar')?r.unit_name_ar:(r.unit_name_en||r.unit_name_ar))}</td>
@@ -2288,7 +2289,7 @@ function viewInventory(){
   </div>
   <div class="filterbar" style="margin-top:-4px"><div class="spacer"></div><span class="count-chip">${rows.length} / ${invData.length} ${t('invItems')}</span></div>
   <div class="au-inventory-results">${body}</div>
-  ${invDrawer()}`;
+  `;
 }
 
 /* =====================================================================
@@ -2312,7 +2313,7 @@ async function loadCatalog(force){
 }
 function catRender(){
   const el = document.getElementById('content');
-  if(el && currentTab() === 'catalog'){el.innerHTML = viewItemCatalog();AdvaconExperience.dataStatus(el,catUpdated,catError,()=>loadCatalog(true));AdvaconUI.enhance(el);}
+  if(el && currentTab() === 'catalog'){el.innerHTML = warehouseItemTabs()+viewItemCatalog();AdvaconExperience.dataStatus(el,catUpdated,catError,()=>loadCatalog(true));AdvaconUI.enhance(el);}
 }
 function catSearch(v){
  catQuery=v;
@@ -2360,6 +2361,7 @@ async function catClose(discardConfirmed=false){
   catDetailId=null; catDetailEdit=false; catDetailErr=''; catDetailDraft={}; catRender();
 }
 async function catEnsureInventory(force){
+  if(!whCan('inventory.view')){catDetailInventory=[];return;}
   if(catDetailInvLoading) return;
   if(catDetailInventory!==null && !force) return;
   catDetailInvLoading=true; catRender();
@@ -2372,6 +2374,7 @@ async function catEnsureInventory(force){
 }
 
 async function catEnsureMovements(force){
+  if(!whCan('movements.view')){catDetailMovements=[];return;}
   if(!catDetailId) return;
   const selectedId=catDetailId;
   if(catDetailMovements!==null && !force) return;
@@ -2525,7 +2528,7 @@ function catDetailDrawer(){
   const r=catSelected();if(!r)return '';
   setTimeout(catHydratePrivateImages,0);
   const id=catItemId(r), admin=catIsAdmin();
-  const inv=(catDetailInventory||[]).filter(x=>String(x.item_id||x.item_master_id)===String(id));
+  const inv=(whCan('inventory.view')?(catDetailInventory||[]):[]).filter(x=>String(x.item_id||x.item_master_id)===String(id));
   const on=inv.reduce((a,x)=>a+Number(x.on_hand||0),0),res=inv.reduce((a,x)=>a+Number(x.reserved||0),0),av=inv.reduce((a,x)=>a+Number(x.available||0),0);
   const status=r.is_active?`<span class="cat-badge on">${t('catActive')}</span>`:`<span class="cat-badge off">${t('catInactive')}</span>`;
   let edit='';
@@ -2560,11 +2563,11 @@ function catDetailDrawer(){
         ${catImgTag(r.image_url,'imd-photo',r.item_code,true)}
         ${admin?`<div class="imd-photo-actions"><label class="imd-upload ${catDetailImgBusy?'busy':''}">${catDetailImgBusy?t('invImgUploading'):(r.image_url?t('invChangeImg'):t('invAddImg'))}<input type="file" accept="image/*" capture="environment" onchange="catUploadExistingImage('${AdvaconExperience.jsSingle(id)}',this)"/></label></div>`:''}
       </div><div>
-        <div class="imd-statusline">${status}<span class="imd-stat">${fmtInt(inv.length)} ${t('catWhCount')}</span></div>
+        <div class="imd-statusline">${status}<span class="imd-stat">${whCan('inventory.view')?fmtInt(inv.length):'—'} ${t('catWhCount')}</span></div>
         <div class="imd-grid">
-          <div class="imd-f"><span class="imd-lb">${t('invOnHand')}</span><span class="imd-v">${fmtInt(on)}</span></div>
-          <div class="imd-f"><span class="imd-lb">${t('invReserved')}</span><span class="imd-v">${fmtInt(res)}</span></div>
-          <div class="imd-f"><span class="imd-lb">${t('invAvail')}</span><span class="imd-v">${fmtInt(av)}</span></div>
+          <div class="imd-f"><span class="imd-lb">${t('invOnHand')}</span><span class="imd-v">${whCan('inventory.view')?fmtInt(on):'—'}</span></div>
+          <div class="imd-f"><span class="imd-lb">${t('invReserved')}</span><span class="imd-v">${whCan('inventory.view')?fmtInt(res):'—'}</span></div>
+          <div class="imd-f"><span class="imd-lb">${t('invAvail')}</span><span class="imd-v">${whCan('inventory.view')?fmtInt(av):'—'}</span></div>
         </div>
         ${admin&&!catDetailEdit?`<div class="imd-actions"><button class="imd-btn pri" onclick="catStartEdit()">✎ ${t('imdEdit')}</button></div>`:''}
       </div></div>
@@ -2577,7 +2580,7 @@ function catDetailDrawer(){
         <button class="imd-btn" onclick="whGoMovements('${AdvaconExperience.jsSingle(id)}','${AdvaconExperience.jsSingle((r.item_code||'')+' · '+(LANG==='ar'?(r.name_ar||r.name_en):(r.name_en||r.name_ar))).replace(/'/g,"\'")}')">🔁 ${t('awh_movements')}</button>
       </div>
       <div class="imd-sec"><div class="imd-sec-h">${LANG==='ar'?'آخر الحركات':'Recent Movements'}</div><div class="imd-sec-b imd-scroll">
-        ${catDetailMovLoading?`<div class="imd-empty">${t('loading')}</div>`:(catDetailMovements&&catDetailMovements.length?`<table class="imd-wh-table"><thead><tr><th>${t('dashCDate')}</th><th>${t('dashCType')}</th><th>${t('dashCWh')}</th><th>${t('dashCQty')}</th></tr></thead><tbody>${catDetailMovements.map(m=>{const d=new Date(m.created_at),wn=LANG==='ar'?(m.warehouse_name_ar||m.warehouse_code):(m.warehouse_name_en||m.warehouse_name_ar||m.warehouse_code),q=Number(m.qty)||0;return `<tr><td>${d.toLocaleDateString(LANG==='ar'?'ar-SA':'en-GB')}</td><td>${t('mvT_'+m.movement_type)}</td><td>${esc(wn||'')}</td><td class="num">${q>0?'+':''}${fmtInt(q)}</td></tr>`}).join('')}</tbody></table>`:`<div class="imd-empty">${LANG==='ar'?'لا توجد حركات مسجلة لهذا الصنف.':'No movements recorded for this item.'}</div>`)}
+        ${!whCan('movements.view')?`<p>${LANG==='ar'?'لا تملك صلاحية عرض الحركات.':'Movement access is not permitted.'}</p>`:catDetailMovLoading?`<div class="imd-empty">${t('loading')}</div>`:(catDetailMovements&&catDetailMovements.length?`<table class="imd-wh-table"><thead><tr><th>${t('dashCDate')}</th><th>${t('dashCType')}</th><th>${t('dashCWh')}</th><th>${t('dashCQty')}</th></tr></thead><tbody>${catDetailMovements.map(m=>{const d=new Date(m.created_at),wn=LANG==='ar'?(m.warehouse_name_ar||m.warehouse_code):(m.warehouse_name_en||m.warehouse_name_ar||m.warehouse_code),q=Number(m.qty)||0;return `<tr><td>${d.toLocaleDateString(LANG==='ar'?'ar-SA':'en-GB')}</td><td>${t('mvT_'+m.movement_type)}</td><td>${esc(wn||'')}</td><td class="num">${q>0?'+':''}${fmtInt(q)}</td></tr>`}).join('')}</tbody></table>`:`<div class="imd-empty">${LANG==='ar'?'لا توجد حركات مسجلة لهذا الصنف.':'No movements recorded for this item.'}</div>`)}
       </div></div>
       <div class="imd-sec"><div class="imd-sec-h">${t('imdBasic')}</div><div class="imd-sec-b"><div class="imd-grid">
         <div class="imd-f"><span class="imd-lb">${t('whmAiNameAr')}</span><span class="imd-v">${esc(r.name_ar||'—')}</span></div>
@@ -2589,7 +2592,7 @@ function catDetailDrawer(){
         <div class="imd-f full"><span class="imd-lb">${t('mvRcNote')}</span><span class="imd-v imd-note">${esc(r.notes||t('imdNoNotes'))}</span></div>
       </div></div></div>
       <div class="imd-sec"><div class="imd-sec-h">${t('imdWarehouses')}</div><div class="imd-sec-b imd-scroll">
-        ${catDetailInvLoading?`<div class="imd-empty">${t('loading')}</div>`:`<table class="imd-wh-table"><thead><tr><th>${t('invWh')}</th><th>${t('invShelf')}</th><th>${t('invOnHand')}</th><th>${t('invReserved')}</th><th>${t('invAvail')}</th><th>${t('invMin')}</th><th>${t('invStatus')}</th></tr></thead><tbody>${whRows}</tbody></table>`}
+        ${!whCan('inventory.view')?`<p>${LANG==='ar'?'لا تملك صلاحية عرض الأرصدة.':'Stock access is not permitted.'}</p>`:catDetailInvLoading?`<div class="imd-empty">${t('loading')}</div>`:`<table class="imd-wh-table"><thead><tr><th>${t('invWh')}</th><th>${t('invShelf')}</th><th>${t('invOnHand')}</th><th>${t('invReserved')}</th><th>${t('invAvail')}</th><th>${t('invMin')}</th><th>${t('invStatus')}</th></tr></thead><tbody>${whRows}</tbody></table>`}
       </div></div>
     </div></aside>`;
 }

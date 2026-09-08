@@ -2456,12 +2456,12 @@ async function tryAdmin(){
     return;
   }
   // success → open the manager dashboard
-  state.role='admin';state.route='manage';if(!L)L='en';await saveLang();
+  state.role='admin';state.route=adminResolveRoute(location.hash.slice(1)||'dashboard');if(!L)L='en';await saveLang();
   await load('admin');
   await repairManagerSnapshot();   // heal a pre-snapshot or stale manager record
   document.getElementById('gate').innerHTML='';document.getElementById('app').style.display='flex';applyDir();render();startRealtime();
 }
-async function enterAdminDirect(){state.role='admin';const h=(location.hash||'').replace('#','');const valid=['dashboard','reports','assets','manage','archive','techtasks','staffdir','media','settings','all'];state.route=valid.includes(h)?h:'dashboard';if(!L)L='en';document.getElementById('gate').innerHTML='';document.getElementById('app').style.display='flex';applyDir();render();startRealtime();}
+async function enterAdminDirect(){state.role='admin';const h=(location.hash||'').replace('#','');const valid=['dashboard','reports','assets','manage','archive','techtasks','staffdir','media','settings','all'];state.route=adminResolveRoute(valid.includes(h.split('?')[0])||['open'].includes(h.split('?')[0])?h:'dashboard');if(!L)L='en';document.getElementById('gate').innerHTML='';document.getElementById('app').style.display='flex';applyDir();render();startRealtime();}
 function enterPublic(role){state.role=role;if(role==='staff')L='ar';else if(!L)L='ar';document.getElementById('gate').innerHTML='';document.getElementById('app').style.display='block';applyDir();
   // A1: if a valid staff session exists, restore it and load tasks from the server
   if(role==='staff'){const sess=stfGetSession();if(sess&&sess.en){staffName=sess.en;render();loadStaffTasks();startPublicPolling();return;}}
@@ -2492,7 +2492,7 @@ let _pubSig='';
 function applyDir(){document.body.setAttribute('dir',L==='ar'?'rtl':'ltr');document.documentElement.lang=L;}
 async function toggleLang(){L=(L==='en'?'ar':'en');if(state.role!=='staff')await saveLang();applyDir();render();}
 async function exitToGate(){state.role='employee';{await admSignOut();}clearAdminFlag();openAdmin();document.getElementById('app').style.display='none';}
-function go(r){state.route=r;sideOpen=false;if(r==='manage')manageView='cards';try{location.hash=r;}catch(e){}render();}
+function go(r){if(state.role==='admin')adminCloseDetail();state.route=state.role==='admin'?adminResolveRoute(r):r;sideOpen=false;try{history.pushState(history.state,'','#'+r);}catch(e){}render();}
 function openExternal(path){try{window.open(path,'_blank','noopener');}catch(e){}}
 function toggleSide(){sideOpen=!sideOpen;render();}
 
@@ -2527,6 +2527,7 @@ function opts(arr,sel){return [`<option value="">${t('select')}</option>`].conca
 
 /* ===== RENDER SHELL ===== */
 function render(){
+  document.body.classList.toggle('ad-admin',state.role==='admin');
   /* CRON: archive_stale_completed_tasks() runs every 10 min server-side; browser auto-archive disabled */
   const app=document.getElementById('app');
   if(state.role==='track'){
@@ -2561,7 +2562,7 @@ function render(){
     return;
   }
   // admin: sidebar shell
-  const navk=["dashboard","manage","techtasks","staffdir","assets","reports","all","media","archive","settings"];
+  const navk=["dashboard","manage","techtasks","assets","reports","settings"];
   const rows=state.requests.map(calc);
   const pendingCount=rows.filter(isIncoming).length;
   let nav=navk.map(k=>{
@@ -2587,18 +2588,18 @@ function render(){
   const v=document.getElementById('view');
   if(state.route==='dashboard')v.innerHTML=adminHome();
   else if(state.route==='assets')v.innerHTML=viewAssets();
-  else if(state.route==='manage')v.innerHTML=viewManage();
-  else if(state.route==='all')v.innerHTML=viewAll();
-  else if(state.route==='techtasks')v.innerHTML=viewTechTasks();
-  else if(state.route==='staffdir')v.innerHTML=viewStaffDir();
+  else if(state.route==='manage')v.innerHTML=adminWorkView();
+  else if(state.route==='all'){adminResolveRoute('all');v.innerHTML=adminWorkView();}
+  else if(state.route==='techtasks')v.innerHTML=adminTeamTabs()+viewTechTasks();
+  else if(state.route==='staffdir')v.innerHTML=adminTeamTabs()+viewStaffDir();
   else if(state.route==='open')v.innerHTML=viewOpen();
-  else if(state.route==='archive')v.innerHTML=viewArchive();
+  else if(state.route==='archive'){adminResolveRoute('archive');v.innerHTML=adminWorkView();}
   else if(state.route==='reports')v.innerHTML=viewReports();
-  else if(state.route==='media')v.innerHTML=viewMedia();
+  else if(state.route==='media')v.innerHTML=adminRequestTabs()+viewMedia();
   else if(state.route==='settings')v.innerHTML=viewSettings();
   renderModal();
   AdvaconUI.enhance(app);
-  if(state.route==='assets')renderDecisionSummary(v);
+  adminDecorate();
 }
 
 async function renderDecisionSummary(root){
@@ -2973,6 +2974,7 @@ function weGoImgs(id,side){
 /* Documents open in the details panel's Files tab — the component that already
    lists them, rather than a second list widget. */
 function weGoDocs(id,side){
+  if(state.role==='admin'){adminDetail(id,1);return;}
   weSel=id; wpFor=id; wpTab='docs';
   renderPanel();
 }
@@ -3268,6 +3270,7 @@ let wpTab='';       // '', 'claim', 'proof', 'docs' — '' means pick the first 
 let wpFor=0;        // which task wpTab belongs to; without this the tab leaks between tasks
 
 function openEvidencePanel(taskId){
+  if(state.role==='admin'){weSel=0;adminDetail(taskId,1);return;}
   if(wpFor!==taskId){ wpTab=''; wpFor=taskId; }
   renderPanel();
 }
@@ -4195,7 +4198,7 @@ function taskRow(r){
   if(!isDone && r.accepted && (r.assignedTo||'').trim() && r.effStatus!=='Cancelled'){if(r.effStatus==='On Hold'||r.effStatus==='Needs Review'||r.effStatus==='Needs Update'){acts+=`<button class="ico" title="${t('returnToTech')}" onclick="returnToTech(${r.id})">↩</button>`;}acts+=`<button class="ico" title="${t('returnAccept')}" onclick="returnToAcceptance(${r.id})">⤴</button>`;}
   const pendBadge=r.pendingConfirm?`<span class="pend-badge">⏳ ${t('pendBadge')}</span>`:'';
   return `<tr class="${rowCls}">
-    <td class="c-id">${fmtID(r.id)}</td>
+    <td class="c-id"><button class="ad-title-button" onclick="adminDetail(${r.id})">${fmtID(r.id)}</button></td>
     <td class="c-title"><div class="ttl">${esc(r.title)} ${pendBadge} ${mrCardBadge(r.id)}</div>${r.notes?`<div class="nt">📝 ${esc(r.notes)}</div>`:''}${r.closeoutNote?`<div class="nt" style="color:var(--green)">💬 ${esc(t('coNoteLbl'))}: ${esc(r.closeoutNote)}</div>`:''}${r.managerNote?`<div class="nt" style="color:#92400E">🗒 ${esc(t('stfMgrNote'))}: ${esc(r.managerNote)}</div>`:''}${imgIcon}${fileLinks(r)}</td>
     <td>${esc(r.project)}</td>
     <td>${esc(r.assignedTo||'—')}</td>
@@ -4283,7 +4286,7 @@ function viewPeriodTasks(){
       <th>${t('mTaskId')}</th><th>${t('reqLabel')}</th><th>${t('mAssign')}</th><th>${t('mStatus')}</th>
       <th>${t('colReceived')}</th><th>${t('colClosed')}</th><th>${t('colDuration')}</th><th></th></tr></thead><tbody>${
       linked.map(r=>`<tr>
-        <td class="c-id">${fmtID(r.id)}</td><td class="c-title"><div class="ttl">${esc(r.title)}</div></td>
+        <td class="c-id"><button class="ad-title-button" onclick="adminDetail(${r.id})">${fmtID(r.id)}</button></td><td class="c-title"><div class="ttl">${esc(r.title)}</div></td>
         <td>${esc(r.assignedTo||'—')}</td><td>${stBadge(r.effStatus)}</td>
         <td class="c-time">${fmtTime(r.receivedAt)}</td><td class="c-time">${fmtTime(r.confirmedAt)}</td>
         <td class="c-dur">${fmtDuration(r.receivedAt,r.confirmedAt)}</td><td class="c-act">${ddActions(r)}</td>
@@ -4532,7 +4535,7 @@ function viewManage(){
   const incCard=(r)=>`<div class="mcard">
     <div class="mc-top"><span class="mc-id">${fmtID(r.id)}</span><span class="prio ${r.priority}">${esc(dispPri(r.priority))}</span></div>
     ${mrCardBadge(r.id)?`<div class="mc-mrbadge">${mrCardBadge(r.id)}</div>`:''}
-    <div class="mc-title">${esc(r.title)}</div>
+    <div class="mc-title">${state.role==='admin'?adminTaskLink(r):esc(r.title)}</div>
     <div class="mc-rows">
       ${drow(t('mReqBy'),esc(r.requestedBy||'—'))}
       ${drow(t('mPhone'),`<span dir="ltr">${esc(r.phone||'—')}</span>`)}
@@ -4547,7 +4550,7 @@ function viewManage(){
   const workCard=(r)=>{const dl=dueCell(r);const schedBadge=r.isFuture?`<span class="sched-badge future">🗓️ ${t('badgeFuture')}</span>`:(r.isReady?`<span class="sched-badge ready">▶ ${t('badgeReady')}</span>`:'');return `<div class="mcard ${r.effStatus==='Overdue'?'ov':''}">
     <div class="mc-top"><span class="mc-id">${fmtID(r.id)}</span>${schedBadge||stBadge(r.effStatus)}</div>
     ${mrCardBadge(r.id)?`<div class="mc-mrbadge">${mrCardBadge(r.id)}</div>`:''}
-    <div class="mc-title">${esc(r.title)}</div>
+    <div class="mc-title">${state.role==='admin'?adminTaskLink(r):esc(r.title)}</div>
     <div class="mc-rows">
       ${drow(t('mAssign'),esc(r.assignedTo||'—'))}
       ${r.schedStart?drow(t('taskStartLbl'),fmtTime(r.schedStart)):''}
@@ -4568,7 +4571,7 @@ function viewManage(){
   const pendCard=(r)=>`<div class="mcard pendrow">
     <div class="mc-top"><span class="mc-id">${fmtID(r.id)}</span><span class="pend-badge">⏳ ${t('pendBadge')}</span></div>
     ${mrCardBadge(r.id)?`<div class="mc-mrbadge">${mrCardBadge(r.id)}</div>`:''}
-    <div class="mc-title">${esc(r.title)}</div>
+    <div class="mc-title">${state.role==='admin'?adminTaskLink(r):esc(r.title)}</div>
     <div class="mc-rows">
       ${drow(t('mAssign'),esc(r.assignedTo||'—'))}
       ${drow(t('mProj'),esc(r.project))}
@@ -4594,7 +4597,7 @@ function viewManage(){
   const head=`<div class="phead phead-row"><div><div class="eyebrow">${t('opsEye')}</div><h1>${t('manageH1')}</h1></div>${periodBtn}</div>`+needsAttention();
   const doneCard=(r)=>{let co=[];try{co=JSON.parse(r.closeoutImages||'[]');}catch(e){}return `<div class="mcard donecard">
     <div class="mc-top"><span class="mc-id">${fmtID(r.id)}</span>${stBadge('Complete')}</div>
-    <div class="mc-title">${esc(r.title)}</div>
+    <div class="mc-title">${state.role==='admin'?adminTaskLink(r):esc(r.title)}</div>
     <div class="mc-rows">
       ${drow(t('mAssign'),esc(r.assignedTo||'—'))}
       ${drow(t('mProj'),esc(r.project))}
@@ -4643,10 +4646,10 @@ function viewAll(){
       else if(isAdminArchived(r)){b+=`<button class="ico ok" title="${t('restore')}" onclick="restoreTask(${r.id})">♻</button>`;}
       return b;
     })();
-    return `<tr><td class="c-id">${fmtID(r.id)}</td><td class="c-title"><div class="ttl">${esc(r.title)}${pend}</div>${r.notes?`<div class="nt">📝 ${esc(r.notes)}</div>`:''}${imgIcon}${fileLinks(r)}</td><td>${esc(r.requestedBy||'—')}</td><td>${esc(r.project)}</td><td>${esc(dispCat(r.category))}</td><td><span class="prio ${r.priority}">${esc(dispPri(r.priority))}</span></td><td>${esc(r.assignedTo||'—')}</td><td>${effBadge(r)}</td><td>${esc(r.due||'—')}</td><td class="c-act">${acts}</td></tr>`;
+    return `<tr><td class="c-id"><button class="ad-title-button" onclick="adminDetail(${r.id})">${fmtID(r.id)}</button></td><td class="c-title"><div class="ttl">${esc(r.title)}${pend}</div>${r.notes?`<div class="nt">📝 ${esc(r.notes)}</div>`:''}${imgIcon}${fileLinks(r)}</td><td>${esc(r.requestedBy||'—')}</td><td>${esc(r.project)}</td><td>${esc(dispCat(r.category))}</td><td><span class="prio ${r.priority}">${esc(dispPri(r.priority))}</span></td><td>${esc(r.assignedTo||'—')}</td><td>${effBadge(r)}</td><td>${esc(r.due||'—')}</td><td class="c-act">${acts}</td></tr>`;
   }).join('')+`</tbody></table></div>`:`<div class="empty">${t('noMatch')}</div>`;
   return `<div class="phead"><div class="eyebrow">${t('allEye')}</div><h1>${t('allH1')}</h1><p>${t('allP')}</p></div>
-  <div class="panel panel-pad stats-panel">${viewDashboard()}</div>
+
   ${filtBar()}<div class="filterbar" style="margin-top:-8px"><div class="spacer"></div><span class="count-chip">${all.length} ${t('total')}</span></div>${body}${pager('all',total)}`;
 }
 
@@ -4702,7 +4705,7 @@ function viewArchive(){
       `</div>`+
       (((r.status==='Rejected'||r.status==='Cancelled')&&r.rejectReason)?`<div class="arch-reason"><b>${t(r.status==='Cancelled'?'cancelReasonLbl':'stfRejectReason')}:</b> ${esc(r.rejectReason)}</div>`:'');
     const note=r.notes?`<div class="nt">📝 ${esc(r.notes)}</div>`:'';
-    return `<tr><td class="c-id">${fmtID(r.id)}</td><td class="c-title"><div class="ttl">${esc(r.title)}</div>${note}${det}${imgIcon}${fileLinks(r)}</td><td>${esc(r.project)}</td><td><span class="st" style="background:${tagColor}">${tag}</span></td><td class="c-act"><button class="ico wide" title="${t('restore')}" onclick="restoreTask(${r.id})">↩ ${t('restore')}</button></td></tr>`;
+    return `<tr><td class="c-id"><button class="ad-title-button" onclick="adminDetail(${r.id})">${fmtID(r.id)}</button></td><td class="c-title"><div class="ttl">${esc(r.title)}</div>${note}${det}${imgIcon}${fileLinks(r)}</td><td>${esc(r.project)}</td><td><span class="st" style="background:${tagColor}">${tag}</span></td><td class="c-act"><button class="ico wide" title="${t('restore')}" onclick="restoreTask(${r.id})">↩ ${t('restore')}</button></td></tr>`;
   }).join('')+`</tbody></table></div>`:`<div class="empty">${t('noMatch')}</div>`;
   return `<div class="phead"><div class="eyebrow">${t('archEye')}</div><h1>${t('archH1')}</h1><p>${t('archP')}</p></div>
   <div class="filterbar"><input placeholder="${t('search')}" value="${esc(F().q)}" oninput="F().q=this.value;rerenderSoft()"/><div class="spacer"></div><span class="count-chip">${rows.length}</span></div>
@@ -4769,7 +4772,7 @@ function dailyDashboard(){
   if(ddOpen&&sets[ddOpen]){
     const list=byNumberDesc(sets[ddOpen]);
     const rows=list.length?list.map(r=>`<tr>
-      <td class="c-id">${fmtID(r.id)}</td><td class="c-title"><div class="ttl">${esc(r.title)}</div></td>
+      <td class="c-id"><button class="ad-title-button" onclick="adminDetail(${r.id})">${fmtID(r.id)}</button></td><td class="c-title"><div class="ttl">${esc(r.title)}</div></td>
       <td>${esc(r.requestedBy||'—')}</td><td>${esc(r.project)}</td><td>${esc(r.assignedTo||'—')}</td><td>${stBadge(r.effStatus)}</td>
       <td class="c-time">${fmtTime(r.receivedAt)}</td><td class="c-time">${fmtTime(r.startedAt)}</td><td class="c-time">${fmtTime(r.confirmedAt)}</td><td class="c-dur">${fmtDuration(r.receivedAt,r.confirmedAt)}</td>
       <td class="c-act">${ddActions(r)}</td>
@@ -4876,7 +4879,7 @@ function viewReports(){
   all.forEach(r=>{const d=dayOf(r);if(!groups[d]){groups[d]=[];order.push(d);}groups[d].push(r);});
   order.sort((a,b)=>{if(a==='—')return 1;if(b==='—')return -1;return b.localeCompare(a);});
   const rowFor=(r)=>`<tr>
-    <td class="c-id">${fmtID(r.id)}</td>
+    <td class="c-id"><button class="ad-title-button" onclick="adminDetail(${r.id})">${fmtID(r.id)}</button></td>
     <td class="c-title"><div class="ttl">${esc(r.title)}</div></td>
     <td>${esc(r.requestedBy||'—')}</td>
     <td>${esc(r.project)}</td>
@@ -5483,7 +5486,7 @@ function wcTaskCard(r){
   return `<div class="mcard ${r.effStatus==='Overdue'?'ov':''}${r.pendingConfirm?' pendrow':''}">
     <div class="mc-top"><span class="mc-id">${fmtID(r.id)}</span>${schedBadge||stBadge(r.effStatus)}</div>
     ${mrCardBadge(r.id)?`<div class="mc-mrbadge">${mrCardBadge(r.id)}</div>`:''}
-    <div class="mc-title">${esc(r.title)}</div>
+    <div class="mc-title">${state.role==='admin'?adminTaskLink(r):esc(r.title)}</div>
     <div class="mc-rows">
       ${wcDrow(t('mProj'),esc(r.project))}
       ${wcDrow(t('svcType'),esc(dispCat(r.category)))}
@@ -5509,7 +5512,7 @@ function viewTechTasks(){
   // Uses the RAW status, so an In-Progress task that is past due (effStatus flips to
   // Overdue) still counts — it's still being worked on. Everything else is excluded:
   // Incoming, accepted-but-not-started, scheduled/future, pending-confirm, done, cancelled.
-  const isActive=(r)=> r.status==='In Progress' && !r.archived;
+  const isActive=(r)=> adminTaskStage(r)==='open';
   const all=(state.requests||[]).map(calc);   // MUST calc — effStatus/due/isFuture come from calc(); raw rows lack them
   const q=(state.ttSearch||'').trim().toLowerCase();
 
@@ -5839,7 +5842,8 @@ async function toggleWidget(k){
 /* ===== export ===== */
 function exportExcel(scope){
   let rows;let fname='OM_Service_Requests.csv';
-  if(scope==='open'){rows=state.requests.map(calc).filter(isOpen).sort((a,b)=>a.id-b.id);fname='OM_Open_Tasks.csv';}
+  if(scope==='work'){rows=adminWorkRows();fname='ADVACON_Filtered_Requests.csv';}
+  else if(scope==='open'){rows=state.requests.map(calc).filter(isOpen).sort((a,b)=>a.id-b.id);fname='OM_Open_Tasks.csv';}
   else{rows=state.requests.map(calc).sort((a,b)=>a.id-b.id);}
   const head=['#','Project','Category','Priority','Assigned To','Task Title','Manager Note','Received','Start','Duration','Status','Task ID','Due','Closed','Days Left','Progress %','Requested By','Mobile'];
   const data=rows.map((r,i)=>[i+1,r.project,r.category,r.priority,r.assignedTo,r.title,r.notes,r.received,r.start,r.duration,r.effStatus,fmtID(r.id),r.due,r.closed,r.daysleft,Math.round((r.progress||0)*100)+'%',r.requestedBy,r.phone||'']);

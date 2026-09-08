@@ -237,6 +237,7 @@
     html[dir="rtl"] .sidebar.open { transform: translateX(0); }
   }
 [hidden] { display: none !important; }
+.housing-nav-group{border-bottom:1px solid var(--border,#e2e8f0);padding:8px 0}.housing-nav-group summary{cursor:pointer;padding:12px 16px;font-weight:700;color:var(--primary,#15406e);min-height:44px}.housing-nav-group .nav-item{margin-inline-start:12px}.housing-record-focus{outline:3px solid #83a6cb;outline-offset:-3px;background:#edf4fb}
 </style>
 <link rel="stylesheet" href="/advacon-ui.css">
 <script src="/advacon-ui.js"></script>
@@ -962,12 +963,9 @@ function navAllowed(item){
   return !key || can(key);
 }
 function renderNav(activeRoute) {
-  const nav = document.getElementById('mainNav');
-  nav.innerHTML = NAV_ITEMS.filter(navAllowed).map(item => `
-    <a class="nav-item ${item.route === activeRoute ? 'active' : ''}" href="#${item.route}">
-      <span class="icon">${item.icon}</span>
-      <span>${escapeHtml(t(item.key))}</span>
-    </a>`).join('');
+ const nav=document.getElementById('mainNav'),tr=(ar,en)=>LANG==='ar'?ar:en;
+ const groups=[['',tr('الملخص','Overview'),['']],['properties',t('properties'),['properties']],['contracts',t('contracts'),['contracts','landlords']],['residents',t('residents'),['residents']],['bills',tr('المالية والتقارير','Finance & reports'),['bills','expenses','meters','reports']],['settings',tr('الإعدادات والإدارة','Settings & administration'),['settings','approvals','permissions','activity','attachment-health']]];
+ nav.innerHTML=groups.map(([key,label,routes])=>{const allowed=NAV_ITEMS.filter(item=>routes.includes(item.route)&&navAllowed(item));if(!allowed.length)return '';const active=routes.includes(activeRoute),link=item=>'<a class="nav-item '+(item.route===activeRoute?'active':'')+'" href="#'+item.route+'"><span class="icon">'+item.icon+'</span><span>'+escapeHtml(t(item.key))+'</span></a>';if(allowed.length===1)return link(allowed[0]);return '<details class="housing-nav-group" '+(active?'open':'')+'><summary>'+escapeHtml(label)+'</summary>'+allowed.map(link).join('')+'</details>';}).join('');
 }
 
 async function route() {
@@ -1272,8 +1270,9 @@ async function screenPropertyDetail(el, id) {
     if (!res.ok || !res.property) { el.innerHTML = `<div class="error-box">Not found</div>`; return; }
     const p = res.property;
     const tabs = ['summary','structure','contracts','meters','residents','expenses','attachments'];
-    const activeTab = location.hash.split('?tab=')[1] || 'summary';
+    const activeTab = new URLSearchParams(location.hash.split('?')[1]||'').get('tab') || 'summary';
     el.innerHTML = `
+      ${new URLSearchParams(location.hash.split('?')[1]||'').get('from')==='contracts'&&can('contracts.view')?'<a class="btn btn-ghost" href="#contracts">'+(LANG==='ar'?'العودة لقائمة العقود':'Back to contracts')+'</a>':''}
       <div class="breadcrumb">
         <a href="#properties">${t('properties')}</a>
         <span class="sep">›</span>
@@ -1527,7 +1526,7 @@ async function renderPropTabContracts(container, p, refresh) {
           <thead><tr><th>${t('contractNo')}</th><th>${t('startDate')}</th><th>${t('endDate')}</th>
             <th>${t('monthlyRent')}</th><th>${t('totalValue')}</th><th>${t('landlord')}</th><th>${t('status')}</th><th></th></tr></thead>
           <tbody>${items.map(c=>`
-            <tr>
+            <tr data-contract-id="${escapeHtml(c.id)}">
               <td class="code-cell">${escapeHtml(c.contract_no||'—')}</td>
               <td>${fmtDate(c.start_date)}</td><td>${fmtDate(c.end_date)}</td>
               <td class="num-cell">${fmtSAR(c.monthly_rent)}</td>
@@ -1541,6 +1540,7 @@ async function renderPropTabContracts(container, p, refresh) {
             </tr>`).join('')}</tbody>
         </table>` : `<div class="empty" style="padding:40px; text-align:center; color:var(--muted);">${t('noItems')}</div>`}
     </div>`;
+  const focusId=new URLSearchParams(location.hash.split('?')[1]||'').get('record');if(focusId){const row=[...container.querySelectorAll('[data-contract-id]')].find(x=>x.dataset.contractId===focusId);if(row){row.classList.add('housing-record-focus');row.tabIndex=-1;row.focus();}}
   document.getElementById('btnAddContract').addEventListener('click', () => openContractForm(null, p.id, refresh));
   container.querySelectorAll('[data-c-edit]').forEach(b => b.addEventListener('click', async (e) => {
     const cid = e.currentTarget.getAttribute('data-c-edit');
@@ -2409,7 +2409,7 @@ async function screenContracts(el) {
             const daysLeft = c.end_date ? Math.floor((new Date(c.end_date) - new Date()) / (1000*60*60*24)) : null;
             const dayCls = daysLeft==null?'':daysLeft<0?'text-muted':daysLeft<=60?'':'text-muted';
             return `<tr>
-              <td class="code-cell">${escapeHtml(c.contract_no||'—')}</td>
+              <td class="code-cell">${c.property_id&&can('properties.view')?'<a href="#properties/'+encodeURIComponent(c.property_id)+'?tab=contracts&record='+encodeURIComponent(c.id)+'&from=contracts">'+escapeHtml(c.contract_no||'—')+'</a>':escapeHtml(c.contract_no||'—')}</td>
               <td>${c.property?`<a href="#properties/${c.property_id}">${escapeHtml(c.property.code)} — ${escapeHtml(LANG==='ar'?c.property.name_ar:(c.property.name_en||c.property.name_ar))}</a>`:'—'}</td>
               <td>${c.landlord?escapeHtml(c.landlord.name):'—'}</td>
               <td>${fmtDate(c.start_date)}</td>
