@@ -236,6 +236,7 @@
     html[dir="rtl"] .sidebar { inset-inline-start: 0; transform: translateX(100%); border-inline-start: 1px solid var(--border); border-inline-end: none; }
     html[dir="rtl"] .sidebar.open { transform: translateX(0); }
   }
+[hidden] { display: none !important; }
 </style>
 </head>
 <body>
@@ -282,7 +283,7 @@ const CFG = {
   assetSessionKey: 'advacon_asset_sess',
   langKey: 'housing_lang',
 };
-const sb = supabase.createClient(CFG.supabaseUrl, CFG.supabaseAnonKey);
+const sb = supabase.createClient(CFG.supabaseUrl, CFG.supabaseAnonKey, {auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
 
 /* =====================================================================
    I18N
@@ -433,11 +434,12 @@ async function assetEnsureSession(){
 }
 async function assetSignOut(){
   const sess=assetGetSession();
-  if(sess&&sess.access_token){try{await fetch(SB_URL+'/auth/v1/logout',{method:'POST',headers:{'apikey':SB_KEY,'Authorization':'Bearer '+sess.access_token,'Content-Type':'application/json'},body:'{}'});}catch(e){}}
+  if(sess&&sess.access_token){try{await fetch(SB_URL+'/auth/v1/logout?scope=local',{method:'POST',headers:{'apikey':SB_KEY,'Authorization':'Bearer '+sess.access_token,'Content-Type':'application/json'},body:'{}'});}catch(e){}}
   assetClearSession();
 }
 function permissionMode(key){ return CTX.mode==='admin'?'direct':(CTX.permissions[key]||'deny'); }
-function can(key){ return permissionMode(key)!=='deny'; }
+function housingActionAttrs(key){return can(key)?'data-permission="'+key+'"':'data-permission="'+key+'" hidden disabled';}
+function can(key){ return ['direct','approval'].includes(permissionMode(key)); }
 
 /* =====================================================================
    ADMIN SESSION — aligned with index.html patterns
@@ -527,7 +529,7 @@ async function admSignOut() {
   const sess = admGetSession();
   if (sess && sess.access_token) {
     try {
-      await fetch(SB_URL + '/auth/v1/logout', {
+      await fetch(SB_URL + '/auth/v1/logout?scope=local', {
         method: 'POST',
         headers: {'apikey': SB_KEY, 'Authorization': 'Bearer ' + sess.access_token, 'Content-Type': 'application/json'},
         body: '{}'
@@ -691,6 +693,8 @@ async function uploadAndRegisterAttachment({ entityType, entityId, file, kindKey
   const okSess = await ensureHousingSession();
   if (!okSess) throw new Error(LANG==='ar'?'جلسة مسؤول الإسكان غير صالحة':'Housing manager session is invalid');
 
+  if(!can('attachments.upload'))throw new Error('not_authorized');
+
   // Step 1: upload to storage
   const { error: upErr } = await sb.storage.from('housing-attachments').upload(path, file, { contentType: file.type });
   if (upErr) throw new Error(translateStorageError(upErr));
@@ -704,6 +708,7 @@ async function uploadAndRegisterAttachment({ entityType, entityId, file, kindKey
       p_notes:       notes || null,
     });
   } catch (regErr) {
+    if(regErr instanceof HousingApprovalPending)throw regErr;
     // Compensating action: remove the just-uploaded file
     let compensationFailed = null;
     try {
@@ -780,28 +785,35 @@ const HOUSING_RPC_ACTION = {
   housing_create_expense:'expenses.create', housing_update_expense:'expenses.edit', housing_toggle_expense_active:'expenses.edit', housing_delete_expense:'expenses.delete',
   housing_register_attachment:'attachments.upload', housing_delete_attachment:'attachments.delete'
 };
+class HousingApprovalPending extends Error {
+ constructor(result){super('APPROVAL_PENDING: '+(LANG==='ar'?'تم إرسال الطلب لموافقة الإدارة؛ لم تُنفذ العملية بعد':'Request submitted for Admin approval; no change has been executed'));this.result=result;}
+}
 async function rawRpc(fn,args={}){
   const okSess = await ensureHousingSession();
   if(!okSess){showSignInRequired('session_expired');throw new Error('Housing access denied');}
   const sess=housingSession();
   let res; try{res=await fetch(SB_URL+'/rest/v1/rpc/'+fn,{method:'POST',headers:{'apikey':SB_KEY,'Authorization':'Bearer '+sess.access_token,'Content-Type':'application/json'},body:JSON.stringify(args||{})});}
   catch(e){throw new Error(LANG==='ar'?'فشل الاتصال بالخادم':'Network error');}
-  if(res.status===401||res.status===403){ if(CTX.mode==='admin') admClearSession(); else await assetSignOut(); showSignInRequired('http_'+res.status); throw new Error('Session expired'); }
+  if(res.status===401){ if(CTX.mode==='admin') admClearSession(); else await assetSignOut(); showSignInRequired('http_'+res.status); throw new Error('Session expired'); }
   if(!res.ok){let msg='http_'+res.status;try{const b=await res.json();msg=(b&&(b.message||b.error||b.details||b.hint))||msg;}catch(_){} throw new Error(String(msg).trim());}
   return await res.json();
 }
 async function rpc(fn,args={}){
+  if(fn==='housing_update_bill')args={p_status:null,p_paid_date:null,...args}; // Select the verified 12-argument overload.
+  if(!await ensureHousingSession())throw new Error('session_expired');
+  if(CTX.mode!=='admin' && /^housing_(get_settings|update_setting|.*ref_item|.*template)$/.test(fn))throw new Error('not_authorized');
   if(CTX.mode==='asset'){
+    const readAction={housing_list_attachments:'attachments.view',housing_get_attachment:'attachments.view',housing_dashboard:'dashboard.view',housing_list_properties:'properties.view',housing_get_property:'properties.view',housing_get_space_tree:'properties.view',housing_list_landlords:'landlords.view',housing_get_landlord:'landlords.view',housing_list_contracts:'contracts.view',housing_get_contract:'contracts.view',housing_list_meters:'meters.view',housing_get_meter:'meters.view',housing_list_meters_for_location:'meters.view',housing_list_readings:'meters.view',housing_list_bills:'bills.view',housing_get_bill:'bills.view',housing_list_residents:'residents.view',housing_get_resident:'residents.view',housing_list_residents_for_location:'residents.view',housing_list_expenses:'expenses.view',housing_get_expense:'expenses.view'}[fn] || (fn.startsWith('housing_report_')?'reports.view':null);
+    if(readAction&&!can(readAction))throw new Error('not_authorized');
     const action=HOUSING_RPC_ACTION[fn];
     if(action){
       const mode=permissionMode(action);
-      if(mode==='deny') throw new Error(LANG==='ar'?'لا تملك صلاحية تنفيذ هذه العملية':'You do not have permission for this action');
-      if(mode==='approval'){
+      if(!['direct','approval'].includes(mode)) throw new Error(LANG==='ar'?'لا تملك صلاحية تنفيذ هذه العملية':'You do not have permission for this action');
+      if(mode==='approval' && args.p_dry_run!==true){
         const entityId=args.p_id||args.p_entity_id||args.p_property_id||args.p_contract_id||args.p_meter_id||args.p_resident_id||args.p_bill_id||args.p_expense_id||null;
         const entityType=action.split('.')[0].replace(/ies$/,'y').replace(/s$/,'');
         const out=await rawRpc('asset_housing_request',{p_rpc_name:fn,p_payload:args||{},p_entity_type:entityType,p_entity_id:entityId?String(entityId):null,p_before_data:null});
-        toast(LANG==='ar'?'تم إرسال الطلب لموافقة الإدارة':'Request submitted for Admin approval','success');
-        return {...(out||{}),pending_approval:true};
+        throw new HousingApprovalPending(out);
       }
     }
   }
@@ -872,6 +884,7 @@ function pickName(obj) {
    UI HELPERS (toast, modal, confirm)
    ===================================================================== */
 function toast(message, kind = 'info', ms = 3500) {
+  if(String(message).startsWith('APPROVAL_PENDING: ')){message=String(message).slice(18);kind='info';}
   const mount = document.getElementById('toast-mount');
   const el = document.createElement('div');
   el.className = 'toast ' + kind;
@@ -1078,6 +1091,9 @@ async function route() {
   const content = document.getElementById('content');
   content.innerHTML = `<div class="loading">${t('loading')}</div>`;
   try {
+    if(!await ensureHousingSession())throw new Error('session_expired');
+    const navItem=NAV_ITEMS.find(x=>x.route===(mainRoute==='dashboard'?'':mainRoute));
+    if(navItem&&!navAllowed(navItem))throw new Error('not_authorized');
     switch (mainRoute) {
       case '': case 'dashboard': await screenDashboard(content); break;
       case 'properties':
@@ -1188,7 +1204,7 @@ async function screenProperties(el) {
     <div class="page-header">
       <h1>${t('properties')}</h1>
       <span class="spacer"></span>
-      <button class="btn btn-primary" id="btnAddProp">+ ${t('add')}</button>
+      <button class="btn btn-primary" id="btnAddProp" ${housingActionAttrs('properties.create')}>+ ${t('add')}</button>
     </div>
     <div class="filters">
       <div class="field"><label>${t('search')}</label><input id="fSearch" placeholder="${t('search')}..."></div>
@@ -1255,6 +1271,7 @@ function renderPropTable(container, items) {
 }
 
 async function openPropertyForm(existing, onSaved) {
+  if(!can(existing?'properties.edit':'properties.create')){toast('not_authorized','error');return;}
   const [cats, uses, owns] = await Promise.all([
     getRefOptions('building_categories'),
     getRefOptions('use_types'),
@@ -1326,9 +1343,9 @@ async function screenPropertyDetail(el, id) {
         </div>
         <span class="spacer"></span>
         ${fmtIsActive(p.is_active)}
-        <button class="btn" id="btnEditProp">${t('edit')}</button>
-        <button class="btn ${p.is_active?'btn-ghost':'btn-primary'}" id="btnToggleActive">${p.is_active?t('deactivate'):t('activate')}</button>
-        <button class="btn btn-ghost" id="btnDeleteProp" style="color:var(--red); border-color:var(--red);">${t('delete')}</button>
+        <button class="btn" id="btnEditProp" ${housingActionAttrs('properties.edit')}>${t('edit')}</button>
+        <button class="btn ${p.is_active?'btn-ghost':'btn-primary'}" id="btnToggleActive" ${housingActionAttrs('properties.activate')}>${p.is_active?t('deactivate'):t('activate')}</button>
+        <button class="btn btn-ghost" id="btnDeleteProp" ${housingActionAttrs('properties.delete')} style="color:var(--red); border-color:var(--red);">${t('delete')}</button>
       </div>
       <div class="tabs">
         ${tabs.map(k => `<a class="tab ${k===activeTab?'active':''}" href="#properties/${id}?tab=${k}">${t('tab'+k.charAt(0).toUpperCase()+k.slice(1))}</a>`).join('')}
@@ -1468,7 +1485,7 @@ async function renderPropTabStructure(container, p, refresh) {
   const nodes = res.nodes || [];
   container.innerHTML = `
     <div class="mb-3 flex" style="justify-content:flex-end;">
-      <button class="btn btn-primary" id="btnAddSpace">+ ${t('add')} ${LANG==='ar'?'حيّز':'Space'}</button>
+      <button class="btn btn-primary" id="btnAddSpace" ${housingActionAttrs('spaces.manage')}>+ ${t('add')} ${LANG==='ar'?'حيّز':'Space'}</button>
     </div>
     <div class="card">
       ${nodes.length ? renderSpaceTree(nodes) : `<div class="text-muted text-center" style="padding:30px;">${t('noItems')}</div>`}
@@ -1505,9 +1522,9 @@ function renderSpaceTree(nodes, depth = 0) {
         <span>${escapeHtml(n.name||'')}</span>
         <span class="text-muted" style="font-size:12px;">${n.capacity!=null?`(${n.capacity})`:''}</span>
         <span class="spacer"></span>
-        <button class="btn btn-sm btn-ghost" data-space-addchild="${n.id}">+</button>
-        <button class="btn btn-sm btn-ghost" data-space-edit="${n.id}">${t('edit')}</button>
-        <button class="btn btn-sm btn-ghost" style="color:var(--red);" data-space-del="${n.id}">×</button>
+        <button class="btn btn-sm btn-ghost" ${housingActionAttrs('spaces.manage')} data-space-addchild="${n.id}">+</button>
+        <button class="btn btn-sm btn-ghost" ${housingActionAttrs('spaces.manage')} data-space-edit="${n.id}">${t('edit')}</button>
+        <button class="btn btn-sm btn-ghost" style="color:var(--red);" ${housingActionAttrs('spaces.manage')} data-space-del="${n.id}">×</button>
       </div>
       ${n.children && n.children.length ? renderSpaceTree(n.children, depth+1) : ''}
     </li>`).join('')}</ul>`;
@@ -1559,7 +1576,7 @@ async function renderPropTabContracts(container, p, refresh) {
   const items = res.items || [];
   container.innerHTML = `
     <div class="mb-3 flex" style="justify-content:flex-end;">
-      <button class="btn btn-primary" id="btnAddContract">+ ${t('add')}</button>
+      <button class="btn btn-primary" id="btnAddContract" ${housingActionAttrs('contracts.create')}>+ ${t('add')}</button>
     </div>
     <div class="table-wrap">
       ${items.length ? `
@@ -1575,8 +1592,8 @@ async function renderPropTabContracts(container, p, refresh) {
               <td>${c.landlord?escapeHtml(c.landlord.name):'—'}</td>
               <td>${fmtStatus(c.status)}</td>
               <td class="row-actions">
-                <button class="btn btn-sm" data-c-edit="${c.id}">${t('edit')}</button>
-                <button class="btn btn-sm" style="color:var(--red);" data-c-del="${c.id}" data-c-no="${escapeHtml(c.contract_no||c.id.slice(0,8))}">×</button>
+                <button class="btn btn-sm" ${housingActionAttrs('contracts.edit')} data-c-edit="${c.id}">${t('edit')}</button>
+                <button class="btn btn-sm" style="color:var(--red);" ${housingActionAttrs('contracts.delete')} data-c-del="${c.id}" data-c-no="${escapeHtml(c.contract_no||c.id.slice(0,8))}">×</button>
               </td>
             </tr>`).join('')}</tbody>
         </table>` : `<div class="empty" style="padding:40px; text-align:center; color:var(--muted);">${t('noItems')}</div>`}
@@ -1628,6 +1645,7 @@ async function renderPropTabContracts(container, p, refresh) {
 }
 
 async function openContractForm(existing, propId, onSaved) {
+  if(!can(existing?'contracts.edit':'contracts.create')){toast('not_authorized','error');return;}
   const [pays, statuses, landlords] = await Promise.all([
     getRefOptions('payment_methods'),
     getRefOptions('contract_statuses'),
@@ -1706,7 +1724,7 @@ async function openContractForm(existing, propId, onSaved) {
             <div class="flex" style="gap:8px; padding:6px 8px; border:1px solid var(--border); border-radius:6px; margin-bottom:4px; align-items:center;">
               <span style="flex:1;">📎 ${escapeHtml(a.filename)} <span style="color:var(--muted); font-size:11px;">(${escapeHtml(pickName(a.kind))}${a.size_bytes?` · ${fmtNum(Math.round(a.size_bytes/1024))} KB`:''})</span></span>
               <button type="button" class="btn btn-sm" data-att-dl="${escapeHtml(a.storage_path)}">↓</button>
-              <button type="button" class="btn btn-sm" style="color:var(--red);" data-att-del="${a.id}" data-path="${escapeHtml(a.storage_path)}">×</button>
+              <button type="button" class="btn btn-sm" style="color:var(--red);" ${housingActionAttrs('attachments.delete')} data-att-del="${a.id}" data-path="${escapeHtml(a.storage_path)}">×</button>
             </div>`).join('');
         }
       } catch(e) { html += `<div class="text-muted" style="font-size:12px;">${escapeHtml(e.message||e)}</div>`; }
@@ -1885,7 +1903,7 @@ async function renderPropTabMeters(container, p, refresh) {
   const items = res.items || [];
   container.innerHTML = `
     <div class="mb-3 flex" style="justify-content:flex-end;">
-      <button class="btn btn-primary" id="btnAssignMeter">+ ${LANG==='ar'?'ربط عدّاد':'Assign Meter'}</button>
+      <button class="btn btn-primary" id="btnAssignMeter" ${housingActionAttrs('meters.assign')}>+ ${LANG==='ar'?'ربط عدّاد':'Assign Meter'}</button>
     </div>
     <div class="table-wrap">
       ${items.length ? `
@@ -1899,7 +1917,7 @@ async function renderPropTabMeters(container, p, refresh) {
               <td>${escapeHtml(m.provider||'—')}</td>
               <td>${fmtDate(m.assigned_from)}</td>
               <td>${fmtIsActive(m.is_active)}</td>
-              <td class="row-actions"><button class="btn btn-sm" style="color:var(--red);" data-unassign="${m.assignment_id}">${LANG==='ar'?'فك':'Unassign'}</button></td>
+              <td class="row-actions"><button class="btn btn-sm" style="color:var(--red);" ${housingActionAttrs('meters.assign')} data-unassign="${m.assignment_id}">${LANG==='ar'?'فك':'Unassign'}</button></td>
             </tr>`).join('')}</tbody>
         </table>` : `<div class="empty" style="padding:40px; text-align:center; color:var(--muted);">${t('noItems')}</div>`}
     </div>`;
@@ -1942,7 +1960,7 @@ async function renderPropTabResidents(container, p, refresh) {
   const items = res.items || [];
   container.innerHTML = `
     <div class="mb-3 flex" style="justify-content:flex-end;">
-      <button class="btn btn-primary" id="btnAssignResident">+ ${LANG==='ar'?'ربط ساكن':'Assign Resident'}</button>
+      <button class="btn btn-primary" id="btnAssignResident" ${housingActionAttrs('residents.assign')}>+ ${LANG==='ar'?'ربط ساكن':'Assign Resident'}</button>
     </div>
     <div class="table-wrap">
       ${items.length ? `
@@ -1956,7 +1974,7 @@ async function renderPropTabResidents(container, p, refresh) {
               <td>${escapeHtml(r.phone||'—')}</td>
               <td>${fmtDate(r.assigned_from)}</td>
               <td>${fmtIsActive(r.is_active)}</td>
-              <td class="row-actions"><button class="btn btn-sm" style="color:var(--red);" data-unassign-r="${r.assignment_id}">${LANG==='ar'?'فك':'Unassign'}</button></td>
+              <td class="row-actions"><button class="btn btn-sm" style="color:var(--red);" ${housingActionAttrs('residents.assign')} data-unassign-r="${r.assignment_id}">${LANG==='ar'?'فك':'Unassign'}</button></td>
             </tr>`).join('')}</tbody>
         </table>` : `<div class="empty" style="padding:40px; text-align:center; color:var(--muted);">${t('noItems')}</div>`}
     </div>`;
@@ -2001,7 +2019,7 @@ async function renderPropTabExpenses(container, p, refresh) {
     <div class="mb-3 flex">
       <div class="text-muted">${LANG==='ar'?'الإجمالي':'Total'}: <strong>${fmtSAR(res.total_amount||0)}</strong></div>
       <span class="spacer"></span>
-      <button class="btn btn-primary" id="btnAddExp">+ ${t('add')}</button>
+      <button class="btn btn-primary" id="btnAddExp" ${housingActionAttrs('expenses.create')}>+ ${t('add')}</button>
     </div>
     <div class="table-wrap">
       ${items.length ? `
@@ -2089,6 +2107,7 @@ async function deleteEntityWithProbe(opts) {
 }
 
 async function openExpenseForm(existing, entityType, entityId, onSaved) {
+  if(!can(existing?'expenses.edit':'expenses.create')){toast('not_authorized','error');return;}
   const [cats, freqs] = await Promise.all([
     getRefOptions('expense_categories'), getRefOptions('expense_frequencies')
   ]);
@@ -2144,7 +2163,7 @@ async function renderPropTabAttachments(container, p, refresh) {
   container.innerHTML = `
     <div class="mb-3 flex" style="justify-content:flex-end;">
       <input type="file" id="fileUpl" style="display:none;">
-      <button class="btn btn-primary" id="btnUpload">+ ${LANG==='ar'?'رفع مرفق':'Upload'}</button>
+      <button class="btn btn-primary" id="btnUpload" ${housingActionAttrs('attachments.upload')}>+ ${LANG==='ar'?'رفع مرفق':'Upload'}</button>
     </div>
     <div class="table-wrap">
       ${items.length ? `
@@ -2158,7 +2177,7 @@ async function renderPropTabAttachments(container, p, refresh) {
               <td>${fmtDateTime(a.uploaded_at)}</td>
               <td class="row-actions">
                 <button class="btn btn-sm" data-att-dl="${a.id}" data-path="${escapeHtml(a.storage_path)}">↓</button>
-                <button class="btn btn-sm" style="color:var(--red);" data-att-del="${a.id}" data-path="${escapeHtml(a.storage_path)}">×</button>
+                <button class="btn btn-sm" style="color:var(--red);" ${housingActionAttrs('attachments.delete')} data-att-del="${a.id}" data-path="${escapeHtml(a.storage_path)}">×</button>
               </td>
             </tr>`).join('')}</tbody>
         </table>` : `<div class="empty" style="padding:40px; text-align:center; color:var(--muted);">${t('noItems')}</div>`}
@@ -2220,7 +2239,7 @@ async function screenLandlords(el) {
     <div class="page-header">
       <h1>${t('landlords')}</h1>
       <span class="spacer"></span>
-      <button class="btn btn-primary" id="btnAddLandlord">+ ${t('add')}</button>
+      <button class="btn btn-primary" id="btnAddLandlord" ${housingActionAttrs('landlords.create')}>+ ${t('add')}</button>
     </div>
     <div class="filters">
       <div class="field"><label>${t('search')}</label><input id="fSearch" placeholder="${t('search')}..."></div>
@@ -2285,8 +2304,8 @@ async function screenLandlords(el) {
               <td>${escapeHtml(l.national_id || '—')}</td>
               <td>${fmtIsActive(l.is_active)}</td>
               <td class="row-actions">
-              <button class="btn btn-sm" data-edit="${l.id}">${t('edit')}</button>
-              <button class="btn btn-sm" style="color:var(--red);" data-del="${l.id}" data-name="${escapeHtml(l.name)}">×</button>
+              <button class="btn btn-sm" ${housingActionAttrs('landlords.edit')} data-edit="${l.id}">${t('edit')}</button>
+              <button class="btn btn-sm" style="color:var(--red);" ${housingActionAttrs('landlords.delete')} data-del="${l.id}" data-name="${escapeHtml(l.name)}">×</button>
             </td>
           </tr>`).join('')}</tbody>
         </table>`;
@@ -2333,6 +2352,7 @@ async function screenLandlords(el) {
 }
 
 async function openLandlordForm(existing, onSaved) {
+  if(!can(existing?'landlords.edit':'landlords.create')){toast('not_authorized','error');return;}
   const schema = { __cols: 2, fields: [
     { name: 'p_name', label: t('name'), required: true, spanAll: true },
     { name: 'p_landlord_type', label: t('landlordType'), type: 'select', required: true,
@@ -2452,7 +2472,7 @@ async function screenMeters(el) {
     <div class="page-header">
       <h1>${t('meters')}</h1>
       <span class="spacer"></span>
-      <button class="btn btn-primary" id="btnAdd">+ ${t('add')}</button>
+      <button class="btn btn-primary" id="btnAdd" ${housingActionAttrs('meters.create')}>+ ${t('add')}</button>
     </div>
     <div class="filters">
       <div class="field"><label>${t('search')}</label><input id="fSearch" placeholder="${t('search')}..."></div>
@@ -2493,7 +2513,7 @@ async function screenMeters(el) {
               <td>${fmtIsActive(m.is_active)}</td>
               <td class="row-actions">
                 <button class="btn btn-sm" data-view="${m.id}">${t('view')}</button>
-                <button class="btn btn-sm" style="color:var(--red);" data-del="${m.id}" data-name="${escapeHtml(m.code + ' — ' + (m.meter_number||''))}">×</button>
+                <button class="btn btn-sm" style="color:var(--red);" ${housingActionAttrs('meters.delete')} data-del="${m.id}" data-name="${escapeHtml(m.code + ' — ' + (m.meter_number||''))}">×</button>
               </td>
             </tr>`).join('')}</tbody>
         </table>`;
@@ -2528,6 +2548,7 @@ async function screenMeters(el) {
 }
 
 async function openMeterForm(existing, onSaved) {
+  if(!can(existing?'meters.edit':'meters.create')){toast('not_authorized','error');return;}
   const types = await getRefOptions('meter_types');
   const schema = { __cols: 2, fields: [
     { name: 'p_meter_type_key', label: t('type'), type: 'select', options: types, required: true },
@@ -2585,7 +2606,7 @@ async function openMeterDetail(id, refresh) {
         <dt>${LANG==='ar'?'آخر قراءة':'Last Reading'}</dt><dd>${m.last_reading?`${fmtNum(m.last_reading.reading_value)} ${escapeHtml(m.last_reading.unit||'')} (${fmtDate(m.last_reading.reading_date)})`:'—'}</dd>
       </dl>
     </div>
-    <div class="flex mb-2"><h4 class="mb-0">${LANG==='ar'?'القراءات':'Readings'}</h4><span class="spacer"></span><button class="btn btn-sm btn-primary" id="btnAddR">+ ${LANG==='ar'?'قراءة':'Reading'}</button></div>
+    <div class="flex mb-2"><h4 class="mb-0">${LANG==='ar'?'القراءات':'Readings'}</h4><span class="spacer"></span><button class="btn btn-sm btn-primary" id="btnAddR" ${housingActionAttrs('meters.reading.create')}>+ ${LANG==='ar'?'قراءة':'Reading'}</button></div>
     <div class="table-wrap">
       ${(readings.items||[]).length ? `
         <table class="data"><thead><tr><th>${LANG==='ar'?'التاريخ':'Date'}</th><th>${t('reading')}</th><th>${LANG==='ar'?'الوحدة':'Unit'}</th><th>${t('notes')}</th><th></th></tr></thead>
@@ -2594,14 +2615,14 @@ async function openMeterDetail(id, refresh) {
           <td class="num-cell">${fmtNum(r.reading_value)}</td>
           <td>${escapeHtml(r.unit||'—')}</td>
           <td>${escapeHtml(r.notes||'—')}</td>
-          <td class="row-actions"><button class="btn btn-sm" style="color:var(--red);" data-del-r="${r.id}">×</button></td>
+          <td class="row-actions"><button class="btn btn-sm" style="color:var(--red);" ${housingActionAttrs('meters.reading.delete')} data-del-r="${r.id}">×</button></td>
         </tr>`).join('')}</tbody></table>`
         : `<div class="empty" style="padding:20px; text-align:center; color:var(--muted);">${t('noItems')}</div>`}
     </div>`;
   const footer = document.createElement('div'); footer.className='flex'; footer.style.gap='8px'; footer.style.justifyContent='flex-end'; footer.style.flex='1';
   const edit = document.createElement('button'); edit.className='btn'; edit.textContent = t('edit');
   const close = document.createElement('button'); close.className='btn btn-primary'; close.textContent = t('close');
-  footer.appendChild(edit); footer.appendChild(close);
+  edit.hidden=!can('meters.edit');footer.appendChild(edit); footer.appendChild(close);
   const modal = openModal({ title: `${t('meters')} — ${m.code}`, body, footer, wide: true });
   close.addEventListener('click', modal.close);
   edit.addEventListener('click', () => { modal.close(); openMeterForm(m, refresh); });
@@ -2648,8 +2669,8 @@ async function screenBills(el) {
     <div class="page-header">
       <h1>${t('bills')}</h1>
       <span class="spacer"></span>
-      <button class="btn" id="btnBulkPay" title="${LANG==='ar'?'علّم كل الفواتير المطابقة للفلاتر كمدفوعة':'Mark all bills matching filters as paid'}">${LANG==='ar'?'علّم الكل كمدفوع':'Bulk mark paid'}</button>
-      <button class="btn btn-primary" id="btnAdd">+ ${t('add')}</button>
+      <button class="btn" id="btnBulkPay" ${housingActionAttrs('bills.bulk_mark_paid')} title="${LANG==='ar'?'علّم كل الفواتير المطابقة للفلاتر كمدفوعة':'Mark all bills matching filters as paid'}">${LANG==='ar'?'علّم الكل كمدفوع':'Bulk mark paid'}</button>
+      <button class="btn btn-primary" id="btnAdd" ${housingActionAttrs('bills.create')}>+ ${t('add')}</button>
     </div>
     <div class="filters">
       <div class="field"><label>${t('status')}</label><select id="fStatus"><option value="">${t('all')}</option><option value="pending">${t('pending')}</option><option value="paid">${t('paid')}</option><option value="overdue">${t('overdue')}</option><option value="disputed">${t('disputed')}</option></select></div>
@@ -2703,9 +2724,9 @@ async function screenBills(el) {
               <td class="num-cell" style="${od>0?'color:var(--red); font-weight:600':''}">${od>0?fmtNum(od,{decimals:0}):'—'}</td>
               <td>${fmtStatus(b.status)}${b.is_amended?` <span class="badge badge-gray">${LANG==='ar'?'معدّل':'amended'}</span>`:''}</td>
               <td class="row-actions">
-                ${b.status!=='paid'&&!b.is_amended?`<button class="btn btn-sm btn-primary" data-pay="${b.id}">${LANG==='ar'?'دفع':'Pay'}</button>`:''}
+                ${b.status!=='paid'&&!b.is_amended?`<button class="btn btn-sm btn-primary" ${housingActionAttrs('bills.mark_paid')} data-pay="${b.id}">${LANG==='ar'?'دفع':'Pay'}</button>`:''}
                 <button class="btn btn-sm" data-view="${b.id}">${t('view')}</button>
-                <button class="btn btn-sm" style="color:var(--red);" data-del="${b.id}" data-name="${escapeHtml((b.meter?.code||'') + ' · ' + fmtDate(b.bill_period_start) + '→' + fmtDate(b.bill_period_end))}">×</button>
+                <button class="btn btn-sm" style="color:var(--red);" ${housingActionAttrs('bills.delete')} data-del="${b.id}" data-name="${escapeHtml((b.meter?.code||'') + ' · ' + fmtDate(b.bill_period_start) + '→' + fmtDate(b.bill_period_end))}">×</button>
               </td>
             </tr>`;
           }).join('')}</tbody>
@@ -2804,6 +2825,7 @@ async function screenBills(el) {
 }
 
 async function openBillForm(existing, onSaved) {
+  if(!can(existing?'bills.edit':'bills.create')){toast('not_authorized','error');return;}
   const meters = await rpc('housing_list_meters', { p_active_only: true });
   const meterOpts = (meters.items||[]).map(m => ({ value: m.id, label: `${m.code} — ${pickName(m.meter_type)} ${m.meter_number||''}` }));
   const schema = { __cols: 2, fields: [
@@ -2917,7 +2939,7 @@ async function openBillDetail(id, refresh) {
   amend.disabled = b.is_amended;
   const edit = document.createElement('button'); edit.className='btn'; edit.textContent = t('edit');
   const close = document.createElement('button'); close.className='btn btn-primary'; close.textContent = t('close');
-  footer.appendChild(amend); footer.appendChild(edit); footer.appendChild(close);
+  amend.hidden=!can('bills.amend');edit.hidden=!can('bills.edit');footer.appendChild(amend); footer.appendChild(edit); footer.appendChild(close);
   const modal = openModal({ title: `${t('bills')} — ${b.meter?.code}`, body, footer });
   close.addEventListener('click', modal.close);
   edit.addEventListener('click', () => { modal.close(); openBillForm(b, refresh); });
@@ -2959,7 +2981,7 @@ async function screenResidents(el) {
     <div class="page-header">
       <h1>${t('residents')}</h1>
       <span class="spacer"></span>
-      <button class="btn btn-primary" id="btnAdd">+ ${t('add')}</button>
+      <button class="btn btn-primary" id="btnAdd" ${housingActionAttrs('residents.create')}>+ ${t('add')}</button>
     </div>
     <div class="filters">
       <div class="field"><label>${t('search')}</label><input id="fSearch" placeholder="${t('search')}..."></div>
@@ -3000,8 +3022,8 @@ async function screenResidents(el) {
               <td>${escapeHtml(r.nationality||'—')}</td>
               <td>${fmtIsActive(r.is_active)}</td>
               <td class="row-actions">
-                <button class="btn btn-sm" data-edit="${r.id}">${t('edit')}</button>
-                <button class="btn btn-sm" style="color:var(--red);" data-del="${r.id}" data-name="${escapeHtml(r.code + ' — ' + r.name_ar)}">×</button>
+                <button class="btn btn-sm" ${housingActionAttrs('residents.edit')} data-edit="${r.id}">${t('edit')}</button>
+                <button class="btn btn-sm" style="color:var(--red);" ${housingActionAttrs('residents.delete')} data-del="${r.id}" data-name="${escapeHtml(r.code + ' — ' + r.name_ar)}">×</button>
               </td>
             </tr>`).join('')}</tbody>
         </table>`;
@@ -3038,6 +3060,7 @@ async function screenResidents(el) {
 }
 
 async function openResidentForm(existing, onSaved) {
+  if(!can(existing?'residents.edit':'residents.create')){toast('not_authorized','error');return;}
   const types = await getRefOptions('resident_types');
   const schema = { __cols: 2, fields: [
     { name: 'p_resident_type_key', label: t('type'), type: 'select', options: types, required: true },
@@ -3141,8 +3164,8 @@ async function screenExpenses(el) {
               <td>${fmtDate(e.next_due_date)}</td>
               <td>${fmtIsActive(e.is_active)}</td>
               <td class="row-actions">
-                <button class="btn btn-sm" data-edit="${e.id}">${t('edit')}</button>
-                <button class="btn btn-sm" style="color:var(--red);" data-del="${e.id}" data-name="${escapeHtml(e.description)}">×</button>
+                <button class="btn btn-sm" ${housingActionAttrs('expenses.edit')} data-edit="${e.id}">${t('edit')}</button>
+                <button class="btn btn-sm" style="color:var(--red);" ${housingActionAttrs('expenses.delete')} data-del="${e.id}" data-name="${escapeHtml(e.description)}">×</button>
               </td>
             </tr>`).join('')}</tbody>
         </table>`;
@@ -3606,12 +3629,22 @@ async function openAuditLog() {
   }catch(e){toast(e.message,'error');}
 }
 
+async function finishHousingApproval(response,actionKey){
+  if(!response || response.ok!==true || response.status!=='approved')throw new Error('approval_execution_unconfirmed');
+  const result=response.result;
+  if(result && result.ok===false)throw new Error(result.error||'approval_execution_failed');
+  if(!String(actionKey||'').endsWith('.delete'))return;
+  // These paths come from the executed delete RPC, not the request payload.
+  const paths=[...(Array.isArray(result?.attachment_paths)?result.attachment_paths:[]),...(typeof result?.storage_path==='string'?[result.storage_path]:[])];
+  if(paths.length)await removeStorageFilesWithFallback([...new Set(paths)],{context:'approved_delete',request_id:response.request_id});
+}
+
 async function screenApprovals(content){
   const res=await rawRpc('asset_admin_housing_pending_approvals',{p_limit:200}); const items=res.items||[];
   content.innerHTML=`<div class="page-head"><div><h1>${LANG==='ar'?'الموافقات المعلقة':'Pending Approvals'}</h1><p class="text-muted">${items.length} ${LANG==='ar'?'طلب':'request(s)'}</p></div></div><div id="approvalList"></div>`;
   const box=content.querySelector('#approvalList');
   box.innerHTML=items.length?items.map(x=>`<div class="card" style="margin-bottom:10px;padding:16px"><div class="flex" style="justify-content:space-between;gap:12px;align-items:start"><div><b>${escapeHtml(x.action_key||'')}</b><div class="text-muted">${escapeHtml(x.requester_email||x.requested_by||'')} · ${fmtDateTime(x.requested_at)}</div><div class="text-muted">${escapeHtml(x.entity_type||'')} ${escapeHtml(x.entity_id||'')}</div></div><div class="flex"><button class="btn btn-primary" data-ap="${x.id}">${LANG==='ar'?'موافقة':'Approve'}</button><button class="btn" data-rj="${x.id}">${LANG==='ar'?'رفض':'Reject'}</button></div></div></div>`).join(''):`<div class="card empty">${LANG==='ar'?'لا توجد موافقات معلقة':'No pending approvals'}</div>`;
-  box.querySelectorAll('[data-ap]').forEach(b=>b.onclick=async()=>{try{await rawRpc('asset_admin_approve_housing_request',{p_request_id:Number(b.dataset.ap),p_review_notes:null});toast(LANG==='ar'?'تمت الموافقة':'Approved','success');await screenApprovals(content);}catch(e){toast(e.message,'error')}});
+  box.querySelectorAll('[data-ap]').forEach(b=>b.onclick=async()=>{try{const approval=await rawRpc('asset_admin_approve_housing_request',{p_request_id:Number(b.dataset.ap),p_review_notes:null});await finishHousingApproval(approval,items.find(x=>String(x.id)===b.dataset.ap)?.action_key);toast(LANG==='ar'?'تمت الموافقة':'Approved','success');await screenApprovals(content);}catch(e){toast(e.message,'error')}});
   box.querySelectorAll('[data-rj]').forEach(b=>b.onclick=async()=>{const note=prompt(LANG==='ar'?'سبب الرفض':'Rejection note')||'';if(!note)return;try{await rawRpc('asset_admin_reject_housing_request',{p_request_id:Number(b.dataset.rj),p_review_notes:note});toast(LANG==='ar'?'تم الرفض':'Rejected','success');await screenApprovals(content);}catch(e){toast(e.message,'error')}});
 }
 
