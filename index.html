@@ -2205,7 +2205,7 @@ const T={
 let L='en';
 function t(k){return T[L][k];}
 
-const ALL_WIDGETS=[["kpis","KPI cards","بطاقات المؤشرات"],["alerts","Needs Attention","يحتاج انتباه"],["byCat","By Category","حسب الفئة"],["bySt","By Status","حسب الحالة"],["byPri","By Priority","حسب الأولوية"],["byProj","By Project","حسب المشروع"],["wlTeam","Workload by Team","توزيع العمل"],["overTime","Over Time","عبر الزمن"],["topReq","Top Requesters","الأكثر طلباً"]];
+const ALL_WIDGETS=[["overTime","Reports: received vs completed","التقارير: الوارد مقابل المنجز"],["byProj","Reports: by project","التقارير: حسب المشروع"],["byCat","Reports: by category","التقارير: حسب الفئة"],["wlTeam","Reports: current team workload","التقارير: عمل الفريق القائم"],["alerts","Reports: overdue age","التقارير: عمر التأخير"]];
 const DEFAULT_WIDGETS={kpis:true,alerts:true,byCat:true,bySt:true,byPri:true,byProj:true,wlTeam:true,overTime:true,topReq:false};
 
 let state={lists:JSON.parse(JSON.stringify(SEED)),requests:[],staff:[],recurring:[],route:"dashboard",role:"employee",widgets:JSON.parse(JSON.stringify(DEFAULT_WIDGETS)),mrBadges:{}};
@@ -2594,7 +2594,7 @@ function render(){
   else if(state.route==='staffdir')v.innerHTML=adminTeamTabs()+viewStaffDir();
   else if(state.route==='open')v.innerHTML=viewOpen();
   else if(state.route==='archive'){adminResolveRoute('archive');v.innerHTML=adminRegistryView();}
-  else if(state.route==='reports')v.innerHTML=viewReports();
+  else if(state.route==='reports')v.innerHTML=adminReportsView();
   else if(state.route==='media')v.innerHTML=adminRequestTabs()+viewMedia();
   else if(state.route==='settings')v.innerHTML=viewSettings();
   renderModal();
@@ -4595,17 +4595,13 @@ function viewManage(){
     return phead+viewPeriodTasks();
   }
   const head='';
-  const doneCard=(r)=>{let co=[];try{co=JSON.parse(r.closeoutImages||'[]');}catch(e){}return `<div class="mcard donecard">
-    <div class="mc-top"><span class="mc-id">${fmtID(r.id)}</span>${stBadge('Complete')}</div>
-    <div class="mc-title">${state.role==='admin'?adminTaskLink(r):esc(r.title)}</div>
-    <div class="mc-rows">
-      ${drow(t('mAssign'),esc(r.assignedTo||'—'))}
-      ${drow(t('mProj'),esc(r.project))}
-      ${drow(t('completedAt'),fmtTime(r.confirmedAt))}
-    </div>
-    ${co.length?`<div class="co-shots"><div class="co-shots-lab">📸 ${t('closeoutPhoto')}</div><div class="co-shots-grid">${co.map((u,i)=>`<img src="${esc(u)}" onclick="openCloseoutGallery(${r.id},${i})"/>`).join('')}</div></div>`:''}${coFilesHtml(r)}${coNoteHtml(r)}
-    <div class="mc-acts"><button class="btn sm" onclick="reopenTask(${r.id})">↺ ${t('reopen')}</button></div>
-  </div>`;};
+  const doneCard=(r)=>`<article class="completed-row" data-completed-id="${r.id}">
+    <div class="completed-title"><span class="mc-id">${fmtID(r.id)}</span><div>${adminTaskLink(r)}</div></div>
+    <div class="completed-meta"><span>${t('mAssign')}</span><b>${esc(r.assignedTo||'—')}</b></div>
+    <div class="completed-meta"><span>${t('mProj')}</span><b>${esc(r.project||'—')}</b></div>
+    <div class="completed-meta"><span>${t('completedAt')}</span><time>${fmtTime(r.confirmedAt)}</time></div>
+    <div class="completed-actions"><button class="btn sec sm" onclick="adminDetail(${r.id})">${L==='ar'?'التفاصيل والمرفقات':'Details & files'}</button><button class="btn sec sm" onclick="reopenTask(${r.id})">↺ ${t('reopen')}</button></div>
+  </article>`;
   const doneSection=recentDone.length?`<details class="done-section flow-done"><summary>${t('recentDone')} · ${recentDone.length} — ${t('recentDoneHint')}</summary><div><div class="section-head" style="margin-top:26px"><span class="sec-dot done-dot"></span> ${t('recentDone')} <span class="count-chip" style="margin-inline-start:8px">${recentDone.length}</span> <span class="done-hint">${t('recentDoneHint')}</span></div><div class="done-grid">${recentDone.map(doneCard).join('')}</div></div></details>`:'';
   return head+`
   <div class="manage-cols">
@@ -5472,7 +5468,7 @@ function viewSettings(){
   const biCard=(title,key)=>`<div class="list-card"><h3>${title}<span style="font-size:11px;color:var(--grey);font-weight:600">${state.lists[key].length}</span></h3><div class="items" data-list="${key}">${state.lists[key].map((x,i)=>`<div class="list-item" data-key="${key}" data-idx="${i}"><span class="li-grip" onpointerdown="dndStart(event,'${key}',${i})" title="${t('dndHint')}">⠿</span><span><b>${esc(x.ar||'—')}</b> <span style="color:var(--grey)">· ${esc(x.en||'—')}</span></span><button onclick="delItem('${key}',${i})">×</button></div>`).join('')}</div><div class="additem bi"><input id="add_${key}_ar" placeholder="${t('addNameAr')}"/><input id="add_${key}_en" placeholder="${t('addNameEn')}" onkeydown="if(event.key==='Enter')addBiItem('${key}')"/><button class="btn sm" onclick="addBiItem('${key}')">${t('add')}</button></div></div>`;
   const wt=ALL_WIDGETS.map(([k,en,ar])=>{const on=state.widgets[k];return `<div class="wtoggle"><span>${esc(L==='ar'?ar:en)}</span><button class="switch ${on?'on':''}" onclick="toggleWidget('${k}')"><span class="knob"></span></button></div>`;}).join('');
   return `<div class="phead"><div class="eyebrow">${t('setEye')}</div><h1>${t('setH1')}</h1><p>${t('setP')}</p></div>
-  <div class="panel panel-pad" style="margin-bottom:20px"><h3 style="font-size:14px;color:var(--navy);margin-bottom:4px">${t('chartsCfg')}</h3><p class="hint" style="margin-bottom:14px">${t('chartsCfgHint')}</p><div class="wtoggle-grid">${wt}</div></div>
+  <div class="panel panel-pad" style="margin-bottom:20px"><h3 style="font-size:14px;color:var(--navy);margin-bottom:4px">${t('chartsCfg')}</h3><p class="hint" style="margin-bottom:14px">${L==='ar'?'تتحكم هذه الخيارات برسوم قسم الإحصائيات في التقارير. لا تغيّر لوحة اليوم أو الصفحة الرئيسية.':'These switches control Statistics charts in Reports. Today’s live dashboard and Home are unaffected.'}</p><div class="wtoggle-grid">${wt}</div></div>
   <div class="settings-grid">${card(t('sProjects'),'projects')}${biCard(t('sCats'),'categories')}${biCard(t('sPris'),'priorities')}</div>`;
 }
 /* ===== STAFF DIRECTORY (own page) ===== */
