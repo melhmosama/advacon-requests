@@ -825,6 +825,8 @@
 @media(max-width:720px){.imd-quick .imd-btn{flex:1 1 140px}}
 [hidden] { display: none !important; }
 </style>
+<link rel="stylesheet" href="/advacon-ui.css">
+<script src="/advacon-ui.js"></script>
 </head>
 <body>
 
@@ -1540,12 +1542,12 @@ async function warehouseMovementRpc(type,args){
  const pair=WH_MOVE_RPC[type], mode=whPermissionMode(WH_MOVE_ACTION[type]);
  if(!pair||!['direct','approval'].includes(mode))throw new Error(translateError('not_authorized'));
  const pending=mode==='approval';
- const result=await warehouseRpc(pair[pending?1:0],args);
+ const result=await warehouseRpc(pair[pending?1:0],args,true);
  return {result,pending_approval:pending};
 }
 function whMovementMessage(result,key){return result.pending_approval?t('aprReqFiled'):t(key);}
 
-async function ensureCurrentSession(){ return CTX.mode==='admin' ? admEnsureSession() : (CTX.mode==='asset' ? assetEnsureSession() : false); }
+async function ensureCurrentSession(){ return AdvaconUI.singleFlight('warehouse-session-'+CTX.mode,()=>CTX.mode==='admin' ? admEnsureSession() : (CTX.mode==='asset' ? assetEnsureSession() : false)); }
 function currentAccessToken(){ const s=CTX.mode==='admin' ? admGetSession() : (CTX.mode==='asset' ? assetGetSession() : null); return s&&s.access_token; }
 async function currentSignOut(){
   resetPhase1Caches();
@@ -1629,11 +1631,11 @@ function translateStorageError(err){
      • translates well-known codes into Arabic messages
      • treats 401/403 as "session gone" → clears session + shows access screen
    ===================================================================== */
-async function warehouseRpc(fn, args){
-  const okSess = await ensureCurrentSession();
+async function warehouseRpc(fn, args, sessionVerified=false){
+  const okSess = sessionVerified || await ensureCurrentSession();
   if(!okSess){ showAccessScreen('session_expired'); throw new Error(translateError('session')); }
   if(CTX.mode==='asset'){
-    await loadWarehousePermissions();
+    if(!sessionVerified)await loadWarehousePermissions();
     const action=WH_RPC_ACTION[fn];
     if(action&&!(action.endsWith('.view')?whCan(action):whDirect(action)))throw new Error(translateError('not_authorized'));
     const movement=Object.entries(WH_MOVE_RPC).find(([,pair])=>pair.includes(fn));
@@ -1722,58 +1724,9 @@ async function removeWarehouseImages(paths){
 function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]); }
 const escapeHtml = esc;
 
-function toast(msg, kind){
-  const mount = document.getElementById('toast-mount');
-  const t = document.createElement('div');
-  t.className = 'toast ' + (kind==='error'?'error':kind==='success'?'success':'');
-  t.innerHTML = `<span>${esc(msg)}</span><button class="toast-close">×</button>`;
-  t.querySelector('.toast-close').addEventListener('click', () => t.remove());
-  mount.appendChild(t);
-  setTimeout(() => t.remove(), 5500);
-}
-
-function openModal({ title, body, footer, wide }){
-  const mount = document.getElementById('modal-mount');
-  const overlay = document.createElement('div');
-  overlay.className = 'modal-overlay';
-  const modal = document.createElement('div');
-  modal.className = 'modal' + (wide?' wide':'');
-  modal.innerHTML = `
-    <div class="modal-header"><h3>${esc(title||'')}</h3><button class="modal-close">×</button></div>
-    <div class="modal-body"></div>
-    <div class="modal-footer"></div>`;
-  const bodyEl = modal.querySelector('.modal-body');
-  const footEl = modal.querySelector('.modal-footer');
-  if(body instanceof HTMLElement) bodyEl.appendChild(body);
-  else if(typeof body === 'string') bodyEl.innerHTML = body;
-  if(footer instanceof HTMLElement) footEl.appendChild(footer);
-  else if(footer === null) footEl.remove();
-  const close = () => { overlay.remove(); document.removeEventListener('keydown', onKey); };
-  const onKey = (e) => { if(e.key === 'Escape') close(); };
-  modal.querySelector('.modal-close').addEventListener('click', close);
-  overlay.addEventListener('click', (e) => { if(e.target === overlay) close(); });
-  document.addEventListener('keydown', onKey);
-  overlay.appendChild(modal);
-  mount.appendChild(overlay);
-  return { close, modal, body: bodyEl };
-}
-
-async function confirmAction({ title, message, danger }){
-  return new Promise(resolve => {
-    const body = document.createElement('div');
-    body.innerHTML = `<div style="font-size:14px;color:var(--text)">${esc(message || '')}</div>`;
-    const footer = document.createElement('div');
-    footer.style.cssText = 'display:flex;gap:8px;justify-content:flex-end;flex:1';
-    const cancel = document.createElement('button'); cancel.className = 'btn'; cancel.textContent = (LANG==='ar')?'إلغاء':'Cancel';
-    const ok = document.createElement('button'); ok.className = 'btn ' + (danger?'':'btn-primary');
-    if(danger){ ok.style.background = 'var(--red)'; ok.style.color = '#fff'; ok.style.borderColor = 'var(--red)'; }
-    ok.textContent = (LANG==='ar')?'تأكيد':'Confirm';
-    footer.appendChild(cancel); footer.appendChild(ok);
-    const m = openModal({ title: title || '', body, footer });
-    cancel.addEventListener('click', () => { m.close(); resolve(false); });
-    ok.addEventListener('click',     () => { m.close(); resolve(true);  });
-  });
-}
+function toast(message,kind='info'){ AdvaconUI.toast(message,kind); }
+function openModal(options){ return AdvaconUI.modal(options); }
+async function confirmAction(options={}){ return AdvaconUI.confirm(options); }
 
 /* Local (non-UTC) date helper — avoids UTC bugs during KSA night hours */
 function localDateISO(d){ d = d || new Date();
@@ -1823,11 +1776,11 @@ function renderSidebar(){
     const label = (LANG==='ar') ? tab.label_ar : tab.label_en;
     const activeClass = (currentTab() === tab.key) ? 'active' : '';
     return `
-      <div class="nav-item ${activeClass}" data-tab="${esc(tab.key)}">
+      <a class="nav-item ${activeClass}" href="#${esc(tab.key)}" data-tab="${esc(tab.key)}">
         <span class="ic">${tab.ic}</span>
         <span>${esc(label)}</span>
         ${tab.key==='materialreq' && CTX.mode==='admin' && aprPendingCount>0 ? `<span class="apr-pending-badge">${aprPendingCount}</span>` : ''}
-      </div>`;
+      </a>`;
   }).join('');
   nav.querySelectorAll('.nav-item').forEach(item => {
     item.addEventListener('click', () => {
@@ -1906,69 +1859,28 @@ async function rawWarehouseAdminRpc(fn,args={}){
   if(!r.ok) throw new Error((data&&(data.message||data.error))||('HTTP '+r.status));
   return data;
 }
+let warehousePermissionRender=0;
 async function viewWarehousePermissions(){
-  if(CTX.mode!=='admin') return `<div class="empty">${LANG==='ar'?'غير مصرح':'Not authorized'}</div>`;
-  const usersR=await rawWarehouseAdminRpc('asset_admin_list_users',{p_module_key:'warehouses'});
-  const manager=((usersR&&usersR.items)||[]).find(u=>u.role==='storekeeper' && u.is_active!==false);
-  if(!manager) return `<div class="phead"><h1>${LANG==='ar'?'صلاحيات مسؤول المستودعات':'Storekeeper Permissions'}</h1></div><div class="panel empty">${LANG==='ar'?'لا يوجد مسؤول مستودعات نشط حالياً.':'No active Storekeeper is currently assigned.'}</div>`;
-  const r=await rawWarehouseAdminRpc('asset_admin_permission_matrix',{p_module_key:'warehouses',p_user_id:manager.user_id});
-  const items=(r&&r.items)||[];
-  const names={
-    dashboard:['لوحة التحكم','Dashboard'],inventory:['المخزون','Inventory'],catalog:['دليل الأصناف','Item Catalog'],
-    movements:['حركات المخزون','Stock Movements'],warehouses:['المستودعات','Warehouses'],shelves:['الأرفف','Shelves'],
-    batches:['الدفعات والصلاحية','Batches & Expiry'],reports:['التقارير','Reports']
-  };
-  let last='',rows='';
-  for(const x of items){
-    const sec=(x.action_key||'').split('.')[0]||'other';
-    if(['settings','permissions','approvals','activity'].includes(sec)) continue;
-    if(sec!==last){
-      const n=(names[sec]||[sec,sec])[LANG==='ar'?0:1];
-      rows+=`<div style="padding:10px 16px;background:#f7f8fa;border-bottom:1px solid var(--line);font-weight:800">${esc(n)}</div>`;last=sec;
-    }
-    const mode=x.effective_mode||'deny';
-    rows+=`<div data-wh-perm-row="${esc(x.action_key)}" style="display:grid;grid-template-columns:minmax(240px,1fr) 120px 150px;gap:8px;align-items:center;padding:11px 16px;border-bottom:1px solid var(--line)">
-      <div><b>${esc(LANG==='ar'?x.label_ar:x.label_en)}</b></div>
-      <div style="text-align:center"><input type="checkbox" data-wh-direct="${esc(x.action_key)}" ${mode==='direct'?'checked':''}></div>
-      <div style="text-align:center">${x.supports_approval?`<input type="checkbox" data-wh-approval="${esc(x.action_key)}" ${mode==='approval'?'checked':''}>`:`<span class="text-muted">—</span>`}</div>
-    </div>`;
-  }
-  setTimeout(()=>bindWarehousePermissionControls(manager.user_id),0);
-  return `<div class="phead"><div class="eyebrow">ASSETS</div><h1>${LANG==='ar'?'صلاحيات مسؤول المستودعات':'Storekeeper Permissions'}</h1><div class="text-muted">${esc(manager.email||'Storekeeper')}</div></div>
-  <div class="panel" style="padding:0;overflow:hidden">
-    <div style="display:grid;grid-template-columns:minmax(240px,1fr) 120px 150px;gap:8px;align-items:center;padding:12px 16px;background:#f7f8fa;border-bottom:1px solid var(--line);font-weight:700">
-      <div>${LANG==='ar'?'الصلاحية':'Permission'}</div><div style="text-align:center">${LANG==='ar'?'سماح':'Allow'}</div><div style="text-align:center">${LANG==='ar'?'تحتاج موافقة':'Require Approval'}</div>
-    </div>${rows||`<div class="empty">${LANG==='ar'?'لا توجد صلاحيات معرفة. شغّل ملف SQL المرفق أولاً.':'No permissions are defined. Run the attached SQL first.'}</div>`}
-  </div><div class="text-muted" style="margin-top:10px;font-size:12px">${LANG==='ar'?'إذا لم يتم تحديد أي خيار تكون الصلاحية ممنوعة. يتم حفظ كل تغيير مباشرة.':'If neither option is selected, the permission is denied. Every change is saved immediately.'}</div>`;
-}
-function bindWarehousePermissionControls(userId){
-  const save=async(key,mode,row)=>{
-    const cs=row.querySelectorAll('input[type=checkbox]');cs.forEach(x=>x.disabled=true);
-    try{
-      await rawWarehouseAdminRpc('asset_admin_set_user_permission',{p_user_id:userId,p_module_key:'warehouses',p_action_key:key,p_mode:mode});
-      toast(LANG==='ar'?'تم حفظ الصلاحية':'Permission saved','success');
-    }catch(e){toast(e.message||'Error','error');}
-    finally{cs.forEach(x=>x.disabled=false);}
-  };
-  document.querySelectorAll('[data-wh-direct]').forEach(cb=>cb.onchange=async()=>{
-    const row=cb.closest('[data-wh-perm-row]'),ap=row.querySelector('[data-wh-approval]');
-    if(cb.checked&&ap)ap.checked=false;
-    await save(cb.dataset.whDirect,cb.checked?'direct':(ap&&ap.checked?'approval':'deny'),row);
-  });
-  document.querySelectorAll('[data-wh-approval]').forEach(cb=>cb.onchange=async()=>{
-    const row=cb.closest('[data-wh-perm-row]'),d=row.querySelector('[data-wh-direct]');
-    if(cb.checked&&d)d.checked=false;
-    await save(cb.dataset.whApproval,cb.checked?'approval':(d&&d.checked?'direct':'deny'),row);
-  });
+ if(CTX.mode!=='admin')throw new Error('not_admin');
+ const users=await rawWarehouseAdminRpc('asset_admin_list_users',{p_module_key:'warehouses'});
+ const manager=(users.items||[]).find(u=>u.role==='storekeeper'&&u.is_active!==false);
+ if(!manager)return '<div class="empty">'+AdvaconUI.text('لا يوجد مسؤول مستودعات نشط.','No active Storekeeper.')+'</div>';
+ const res=await rawWarehouseAdminRpc('asset_admin_permission_matrix',{p_module_key:'warehouses',p_user_id:manager.user_id});
+ const id='warehouse-permissions-'+(++warehousePermissionRender);
+ setTimeout(()=>{const root=document.getElementById(id);if(!root)return;AdvaconUI.permissionMatrix(root,{items:(res.items||[]).filter(x=>!['settings','permissions','approvals','activity'].includes(x.action_key.split('.')[0])),onSave:async(key,mode)=>{const r=await rawWarehouseAdminRpc('asset_admin_set_user_permission',{p_user_id:manager.user_id,p_module_key:'warehouses',p_action_key:key,p_mode:mode});if(r?.ok===false)throw new Error(r.error||'permission_save_failed');}});},0);
+ return '<div class="phead"><h1>'+AdvaconUI.text('صلاحيات مسؤول المستودعات','Storekeeper Permissions')+'</h1><p>'+esc(manager.email||'')+'</p></div><p class="text-muted">'+AdvaconUI.text('اختر وضعًا واحدًا لكل صلاحية. يُحفظ كل تغيير مباشرة.','Choose one mode per permission. Each change saves immediately.')+'</p><div class="panel" id="'+id+'"></div>';
 }
 
 
 /* =====================================================================
    ROUTING
    ===================================================================== */
+let warehouseRouteSerial=0;
 async function route(){
+  const version=++warehouseRouteSerial;
   if(!CTX.mode){ showAccessScreen('no_context'); return; }
   await loadWarehousePermissions();
+  if(version!==warehouseRouteSerial)return;
   const key = currentTab();
   const tab = WH_SUBNAV.find(x => x.key === key);
   const el = document.getElementById('content');
@@ -1987,9 +1899,10 @@ async function route(){
     case 'shelves':     el.innerHTML = viewWarehouses(); break;
     case 'batches':     el.innerHTML = viewBatches(); break;
     case 'reports':     el.innerHTML = viewWhReports(); break;
-    case 'permissions': el.innerHTML = await viewWarehousePermissions(); break;
+    case 'permissions': {const html=await viewWarehousePermissions();if(version===warehouseRouteSerial)el.innerHTML=html;break;}
     default:            el.innerHTML = `<div class="empty">${esc((LANG==='ar')?'شاشة غير معروفة':'Unknown screen')}</div>`;
   }
+  AdvaconUI.enhance(el);
 }
 
 
@@ -2075,20 +1988,24 @@ let catStatusFilter = 'all';
 /* =====================================================================
    DASHBOARD
    ===================================================================== */
+let dashboardError=null,dashboardUpdated=null,dashboardSequence=0;
 async function loadDashboard(force){
   if(dashLoaded && !force){ dashRender(); return; }
-  if(dashLoading) return;
+  const version=++dashboardSequence;
   dashLoading = true;
   try{
-    dashData = await warehouseRpc('warehouse_dashboard', { p_warehouse_id: dashWh || null });
+    const result = await warehouseRpc('warehouse_dashboard', { p_warehouse_id: dashWh || null });
+    if(version!==dashboardSequence)return;
+    dashData=result;dashboardError=null;dashboardUpdated=Date.now();
     dashLoaded = true;
   }catch(e){
-    dashData = null; dashLoaded = true;
+    if(version!==dashboardSequence)return;
+    dashboardError=e;dashLoaded=true;
     toast(e.message || t('errorOccurred'), 'error');
   }finally{
-    dashLoading = false;
+    if(version===dashboardSequence)dashLoading = false;
   }
-  dashRender();
+  if(version===dashboardSequence)dashRender();
 }
 function dashRender(){
   const el = document.getElementById('content');
@@ -2113,6 +2030,7 @@ function dashGoCat(catId){
 
 function viewWhDashboard(){
   if(!dashLoaded){ loadDashboard(); return `<div class="empty">${t('dashLoading')}</div>`; }
+  if(dashboardError)return '<div class="au-state error" role="alert"><p>'+esc(AdvaconUI.humanError(dashboardError))+'</p><button class="btn" onclick="loadDashboard(true)">'+AdvaconUI.text('إعادة المحاولة','Try again')+'</button></div>';
   if(!dashData || !dashData.kpis){ return `<div class="empty">${t('dashNone')}</div>`; }
   const k = dashData.kpis;
   const mv = Array.isArray(dashData.recent_movements) ? dashData.recent_movements : [];
@@ -2131,9 +2049,7 @@ function viewWhDashboard(){
 
   const row1 = `<div class="kpi-row">
     ${card(t('dashTotalItems'), n(k.total_items),     'k-navy')}
-    ${card(t('dashOnHand'),     n(k.total_on_hand),   'k-navy')}
-    ${card(t('dashAvailable'),  n(k.total_available), 'k-navy')}
-    ${card(t('dashReserved'),   n(k.total_reserved),  'k-navy')}
+    ${card(AdvaconUI.text('المستودعات في القائمة','Warehouses listed'),n(whList.length),'k-navy')}
   </div>`;
   const row2 = `<div class="kpi-row">
     ${card(t('dashLow'),      n(k.low_stock),     'k-amber', "dashGoInv('low')")}
@@ -2157,7 +2073,7 @@ function viewWhDashboard(){
     </tr>`;
   }).join('') : `<tr><td colspan="4" class="empty">${t('dashNoCat')}</td></tr>`;
   const catPanel = `<div class="panel cat-panel">
-    <div class="phead sm"><h2>${t('dashCatTitle')}</h2></div>
+    <div class="phead sm"><h2>${t('dashCatTitle')}</h2></div><p class="text-muted" style="padding:0 16px">${AdvaconUI.text('الكميات قد تجمع وحدات مختلفة؛ راجع وحدة كل صنف في المخزون.','Quantities may combine different units; check each item’s unit in Inventory.')}</p>
     <div class="tbl-wrap"><table class="tbl cat-tbl">
       <thead><tr>
         <th>${t('dashCatCat')}</th><th class="cat-n">${t('dashCatItems')}</th>
@@ -2205,10 +2121,11 @@ function viewWhDashboard(){
       <div><div class="eyebrow">${t('dashEye')}</div><h1>${t('dashH1')}</h1></div>
       <div class="dash-wh"><select onchange="dashSetWh(this.value)">${whOpts}</select></div>
     </div>
-    ${row1}
+    <p class="au-section-label">${AdvaconUI.text('تحتاج متابعة','Needs attention')}</p>
     ${row2}
+    ${row1}
     ${catPanel}
-    ${mvPanel}`;
+    ${mvPanel}<p class="au-updated">${dashboardUpdated?AdvaconUI.updatedAt(dashboardUpdated):''}</p>`;
 }
 
 /* =====================================================================
@@ -2386,12 +2303,13 @@ function catRender(){
   if(el && currentTab() === 'catalog') el.innerHTML = viewItemCatalog();
 }
 function catSearch(v){
-  catQuery = v; catRender();
-  setTimeout(() => {
-    const el = document.getElementById('catSearch');
-    if(el){ el.focus(); el.setSelectionRange(el.value.length, el.value.length); }
-  }, 0);
+ catQuery=v;
+ const root=document.getElementById('content');if(!root||currentTab()!=='catalog')return;
+ const template=document.createElement('template');template.innerHTML=viewItemCatalog();
+ for(const selector of ['.cat-count','.cat-tablewrap']){const old=root.querySelector(selector),fresh=template.content.querySelector(selector);if(old&&fresh)old.replaceWith(fresh);}
+ AdvaconUI.enhance(root);
 }
+
 function catSetStatus(v){ catStatusFilter = v; catRender(); }
 
 /* Phase 6.5 — Item Master state */
@@ -2737,7 +2655,7 @@ let mvTf={src_wh:'',item_iw:'',dest_wh:'',dest_shelf:'',qty:'',batch_no:'',note:
 let mvRef=null,mvRefLoading=false;
 let whmRcvOpen=false,whmRcvBusy=false,whmRcvErr='',whmRcv={item_id:'',qty:'',shelf_id:'',min_level:'',batch_no:'',expiry_date:'',note:''},whmRcvPickOpen=false,whmRcvPickQuery='';
 
-function mvRender(){ const el=document.getElementById('content'); if(el&&currentTab()==='movements') el.innerHTML=viewMovements(); }
+function mvRender(){ const el=document.getElementById('content'); if(el&&currentTab()==='movements') el.innerHTML=viewMovements()+(whmRcvOpen?whmReceiveModal():''); }
 async function loadMovements(force){
   if(mvLoaded&&!force){mvRender();return;} if(mvLoading)return; mvLoading=true;
   try{
@@ -2790,12 +2708,22 @@ function viewMovements(){
   const from=mvTotal?mvPage*MV_PAGE_SIZE+1:0,to=Math.min((mvPage+1)*MV_PAGE_SIZE,mvTotal),pager=`<div class="mv-pager"><span class="mv-count">${from}–${to} ${t('mvOf')} ${fmtInt(mvTotal)}</span><div class="mv-pgbtns"><button ${mvPage>0?'':'disabled'} onclick="mvPrev()">‹ ${t('mvPrev')}</button><button ${(mvPage+1)*MV_PAGE_SIZE<mvTotal?'':'disabled'} onclick="mvNext()">${t('mvNext')} ›</button></div></div>`;
   return `<div class="dash-head"><div><div class="eyebrow">${t('mvEye')}</div><h1>${t('mvH1')}</h1></div>${whAnyMovement()?`<button class="mv-new" onclick="mvOpenChooser()">+ ${t('mvNew')}</button>`:''}</div><div class="mv-filters"><select onchange="mvSetType(this.value)">${typeOpts}</select><select onchange="mvSetWh(this.value)">${whOpts}</select><label class="mv-date">${t('mvFrom')} <input type="date" value="${esc(mvFilters.date_from)}" onchange="mvSetDateFrom(this.value)"/></label><label class="mv-date">${t('mvTo')} <input type="date" value="${esc(mvFilters.date_to)}" onchange="mvSetDateTo(this.value)"/></label>${itemPicker}</div><div class="panel"><div class="tbl-wrap"><table class="tbl mv-tbl"><thead><tr><th>${t('dashCDate')}</th><th>${t('dashCType')}</th><th>${t('dashCItem')}</th><th>${t('dashCQty')}</th><th>${t('dashCWh')}</th>${showActor?`<th>${t('dashCActor')}</th>`:''}</tr></thead><tbody>${body}</tbody></table></div>${pager}</div>${mvModal==='chooser'?mvChooserModal():''}${mvModal==='issue'?mvIssueModal():''}${mvModal==='disposal'?mvDisposalModal():''}${mvModal==='adjustment'?mvAdjustmentModal():''}${mvModal==='return'?mvReturnModal():''}${mvModal==='transfer'?mvTransferModal():''}`;
 }
-function mvChooserModal(){const markup = `<div class="mv-scrim" onclick="mvCloseModal()"></div><div class="mv-modal"><div class="mv-modal-head"><h2>${t('mvNew')}</h2><button class="mv-modal-x" onclick="mvCloseModal()">×</button></div><div class="mv-modal-body"><div class="mv-choose"><button class="mv-choose-btn" onclick="mvOpenIssue()"><span class="mc-ic">📤</span><span class="mc-lb">${t('mvT_ISSUE')}</span><span class="mc-sub">${t('mvChooseIssue')}</span></button>${mvTfCanTransfer()?`<button class="mv-choose-btn" onclick="mvOpenTransfer()"><span class="mc-ic">🔄</span><span class="mc-lb">${t('mvChooseTransfer')}</span><span class="mc-sub">${t('mvChooseTransferSub')}</span></button>`:`<button class="mv-choose-btn is-disabled" disabled><span class="mc-ic">🔄</span><span class="mc-lb">${t('mvChooseTransfer')}</span><span class="mc-sub mc-sub-warn">${t('mvTfNeedTwo')}</span></button>`}<button class="mv-choose-btn" onclick="mvOpenReturn()"><span class="mc-ic">↩️</span><span class="mc-lb">${t('mvT_RETURN')}</span><span class="mc-sub">${t('mvChooseReturn')}</span></button><button class="mv-choose-btn" onclick="mvOpenDisposal()"><span class="mc-ic">🗑️</span><span class="mc-lb">${t('mvT_DISPOSAL')}</span><span class="mc-sub">${t('mvChooseDisposal')}</span></button><button class="mv-choose-btn" onclick="mvOpenAdjustment()"><span class="mc-ic">⚖️</span><span class="mc-lb">${t('mvT_ADJUSTMENT')}</span><span class="mc-sub">${t('mvChooseAdjust')}</span></button></div><div class="rc-hint2" style="margin-top:12px">${t('mvT_RECEIPT')}: ${LANG==='ar'?'من صفحة تفاصيل المستودع':'from Warehouse Detail'}</div></div></div>`;const tpl=document.createElement('template');tpl.innerHTML=markup;const actions={mvOpenIssue:'ISSUE',mvOpenTransfer:'TRANSFER',mvOpenReturn:'RETURN',mvOpenDisposal:'DISPOSAL',mvOpenAdjustment:'ADJUSTMENT'};tpl.content.querySelectorAll('button[onclick]').forEach(b=>{const fn=b.getAttribute('onclick').split('(')[0];if(actions[fn]&&!whCan(WH_MOVE_ACTION[actions[fn]]))b.remove();});return tpl.innerHTML;}
-function mvIssueModal(){const r=mvIs,b=mvIsSubmitting,dd=mvModalPicker(mvIsPickOpen,mvIsPickQuery,'mvIsPickSearch','mvIsPickItem'),item=r.iw?`<div class="rc-chip">${esc(r.iwLabel)}<span class="mv-chip-x" onclick="mvIsClearItem()">×</span></div>`:`<button class="mv-pick-btn" style="width:100%;text-align:start" onclick="mvIsTogglePick()">${t('mvRcSelItem')} ▾</button>${dd}`,err=mvIsErr?`<div class="rc-err">${esc(mvIsErr)}</div>`:'';return `<div class="mv-scrim"></div><div class="mv-modal"><div class="mv-modal-head"><h2>${t('mvT_ISSUE')}</h2><button class="mv-modal-x" onclick="mvCloseModal()">×</button></div><div class="mv-modal-body"><label class="rc-lbl">${t('mvRcItem')} *</label>${item}${mvModalInfo(r)}<label class="rc-lbl">${t('mvIsQty')} *</label><input class="rc-in" type="number" min="0" step="any" value="${esc(r.qty)}" oninput="mvIsSet('qty',this.value)"/><label class="rc-lbl">${t('mvIsBatch')}</label><input class="rc-in" value="${esc(r.batch_no)}" oninput="mvIsSet('batch_no',this.value)"/><label class="rc-lbl">${t('mvRcNote')}</label><textarea class="rc-in" rows="2" oninput="mvIsSet('note',this.value)">${esc(r.note)}</textarea>${err}</div><div class="mv-modal-foot"><button class="rc-cancel" onclick="mvCloseModal()">${t('mvRcCancel')}</button><button class="rc-save" onclick="mvSubmitIssue()" ${b?'disabled':''}>${b?t('mvIsSaving'):t('mvIsPost')}</button></div></div>`}
-function mvDisposalModal(){const r=mvDp,b=mvDpSubmitting,dd=mvModalPicker(mvDpPickOpen,mvDpPickQuery,'mvDpPickSearch','mvDpPickItem'),item=r.iw?`<div class="rc-chip">${esc(r.iwLabel)}<span class="mv-chip-x" onclick="mvDpClearItem()">×</span></div>`:`<button class="mv-pick-btn" style="width:100%;text-align:start" onclick="mvDpTogglePick()">${t('mvRcSelItem')} ▾</button>${dd}`,R=['storage_damage','expired','broken','unfit_for_use','other'],ro=`<option value="">${t('mvDpReasonSel')}</option>`+R.map(x=>`<option value="${x}" ${r.reason===x?'selected':''}>${t('mvDpR_'+x)}</option>`).join(''),err=mvDpErr?`<div class="rc-err">${esc(mvDpErr)}</div>`:'';return `<div class="mv-scrim"></div><div class="mv-modal"><div class="mv-modal-head"><h2>${t('mvT_DISPOSAL')}</h2><button class="mv-modal-x" onclick="mvCloseModal()">×</button></div><div class="mv-modal-body"><label class="rc-lbl">${t('mvRcItem')} *</label>${item}${mvModalInfo(r)}<label class="rc-lbl">${t('mvDpQty')} *</label><input class="rc-in" type="number" value="${esc(r.qty)}" oninput="mvDpSet('qty',this.value)"/><label class="rc-lbl">${t('mvDpReason')} *</label><select class="rc-in" onchange="mvDpSetReason(this.value)">${ro}</select><label class="rc-lbl">${t('mvRcNote')} *</label><textarea class="rc-in" rows="2" oninput="mvDpSet('note',this.value)">${esc(r.note)}</textarea>${err}</div><div class="mv-modal-foot"><button class="rc-cancel" onclick="mvCloseModal()">${t('mvRcCancel')}</button><button class="rc-save" onclick="mvSubmitDisposal()" ${b?'disabled':''}>${b?t('mvIsSaving'):t('mvDpPost')}</button></div></div>`}
-function mvAdjustmentModal(){const r=mvAj,b=mvAjSubmitting,dd=mvModalPicker(mvAjPickOpen,mvAjPickQuery,'mvAjPickSearch','mvAjPickItem'),item=r.iw?`<div class="rc-chip">${esc(r.iwLabel)}<span class="mv-chip-x" onclick="mvAjClearItem()">×</span></div>`:`<button class="mv-pick-btn" style="width:100%;text-align:start" onclick="mvAjTogglePick()">${t('mvRcSelItem')} ▾</button>${dd}`,R=['periodic_count','data_entry_correction','unexplained_variance','system_reconciliation','other'],ro=`<option value="">${t('mvDpReasonSel')}</option>`+R.map(x=>`<option value="${x}" ${r.reason===x?'selected':''}>${t('mvAjR_'+x)}</option>`).join(''),err=mvAjErr?`<div class="rc-err">${esc(mvAjErr)}</div>`:'';return `<div class="mv-scrim"></div><div class="mv-modal"><div class="mv-modal-head"><h2>${t('mvT_ADJUSTMENT')}</h2><button class="mv-modal-x" onclick="mvCloseModal()">×</button></div><div class="mv-modal-body"><label class="rc-lbl">${t('mvRcItem')} *</label>${item}${mvModalInfo(r)}<label class="rc-lbl">${t('mvAjDir')} *</label><div class="aj-dir"><button class="aj-dir-btn ${r.direction==='increase'?'on inc':''}" onclick="mvAjSetDir('increase')">▲ ${t('mvAjInc')}</button><button class="aj-dir-btn ${r.direction==='decrease'?'on dec':''}" onclick="mvAjSetDir('decrease')">▼ ${t('mvAjDec')}</button></div><label class="rc-lbl">${t('mvAjQty')} *</label><input class="rc-in" type="number" value="${esc(r.qty)}" oninput="mvAjSet('qty',this.value)"/><label class="rc-lbl">${t('mvAjReason')} *</label><select class="rc-in" onchange="mvAjSetReason(this.value)">${ro}</select><label class="rc-lbl">${t('mvRcNote')}${r.reason==='other'?' *':''}</label><textarea class="rc-in" rows="2" oninput="mvAjSet('note',this.value)">${esc(r.note)}</textarea>${err}</div><div class="mv-modal-foot"><button class="rc-cancel" onclick="mvCloseModal()">${t('mvRcCancel')}</button><button class="rc-save" onclick="mvSubmitAdjustment()" ${b?'disabled':''}>${b?t('mvIsSaving'):t('mvAjPost')}</button></div></div>`}
-function mvReturnModal(){const r=mvRt,b=mvRtSubmitting,dd=mvModalPicker(mvRtPickOpen,mvRtPickQuery,'mvRtPickSearch','mvRtPickItem'),item=r.iw?`<div class="rc-chip">${esc(r.iwLabel)}<span class="mv-chip-x" onclick="mvRtClearItem()">×</span></div>`:`<button class="mv-pick-btn" style="width:100%;text-align:start" onclick="mvRtTogglePick()">${t('mvRcSelItem')} ▾</button>${dd}`;let extra='';if(r.mode==='linked'){let p;if(!r.iw)p=`<div class="rt-hint">${t('mvRtPickItemFirst')}</div>`;else if(mvRtIssuesLoading)p=`<div class="mv-pick-load">${t('mvLoading')}</div>`;else if(!mvRtIssues||!mvRtIssues.length)p=`<div class="rt-none">${t('mvRtNoIssues')}</div>`;else if(r.ref)p=`<div class="rc-chip">${esc(r.refLabel)}<span class="mv-chip-x" onclick="mvRtPickRef(null,'','')">×</span></div>`;else p=`<div class="rt-issues">${mvRtIssues.map(x=>{const d=new Date(x.created_at).toLocaleDateString(LANG==='ar'?'ar-SA':'en-GB'),lab=`${d} · ${t('mvRtIssued')} ${fmtInt(x.qty_issued)} · ${t('mvRtRemain')} ${fmtInt(x.qty_returnable)}`;return `<div class="rt-issue-row" onclick="mvRtPickRef('${x.issue_movement_id}','${esc(lab).replace(/'/g,"\\'")}',${Number(x.qty_returnable)})"><div class="rt-ir-date">${d}</div><div class="rt-ir-nums"><span>${t('mvRtIssued')}: ${fmtInt(x.qty_issued)}</span><span>${t('mvRtReturned')}: ${fmtInt(x.qty_returned)}</span><span class="rt-ir-rem">${t('mvRtRemain')}: ${fmtInt(x.qty_returnable)}</span></div></div>`}).join('')}</div>`;extra=`<label class="rc-lbl">${t('mvRtIssue')} *</label>${p}<label class="rc-lbl">${t('mvRtQty')} *</label><input class="rc-in" type="number" value="${esc(r.qty)}" oninput="mvRtSet('qty',this.value)"/><label class="rc-lbl">${t('mvRcNote')}</label><textarea class="rc-in" rows="2" oninput="mvRtSet('note',this.value)">${esc(r.note)}</textarea>`}else extra=`<label class="rc-lbl">${t('mvRtQty')} *</label><input class="rc-in" type="number" value="${esc(r.qty)}" oninput="mvRtSet('qty',this.value)"/><label class="rc-lbl">${t('mvIsBatch')}</label><input class="rc-in" value="${esc(r.batch_no)}" oninput="mvRtSet('batch_no',this.value)"/><label class="rc-lbl">${t('mvRcNote')} *</label><textarea class="rc-in" rows="2" oninput="mvRtSet('note',this.value)">${esc(r.note)}</textarea><div class="rc-hint2">${t('mvRtUnlinkedHint')}</div>`;return `<div class="mv-scrim"></div><div class="mv-modal"><div class="mv-modal-head"><h2>${t('mvT_RETURN')}</h2><button class="mv-modal-x" onclick="mvCloseModal()">×</button></div><div class="mv-modal-body"><label class="rc-lbl">${t('mvRcItem')} *</label>${item}${mvModalInfo(r)}<div class="rt-mode"><button class="rt-mode-btn ${r.mode==='linked'?'on':''}" onclick="mvRtSetMode('linked')">${t('mvRtLinked')}</button><button class="rt-mode-btn ${r.mode==='unlinked'?'on':''}" onclick="mvRtSetMode('unlinked')">${t('mvRtUnlinked')}</button></div>${extra}${mvRtErr?`<div class="rc-err">${esc(mvRtErr)}</div>`:''}</div><div class="mv-modal-foot"><button class="rc-cancel" onclick="mvCloseModal()">${t('mvRcCancel')}</button><button class="rc-save" onclick="mvSubmitReturn()" ${b?'disabled':''}>${b?t('mvIsSaving'):t('mvRtPost')}</button></div></div>`}
-function mvTransferModal(){if(mvWhList===null||mvItemList===null)return `<div class="mv-scrim"></div><div class="mv-modal"><div class="mv-modal-body"><div class="empty">${t('mvLoading')}</div></div></div>`;const open=mvOpenWarehouses(),src=`<option value="">${t('mvTfSrc')}</option>`+open.map(w=>`<option value="${w.warehouse_id||w.id}" ${mvTf.src_wh===(w.warehouse_id||w.id)?'selected':''}>${esc(LANG==='ar'?(w.name_ar||w.code):(w.name_en||w.name_ar||w.code))}</option>`).join(''),dest=`<option value="">${t('mvTfDest')}</option>`+open.filter(w=>(w.warehouse_id||w.id)!==mvTf.src_wh).map(w=>`<option value="${w.warehouse_id||w.id}" ${mvTf.dest_wh===(w.warehouse_id||w.id)?'selected':''}>${esc(LANG==='ar'?(w.name_ar||w.code):(w.name_en||w.name_ar||w.code))}</option>`).join('');let item='';if(mvTf.src_wh){const list=mvTfSourceItems(),chosen=mvTfChosenItem();if(chosen)item=`<div class="rc-chip">${esc(chosen.item_code)} · ${esc(LANG==='ar'?(chosen.name_ar||chosen.name_en):(chosen.name_en||chosen.name_ar))}<span class="mv-chip-x" onclick="mvTfSet('item_iw','')">×</span></div>`;else item=`<button class="mv-pick-btn" style="width:100%;text-align:start" onclick="mvTfToggleItem()">${t('mvRcSelItem')} ▾</button>${mvTfItemOpen?`<div class="mv-pick-dd" style="position:static;width:100%;box-shadow:none;margin-top:6px"><div class="mv-pick-list">${list.map(x=>`<div class="mv-pick-row" onclick="mvTfPickItem('${x.item_warehouse_id}')"><span class="mv-pick-code">${esc(x.item_code)}</span>${esc(LANG==='ar'?(x.name_ar||x.name_en):(x.name_en||x.name_ar))}</div>`).join('')}</div></div>`:''}`};let shelf='';if(mvTf.dest_wh&&!mvTfItemInDest()){const sh=mvShelves[mvTf.dest_wh];if(Array.isArray(sh))shelf=`<label class="rc-lbl">${t('whmAiShelf')} *</label><select class="rc-in" onchange="mvTfSet('dest_shelf',this.value)"><option value="">${t('whmAiShelfSel')}</option>${sh.map(x=>`<option value="${x.shelf_id}" ${mvTf.dest_shelf===x.shelf_id?'selected':''}>${esc(x.shelf_name)}</option>`).join('')}</select>`}return `<div class="mv-scrim"></div><div class="mv-modal"><div class="mv-modal-head"><h2>${t('mvChooseTransfer')}</h2><button class="mv-modal-x" onclick="mvCloseModal()">×</button></div><div class="mv-modal-body"><label class="rc-lbl">${t('mvTfSrc')} *</label><select class="rc-in" onchange="mvTfSet('src_wh',this.value)">${src}</select>${mvTf.src_wh?`<label class="rc-lbl">${t('mvRcItem')} *</label>${item}`:''}${mvTf.item_iw?`<label class="rc-lbl">${t('mvTfDest')} *</label><select class="rc-in" onchange="mvTfSet('dest_wh',this.value)">${dest}</select>`:''}${shelf}${mvTf.dest_wh?`<label class="rc-lbl">${t('mvTfQty')} *</label><input class="rc-in" type="number" value="${esc(mvTf.qty)}" oninput="mvTfSet('qty',this.value)"/><label class="rc-lbl">${t('mvIsBatch')}</label><input class="rc-in" value="${esc(mvTf.batch_no)}" oninput="mvTfSet('batch_no',this.value)"/><label class="rc-lbl">${t('mvRcNote')}</label><textarea class="rc-in" rows="2" oninput="mvTfSet('note',this.value)">${esc(mvTf.note)}</textarea>`:''}${mvTfErr?`<div class="rc-err">${esc(mvTfErr)}</div>`:''}</div><div class="mv-modal-foot"><button class="rc-cancel" onclick="mvCloseModal()">${t('mvRcCancel')}</button><button class="rc-save" onclick="mvSubmitTransfer()" ${mvTfSubmitting?'disabled':''}>${mvTfSubmitting?t('mvRcSaving'):t('mvTfPost')}</button></div></div>`}
+async function mvOpenReceipt(){
+ if(!whCan('movements.receive'))return;
+ const body=document.createElement('div'),field=document.createElement('div');field.className='field';
+ const label=document.createElement('label'),select=document.createElement('select');label.textContent=AdvaconUI.text('المستودع المستلم','Receiving warehouse');
+ const warehouses=mvOpenWarehouses();if(!warehouses.length){toast(AdvaconUI.text('لا يوجد مستودع نشط ومفتوح للاستلام.','No active open warehouse is available.'),'error');return;}
+ warehouses.forEach(w=>{const option=document.createElement('option');option.value=w.warehouse_id||w.id;option.textContent=(LANG==='ar'?w.name_ar:w.name_en)||w.name_ar||w.code;select.append(option);});field.append(label,select);body.append(field);
+ const next=document.createElement('button');next.className='btn btn-primary';next.textContent=AdvaconUI.text('متابعة للاستلام','Continue to receipt');
+ mvCloseModal();const m=openModal({title:t('mvT_RECEIPT'),body,footer:next});
+ next.onclick=()=>AdvaconUI.busy(next,async()=>{try{const id=select.value;if(!id)return;m.close();whDetailId=id;whmItems=null;whmShelves=null;await whmTryReceive();}catch(e){toast(e.message,'error');}});
+}
+function mvChooserModal(){const markup = `<div class="mv-scrim" onclick="mvCloseModal()"></div><div class="mv-modal"><div class="mv-modal-head"><h2>${t('mvNew')}</h2><button class="mv-modal-x" onclick="mvCloseModal()">×</button></div><div class="mv-modal-body"><div class="mv-choose"><button class="mv-choose-btn" onclick="mvOpenReceipt()"><span class="mc-ic">📥</span><span class="mc-lb">${t('mvT_RECEIPT')}</span><span class="mc-sub">${t('mvChooseReceipt')}</span></button><button class="mv-choose-btn" onclick="mvOpenIssue()"><span class="mc-ic">📤</span><span class="mc-lb">${t('mvT_ISSUE')}</span><span class="mc-sub">${t('mvChooseIssue')}</span></button>${mvTfCanTransfer()?`<button class="mv-choose-btn" onclick="mvOpenTransfer()"><span class="mc-ic">🔄</span><span class="mc-lb">${t('mvChooseTransfer')}</span><span class="mc-sub">${t('mvChooseTransferSub')}</span></button>`:`<button class="mv-choose-btn is-disabled" disabled><span class="mc-ic">🔄</span><span class="mc-lb">${t('mvChooseTransfer')}</span><span class="mc-sub mc-sub-warn">${t('mvTfNeedTwo')}</span></button>`}<button class="mv-choose-btn" onclick="mvOpenReturn()"><span class="mc-ic">↩️</span><span class="mc-lb">${t('mvT_RETURN')}</span><span class="mc-sub">${t('mvChooseReturn')}</span></button><button class="mv-choose-btn" onclick="mvOpenDisposal()"><span class="mc-ic">🗑️</span><span class="mc-lb">${t('mvT_DISPOSAL')}</span><span class="mc-sub">${t('mvChooseDisposal')}</span></button><button class="mv-choose-btn" onclick="mvOpenAdjustment()"><span class="mc-ic">⚖️</span><span class="mc-lb">${t('mvT_ADJUSTMENT')}</span><span class="mc-sub">${t('mvChooseAdjust')}</span></button></div></div></div>`;const tpl=document.createElement('template');tpl.innerHTML=markup;const actions={mvOpenReceipt:'RECEIPT',mvOpenIssue:'ISSUE',mvOpenTransfer:'TRANSFER',mvOpenReturn:'RETURN',mvOpenDisposal:'DISPOSAL',mvOpenAdjustment:'ADJUSTMENT'};tpl.content.querySelectorAll('button[onclick]').forEach(b=>{const fn=b.getAttribute('onclick').split('(')[0];if(actions[fn]&&!whCan(WH_MOVE_ACTION[actions[fn]]))b.remove();});return tpl.innerHTML;}
+function mvIssueModal(){const r=mvIs,b=mvIsSubmitting,dd=mvModalPicker(mvIsPickOpen,mvIsPickQuery,'mvIsPickSearch','mvIsPickItem'),item=r.iw?`<div class="rc-chip">${esc(r.iwLabel)}<span class="mv-chip-x" onclick="mvIsClearItem()">×</span></div>`:`<button class="mv-pick-btn" style="width:100%;text-align:start" onclick="mvIsTogglePick()">${t('mvRcSelItem')} ▾</button>${dd}`,err=mvIsErr?`<div class="rc-err">${esc(mvIsErr)}</div>`:'';return `<div class="mv-scrim"></div><div class="mv-modal"><div class="mv-modal-head"><h2>${t('mvT_ISSUE')}</h2><button class="mv-modal-x" onclick="mvCloseModal()">×</button></div><div class="mv-modal-body"><label class="rc-lbl">${t('mvRcItem')} *</label>${item}${mvModalInfo(r)}<label class="rc-lbl">${t('mvIsQty')} *</label><input class="rc-in" type="number" min="0" step="any" value="${esc(r.qty)}" oninput="mvIsSet('qty',this.value)"/><label class="rc-lbl">${t('mvIsBatch')}</label><input class="rc-in" value="${esc(r.batch_no)}" oninput="mvIsSet('batch_no',this.value)"/><label class="rc-lbl">${t('mvRcNote')}</label><textarea class="rc-in" rows="2" oninput="mvIsSet('note',this.value)">${esc(r.note)}</textarea>${err}</div><div class="mv-modal-foot"><button class="rc-cancel" onclick="mvCloseModal()">${t('mvRcCancel')}</button><button class="rc-save" onclick="mvSubmitIssue()" ${b?'disabled':''}>${b?t('mvIsSaving'):AdvaconUI.requestLabel(whPermissionMode(WH_MOVE_ACTION.ISSUE),t('mvIsPost'))}</button></div></div>`}
+function mvDisposalModal(){const r=mvDp,b=mvDpSubmitting,dd=mvModalPicker(mvDpPickOpen,mvDpPickQuery,'mvDpPickSearch','mvDpPickItem'),item=r.iw?`<div class="rc-chip">${esc(r.iwLabel)}<span class="mv-chip-x" onclick="mvDpClearItem()">×</span></div>`:`<button class="mv-pick-btn" style="width:100%;text-align:start" onclick="mvDpTogglePick()">${t('mvRcSelItem')} ▾</button>${dd}`,R=['storage_damage','expired','broken','unfit_for_use','other'],ro=`<option value="">${t('mvDpReasonSel')}</option>`+R.map(x=>`<option value="${x}" ${r.reason===x?'selected':''}>${t('mvDpR_'+x)}</option>`).join(''),err=mvDpErr?`<div class="rc-err">${esc(mvDpErr)}</div>`:'';return `<div class="mv-scrim"></div><div class="mv-modal"><div class="mv-modal-head"><h2>${t('mvT_DISPOSAL')}</h2><button class="mv-modal-x" onclick="mvCloseModal()">×</button></div><div class="mv-modal-body"><label class="rc-lbl">${t('mvRcItem')} *</label>${item}${mvModalInfo(r)}<label class="rc-lbl">${t('mvDpQty')} *</label><input class="rc-in" type="number" value="${esc(r.qty)}" oninput="mvDpSet('qty',this.value)"/><label class="rc-lbl">${t('mvDpReason')} *</label><select class="rc-in" onchange="mvDpSetReason(this.value)">${ro}</select><label class="rc-lbl">${t('mvRcNote')} *</label><textarea class="rc-in" rows="2" oninput="mvDpSet('note',this.value)">${esc(r.note)}</textarea>${err}</div><div class="mv-modal-foot"><button class="rc-cancel" onclick="mvCloseModal()">${t('mvRcCancel')}</button><button class="rc-save" onclick="mvSubmitDisposal()" ${b?'disabled':''}>${b?t('mvIsSaving'):AdvaconUI.requestLabel(whPermissionMode(WH_MOVE_ACTION.DISPOSAL),t('mvDpPost'))}</button></div></div>`}
+function mvAdjustmentModal(){const r=mvAj,b=mvAjSubmitting,dd=mvModalPicker(mvAjPickOpen,mvAjPickQuery,'mvAjPickSearch','mvAjPickItem'),item=r.iw?`<div class="rc-chip">${esc(r.iwLabel)}<span class="mv-chip-x" onclick="mvAjClearItem()">×</span></div>`:`<button class="mv-pick-btn" style="width:100%;text-align:start" onclick="mvAjTogglePick()">${t('mvRcSelItem')} ▾</button>${dd}`,R=['periodic_count','data_entry_correction','unexplained_variance','system_reconciliation','other'],ro=`<option value="">${t('mvDpReasonSel')}</option>`+R.map(x=>`<option value="${x}" ${r.reason===x?'selected':''}>${t('mvAjR_'+x)}</option>`).join(''),err=mvAjErr?`<div class="rc-err">${esc(mvAjErr)}</div>`:'';return `<div class="mv-scrim"></div><div class="mv-modal"><div class="mv-modal-head"><h2>${t('mvT_ADJUSTMENT')}</h2><button class="mv-modal-x" onclick="mvCloseModal()">×</button></div><div class="mv-modal-body"><label class="rc-lbl">${t('mvRcItem')} *</label>${item}${mvModalInfo(r)}<label class="rc-lbl">${t('mvAjDir')} *</label><div class="aj-dir"><button class="aj-dir-btn ${r.direction==='increase'?'on inc':''}" onclick="mvAjSetDir('increase')">▲ ${t('mvAjInc')}</button><button class="aj-dir-btn ${r.direction==='decrease'?'on dec':''}" onclick="mvAjSetDir('decrease')">▼ ${t('mvAjDec')}</button></div><label class="rc-lbl">${t('mvAjQty')} *</label><input class="rc-in" type="number" value="${esc(r.qty)}" oninput="mvAjSet('qty',this.value)"/><label class="rc-lbl">${t('mvAjReason')} *</label><select class="rc-in" onchange="mvAjSetReason(this.value)">${ro}</select><label class="rc-lbl">${t('mvRcNote')}${r.reason==='other'?' *':''}</label><textarea class="rc-in" rows="2" oninput="mvAjSet('note',this.value)">${esc(r.note)}</textarea>${err}</div><div class="mv-modal-foot"><button class="rc-cancel" onclick="mvCloseModal()">${t('mvRcCancel')}</button><button class="rc-save" onclick="mvSubmitAdjustment()" ${b?'disabled':''}>${b?t('mvIsSaving'):AdvaconUI.requestLabel(whPermissionMode(WH_MOVE_ACTION.ADJUSTMENT),t('mvAjPost'))}</button></div></div>`}
+function mvReturnModal(){const r=mvRt,b=mvRtSubmitting,dd=mvModalPicker(mvRtPickOpen,mvRtPickQuery,'mvRtPickSearch','mvRtPickItem'),item=r.iw?`<div class="rc-chip">${esc(r.iwLabel)}<span class="mv-chip-x" onclick="mvRtClearItem()">×</span></div>`:`<button class="mv-pick-btn" style="width:100%;text-align:start" onclick="mvRtTogglePick()">${t('mvRcSelItem')} ▾</button>${dd}`;let extra='';if(r.mode==='linked'){let p;if(!r.iw)p=`<div class="rt-hint">${t('mvRtPickItemFirst')}</div>`;else if(mvRtIssuesLoading)p=`<div class="mv-pick-load">${t('mvLoading')}</div>`;else if(!mvRtIssues||!mvRtIssues.length)p=`<div class="rt-none">${t('mvRtNoIssues')}</div>`;else if(r.ref)p=`<div class="rc-chip">${esc(r.refLabel)}<span class="mv-chip-x" onclick="mvRtPickRef(null,'','')">×</span></div>`;else p=`<div class="rt-issues">${mvRtIssues.map(x=>{const d=new Date(x.created_at).toLocaleDateString(LANG==='ar'?'ar-SA':'en-GB'),lab=`${d} · ${t('mvRtIssued')} ${fmtInt(x.qty_issued)} · ${t('mvRtRemain')} ${fmtInt(x.qty_returnable)}`;return `<div class="rt-issue-row" onclick="mvRtPickRef('${x.issue_movement_id}','${esc(lab).replace(/'/g,"\\'")}',${Number(x.qty_returnable)})"><div class="rt-ir-date">${d}</div><div class="rt-ir-nums"><span>${t('mvRtIssued')}: ${fmtInt(x.qty_issued)}</span><span>${t('mvRtReturned')}: ${fmtInt(x.qty_returned)}</span><span class="rt-ir-rem">${t('mvRtRemain')}: ${fmtInt(x.qty_returnable)}</span></div></div>`}).join('')}</div>`;extra=`<label class="rc-lbl">${t('mvRtIssue')} *</label>${p}<label class="rc-lbl">${t('mvRtQty')} *</label><input class="rc-in" type="number" value="${esc(r.qty)}" oninput="mvRtSet('qty',this.value)"/><label class="rc-lbl">${t('mvRcNote')}</label><textarea class="rc-in" rows="2" oninput="mvRtSet('note',this.value)">${esc(r.note)}</textarea>`}else extra=`<label class="rc-lbl">${t('mvRtQty')} *</label><input class="rc-in" type="number" value="${esc(r.qty)}" oninput="mvRtSet('qty',this.value)"/><label class="rc-lbl">${t('mvIsBatch')}</label><input class="rc-in" value="${esc(r.batch_no)}" oninput="mvRtSet('batch_no',this.value)"/><label class="rc-lbl">${t('mvRcNote')} *</label><textarea class="rc-in" rows="2" oninput="mvRtSet('note',this.value)">${esc(r.note)}</textarea><div class="rc-hint2">${t('mvRtUnlinkedHint')}</div>`;return `<div class="mv-scrim"></div><div class="mv-modal"><div class="mv-modal-head"><h2>${t('mvT_RETURN')}</h2><button class="mv-modal-x" onclick="mvCloseModal()">×</button></div><div class="mv-modal-body"><label class="rc-lbl">${t('mvRcItem')} *</label>${item}${mvModalInfo(r)}<div class="rt-mode"><button class="rt-mode-btn ${r.mode==='linked'?'on':''}" onclick="mvRtSetMode('linked')">${t('mvRtLinked')}</button><button class="rt-mode-btn ${r.mode==='unlinked'?'on':''}" onclick="mvRtSetMode('unlinked')">${t('mvRtUnlinked')}</button></div>${extra}${mvRtErr?`<div class="rc-err">${esc(mvRtErr)}</div>`:''}</div><div class="mv-modal-foot"><button class="rc-cancel" onclick="mvCloseModal()">${t('mvRcCancel')}</button><button class="rc-save" onclick="mvSubmitReturn()" ${b?'disabled':''}>${b?t('mvIsSaving'):AdvaconUI.requestLabel(whPermissionMode(WH_MOVE_ACTION.RETURN),t('mvRtPost'))}</button></div></div>`}
+function mvTransferModal(){if(mvWhList===null||mvItemList===null)return `<div class="mv-scrim"></div><div class="mv-modal"><div class="mv-modal-body"><div class="empty">${t('mvLoading')}</div></div></div>`;const open=mvOpenWarehouses(),src=`<option value="">${t('mvTfSrc')}</option>`+open.map(w=>`<option value="${w.warehouse_id||w.id}" ${mvTf.src_wh===(w.warehouse_id||w.id)?'selected':''}>${esc(LANG==='ar'?(w.name_ar||w.code):(w.name_en||w.name_ar||w.code))}</option>`).join(''),dest=`<option value="">${t('mvTfDest')}</option>`+open.filter(w=>(w.warehouse_id||w.id)!==mvTf.src_wh).map(w=>`<option value="${w.warehouse_id||w.id}" ${mvTf.dest_wh===(w.warehouse_id||w.id)?'selected':''}>${esc(LANG==='ar'?(w.name_ar||w.code):(w.name_en||w.name_ar||w.code))}</option>`).join('');let item='';if(mvTf.src_wh){const list=mvTfSourceItems(),chosen=mvTfChosenItem();if(chosen)item=`<div class="rc-chip">${esc(chosen.item_code)} · ${esc(LANG==='ar'?(chosen.name_ar||chosen.name_en):(chosen.name_en||chosen.name_ar))}<span class="mv-chip-x" onclick="mvTfSet('item_iw','')">×</span></div>`;else item=`<button class="mv-pick-btn" style="width:100%;text-align:start" onclick="mvTfToggleItem()">${t('mvRcSelItem')} ▾</button>${mvTfItemOpen?`<div class="mv-pick-dd" style="position:static;width:100%;box-shadow:none;margin-top:6px"><div class="mv-pick-list">${list.map(x=>`<div class="mv-pick-row" onclick="mvTfPickItem('${x.item_warehouse_id}')"><span class="mv-pick-code">${esc(x.item_code)}</span>${esc(LANG==='ar'?(x.name_ar||x.name_en):(x.name_en||x.name_ar))}</div>`).join('')}</div></div>`:''}`};let shelf='';if(mvTf.dest_wh&&!mvTfItemInDest()){const sh=mvShelves[mvTf.dest_wh];if(Array.isArray(sh))shelf=`<label class="rc-lbl">${t('whmAiShelf')} *</label><select class="rc-in" onchange="mvTfSet('dest_shelf',this.value)"><option value="">${t('whmAiShelfSel')}</option>${sh.map(x=>`<option value="${x.shelf_id}" ${mvTf.dest_shelf===x.shelf_id?'selected':''}>${esc(x.shelf_name)}</option>`).join('')}</select>`}return `<div class="mv-scrim"></div><div class="mv-modal"><div class="mv-modal-head"><h2>${t('mvChooseTransfer')}</h2><button class="mv-modal-x" onclick="mvCloseModal()">×</button></div><div class="mv-modal-body"><label class="rc-lbl">${t('mvTfSrc')} *</label><select class="rc-in" onchange="mvTfSet('src_wh',this.value)">${src}</select>${mvTf.src_wh?`<label class="rc-lbl">${t('mvRcItem')} *</label>${item}`:''}${mvTf.item_iw?`<label class="rc-lbl">${t('mvTfDest')} *</label><select class="rc-in" onchange="mvTfSet('dest_wh',this.value)">${dest}</select>`:''}${shelf}${mvTf.dest_wh?`<label class="rc-lbl">${t('mvTfQty')} *</label><input class="rc-in" type="number" value="${esc(mvTf.qty)}" oninput="mvTfSet('qty',this.value)"/><label class="rc-lbl">${t('mvIsBatch')}</label><input class="rc-in" value="${esc(mvTf.batch_no)}" oninput="mvTfSet('batch_no',this.value)"/><label class="rc-lbl">${t('mvRcNote')}</label><textarea class="rc-in" rows="2" oninput="mvTfSet('note',this.value)">${esc(mvTf.note)}</textarea>`:''}${mvTfErr?`<div class="rc-err">${esc(mvTfErr)}</div>`:''}</div><div class="mv-modal-foot"><button class="rc-cancel" onclick="mvCloseModal()">${t('mvRcCancel')}</button><button class="rc-save" onclick="mvSubmitTransfer()" ${mvTfSubmitting?'disabled':''}>${mvTfSubmitting?t('mvRcSaving'):AdvaconUI.requestLabel(whPermissionMode(WH_MOVE_ACTION.TRANSFER),t('mvTfPost'))}</button></div></div>`}
 
 /* Receipt from warehouse detail */
 async function mvLoadReference(){if(mvRef!==null||mvRefLoading)return;mvRefLoading=true;try{const r=await warehouseRpc('reference_lists',{});mvRef=(r&&typeof r==='object'&&!Array.isArray(r))?r:{items:[]}}catch(e){mvRef={items:[]};toast(e.message||t('errorOccurred'),'error')}finally{mvRefLoading=false;whmRender()}}
@@ -2803,7 +2731,7 @@ function whmRcvExistingRow(){if(!whmRcv.item_id)return null;return (whmItems||[]
 async function whmTryReceive(){if(!whCan('movements.receive'))return;if(whmItems===null)await whmLoadItems();if(whmItemsError||whmItems===null){toast(t('rcvLoadItemsFailed'),'error');return}if(whmShelves===null)await whmLoadShelves();if(mvRef===null)await mvLoadReference();whmRcv={item_id:'',qty:'',shelf_id:'',min_level:'',batch_no:'',expiry_date:'',note:''};whmRcvErr='';whmRcvOpen=true;whmRcvPickOpen=false;whmRender()}
 function whmRcvClose(){if(!whmRcvBusy){whmRcvOpen=false;whmRender()}} function whmRcvSet(k,v){whmRcv[k]=v;whmRcvErr='';if(k==='item_id')whmRender()} function whmRcvTogglePick(){whmRcvPickOpen=!whmRcvPickOpen;whmRender()} function whmRcvPickSearch(v){whmRcvPickQuery=v;whmRender()} function whmRcvPickItem(id){whmRcv.item_id=id;whmRcv.shelf_id='';whmRcvPickOpen=false;whmRcvPickQuery='';whmRender()}
 async function whmRcvSubmit(){if(whmRcvBusy)return;const a=whmRcv,q=Number(a.qty),existing=whmRcvExistingRow();if(!a.item_id){whmRcvErr=t('mvRcErrItem');whmRender();return}if(!a.qty||!Number.isFinite(q)||q<=0){whmRcvErr=t('mvRcErrQty');whmRender();return}if(!existing&&!a.shelf_id){whmRcvErr=t('whmAiErrShelf');whmRender();return}if(a.expiry_date&&!(a.batch_no||'').trim()){whmRcvErr=t('mvRcErrExpiry');whmRender();return}const ml=(a.min_level===''?null:Number(a.min_level));if(ml!==null&&(!Number.isFinite(ml)||ml<0)){whmRcvErr=t('whmErr_invalid_min_level');whmRender();return}whmRcvBusy=true;whmRender();try{const moveResult=await warehouseMovementRpc('RECEIPT',{p_item_id:a.item_id,p_warehouse_id:whDetailId,p_shelf_id:existing?null:a.shelf_id,p_qty:q,p_min_level:existing?null:ml,p_batch_no:(a.batch_no||'').trim()||null,p_expiry_date:a.expiry_date||null,p_note:(a.note||'').trim()||null});toast(whMovementMessage(moveResult,'mvRcOk'),'success');whmRcvOpen=false;mvInvalidate();whmItems=null;whmLoaded=false;await whmLoadItems()}catch(e){whmRcvErr=e.message||t('mvRcErrGeneric')}finally{whmRcvBusy=false;whmRender()}}
-function whmReceiveModal(){const items=(mvRef&&Array.isArray(mvRef.items))?mvRef.items:[],q=(whmRcvPickQuery||'').trim().toLowerCase(),list=items.filter(x=>!q||((x.item_code||'').toLowerCase().includes(q)||(x.name_ar||'').toLowerCase().includes(q)||(x.name_en||'').toLowerCase().includes(q))).slice(0,40),chosen=items.find(x=>(x.item_id||x.id)===whmRcv.item_id),existing=whmRcvExistingRow(),busy=whmRcvBusy;let picker;if(chosen){const nm=LANG==='ar'?(chosen.name_ar||chosen.name_en):(chosen.name_en||chosen.name_ar);picker=`<div class="rc-chip">${esc(chosen.item_code||'')} · ${esc(nm||'')}<span class="mv-chip-x" onclick="whmRcvPickItem('')">×</span></div>`}else picker=`<button class="mv-pick-btn" style="width:100%;text-align:start" onclick="whmRcvTogglePick()">${t('mvRcSelItem')} ▾</button>${whmRcvPickOpen?`<div class="mv-pick-dd" style="position:static;width:100%;box-shadow:none;margin-top:6px"><input class="mv-pick-search" value="${esc(whmRcvPickQuery)}" placeholder="${t('mvItemPh')}" oninput="whmRcvPickSearch(this.value)"/><div class="mv-pick-list">${list.length?list.map(x=>{const id=x.item_id||x.id,nm=LANG==='ar'?(x.name_ar||x.name_en):(x.name_en||x.name_ar);return `<div class="mv-pick-row" onclick="whmRcvPickItem('${id}')"><span class="mv-pick-code">${esc(x.item_code||'')}</span>${esc(nm||'')}</div>`}).join(''):`<div class="mv-pick-load">${t('rcvNoCatalog')}</div>`}</div></div>`:''}`;let ctx='';if(chosen)ctx=existing?`<div class="rcv-ctx rcv-ctx-exist"><div class="rcv-ctx-tag">${t('rcvExisting')}</div><div class="rcv-ctx-grid"><div><span class="rcv-ctx-l">${t('mvRcOnHand')}</span><span class="rcv-ctx-v">${fmtInt(existing.on_hand)}</span></div><div><span class="rcv-ctx-l">${t('mvRcAvail')}</span><span class="rcv-ctx-v">${fmtInt(existing.available)}</span></div></div></div>`:`<div class="rcv-ctx rcv-ctx-first"><div class="rcv-ctx-tag">${t('rcvFirst')}</div></div><label class="rc-lbl">${t('rcvShelf')} *</label><select class="rc-in" onchange="whmRcvSet('shelf_id',this.value)"><option value="">${t('whmPickShelf')}</option>${(whmShelves||[]).map(x=>`<option value="${x.shelf_id}" ${whmRcv.shelf_id===x.shelf_id?'selected':''}>${esc(x.shelf_name)}</option>`).join('')}</select><label class="rc-lbl">${t('rcvMin')}</label><input class="rc-in" type="number" min="0" value="${esc(whmRcv.min_level)}" oninput="whmRcvSet('min_level',this.value)"/>`;return `<div class="mv-scrim"></div><div class="mv-modal"><div class="mv-modal-head"><h2>${t('rcvTitle')}</h2><button class="mv-modal-x" onclick="whmRcvClose()">×</button></div><div class="mv-modal-body"><label class="rc-lbl">${t('mvRcItem')} *</label>${picker}<div class="rc-hint2">${t('rcvExistingOnlyHint')}</div>${ctx}${chosen?`<label class="rc-lbl">${t('mvRcQty')} *</label><input class="rc-in" type="number" min="0" step="any" value="${esc(whmRcv.qty)}" oninput="whmRcvSet('qty',this.value)"/><div class="rcv-batchbox"><div class="rcv-batchbox-h">${t('mvRcBatchBoxTitle')}</div><div class="rcv-batchbox-sub">${t('mvRcBatchBoxSub')}</div><label class="rc-lbl">${t('mvRcBatch')}</label><input class="rc-in" value="${esc(whmRcv.batch_no)}" oninput="whmRcvSet('batch_no',this.value)"/><label class="rc-lbl">${t('mvRcExpiry')}</label><input class="rc-in" type="date" value="${esc(whmRcv.expiry_date)}" oninput="whmRcvSet('expiry_date',this.value)"/></div><label class="rc-lbl">${t('mvRcNote')}</label><textarea class="rc-in" rows="2" oninput="whmRcvSet('note',this.value)">${esc(whmRcv.note)}</textarea>`:''}${whmRcvErr?`<div class="rc-err">${esc(whmRcvErr)}</div>`:''}</div><div class="mv-modal-foot"><button class="rc-cancel" onclick="whmRcvClose()">${t('mvRcCancel')}</button><button class="rc-save" onclick="whmRcvSubmit()" ${busy||!chosen?'disabled':''}>${busy?t('mvRcSaving'):t('mvRcPost')}</button></div></div>`}
+function whmReceiveModal(){const items=(mvRef&&Array.isArray(mvRef.items))?mvRef.items:[],q=(whmRcvPickQuery||'').trim().toLowerCase(),list=items.filter(x=>!q||((x.item_code||'').toLowerCase().includes(q)||(x.name_ar||'').toLowerCase().includes(q)||(x.name_en||'').toLowerCase().includes(q))).slice(0,40),chosen=items.find(x=>(x.item_id||x.id)===whmRcv.item_id),existing=whmRcvExistingRow(),busy=whmRcvBusy;let picker;if(chosen){const nm=LANG==='ar'?(chosen.name_ar||chosen.name_en):(chosen.name_en||chosen.name_ar);picker=`<div class="rc-chip">${esc(chosen.item_code||'')} · ${esc(nm||'')}<span class="mv-chip-x" onclick="whmRcvPickItem('')">×</span></div>`}else picker=`<button class="mv-pick-btn" style="width:100%;text-align:start" onclick="whmRcvTogglePick()">${t('mvRcSelItem')} ▾</button>${whmRcvPickOpen?`<div class="mv-pick-dd" style="position:static;width:100%;box-shadow:none;margin-top:6px"><input class="mv-pick-search" value="${esc(whmRcvPickQuery)}" placeholder="${t('mvItemPh')}" oninput="whmRcvPickSearch(this.value)"/><div class="mv-pick-list">${list.length?list.map(x=>{const id=x.item_id||x.id,nm=LANG==='ar'?(x.name_ar||x.name_en):(x.name_en||x.name_ar);return `<div class="mv-pick-row" onclick="whmRcvPickItem('${id}')"><span class="mv-pick-code">${esc(x.item_code||'')}</span>${esc(nm||'')}</div>`}).join(''):`<div class="mv-pick-load">${t('rcvNoCatalog')}</div>`}</div></div>`:''}`;let ctx='';if(chosen)ctx=existing?`<div class="rcv-ctx rcv-ctx-exist"><div class="rcv-ctx-tag">${t('rcvExisting')}</div><div class="rcv-ctx-grid"><div><span class="rcv-ctx-l">${t('mvRcOnHand')}</span><span class="rcv-ctx-v">${fmtInt(existing.on_hand)}</span></div><div><span class="rcv-ctx-l">${t('mvRcAvail')}</span><span class="rcv-ctx-v">${fmtInt(existing.available)}</span></div></div></div>`:`<div class="rcv-ctx rcv-ctx-first"><div class="rcv-ctx-tag">${t('rcvFirst')}</div></div><label class="rc-lbl">${t('rcvShelf')} *</label><select class="rc-in" onchange="whmRcvSet('shelf_id',this.value)"><option value="">${t('whmPickShelf')}</option>${(whmShelves||[]).map(x=>`<option value="${x.shelf_id}" ${whmRcv.shelf_id===x.shelf_id?'selected':''}>${esc(x.shelf_name)}</option>`).join('')}</select><label class="rc-lbl">${t('rcvMin')}</label><input class="rc-in" type="number" min="0" value="${esc(whmRcv.min_level)}" oninput="whmRcvSet('min_level',this.value)"/>`;return `<div class="mv-scrim"></div><div class="mv-modal"><div class="mv-modal-head"><h2>${t('rcvTitle')}</h2><button class="mv-modal-x" onclick="whmRcvClose()">×</button></div><div class="mv-modal-body"><label class="rc-lbl">${t('mvRcItem')} *</label>${picker}<div class="rc-hint2">${t('rcvExistingOnlyHint')}</div>${ctx}${chosen?`<label class="rc-lbl">${t('mvRcQty')} *</label><input class="rc-in" type="number" min="0" step="any" value="${esc(whmRcv.qty)}" oninput="whmRcvSet('qty',this.value)"/><div class="rcv-batchbox"><div class="rcv-batchbox-h">${t('mvRcBatchBoxTitle')}</div><div class="rcv-batchbox-sub">${t('mvRcBatchBoxSub')}</div><label class="rc-lbl">${t('mvRcBatch')}</label><input class="rc-in" value="${esc(whmRcv.batch_no)}" oninput="whmRcvSet('batch_no',this.value)"/><label class="rc-lbl">${t('mvRcExpiry')}</label><input class="rc-in" type="date" value="${esc(whmRcv.expiry_date)}" oninput="whmRcvSet('expiry_date',this.value)"/></div><label class="rc-lbl">${t('mvRcNote')}</label><textarea class="rc-in" rows="2" oninput="whmRcvSet('note',this.value)">${esc(whmRcv.note)}</textarea>`:''}${whmRcvErr?`<div class="rc-err">${esc(whmRcvErr)}</div>`:''}</div><div class="mv-modal-foot"><button class="rc-cancel" onclick="whmRcvClose()">${t('mvRcCancel')}</button><button class="rc-save" onclick="whmRcvSubmit()" ${busy||!chosen?'disabled':''}>${busy?t('mvRcSaving'):AdvaconUI.requestLabel(whPermissionMode(WH_MOVE_ACTION.RECEIPT),t('mvRcPost'))}</button></div></div>`}
 
 function resetPhase3Caches(){mvData=null;mvTotal=0;mvLoaded=false;mvLoading=false;mvPage=0;mvFilters={type:'',warehouse:'',item_id:'',item_label:'',date_from:'',date_to:''};mvItemList=null;mvItemQuery='';mvItemOpen=false;mvModal=null;mvWhList=null;mvShelves={};mvRef=null;whmRcvOpen=false;}
 
@@ -2891,6 +2819,7 @@ async function loadWarehouses(force){
 function whmRender(){
   const el = document.getElementById('content');
   if(el && currentTab() === 'shelves') el.innerHTML = viewWarehouses();
+  else if(el && currentTab() === 'movements')mvRender();
 }
 
 /* ---------- Create Warehouse (admin) ---------- */
@@ -4135,6 +4064,14 @@ function viewWhReports(){
 }
 
 
+</script>
+<script>
+document.addEventListener('DOMContentLoaded',()=>{
+ for(const name of ['renderNav','renderSidebar','route','catRender','invRender','dashRender','mvRender','aprRender','whmRender','repRender']){
+  const original=window[name];if(typeof original!=='function')continue;
+  window[name]=function(...args){const focus=AdvaconUI.captureFocus();const result=original.apply(this,args);AdvaconUI.restoreFocus(focus);if(result?.then)result.then(()=>AdvaconUI.enhance(document),()=>{});else AdvaconUI.enhance(document);return result;};
+ }
+});
 </script>
 </body>
 </html>

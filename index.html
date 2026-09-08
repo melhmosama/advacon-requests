@@ -1452,7 +1452,9 @@ html[dir=rtl] .tt-search input{padding:9px 34px 9px 12px}
 .stf-quick{display:flex;gap:8px;margin:0 0 14px}
 .stf-quick-btn{flex:1;padding:11px 10px;border:1px solid var(--grid);border-radius:10px;background:var(--white);color:var(--navy);font-weight:600;font-size:13px;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px}
 .stf-quick-btn:hover{background:var(--head);border-color:var(--accent)}
-</style></head>
+</style><link rel="stylesheet" href="/advacon-ui.css">
+<script src="/advacon-ui.js"></script>
+</head>
 <body class="notranslate"><div id="gate"></div><div class="app" id="app" style="display:none"></div><div class="toast" id="toast"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
@@ -2331,7 +2333,7 @@ async function saveWidgets(showError){
   }
 }
 
-function toast(m){const el=document.getElementById('toast');el.textContent=m;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2600);}
+function toast(m){AdvaconUI.toast(m);}
 // A8-UI global: after an action, show the toast ON TOP of the open modal, keep both ~1s,
 // then dismiss toast + close modal TOGETHER. Clicking anywhere dismisses both immediately.
 let _finishTimer=null,_finishClickBound=false;
@@ -2480,7 +2482,7 @@ function startPublicPolling(){
     return;
   }
   // legacy polling (rollback): re-fetch all requests
-  _pubPoll=setInterval(async()=>{if(staffModal||staffModal2)return;if(document.activeElement&&['INPUT','SELECT','TEXTAREA'].includes(document.activeElement.tagName))return;const sb=await sbFetchAll();if(sb!==null){const sig=JSON.stringify(sb.map(r=>[r.id,r.status,r.accepted,r.archived,r.pendingConfirm,r.confirmedAt].join('|')));if(sig!==_pubSig){_pubSig=sig;state.requests=sb;render();}}},20000);
+  _pubPoll=setInterval(async()=>{if(document.hidden||staffModal||staffModal2)return;if(document.activeElement&&['INPUT','SELECT','TEXTAREA'].includes(document.activeElement.tagName))return;const sb=await sbFetchAll();if(sb!==null){const sig=JSON.stringify(sb.map(r=>[r.id,r.status,r.accepted,r.archived,r.pendingConfirm,r.confirmedAt].join('|')));if(sig!==_pubSig){_pubSig=sig;state.requests=sb;render();}}},20000);
 }
 let _pubSig='';
 function applyDir(){document.body.setAttribute('dir',L==='ar'?'rtl':'ltr');document.documentElement.lang=L;}
@@ -2492,11 +2494,13 @@ function toggleSide(){sideOpen=!sideOpen;render();}
 
 /* realtime */
 let _rt=null,_rtRef=1,_rtHb=null,_poll=null;
-async function refreshNow(){if(state.role!=='admin')return;
+async function refreshNow(){return AdvaconUI.singleFlight('admin-refresh',refreshNowImpl);}
+async function refreshNowImpl(){if(state.role!=='admin'||document.hidden)return;
   // don't disrupt if a modal is open or user is typing in a field
   if(modal)return;
   if(document.activeElement&&['INPUT','SELECT','TEXTAREA'].includes(document.activeElement.tagName))return;
   const sb=await sbFetchAll();
+  if(state.role!=='admin'||document.hidden||modal||['INPUT','SELECT','TEXTAREA'].includes(document.activeElement?.tagName))return;
   if(sb!==null){
     // only re-render if data actually changed (avoid needless flicker)
     const sig=JSON.stringify(sb.map(r=>[r.id,r.status,r.accepted,r.archived,r.assignedTo,r.duration,r.start,r.notes].join('|')));
@@ -2504,12 +2508,15 @@ async function refreshNow(){if(state.role!=='admin')return;
     else{state.requests=sb;}
   }
 }
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&state.role==='admin')refreshNow();});
+let _realtimeRefreshTimer=null;
+function scheduleAdminRefresh(){if(_realtimeRefreshTimer)return;_realtimeRefreshTimer=setTimeout(()=>{_realtimeRefreshTimer=null;refreshNow();},300);}
 let _lastSig='';
 function startRealtime(){
   // websocket gives near-instant updates; keep a slower 20s poll only as a fallback
   if(!_poll)_poll=setInterval(refreshNow,20000);
   // also attempt websocket realtime for near-instant updates
-  try{if(_rt)return;const ws=SB_URL.replace('https://','wss://')+'/realtime/v1/websocket?apikey='+encodeURIComponent(SB_KEY)+'&vsn=1.0.0';_rt=new WebSocket(ws);_rt.onopen=()=>{_rt.send(JSON.stringify({topic:'realtime:public:requests',event:'phx_join',payload:{config:{postgres_changes:[{event:'*',schema:'public',table:'requests'}]}},ref:String(_rtRef++)}));_rtHb=setInterval(()=>{if(_rt&&_rt.readyState===1)_rt.send(JSON.stringify({topic:'phoenix',event:'heartbeat',payload:{},ref:String(_rtRef++)}));},25000);};_rt.onmessage=(m)=>{try{const d=JSON.parse(m.data);if(d.event==='postgres_changes'||(d.payload&&d.payload.data))refreshNow();}catch(e){}};_rt.onclose=()=>{_rt=null;if(_rtHb){clearInterval(_rtHb);_rtHb=null;}setTimeout(()=>{if(state.role==='admin')startRealtime();},3000);};_rt.onerror=()=>{try{_rt.close();}catch(e){}};}catch(e){}}
+  try{if(_rt)return;const ws=SB_URL.replace('https://','wss://')+'/realtime/v1/websocket?apikey='+encodeURIComponent(SB_KEY)+'&vsn=1.0.0';_rt=new WebSocket(ws);_rt.onopen=()=>{_rt.send(JSON.stringify({topic:'realtime:public:requests',event:'phx_join',payload:{config:{postgres_changes:[{event:'*',schema:'public',table:'requests'}]}},ref:String(_rtRef++)}));_rtHb=setInterval(()=>{if(_rt&&_rt.readyState===1)_rt.send(JSON.stringify({topic:'phoenix',event:'heartbeat',payload:{},ref:String(_rtRef++)}));},25000);};_rt.onmessage=(m)=>{try{const d=JSON.parse(m.data);if(d.event==='postgres_changes'||(d.payload&&d.payload.data))scheduleAdminRefresh();}catch(e){}};_rt.onclose=()=>{_rt=null;if(_rtHb){clearInterval(_rtHb);_rtHb=null;}setTimeout(()=>{if(state.role==='admin')startRealtime();},3000);};_rt.onerror=()=>{try{_rt.close();}catch(e){}};}catch(e){}}
 
 function opts(arr,sel){return [`<option value="">${t('select')}</option>`].concat((arr||[]).map(x=>{const v=biVal(x),d=biDisp(x);return `<option value="${esc(v)}" ${v===sel?'selected':''}>${esc(d)}</option>`;})).join('');}
 

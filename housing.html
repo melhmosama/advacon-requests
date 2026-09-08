@@ -238,6 +238,8 @@
   }
 [hidden] { display: none !important; }
 </style>
+<link rel="stylesheet" href="/advacon-ui.css">
+<script src="/advacon-ui.js"></script>
 </head>
 <body>
 
@@ -556,7 +558,8 @@ async function requireContext() {
   return true;
 }
 
-async function ensureHousingSession(){
+async function ensureHousingSession(){return AdvaconUI.singleFlight('housing-session-'+CTX.mode,ensureHousingSessionImpl);}
+async function ensureHousingSessionImpl(){
   return CTX.mode==='admin' ? admEnsureSession() : (CTX.mode==='asset' ? assetEnsureSession() : false);
 }
 function housingSession(){ return CTX.mode==='admin' ? admGetSession() : (CTX.mode==='asset' ? assetGetSession() : null); }
@@ -788,8 +791,8 @@ const HOUSING_RPC_ACTION = {
 class HousingApprovalPending extends Error {
  constructor(result){super('APPROVAL_PENDING: '+(LANG==='ar'?'تم إرسال الطلب لموافقة الإدارة؛ لم تُنفذ العملية بعد':'Request submitted for Admin approval; no change has been executed'));this.result=result;}
 }
-async function rawRpc(fn,args={}){
-  const okSess = await ensureHousingSession();
+async function rawRpc(fn,args={},sessionVerified=false){
+  const okSess = sessionVerified || await ensureHousingSession();
   if(!okSess){showSignInRequired('session_expired');throw new Error('Housing access denied');}
   const sess=housingSession();
   let res; try{res=await fetch(SB_URL+'/rest/v1/rpc/'+fn,{method:'POST',headers:{'apikey':SB_KEY,'Authorization':'Bearer '+sess.access_token,'Content-Type':'application/json'},body:JSON.stringify(args||{})});}
@@ -812,12 +815,15 @@ async function rpc(fn,args={}){
       if(mode==='approval' && args.p_dry_run!==true){
         const entityId=args.p_id||args.p_entity_id||args.p_property_id||args.p_contract_id||args.p_meter_id||args.p_resident_id||args.p_bill_id||args.p_expense_id||null;
         const entityType=action.split('.')[0].replace(/ies$/,'y').replace(/s$/,'');
-        const out=await rawRpc('asset_housing_request',{p_rpc_name:fn,p_payload:args||{},p_entity_type:entityType,p_entity_id:entityId?String(entityId):null,p_before_data:null});
+        const originatingDialog=AdvaconUI.currentDialog();
+        const out=await rawRpc('asset_housing_request',{p_rpc_name:fn,p_payload:args||{},p_entity_type:entityType,p_entity_id:entityId?String(entityId):null,p_before_data:null},true);
+        if(out?.ok===false)throw new Error(out.error||'approval_request_failed');
+        originatingDialog?.close();
         throw new HousingApprovalPending(out);
       }
     }
   }
-  try{return await rawRpc(fn,args);}catch(e){throw new Error(translateError(e.message||String(e)));}
+  try{return await rawRpc(fn,args,true);}catch(e){throw new Error(translateError(e.message||String(e)));}
 }
 
 /* =====================================================================
@@ -883,73 +889,17 @@ function pickName(obj) {
 /* =====================================================================
    UI HELPERS (toast, modal, confirm)
    ===================================================================== */
-function toast(message, kind = 'info', ms = 3500) {
-  if(String(message).startsWith('APPROVAL_PENDING: ')){message=String(message).slice(18);kind='info';}
-  const mount = document.getElementById('toast-mount');
-  const el = document.createElement('div');
-  el.className = 'toast ' + kind;
-  el.innerHTML = `<div class="toast-body">${escapeHtml(message)}</div><button class="toast-close">×</button>`;
-  el.querySelector('.toast-close').addEventListener('click', () => el.remove());
-  mount.appendChild(el);
-  if (ms > 0) setTimeout(() => el.remove(), ms);
+function toast(message,kind='info'){ AdvaconUI.toast(message,kind); }
+function openModal(options){
+ const dialog=AdvaconUI.modal(options);
+ return dialog;
 }
-
-function openModal({ title, body, footer, wide, narrow, onClose }) {
-  const mount = document.getElementById('modal-mount');
-  const backdrop = document.createElement('div');
-  backdrop.className = 'modal-backdrop';
-  const cls = wide ? 'wide' : (narrow ? 'narrow' : '');
-  backdrop.innerHTML = `
-    <div class="modal ${cls}" role="dialog">
-      <div class="modal-header">
-        <h3 class="modal-title">${escapeHtml(title || '')}</h3>
-        <button class="modal-close" aria-label="Close">×</button>
-      </div>
-      <div class="modal-body"></div>
-      ${footer !== false ? '<div class="modal-footer"></div>' : ''}
-    </div>`;
-  const modal = backdrop.querySelector('.modal');
-  const bodyEl = modal.querySelector('.modal-body');
-  const footerEl = modal.querySelector('.modal-footer');
-  if (typeof body === 'string') bodyEl.innerHTML = body;
-  else if (body instanceof Node) bodyEl.appendChild(body);
-  if (footer && footerEl) {
-    if (typeof footer === 'string') footerEl.innerHTML = footer;
-    else if (footer instanceof Node) footerEl.appendChild(footer);
-  }
-  const close = () => { backdrop.remove(); if (onClose) onClose(); };
-  modal.querySelector('.modal-close').addEventListener('click', close);
-  backdrop.addEventListener('click', (e) => { if (e.target === backdrop) close(); });
-  mount.appendChild(backdrop);
-  return { backdrop, modal, bodyEl, footerEl, close };
-}
-
-async function confirmAction({ title, message, danger, confirmLabel, cancelLabel } = {}) {
-  return new Promise(resolve => {
-    const body = document.createElement('div');
-    body.innerHTML = `<div style="font-size:14px; color:var(--text);">${escapeHtml(message || t('confirmDelete'))}</div>`;
-    const footer = document.createElement('div');
-    footer.className = 'flex';
-    footer.style.gap = '8px';
-    footer.style.justifyContent = 'flex-end';
-    footer.style.flex = '1';
-    const cancelBtn = document.createElement('button');
-    cancelBtn.className = 'btn';
-    cancelBtn.textContent = cancelLabel || t('cancel');
-    const okBtn = document.createElement('button');
-    okBtn.className = 'btn ' + (danger ? 'btn-danger' : 'btn-primary');
-    okBtn.textContent = confirmLabel || t('ok');
-    footer.appendChild(cancelBtn);
-    footer.appendChild(okBtn);
-    const m = openModal({ title: title || '', body, footer, narrow: true, onClose: () => resolve(false) });
-    cancelBtn.addEventListener('click', () => { m.close(); resolve(false); });
-    okBtn.addEventListener('click', () => { m.close(); resolve(true); });
-  });
-}
+async function confirmAction(options={}){ return AdvaconUI.confirm({...options,message:options.message||t('confirmDelete'),confirmLabel:options.confirmLabel||t('ok'),cancelLabel:options.cancelLabel||t('cancel')}); }
 
 /* =====================================================================
    FORM BUILDER (schema-driven)
    ===================================================================== */
+let housingFieldSerial=0;
 function buildForm(schema, values = {}) {
   // schema: [{ name, label, type, required, options, min, max, hint, cols, placeholder, readonly }]
   const form = document.createElement('div');
@@ -986,6 +936,10 @@ function buildForm(schema, values = {}) {
       if (f.placeholder) inp.placeholder = f.placeholder;
     }
     inp.name = f.name;
+    inp.id = 'housing-field-'+(++housingFieldSerial);
+    lbl.htmlFor = inp.id;
+    inp.required = !!f.required;
+    if(f.required)inp.setAttribute('aria-required','true');
     inp.dataset.field = f.name;
     // "readonly" support: <input>/<textarea> support the readOnly property,
     // but <select> does not — for selects we use `disabled` and add a class
@@ -1004,6 +958,7 @@ function buildForm(schema, values = {}) {
       const h = document.createElement('div');
       h.className = 'hint';
       h.textContent = f.hint;
+      h.id=inp.id+'-hint'; inp.setAttribute('aria-describedby',h.id);
       field.appendChild(h);
     }
     form.appendChild(field);
@@ -1012,6 +967,8 @@ function buildForm(schema, values = {}) {
 }
 
 function readForm(formEl) {
+  const invalid=[...formEl.querySelectorAll('[data-field]')].find(input=>!input.disabled&&!input.readOnly&&!input.checkValidity());
+  if(invalid){invalid.reportValidity();const name=invalid.labels?.[0]?.textContent?.replace('*','').trim()||t('requiredField');throw new Error(t('requiredField')+': '+name);}
   const out = {};
   formEl.querySelectorAll('[data-field]').forEach(el => {
     if (el.type === 'checkbox') out[el.dataset.field] = el.checked;
@@ -1088,10 +1045,12 @@ async function route() {
   const [head, ...rest] = pathOnly.split('/');
   const mainRoute = head || '';
   renderNav(mainRoute);
-  const content = document.getElementById('content');
+  const previousContent = document.getElementById('content');
+  const content=previousContent.cloneNode(false);previousContent.replaceWith(content);
   content.innerHTML = `<div class="loading">${t('loading')}</div>`;
   try {
     if(!await ensureHousingSession())throw new Error('session_expired');
+    if(!content.isConnected)return;
     const navItem=NAV_ITEMS.find(x=>x.route===(mainRoute==='dashboard'?'':mainRoute));
     if(navItem&&!navAllowed(navItem))throw new Error('not_authorized');
     switch (mainRoute) {
@@ -1100,6 +1059,7 @@ async function route() {
         if (rest.length > 0) await screenPropertyDetail(content, rest[0]);
         else await screenProperties(content);
         break;
+      case 'alerts': await screenHousingAlert(content,rest[0]); break;
       case 'contracts': await screenContracts(content); break;
       case 'landlords': await screenLandlords(content); break;
       case 'meters': await screenMeters(content); break;
@@ -1116,7 +1076,7 @@ async function route() {
     }
   } catch (e) {
     console.error(e);
-    content.innerHTML = `<div class="error-box">${escapeHtml(t('errorOccurred'))}: ${escapeHtml(e.message || e)}</div>`;
+    if(content.isConnected)AdvaconUI.errorState(content,e,route);
   }
 }
 
@@ -1188,7 +1148,43 @@ async function screenDashboard(el) {
     </div>`;
 }
 function alertLabelKey(k){return ({contract_expiring:'contractExpiring',bill_overdue:'billOverdue',payment_due_soon:'paymentDueSoon',expense_due_soon:'expenseDueSoon',property_vacant:'propertyVacant',meter_no_recent_reading:'meterStale'})[k]||k;}
-function routeForAlert(k){return ({contract_expiring:'contracts',bill_overdue:'bills',payment_due_soon:'contracts',expense_due_soon:'expenses',property_vacant:'properties',meter_no_recent_reading:'meters'})[k]||'';}
+/* Build-time source for the alert detail screen. Uses verified existing read RPCs. */
+const HOUSING_ALERT_ROUTES={
+ contract_expiring:{rpc:'housing_alerts_contracts_expiring',title:['عقود قاربت الانتهاء','Expiring contracts']},
+ bill_overdue:{rpc:'housing_alerts_bills_overdue',title:['فواتير متأخرة','Overdue bills']},
+ payment_due_soon:{rpc:'housing_alerts_payments_due',title:['دفعات عقود قريبة','Upcoming contract payments']},
+ expense_due_soon:{rpc:'housing_alerts_expenses_due',title:['مصروفات قريبة الاستحقاق','Upcoming expenses']},
+ property_vacant:{rpc:'housing_alerts_properties_vacant',title:['عقارات شاغرة','Vacant properties']},
+ meter_no_recent_reading:{rpc:'housing_alerts_meters_stale',title:['عدادات تحتاج قراءة','Meters needing readings']}
+};
+function routeForAlert(key){return Object.hasOwn(HOUSING_ALERT_ROUTES,key)?'alerts/'+key:'';}
+async function screenHousingAlert(content,key){
+ if(!can('dashboard.view'))throw new Error('not_authorized');
+ const config=Object.hasOwn(HOUSING_ALERT_ROUTES,key)?HOUSING_ALERT_ROUTES[key]:null;if(!config)throw new Error('unknown_alert');
+ const response=await rpc(config.rpc,{});if(!content.isConnected)return;
+ const tr=AdvaconUI.text,esc=escapeHtml,items=response.items||[];
+ content.innerHTML='<div class="page-header"><h1>'+esc(config.title[LANG==='ar'?0:1])+'</h1><a class="btn" href="#">'+tr('لوحة المعلومات','Dashboard')+'</a></div><p class="au-updated">'+AdvaconUI.updatedAt(Date.now())+'</p>'+(response.enabled===false?'<p class="au-review-note">'+tr('هذا التنبيه معطل حاليًا في الإعدادات.','This alert is currently disabled in settings.')+'</p>':'')+'<div class="au-toolbar"><input id="alertSearch" type="search" aria-label="'+t('search')+'" placeholder="'+t('search')+'"><button class="btn" id="alertRefresh">'+tr('تحديث','Refresh')+'</button></div><p id="alertCount"></p><div id="alertItems"></div>';
+ function render(){
+  const q=content.querySelector('#alertSearch').value.trim().toLowerCase(),filtered=items.filter(x=>JSON.stringify(x).toLowerCase().includes(q));
+  content.querySelector('#alertCount').textContent=filtered.length+' / '+items.length+' '+tr('سجل مطابق للتنبيه','records matching this alert');
+  const box=content.querySelector('#alertItems');
+  box.innerHTML=filtered.map((x,index)=>{
+   const title=x.contract_no||x.code||x.description||x.meter?.code||'—',property=x.property||null;
+   const date=x.due_date||x.end_date||x.next_payment_due||x.next_due_date||x.last_reading_date||x.last_contract_end;
+   const days=x.days_overdue??x.days_until_end??x.days_until_due??x.days_vacant??x.days_since_last_reading;
+   let action='';
+   if(x.bill_id&&can('bills.view'))action='<button class="btn" data-alert-open="'+index+'">'+tr('فتح الفاتورة','Open bill')+'</button>';
+   else if(x.meter_id&&can('meters.view'))action='<button class="btn" data-alert-open="'+index+'">'+tr('فتح العداد','Open meter')+'</button>';
+   else if((x.property_id||property?.id)&&can('properties.view'))action='<a class="btn" href="#properties/'+encodeURIComponent(x.property_id||property.id)+(x.contract_id?'?tab=contracts':'')+'">'+tr('فتح العقار','Open property')+'</a>';
+   else if(x.expense_id&&can('expenses.view'))action='<button class="btn" data-alert-open="'+index+'">'+tr('فتح المصروف','Open expense')+'</button>';
+   return '<article class="au-request-card"><h3>'+esc(title)+'</h3>'+(property?'<div>'+esc(property.code||'')+' · '+esc(property.name_ar||'')+'</div>':'')+'<div class="au-review-summary"><div><small>'+tr('التاريخ المرتبط بالتنبيه','Relevant date')+'</small>'+fmtDate(date)+'</div><div><small>'+tr('الأيام حسب التنبيه','Days for this alert')+'</small>'+esc(days??'—')+'</div>'+((x.amount??x.monthly_rent)!=null?'<div><small>'+tr('المبلغ','Amount')+'</small>'+fmtSAR(x.amount??x.monthly_rent)+'</div>':'')+'</div>'+action+'</article>';
+  }).join('')||'<div class="empty">'+t('noItems')+'</div>';
+  box.querySelectorAll('[data-alert-open]').forEach(b=>b.onclick=()=>AdvaconUI.busy(b,async()=>{const x=filtered[Number(b.dataset.alertOpen)];try{if(x.bill_id)await openBillDetail(x.bill_id,()=>screenHousingAlert(content,key));else if(x.meter_id)await openMeterDetail(x.meter_id,()=>screenHousingAlert(content,key));else if(x.expense_id){const r=await rpc('housing_get_expense',{p_id:x.expense_id});const entity=r.expense||r.item||r;if(can('expenses.edit'))await openExpenseForm(entity,entity.entity_type,entity.entity_id,()=>screenHousingAlert(content,key));else{const body=document.createElement('div');body.innerHTML=housingRequestDetails({payload:entity});openModal({title:tr('تفاصيل المصروف','Expense details'),body,footer:null});}}}catch(e){toast(e.message,'error');}}));
+  AdvaconUI.enhance(content);
+ }
+ content.querySelector('#alertSearch').oninput=render;content.querySelector('#alertRefresh').onclick=e=>AdvaconUI.busy(e.currentTarget,()=>screenHousingAlert(content,key));render();
+}
+
 function alertHint(s){const th=s.threshold_days;if(th)return LANG==='ar'?`العتبة: ${th} يوم`:`Threshold: ${th}d`;if(s.total_overdue_amount!=null)return fmtSAR(s.total_overdue_amount);return '';}
 
 /* =====================================================================
@@ -1215,32 +1211,41 @@ async function screenProperties(el) {
       <button class="btn btn-ghost" id="btnClear">↺</button>
     </div>
     <div id="propList" class="table-wrap"><div class="loading">${t('loading')}</div></div>`;
-  const listEl = document.getElementById('propList');
-  const load = async () => {
+  const listEl = el.querySelector('#propList');
+  let loadSerial=0, searchCache=null;
+  const load = async (localSearch=false) => {
+    const version=++loadSerial;
+    localSearch=localSearch===true;
     listEl.innerHTML = `<div class="loading">${t('loading')}</div>`;
     try {
-      const activeVal = document.getElementById('fActive').value;
+      const activeVal = el.querySelector('#fActive').value;
       const args = {};
       if (activeVal === 'true') args.p_active_only = true;
-      if (document.getElementById('fCategory').value) args.p_category_key = document.getElementById('fCategory').value;
-      if (document.getElementById('fUse').value) args.p_use_type_key = document.getElementById('fUse').value;
-      const res = await rpc('housing_list_properties', args);
+      if (el.querySelector('#fCategory').value) args.p_category_key = el.querySelector('#fCategory').value;
+      if (el.querySelector('#fUse').value) args.p_use_type_key = el.querySelector('#fUse').value;
+      const requestArgs=args, signature=JSON.stringify(requestArgs);
+      const res=localSearch&&searchCache?.signature===signature?searchCache.data:await rpc('housing_list_properties',requestArgs);
+      if(version!==loadSerial||!el.isConnected)return;
+      searchCache={signature,data:res};
       let items = res.items || [];
-      const q = document.getElementById('fSearch').value.trim().toLowerCase();
+      const q = el.querySelector('#fSearch').value.trim().toLowerCase();
       if (q) items = items.filter(p => (p.code||'').toLowerCase().includes(q) || (p.name_ar||'').toLowerCase().includes(q) || (p.name_en||'').toLowerCase().includes(q) || (p.location||'').toLowerCase().includes(q));
       if (activeVal === 'false') items = items.filter(p => !p.is_active);
       renderPropTable(listEl, items);
-    } catch (e) {
+    } catch(e) { if(version!==loadSerial||!el.isConnected)return;
       listEl.innerHTML = `<div class="error-box">${escapeHtml(e.message)}</div>`;
     }
   };
-  document.getElementById('fSearch').addEventListener('input', debounce(load, 300));
-  ['fCategory','fUse','fActive'].forEach(id => document.getElementById(id).addEventListener('input', load));
-  document.getElementById('btnClear').addEventListener('click', () => {
-    ['fSearch','fCategory','fUse','fActive'].forEach(id => document.getElementById(id).value = '');
+  el.querySelector('#fSearch').addEventListener('input', debounce(()=>load(true), 200));
+  ['fCategory','fUse','fActive'].forEach(id => el.querySelector('[id="'+id+'"]').addEventListener('input', load));
+  el.querySelector('#btnClear').addEventListener('click', () => {
+    ['fSearch','fCategory','fUse','fActive'].forEach(id => el.querySelector('[id="'+id+'"]').value = '');
     load();
   });
-  document.getElementById('btnAddProp').addEventListener('click', () => openPropertyForm(null, load));
+  el.querySelector('#btnAddProp').addEventListener('click', () => openPropertyForm(null, load));
+  const refresh=document.createElement('button');refresh.className='btn';refresh.textContent=AdvaconUI.text('تحديث','Refresh');refresh.onclick=()=>AdvaconUI.busy(refresh,()=>load());
+  el.querySelector('.filters')?.append(refresh);
+  AdvaconUI.enhance(el);
   await load();
 }
 
@@ -1300,10 +1305,10 @@ async function openPropertyForm(existing, onSaved) {
   const formEl = buildForm(schema, initial);
   const footer = document.createElement('div'); footer.className='flex'; footer.style.gap='8px'; footer.style.justifyContent='flex-end'; footer.style.flex='1';
   const cancel = document.createElement('button'); cancel.className='btn'; cancel.textContent = t('cancel');
-  const save = document.createElement('button'); save.className='btn btn-primary'; save.textContent = t('save');
+  const save = document.createElement('button'); save.className='btn btn-primary'; save.textContent = AdvaconUI.requestLabel(permissionMode('properties.'+(existing?'edit':'create')),t('save'));
   footer.appendChild(cancel); footer.appendChild(save);
   const m = openModal({ title: existing ? t('edit') : t('add') + ' ' + t('properties'), body: formEl, footer, wide: true });
-  cancel.addEventListener('click', m.close);
+  cancel.addEventListener('click', m.dismiss);
   save.addEventListener('click', async () => {
     save.disabled = true;
     try {
@@ -1351,13 +1356,13 @@ async function screenPropertyDetail(el, id) {
         ${tabs.map(k => `<a class="tab ${k===activeTab?'active':''}" href="#properties/${id}?tab=${k}">${t('tab'+k.charAt(0).toUpperCase()+k.slice(1))}</a>`).join('')}
       </div>
       <div id="tabContent"><div class="loading">${t('loading')}</div></div>`;
-    document.getElementById('btnEditProp').addEventListener('click', () => openPropertyForm(p, load));
-    document.getElementById('btnToggleActive').addEventListener('click', async () => {
+    el.querySelector('#btnEditProp').addEventListener('click', () => openPropertyForm(p, load));
+    el.querySelector('#btnToggleActive').addEventListener('click', async () => {
       if (p.is_active && !await confirmAction({ title: t('confirmDeactivate'), message: t('confirmDeactivate') })) return;
       await rpc('housing_toggle_property_active', { p_id: id, p_active: !p.is_active });
       toast(t('savedSuccessfully'), 'success'); load();
     });
-    document.getElementById('btnDeleteProp').addEventListener('click', async () => {
+    el.querySelector('#btnDeleteProp').addEventListener('click', async () => {
       // Step 1: TRUE probe — dry_run=true never deletes, only reports counts
       let probe;
       try {
@@ -1408,7 +1413,7 @@ async function screenPropertyDetail(el, id) {
         : (LANG==='ar' ? 'حذف' : 'Delete');
       foot.appendChild(cx); foot.appendChild(del);
       const pm = openModal({ title: t('delete'), body, footer: foot });
-      cx.addEventListener('click', pm.close);
+      cx.addEventListener('click', pm.dismiss);
       del.addEventListener('click', async () => {
         del.disabled = true;
         try {
@@ -1431,7 +1436,7 @@ async function screenPropertyDetail(el, id) {
         } catch (e) { toast(e.message || String(e), 'error'); del.disabled = false; }
       });
     });
-    await renderPropertyTab(document.getElementById('tabContent'), p, activeTab, load);
+    await renderPropertyTab(el.querySelector('#tabContent'), p, activeTab, load);
   };
   await load();
 }
@@ -1554,7 +1559,7 @@ async function openSpaceForm(existing, propId, parentId, onSaved) {
   const save = document.createElement('button'); save.className='btn btn-primary'; save.textContent = t('save');
   footer.appendChild(cancel); footer.appendChild(save);
   const m = openModal({ title: existing ? t('edit') : t('add'), body: formEl, footer });
-  cancel.addEventListener('click', m.close);
+  cancel.addEventListener('click', m.dismiss);
   save.addEventListener('click', async () => {
     save.disabled = true;
     try {
@@ -1631,7 +1636,7 @@ async function renderPropTabContracts(container, p, refresh) {
     del.textContent = probe.has_dependents ? (LANG==='ar'?'حذف الكل':'Delete all') : (LANG==='ar'?'حذف':'Delete');
     foot.appendChild(cx); foot.appendChild(del);
     const pm = openModal({ title: t('delete'), body, footer: foot });
-    cx.addEventListener('click', pm.close);
+    cx.addEventListener('click', pm.dismiss);
     del.addEventListener('click', async () => {
       del.disabled = true;
       try {
@@ -1786,7 +1791,7 @@ async function openContractForm(existing, propId, onSaved) {
     const ok = document.createElement('button'); ok.className='btn btn-primary'; ok.textContent = existing ? (LANG==='ar'?'رفع':'Upload') : (LANG==='ar'?'أضف للقائمة':'Add to list');
     foot.appendChild(c); foot.appendChild(ok);
     const pm = openModal({ title: LANG==='ar'?'إضافة مرفق':'Add attachment', body, footer: foot });
-    c.addEventListener('click', pm.close);
+    c.addEventListener('click', pm.dismiss);
     ok.addEventListener('click', async () => {
       const kindKey = document.getElementById('pkKind').value;
       const notes   = document.getElementById('pkNotes').value;
@@ -1816,7 +1821,7 @@ async function openContractForm(existing, propId, onSaved) {
 
   const footer = document.createElement('div'); footer.className='flex'; footer.style.gap='8px'; footer.style.justifyContent='flex-end'; footer.style.flex='1';
   const cancel = document.createElement('button'); cancel.className='btn'; cancel.textContent = t('cancel');
-  const save = document.createElement('button'); save.className='btn btn-primary'; save.textContent = t('save');
+  const save = document.createElement('button'); save.className='btn btn-primary'; save.textContent = AdvaconUI.requestLabel(permissionMode('contracts.'+(existing?'edit':'create')),t('save'));
   footer.appendChild(cancel); footer.appendChild(save);
   const m = openModal({ title: existing ? t('edit') : t('add') + ' ' + t('contracts'), body: formEl, footer, wide: true });
 
@@ -1853,7 +1858,7 @@ async function openContractForm(existing, propId, onSaved) {
     }
   }
 
-  cancel.addEventListener('click', m.close);
+  cancel.addEventListener('click', m.dismiss);
   save.addEventListener('click', async () => {
     save.disabled = true;
     try {
@@ -1943,7 +1948,7 @@ async function openAssignMeterForm(propId, onSaved) {
   const save = document.createElement('button'); save.className='btn btn-primary'; save.textContent = t('save');
   footer.appendChild(cancel); footer.appendChild(save);
   const m = openModal({ title: LANG==='ar'?'ربط عدّاد':'Assign Meter', body: formEl, footer });
-  cancel.addEventListener('click', m.close);
+  cancel.addEventListener('click', m.dismiss);
   save.addEventListener('click', async () => {
     save.disabled = true;
     try {
@@ -2000,7 +2005,7 @@ async function openAssignResidentForm(propId, onSaved) {
   const save = document.createElement('button'); save.className='btn btn-primary'; save.textContent = t('save');
   footer.appendChild(cancel); footer.appendChild(save);
   const m = openModal({ title: LANG==='ar'?'ربط ساكن':'Assign Resident', body: formEl, footer });
-  cancel.addEventListener('click', m.close);
+  cancel.addEventListener('click', m.dismiss);
   save.addEventListener('click', async () => {
     save.disabled = true;
     try {
@@ -2092,7 +2097,7 @@ async function deleteEntityWithProbe(opts) {
   del.textContent = probe.has_dependents ? (LANG==='ar'?'حذف الكل':'Delete all') : (LANG==='ar'?'حذف':'Delete');
   foot.appendChild(cx); foot.appendChild(del);
   const pm = openModal({ title: t('delete'), body, footer: foot });
-  cx.addEventListener('click', pm.close);
+  cx.addEventListener('click', pm.dismiss);
   del.addEventListener('click', async () => {
     del.disabled = true;
     try {
@@ -2136,10 +2141,10 @@ async function openExpenseForm(existing, entityType, entityId, onSaved) {
   const formEl = buildForm(schema, initial);
   const footer = document.createElement('div'); footer.className='flex'; footer.style.gap='8px'; footer.style.justifyContent='flex-end'; footer.style.flex='1';
   const cancel = document.createElement('button'); cancel.className='btn'; cancel.textContent = t('cancel');
-  const save = document.createElement('button'); save.className='btn btn-primary'; save.textContent = t('save');
+  const save = document.createElement('button'); save.className='btn btn-primary'; save.textContent = AdvaconUI.requestLabel(permissionMode('expenses.'+(existing?'edit':'create')),t('save'));
   footer.appendChild(cancel); footer.appendChild(save);
   const m = openModal({ title: (existing?t('edit'):t('add')) + ' ' + t('expenses'), body: formEl, footer, wide: true });
-  cancel.addEventListener('click', m.close);
+  cancel.addEventListener('click', m.dismiss);
   save.addEventListener('click', async () => {
     save.disabled = true;
     try {
@@ -2219,7 +2224,7 @@ async function handleAttachmentUpload(file, entityType, entityId, onSaved) {
   const save = document.createElement('button'); save.className='btn btn-primary'; save.textContent = LANG==='ar'?'رفع':'Upload';
   footer.appendChild(cancel); footer.appendChild(save);
   const m = openModal({ title: LANG==='ar'?'رفع مرفق':'Upload Attachment', body, footer });
-  cancel.addEventListener('click', m.close);
+  cancel.addEventListener('click', m.dismiss);
   save.addEventListener('click', async () => {
     save.disabled = true;
     try {
@@ -2261,19 +2266,25 @@ async function screenLandlords(el) {
       <button class="btn btn-ghost" id="btnClear">↺</button>
     </div>
     <div id="list" class="table-wrap"><div class="loading">${t('loading')}</div></div>`;
-  const listEl = document.getElementById('list');
-  const load = async () => {
+  const listEl = el.querySelector('#list');
+  let loadSerial=0, searchCache=null;
+  const load = async (localSearch=false) => {
+    const version=++loadSerial;
+    localSearch=localSearch===true;
     listEl.innerHTML = `<div class="loading">${t('loading')}</div>`;
     try {
       const args = {};
-      const activeVal = document.getElementById('fActive').value;
+      const activeVal = el.querySelector('#fActive').value;
       if (activeVal === 'true') args.p_active_only = true;
-      const res = await rpc('housing_list_landlords', args);
+      const requestArgs=args, signature=JSON.stringify(requestArgs);
+      const res=localSearch&&searchCache?.signature===signature?searchCache.data:await rpc('housing_list_landlords',requestArgs);
+      if(version!==loadSerial||!el.isConnected)return;
+      searchCache={signature,data:res};
       let items = res.items || [];
       if (activeVal === 'false') items = items.filter(l => !l.is_active);
-      const typeVal = document.getElementById('fType').value;
+      const typeVal = el.querySelector('#fType').value;
       if (typeVal) items = items.filter(l => l.landlord_type === typeVal);
-      const q = document.getElementById('fSearch').value.trim().toLowerCase();
+      const q = el.querySelector('#fSearch').value.trim().toLowerCase();
       if (q) items = items.filter(l =>
         (l.name||'').toLowerCase().includes(q) ||
         (l.phone||'').toLowerCase().includes(q) ||
@@ -2337,17 +2348,20 @@ async function screenLandlords(el) {
           toast(t('deletedSuccessfully'), 'success'); load();
         } catch(err) { toast(err.message||err,'error'); }
       }));
-    } catch (e) {
+    } catch(e) { if(version!==loadSerial||!el.isConnected)return;
       listEl.innerHTML = `<div class="error-box">${escapeHtml(e.message || e)}</div>`;
     }
   };
-  document.getElementById('fSearch').addEventListener('input', debounce(load, 300));
-  ['fType','fActive'].forEach(id => document.getElementById(id).addEventListener('input', load));
-  document.getElementById('btnClear').addEventListener('click', () => {
-    ['fSearch','fType','fActive'].forEach(id => document.getElementById(id).value = '');
+  el.querySelector('#fSearch').addEventListener('input', debounce(()=>load(true), 200));
+  ['fType','fActive'].forEach(id => el.querySelector('[id="'+id+'"]').addEventListener('input', load));
+  el.querySelector('#btnClear').addEventListener('click', () => {
+    ['fSearch','fType','fActive'].forEach(id => el.querySelector('[id="'+id+'"]').value = '');
     load();
   });
-  document.getElementById('btnAddLandlord').addEventListener('click', () => openLandlordForm(null, load));
+  el.querySelector('#btnAddLandlord').addEventListener('click', () => openLandlordForm(null, load));
+  const refresh=document.createElement('button');refresh.className='btn';refresh.textContent=AdvaconUI.text('تحديث','Refresh');refresh.onclick=()=>AdvaconUI.busy(refresh,()=>load());
+  el.querySelector('.filters')?.append(refresh);
+  AdvaconUI.enhance(el);
   await load();
 }
 
@@ -2377,10 +2391,10 @@ async function openLandlordForm(existing, onSaved) {
   footer.style.justifyContent = 'flex-end';
   footer.style.flex = '1';
   const cancel = document.createElement('button'); cancel.className = 'btn'; cancel.textContent = t('cancel');
-  const save = document.createElement('button'); save.className = 'btn btn-primary'; save.textContent = t('save');
+  const save = document.createElement('button'); save.className = 'btn btn-primary'; save.textContent = AdvaconUI.requestLabel(permissionMode('landlords.'+(existing?'edit':'create')),t('save'));
   footer.appendChild(cancel); footer.appendChild(save);
   const m = openModal({ title: (existing ? t('edit') : t('add')) + ' ' + t('landlords'), body: formEl, footer });
-  cancel.addEventListener('click', m.close);
+  cancel.addEventListener('click', m.dismiss);
   save.addEventListener('click', async () => {
     save.disabled = true;
     try {
@@ -2418,15 +2432,21 @@ async function screenContracts(el) {
       <button class="btn btn-ghost" id="btnClear">↺</button>
     </div>
     <div id="list" class="table-wrap"><div class="loading">${t('loading')}</div></div>`;
-  const listEl = document.getElementById('list');
-  const load = async () => {
+  const listEl = el.querySelector('#list');
+  let loadSerial=0, searchCache=null;
+  const load = async (localSearch=false) => {
+    const version=++loadSerial;
+    localSearch=localSearch===true;
     listEl.innerHTML = `<div class="loading">${t('loading')}</div>`;
     try {
       const args = {};
-      if (document.getElementById('fStatus').value) args.p_status_key = document.getElementById('fStatus').value;
-      const res = await rpc('housing_list_contracts', args);
+      if (el.querySelector('#fStatus').value) args.p_status_key = el.querySelector('#fStatus').value;
+      const requestArgs=args, signature=JSON.stringify(requestArgs);
+      const res=localSearch&&searchCache?.signature===signature?searchCache.data:await rpc('housing_list_contracts',requestArgs);
+      if(version!==loadSerial||!el.isConnected)return;
+      searchCache={signature,data:res};
       let items = res.items || [];
-      const q = document.getElementById('fSearch').value.trim().toLowerCase();
+      const q = el.querySelector('#fSearch').value.trim().toLowerCase();
       if (q) items = items.filter(c => (c.contract_no||'').toLowerCase().includes(q) || (c.property?.code||'').toLowerCase().includes(q) || (c.landlord?.name||'').toLowerCase().includes(q));
       if (!items.length) { listEl.innerHTML = `<div class="empty" style="padding:40px; text-align:center; color:var(--muted);">${t('noItems')}</div>`; return; }
       listEl.innerHTML = `
@@ -2452,14 +2472,17 @@ async function screenContracts(el) {
             </tr>`;
           }).join('')}</tbody>
         </table>`;
-    } catch(e) { listEl.innerHTML = `<div class="error-box">${escapeHtml(e.message)}</div>`; }
+    } catch(e) { if(version!==loadSerial||!el.isConnected)return; listEl.innerHTML = `<div class="error-box">${escapeHtml(e.message)}</div>`; }
   };
-  document.getElementById('fSearch').addEventListener('input', debounce(load, 300));
-  ['fStatus'].forEach(id => document.getElementById(id).addEventListener('input', load));
-  document.getElementById('btnClear').addEventListener('click', () => {
-    ['fSearch','fStatus'].forEach(id => document.getElementById(id).value = '');
+  el.querySelector('#fSearch').addEventListener('input', debounce(()=>load(true), 200));
+  ['fStatus'].forEach(id => el.querySelector('[id="'+id+'"]').addEventListener('input', load));
+  el.querySelector('#btnClear').addEventListener('click', () => {
+    ['fSearch','fStatus'].forEach(id => el.querySelector('[id="'+id+'"]').value = '');
     load();
   });
+  const refresh=document.createElement('button');refresh.className='btn';refresh.textContent=AdvaconUI.text('تحديث','Refresh');refresh.onclick=()=>AdvaconUI.busy(refresh,()=>load());
+  el.querySelector('.filters')?.append(refresh);
+  AdvaconUI.enhance(el);
   await load();
 }
 
@@ -2482,18 +2505,24 @@ async function screenMeters(el) {
       <button class="btn btn-ghost" id="btnClear">↺</button>
     </div>
     <div id="list" class="table-wrap"><div class="loading">${t('loading')}</div></div>`;
-  const listEl = document.getElementById('list');
-  const load = async () => {
+  const listEl = el.querySelector('#list');
+  let loadSerial=0, searchCache=null;
+  const load = async (localSearch=false) => {
+    const version=++loadSerial;
+    localSearch=localSearch===true;
     listEl.innerHTML = `<div class="loading">${t('loading')}</div>`;
     try {
       const args = {};
-      const activeVal = document.getElementById('fActive').value;
+      const activeVal = el.querySelector('#fActive').value;
       if (activeVal === 'true') args.p_active_only = true;
-      if (document.getElementById('fType').value) args.p_meter_type_key = document.getElementById('fType').value;
-      const res = await rpc('housing_list_meters', args);
+      if (el.querySelector('#fType').value) args.p_meter_type_key = el.querySelector('#fType').value;
+      const requestArgs=args, signature=JSON.stringify(requestArgs);
+      const res=localSearch&&searchCache?.signature===signature?searchCache.data:await rpc('housing_list_meters',requestArgs);
+      if(version!==loadSerial||!el.isConnected)return;
+      searchCache={signature,data:res};
       let items = res.items || [];
       if (activeVal === 'false') items = items.filter(m => !m.is_active);
-      const q = document.getElementById('fSearch').value.trim().toLowerCase();
+      const q = el.querySelector('#fSearch').value.trim().toLowerCase();
       if (q) items = items.filter(m => (m.code||'').toLowerCase().includes(q) || (m.meter_number||'').toLowerCase().includes(q) || (m.description||'').toLowerCase().includes(q));
       if (!items.length) { listEl.innerHTML = `<div class="empty" style="padding:40px; text-align:center; color:var(--muted);">${t('noItems')}</div>`; return; }
       listEl.innerHTML = `
@@ -2535,15 +2564,18 @@ async function screenMeters(el) {
           onDone: () => load(),
         });
       }));
-    } catch(e) { listEl.innerHTML = `<div class="error-box">${escapeHtml(e.message)}</div>`; }
+    } catch(e) { if(version!==loadSerial||!el.isConnected)return; listEl.innerHTML = `<div class="error-box">${escapeHtml(e.message)}</div>`; }
   };
-  document.getElementById('fSearch').addEventListener('input', debounce(load, 300));
-  ['fType','fActive'].forEach(id => document.getElementById(id).addEventListener('input', load));
-  document.getElementById('btnClear').addEventListener('click', () => {
-    ['fSearch','fType','fActive'].forEach(id => document.getElementById(id).value = '');
+  el.querySelector('#fSearch').addEventListener('input', debounce(()=>load(true), 200));
+  ['fType','fActive'].forEach(id => el.querySelector('[id="'+id+'"]').addEventListener('input', load));
+  el.querySelector('#btnClear').addEventListener('click', () => {
+    ['fSearch','fType','fActive'].forEach(id => el.querySelector('[id="'+id+'"]').value = '');
     load();
   });
-  document.getElementById('btnAdd').addEventListener('click', () => openMeterForm(null, load));
+  el.querySelector('#btnAdd').addEventListener('click', () => openMeterForm(null, load));
+  const refresh=document.createElement('button');refresh.className='btn';refresh.textContent=AdvaconUI.text('تحديث','Refresh');refresh.onclick=()=>AdvaconUI.busy(refresh,()=>load());
+  el.querySelector('.filters')?.append(refresh);
+  AdvaconUI.enhance(el);
   await load();
 }
 
@@ -2569,10 +2601,10 @@ async function openMeterForm(existing, onSaved) {
   const formEl = buildForm(schema, initial);
   const footer = document.createElement('div'); footer.className='flex'; footer.style.gap='8px'; footer.style.justifyContent='flex-end'; footer.style.flex='1';
   const cancel = document.createElement('button'); cancel.className='btn'; cancel.textContent = t('cancel');
-  const save = document.createElement('button'); save.className='btn btn-primary'; save.textContent = t('save');
+  const save = document.createElement('button'); save.className='btn btn-primary'; save.textContent = AdvaconUI.requestLabel(permissionMode('meters.'+(existing?'edit':'create')),t('save'));
   footer.appendChild(cancel); footer.appendChild(save);
   const m = openModal({ title: existing ? t('edit') : t('add') + ' ' + t('meters'), body: formEl, footer, wide: true });
-  cancel.addEventListener('click', m.close);
+  cancel.addEventListener('click', m.dismiss);
   save.addEventListener('click', async () => {
     save.disabled = true;
     try {
@@ -2647,7 +2679,7 @@ async function openReadingForm(meterId, onSaved) {
   const save = document.createElement('button'); save.className='btn btn-primary'; save.textContent = t('save');
   footer.appendChild(cancel); footer.appendChild(save);
   const m = openModal({ title: LANG==='ar'?'إضافة قراءة':'Add Reading', body: formEl, footer });
-  cancel.addEventListener('click', m.close);
+  cancel.addEventListener('click', m.dismiss);
   save.addEventListener('click', async () => {
     save.disabled = true;
     try {
@@ -2683,28 +2715,36 @@ async function screenBills(el) {
     <div id="list" class="table-wrap"><div class="loading">${t('loading')}</div></div>
     <div id="pager" class="flex mb-3" style="justify-content:center; gap:12px; align-items:center; margin-top:12px;"></div>`;
 
+  const initialStatus=new URLSearchParams(location.hash.split('?')[1]||'').get('status');
+  if(['pending','paid','overdue','disputed','cancelled'].includes(initialStatus))el.querySelector('#fStatus').value=initialStatus;
   const buildFilters = () => {
     const f = {};
-    if (document.getElementById('fStatus').value) f.p_status = document.getElementById('fStatus').value;
-    if (document.getElementById('fFrom').value)   f.p_period_from = document.getElementById('fFrom').value;
-    if (document.getElementById('fTo').value)     f.p_period_to = document.getElementById('fTo').value;
+    if (el.querySelector('#fStatus').value) f.p_status = el.querySelector('#fStatus').value;
+    if (el.querySelector('#fFrom').value)   f.p_period_from = el.querySelector('#fFrom').value;
+    if (el.querySelector('#fTo').value)     f.p_period_to = el.querySelector('#fTo').value;
     return f;
   };
 
-  const load = async () => {
-    document.getElementById('list').innerHTML = `<div class="loading">${t('loading')}</div>`;
-    document.getElementById('pager').innerHTML = '';
+  let loadSerial=0, searchCache=null;
+  const load = async (localSearch=false) => {
+    const version=++loadSerial;
+    localSearch=localSearch===true;
+    el.querySelector('#list').innerHTML = `<div class="loading">${t('loading')}</div>`;
+    el.querySelector('#pager').innerHTML = '';
     try {
       const filters = buildFilters();
-      const res = await rpc('housing_list_bills', { ...filters, p_limit: PAGE_SIZE, p_offset: currentOffset });
+      const requestArgs={ ...filters, p_limit: PAGE_SIZE, p_offset: currentOffset }, signature=JSON.stringify(requestArgs);
+      const res=localSearch&&searchCache?.signature===signature?searchCache.data:await rpc('housing_list_bills',requestArgs);
+      if(version!==loadSerial||!el.isConnected)return;
+      searchCache={signature,data:res};
       const items = res.items || [];
       const total = res.total_count || 0;
-      document.getElementById('summary').innerHTML = `
+      el.querySelector('#summary').innerHTML = `
         <div class="stat-grid">
           <div class="stat"><div class="stat-label">${t('count')}</div><div class="stat-value">${fmtNum(total,{decimals:0})}</div></div>
           <div class="stat"><div class="stat-label">${t('total')}</div><div class="stat-value">${fmtSAR(res.total_amount||0)}</div></div>
         </div>`;
-      const listEl = document.getElementById('list');
+      const listEl = el.querySelector('#list');
       if (!items.length) { listEl.innerHTML = `<div class="empty" style="padding:40px; text-align:center; color:var(--muted);">${t('noItems')}</div>`; return; }
       listEl.innerHTML = `
         <table class="data">
@@ -2749,7 +2789,7 @@ async function screenBills(el) {
       }));
 
       // Pagination controls
-      const pgEl = document.getElementById('pager');
+      const pgEl = el.querySelector('#pager');
       const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
       const currentPage = Math.floor(currentOffset / PAGE_SIZE) + 1;
       if (total > PAGE_SIZE) {
@@ -2759,21 +2799,21 @@ async function screenBills(el) {
           <button class="btn btn-sm" id="pgPrev" ${currentOffset<=0?'disabled':''}>‹ ${LANG==='ar'?'السابق':'Prev'}</button>
           <span class="text-muted" style="font-size:13px;">${LANG==='ar'?'صفحة':'Page'} ${currentPage} / ${pageCount} &nbsp;·&nbsp; ${fromN}–${toN} ${LANG==='ar'?'من':'of'} ${total}</span>
           <button class="btn btn-sm" id="pgNext" ${currentOffset+PAGE_SIZE>=total?'disabled':''}>${LANG==='ar'?'التالي':'Next'} ›</button>`;
-        document.getElementById('pgPrev').addEventListener('click', () => { if (currentOffset > 0) { currentOffset = Math.max(0, currentOffset - PAGE_SIZE); load(); } });
-        document.getElementById('pgNext').addEventListener('click', () => { if (currentOffset + PAGE_SIZE < total) { currentOffset += PAGE_SIZE; load(); } });
+        el.querySelector('#pgPrev').addEventListener('click', () => { if (currentOffset > 0) { currentOffset = Math.max(0, currentOffset - PAGE_SIZE); load(); } });
+        el.querySelector('#pgNext').addEventListener('click', () => { if (currentOffset + PAGE_SIZE < total) { currentOffset += PAGE_SIZE; load(); } });
       }
-    } catch(e) { document.getElementById('list').innerHTML = `<div class="error-box">${escapeHtml(e.message)}</div>`; }
+    } catch(e) { if(version!==loadSerial||!el.isConnected)return; el.querySelector('#list').innerHTML = `<div class="error-box">${escapeHtml(e.message)}</div>`; }
   };
 
-  ['fStatus','fFrom','fTo'].forEach(id => document.getElementById(id).addEventListener('input', () => { currentOffset = 0; load(); }));
-  document.getElementById('btnClear').addEventListener('click', () => {
-    ['fStatus','fFrom','fTo'].forEach(id => document.getElementById(id).value = '');
+  ['fStatus','fFrom','fTo'].forEach(id => el.querySelector('[id="'+id+'"]').addEventListener('input', () => { currentOffset = 0; load(); }));
+  el.querySelector('#btnClear').addEventListener('click', () => {
+    ['fStatus','fFrom','fTo'].forEach(id => el.querySelector('[id="'+id+'"]').value = '');
     currentOffset = 0; load();
   });
-  document.getElementById('btnAdd').addEventListener('click', () => openBillForm(null, load));
+  el.querySelector('#btnAdd').addEventListener('click', () => openBillForm(null, load));
 
   // Bulk mark paid — uses current filters, prompts for paid_date
-  document.getElementById('btnBulkPay').addEventListener('click', async () => {
+  el.querySelector('#btnBulkPay').addEventListener('click', async () => {
     // Probe: how many pending/overdue match the current filters
     const filters = buildFilters();
     let candCount = 0;
@@ -2806,9 +2846,9 @@ async function screenBills(el) {
     const ok = document.createElement('button'); ok.className='btn btn-primary'; ok.textContent = LANG==='ar' ? 'علّم الكل' : 'Mark all';
     foot.appendChild(cx); foot.appendChild(ok);
     const pm = openModal({ title: LANG==='ar'?'دفع جماعي':'Bulk Mark Paid', body, footer: foot });
-    cx.addEventListener('click', pm.close);
+    cx.addEventListener('click', pm.dismiss);
     ok.addEventListener('click', async () => {
-      const paidDate = document.getElementById('bmpDate').value;
+      const paidDate = el.querySelector('#bmpDate').value;
       if (!paidDate) { toast(LANG==='ar'?'اختر تاريخ الدفع':'Pick a paid date','error'); return; }
       ok.disabled = true;
       try {
@@ -2821,6 +2861,9 @@ async function screenBills(el) {
     });
   });
 
+  const refresh=document.createElement('button');refresh.className='btn';refresh.textContent=AdvaconUI.text('تحديث','Refresh');refresh.onclick=()=>AdvaconUI.busy(refresh,()=>load());
+  el.querySelector('.filters')?.append(refresh);
+  AdvaconUI.enhance(el);
   await load();
 }
 
@@ -2860,10 +2903,10 @@ async function openBillForm(existing, onSaved) {
   const formEl = buildForm(schema, initial);
   const footer = document.createElement('div'); footer.className='flex'; footer.style.gap='8px'; footer.style.justifyContent='flex-end'; footer.style.flex='1';
   const cancel = document.createElement('button'); cancel.className='btn'; cancel.textContent = t('cancel');
-  const save = document.createElement('button'); save.className='btn btn-primary'; save.textContent = t('save');
+  const save = document.createElement('button'); save.className='btn btn-primary'; save.textContent = AdvaconUI.requestLabel(permissionMode('bills.'+(existing?'edit':'create')),t('save'));
   footer.appendChild(cancel); footer.appendChild(save);
   const m = openModal({ title: existing ? t('edit') : t('add') + ' ' + t('bills'), body: formEl, footer, wide: true });
-  cancel.addEventListener('click', m.close);
+  cancel.addEventListener('click', m.dismiss);
   save.addEventListener('click', async () => {
     save.disabled = true;
     try {
@@ -2904,7 +2947,7 @@ async function openMarkPaid(billId, onSaved) {
   const save = document.createElement('button'); save.className='btn btn-primary'; save.textContent = LANG==='ar'?'تسجيل الدفع':'Mark Paid';
   footer.appendChild(cancel); footer.appendChild(save);
   const m = openModal({ title: LANG==='ar'?'تسجيل دفع':'Mark Paid', body, footer });
-  cancel.addEventListener('click', m.close);
+  cancel.addEventListener('click', m.dismiss);
   save.addEventListener('click', async () => {
     save.disabled = true;
     try {
@@ -2960,7 +3003,7 @@ async function openAmendBillForm(orig, onSaved) {
   const save = document.createElement('button'); save.className='btn btn-primary'; save.textContent = LANG==='ar'?'إنشاء تعديل':'Create Amendment';
   footer.appendChild(cancel); footer.appendChild(save);
   const m = openModal({ title: LANG==='ar'?'تعديل فاتورة':'Amend Bill', body: formEl, footer });
-  cancel.addEventListener('click', m.close);
+  cancel.addEventListener('click', m.dismiss);
   save.addEventListener('click', async () => {
     save.disabled = true;
     try {
@@ -2991,19 +3034,25 @@ async function screenResidents(el) {
       <button class="btn btn-ghost" id="btnClear">↺</button>
     </div>
     <div id="list" class="table-wrap"><div class="loading">${t('loading')}</div></div>`;
-  const load = async () => {
-    document.getElementById('list').innerHTML = `<div class="loading">${t('loading')}</div>`;
+  let loadSerial=0, searchCache=null;
+  const load = async (localSearch=false) => {
+    const version=++loadSerial;
+    localSearch=localSearch===true;
+    el.querySelector('#list').innerHTML = `<div class="loading">${t('loading')}</div>`;
     try {
       const args = {};
-      const activeVal = document.getElementById('fActive').value;
+      const activeVal = el.querySelector('#fActive').value;
       if (activeVal === 'true') args.p_active_only = true;
-      if (document.getElementById('fType').value) args.p_type_key = document.getElementById('fType').value;
-      const res = await rpc('housing_list_residents', args);
+      if (el.querySelector('#fType').value) args.p_type_key = el.querySelector('#fType').value;
+      const requestArgs=args, signature=JSON.stringify(requestArgs);
+      const res=localSearch&&searchCache?.signature===signature?searchCache.data:await rpc('housing_list_residents',requestArgs);
+      if(version!==loadSerial||!el.isConnected)return;
+      searchCache={signature,data:res};
       let items = res.items || [];
       if (activeVal === 'false') items = items.filter(r => !r.is_active);
-      const q = document.getElementById('fSearch').value.trim().toLowerCase();
+      const q = el.querySelector('#fSearch').value.trim().toLowerCase();
       if (q) items = items.filter(r => (r.code||'').toLowerCase().includes(q) || (r.name_ar||'').toLowerCase().includes(q) || (r.name_en||'').toLowerCase().includes(q) || (r.id_number||'').toLowerCase().includes(q) || (r.phone||'').toLowerCase().includes(q));
-      const listEl = document.getElementById('list');
+      const listEl = el.querySelector('#list');
       if (!items.length) { listEl.innerHTML = `<div class="empty" style="padding:40px; text-align:center; color:var(--muted);">${t('noItems')}</div>`; return; }
       listEl.innerHTML = `
         <table class="data">
@@ -3047,15 +3096,18 @@ async function screenResidents(el) {
           onDone: () => load(),
         });
       }));
-    } catch(e) { document.getElementById('list').innerHTML = `<div class="error-box">${escapeHtml(e.message)}</div>`; }
+    } catch(e) { if(version!==loadSerial||!el.isConnected)return; el.querySelector('#list').innerHTML = `<div class="error-box">${escapeHtml(e.message)}</div>`; }
   };
-  document.getElementById('fSearch').addEventListener('input', debounce(load, 300));
-  ['fType','fActive'].forEach(id => document.getElementById(id).addEventListener('input', load));
-  document.getElementById('btnClear').addEventListener('click', () => {
-    ['fSearch','fType','fActive'].forEach(id => document.getElementById(id).value = '');
+  el.querySelector('#fSearch').addEventListener('input', debounce(()=>load(true), 200));
+  ['fType','fActive'].forEach(id => el.querySelector('[id="'+id+'"]').addEventListener('input', load));
+  el.querySelector('#btnClear').addEventListener('click', () => {
+    ['fSearch','fType','fActive'].forEach(id => el.querySelector('[id="'+id+'"]').value = '');
     load();
   });
-  document.getElementById('btnAdd').addEventListener('click', () => openResidentForm(null, load));
+  el.querySelector('#btnAdd').addEventListener('click', () => openResidentForm(null, load));
+  const refresh=document.createElement('button');refresh.className='btn';refresh.textContent=AdvaconUI.text('تحديث','Refresh');refresh.onclick=()=>AdvaconUI.busy(refresh,()=>load());
+  el.querySelector('.filters')?.append(refresh);
+  AdvaconUI.enhance(el);
   await load();
 }
 
@@ -3082,10 +3134,10 @@ async function openResidentForm(existing, onSaved) {
   const formEl = buildForm(schema, initial);
   const footer = document.createElement('div'); footer.className='flex'; footer.style.gap='8px'; footer.style.justifyContent='flex-end'; footer.style.flex='1';
   const cancel = document.createElement('button'); cancel.className='btn'; cancel.textContent = t('cancel');
-  const save = document.createElement('button'); save.className='btn btn-primary'; save.textContent = t('save');
+  const save = document.createElement('button'); save.className='btn btn-primary'; save.textContent = AdvaconUI.requestLabel(permissionMode('residents.'+(existing?'edit':'create')),t('save'));
   footer.appendChild(cancel); footer.appendChild(save);
   const m = openModal({ title: existing ? t('edit') : t('add') + ' ' + t('residents'), body: formEl, footer, wide: true });
-  cancel.addEventListener('click', m.close);
+  cancel.addEventListener('click', m.dismiss);
   save.addEventListener('click', async () => {
     save.disabled = true;
     try {
@@ -3126,25 +3178,31 @@ async function screenExpenses(el) {
     <div id="summary" class="mb-3"></div>
     <div id="list" class="table-wrap"><div class="loading">${t('loading')}</div></div>
     <div id="pager" class="flex mb-3" style="justify-content:center; gap:12px; align-items:center; margin-top:12px;"></div>`;
-  const load = async () => {
-    document.getElementById('list').innerHTML = `<div class="loading">${t('loading')}</div>`;
-    document.getElementById('pager').innerHTML = '';
+  let loadSerial=0, searchCache=null;
+  const load = async (localSearch=false) => {
+    const version=++loadSerial;
+    localSearch=localSearch===true;
+    el.querySelector('#list').innerHTML = `<div class="loading">${t('loading')}</div>`;
+    el.querySelector('#pager').innerHTML = '';
     try {
       const args = { p_limit: PAGE_SIZE, p_offset: currentOffset };
-      if (document.getElementById('fEntity').value) args.p_entity_type = document.getElementById('fEntity').value;
-      if (document.getElementById('fCat').value) args.p_category_key = document.getElementById('fCat').value;
-      if (document.getElementById('fFreq').value) args.p_frequency_key = document.getElementById('fFreq').value;
-      if (document.getElementById('fFrom').value) args.p_from_date = document.getElementById('fFrom').value;
-      if (document.getElementById('fTo').value) args.p_to_date = document.getElementById('fTo').value;
-      const res = await rpc('housing_list_expenses', args);
+      if (el.querySelector('#fEntity').value) args.p_entity_type = el.querySelector('#fEntity').value;
+      if (el.querySelector('#fCat').value) args.p_category_key = el.querySelector('#fCat').value;
+      if (el.querySelector('#fFreq').value) args.p_frequency_key = el.querySelector('#fFreq').value;
+      if (el.querySelector('#fFrom').value) args.p_from_date = el.querySelector('#fFrom').value;
+      if (el.querySelector('#fTo').value) args.p_to_date = el.querySelector('#fTo').value;
+      const requestArgs=args, signature=JSON.stringify(requestArgs);
+      const res=localSearch&&searchCache?.signature===signature?searchCache.data:await rpc('housing_list_expenses',requestArgs);
+      if(version!==loadSerial||!el.isConnected)return;
+      searchCache={signature,data:res};
       const items = res.items || [];
       const total = res.total_count || 0;
-      document.getElementById('summary').innerHTML = `
+      el.querySelector('#summary').innerHTML = `
         <div class="stat-grid">
           <div class="stat"><div class="stat-label">${t('count')}</div><div class="stat-value">${fmtNum(total,{decimals:0})}</div></div>
           <div class="stat"><div class="stat-label">${t('total')}</div><div class="stat-value">${fmtSAR(res.total_amount||0)}</div></div>
         </div>`;
-      const listEl = document.getElementById('list');
+      const listEl = el.querySelector('#list');
       if (!items.length) { listEl.innerHTML = `<div class="empty" style="padding:40px; text-align:center; color:var(--muted);">${t('noItems')}</div>`; return; }
       listEl.innerHTML = `
         <table class="data">
@@ -3190,7 +3248,7 @@ async function screenExpenses(el) {
       }));
 
       // Pagination
-      const pgEl = document.getElementById('pager');
+      const pgEl = el.querySelector('#pager');
       const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
       const currentPage = Math.floor(currentOffset / PAGE_SIZE) + 1;
       if (total > PAGE_SIZE) {
@@ -3200,16 +3258,19 @@ async function screenExpenses(el) {
           <button class="btn btn-sm" id="pgPrev" ${currentOffset<=0?'disabled':''}>‹ ${LANG==='ar'?'السابق':'Prev'}</button>
           <span class="text-muted" style="font-size:13px;">${LANG==='ar'?'صفحة':'Page'} ${currentPage} / ${pageCount} &nbsp;·&nbsp; ${fromN}–${toN} ${LANG==='ar'?'من':'of'} ${total}</span>
           <button class="btn btn-sm" id="pgNext" ${currentOffset+PAGE_SIZE>=total?'disabled':''}>${LANG==='ar'?'التالي':'Next'} ›</button>`;
-        document.getElementById('pgPrev').addEventListener('click', () => { if (currentOffset > 0) { currentOffset = Math.max(0, currentOffset - PAGE_SIZE); load(); } });
-        document.getElementById('pgNext').addEventListener('click', () => { if (currentOffset + PAGE_SIZE < total) { currentOffset += PAGE_SIZE; load(); } });
+        el.querySelector('#pgPrev').addEventListener('click', () => { if (currentOffset > 0) { currentOffset = Math.max(0, currentOffset - PAGE_SIZE); load(); } });
+        el.querySelector('#pgNext').addEventListener('click', () => { if (currentOffset + PAGE_SIZE < total) { currentOffset += PAGE_SIZE; load(); } });
       }
-    } catch(e) { document.getElementById('list').innerHTML = `<div class="error-box">${escapeHtml(e.message)}</div>`; }
+    } catch(e) { if(version!==loadSerial||!el.isConnected)return; el.querySelector('#list').innerHTML = `<div class="error-box">${escapeHtml(e.message)}</div>`; }
   };
-  ['fEntity','fCat','fFreq','fFrom','fTo'].forEach(id => document.getElementById(id).addEventListener('input', () => { currentOffset = 0; load(); }));
-  document.getElementById('btnClear').addEventListener('click', () => {
-    ['fEntity','fCat','fFreq','fFrom','fTo'].forEach(id => document.getElementById(id).value = '');
+  ['fEntity','fCat','fFreq','fFrom','fTo'].forEach(id => el.querySelector('[id="'+id+'"]').addEventListener('input', () => { currentOffset = 0; load(); }));
+  el.querySelector('#btnClear').addEventListener('click', () => {
+    ['fEntity','fCat','fFreq','fFrom','fTo'].forEach(id => el.querySelector('[id="'+id+'"]').value = '');
     currentOffset = 0; load();
   });
+  const refresh=document.createElement('button');refresh.className='btn';refresh.textContent=AdvaconUI.text('تحديث','Refresh');refresh.onclick=()=>AdvaconUI.busy(refresh,()=>load());
+  el.querySelector('.filters')?.append(refresh);
+  AdvaconUI.enhance(el);
   await load();
 }
 
@@ -3437,7 +3498,7 @@ async function screenSettings(el) {
       <a class="tab ${active==='templates'?'active':''}" href="#settings?tab=templates">${LANG==='ar'?'القوالب':'Templates'}</a>
     </div>
     <div id="setBody"><div class="loading">${t('loading')}</div></div>`;
-  const body = document.getElementById('setBody');
+  const body = el.querySelector('#setBody');
   if (active === 'alerts') await renderAlertSettings(body);
   else if (active === 'refs') await renderRefsSettings(body);
   else if (active === 'templates') await renderTemplatesSettings(body);
@@ -3530,7 +3591,7 @@ async function openRefItemForm(listKey, existing, onSaved) {
   const save = document.createElement('button'); save.className='btn btn-primary'; save.textContent = t('save');
   footer.appendChild(cancel); footer.appendChild(save);
   const m = openModal({ title: existing ? t('edit') : t('add'), body: formEl, footer });
-  cancel.addEventListener('click', m.close);
+  cancel.addEventListener('click', m.dismiss);
   save.addEventListener('click', async () => {
     save.disabled = true;
     try {
@@ -3597,7 +3658,7 @@ async function openTemplateForm(existing, onSaved) {
   const save = document.createElement('button'); save.className='btn btn-primary'; save.textContent = t('save');
   footer.appendChild(cancel); footer.appendChild(save);
   const m = openModal({ title: existing ? t('edit') : t('add') + ' ' + (LANG==='ar'?'قالب':'Template'), body: formEl, footer, wide: true });
-  cancel.addEventListener('click', m.close);
+  cancel.addEventListener('click', m.dismiss);
   save.addEventListener('click', async () => {
     save.disabled = true;
     try {
@@ -3618,16 +3679,45 @@ async function openTemplateForm(existing, onSaved) {
 /* =====================================================================
    AUDIT LOG VIEWER — recent deletions, edits, and other actions
    ===================================================================== */
-async function openAuditLog() {
-  if(CTX.mode==='admin'){ location.hash='activity'; return; }
-  try{
-    const res=await rawRpc('asset_housing_my_requests',{p_limit:100});
-    const items=res.items||[];
-    const body=document.createElement('div');
-    body.innerHTML=items.length?items.map(x=>`<div class="card" style="margin-bottom:8px;padding:12px"><b>${escapeHtml(x.action_key||'')}</b><div class="text-muted">${escapeHtml(x.status||'')} · ${fmtDateTime(x.requested_at)}</div></div>`).join(''):`<div class="empty">${t('noItems')}</div>`;
-    openModal({title:LANG==='ar'?'طلباتي':'My Requests',body,footer:null,wide:true});
-  }catch(e){toast(e.message,'error');}
+/* Build-time source: inserted into housing.html by enhance-workflows.cjs. */
+function housingActionName(key){
+ const sections={properties:['العقارات','Properties'],spaces:['المساحات','Spaces'],landlords:['الملاك','Landlords'],contracts:['العقود','Contracts'],meters:['العدادات','Meters'],bills:['الفواتير','Bills'],residents:['السكان','Residents'],expenses:['المصروفات','Expenses'],attachments:['المرفقات','Attachments']};
+ const verbs={create:['إضافة','Create'],edit:['تعديل','Edit'],delete:['حذف','Delete'],assign:['تسكين / ربط','Assign'],unassign:['فك الربط','Unassign'],upload:['رفع مرفق','Upload'],mark_paid:['تسجيل الدفع','Mark paid'],bulk_mark_paid:['تسجيل دفعات','Mark payments'],amend:['تصحيح','Amend'],reading:['قراءة','Reading']};
+ const parts=String(key||'').split('.'),pick=x=>x?.[LANG==='ar'?0:1];
+ return [pick(sections[parts[0]])||parts[0],...parts.slice(1).map(x=>pick(verbs[x])||x)].join(' · ');
 }
+function housingRequestDetails(item){
+ const labels={id:['معرّف السجل','Record ID'],property_id:['العقار','Property'],contract_id:['العقد','Contract'],meter_id:['العداد','Meter'],resident_id:['الساكن','Resident'],landlord_id:['المالك','Landlord'],space_id:['المساحة','Space'],bill_id:['الفاتورة','Bill'],expense_id:['المصروف','Expense'],name_ar:['الاسم العربي','Arabic name'],name_en:['الاسم الإنجليزي','English name'],name:['الاسم','Name'],code:['الرمز','Code'],amount:['المبلغ','Amount'],monthly_rent:['الإيجار الشهري','Monthly rent'],total_value:['قيمة العقد','Contract value'],notes:['ملاحظات','Notes'],note:['ملاحظة','Note'],reason:['السبب','Reason'],status:['الحالة','Status'],status_key:['الحالة','Status'],start_date:['تاريخ البداية','Start date'],end_date:['تاريخ النهاية','End date'],due_date:['تاريخ الاستحقاق','Due date'],paid_date:['تاريخ الدفع','Paid date'],payment_reference:['مرجع الدفع','Payment reference'],file_name:['اسم الملف','File name'],file_size:['حجم الملف','File size'],storage_path:['مرجع المرفق','Attachment reference'],cascade:['حذف البيانات المرتبطة','Delete linked data'],dry_run:['معاينة فقط','Preview only'],is_active:['نشط','Active'],phone:['الهاتف','Phone'],contract_no:['رقم العقد','Contract number'],meter_number:['رقم العداد','Meter number'],reading_value:['قيمة القراءة','Reading'],reading_date:['تاريخ القراءة','Reading date'],assigned_from:['بداية الربط','Assignment start'],assigned_to:['نهاية الربط','Assignment end']};
+ const tr=AdvaconUI.text,esc=escapeHtml;
+ const value=v=>v===null?tr('فارغ صراحةً','Explicitly empty'):typeof v==='boolean'?(v?tr('نعم','Yes'):tr('لا','No')):typeof v==='object'?JSON.stringify(v):String(v);
+ const payload=item.payload&&typeof item.payload==='object'?item.payload:{};
+ const before=item.before_data&&typeof item.before_data==='object'?item.before_data:null;
+ const rows=Object.entries(payload).filter(([k])=>k!=='p_dry_run').map(([k,v])=>{
+  const name=k.replace(/^p_/,''),label=labels[name]?.[LANG==='ar'?0:1]||name.replaceAll('_',' ');
+  const old=before&&Object.hasOwn(before,name)?value(before[name]):'—';
+  return '<tr><th scope="row">'+esc(label)+'</th>'+(before?'<td>'+esc(old)+'</td>':'')+'<td>'+esc(value(v))+'</td></tr>';
+ }).join('');
+ const deleteNote=String(item.action_key).endsWith('.delete')?'<p class="au-review-note">'+tr('هذا طلب حذف. قد يشمل بيانات مرتبطة إذا كان خيار الحذف المتسلسل مفعّلًا؛ يتحقق الخادم من الأثر عند التنفيذ.','Deletion request. Linked records may be included when cascade is enabled; the server checks the impact at execution.')+'</p>':'';
+ return '<div class="au-review">'+deleteNote+'<p class="text-muted">'+(before?tr('المقارنة مع البيانات المحفوظة وقت الطلب؛ قد تكون الحالة الحالية تغيّرت.','Comparison uses the snapshot captured at request time; current data may have changed.'):tr('لا توجد لقطة سابقة لهذا الطلب. القيم أدناه هي التغييرات المطلوبة وليست إثباتًا لتنفيذها.','No previous snapshot is available. Values below are requested changes, not confirmation of execution.'))+'</p><div class="table-wrap"><table class="au-review-table"><thead><tr><th>'+tr('الحقل','Field')+'</th>'+(before?'<th>'+tr('قبل الطلب','Before request')+'</th>':'')+'<th>'+tr('القيمة المطلوبة','Requested value')+'</th></tr></thead><tbody>'+ (rows||'<tr><td colspan="3">'+tr('لا توجد تفاصيل إضافية.','No additional details.')+'</td></tr>')+'</tbody></table></div>'+(item.review_notes?'<p><b>'+tr('ملاحظات المراجعة: ','Review notes: ')+'</b>'+esc(item.review_notes)+'</p>':'')+'</div>';
+}
+async function openAuditLog(){
+ if(CTX.mode==='admin'){location.hash='activity';return;}
+ const tr=AdvaconUI.text,body=document.createElement('div');
+ const m=openModal({title:tr('طلباتي','My Requests'),body,footer:null,wide:true,trackChanges:false});
+ async function load(){
+  body.innerHTML='<div class="loading">'+t('loading')+'</div>';
+  try{const res=await rawRpc('asset_housing_my_requests',{p_limit:100}),items=res.items||[];
+   if(!body.isConnected)return;
+   body.innerHTML='<p class="au-updated">'+AdvaconUI.updatedAt(Date.now())+' · '+tr('آخر 100 طلب كحد أقصى','Up to 100 most recent requests')+'</p>'+(items.length?items.map(x=>{
+    const status={pending:tr('بانتظار الموافقة — لم ينفذ','Pending — not executed'),approved:tr('معتمد','Approved'),rejected:tr('مرفوض','Rejected'),cancelled:tr('ملغى','Cancelled')}[x.status]||x.status;
+    return '<article class="au-request-card"><h3>#'+escapeHtml(x.id)+' · '+escapeHtml(housingActionName(x.action_key))+'</h3><div><span class="au-status '+(['pending','approved','rejected'].includes(x.status)?x.status:'')+'">'+escapeHtml(status)+'</span></div><small>'+fmtDateTime(x.requested_at)+'</small><details><summary>'+tr('تفاصيل الطلب','Request details')+'</summary>'+housingRequestDetails(x)+'</details></article>';
+   }).join(''):'<div class="empty">'+t('noItems')+'</div>');
+   const refresh=document.createElement('button');refresh.className='btn';refresh.textContent=tr('تحديث الحالة','Refresh status');refresh.onclick=()=>AdvaconUI.busy(refresh,load);body.prepend(refresh);
+  }catch(e){if(body.isConnected)AdvaconUI.errorState(body,e,load);}
+ }
+ await load();
+}
+
 
 async function finishHousingApproval(response,actionKey){
   if(!response || response.ok!==true || response.status!=='approved')throw new Error('approval_execution_unconfirmed');
@@ -3640,13 +3730,42 @@ async function finishHousingApproval(response,actionKey){
 }
 
 async function screenApprovals(content){
-  const res=await rawRpc('asset_admin_housing_pending_approvals',{p_limit:200}); const items=res.items||[];
-  content.innerHTML=`<div class="page-head"><div><h1>${LANG==='ar'?'الموافقات المعلقة':'Pending Approvals'}</h1><p class="text-muted">${items.length} ${LANG==='ar'?'طلب':'request(s)'}</p></div></div><div id="approvalList"></div>`;
-  const box=content.querySelector('#approvalList');
-  box.innerHTML=items.length?items.map(x=>`<div class="card" style="margin-bottom:10px;padding:16px"><div class="flex" style="justify-content:space-between;gap:12px;align-items:start"><div><b>${escapeHtml(x.action_key||'')}</b><div class="text-muted">${escapeHtml(x.requester_email||x.requested_by||'')} · ${fmtDateTime(x.requested_at)}</div><div class="text-muted">${escapeHtml(x.entity_type||'')} ${escapeHtml(x.entity_id||'')}</div></div><div class="flex"><button class="btn btn-primary" data-ap="${x.id}">${LANG==='ar'?'موافقة':'Approve'}</button><button class="btn" data-rj="${x.id}">${LANG==='ar'?'رفض':'Reject'}</button></div></div></div>`).join(''):`<div class="card empty">${LANG==='ar'?'لا توجد موافقات معلقة':'No pending approvals'}</div>`;
-  box.querySelectorAll('[data-ap]').forEach(b=>b.onclick=async()=>{try{const approval=await rawRpc('asset_admin_approve_housing_request',{p_request_id:Number(b.dataset.ap),p_review_notes:null});await finishHousingApproval(approval,items.find(x=>String(x.id)===b.dataset.ap)?.action_key);toast(LANG==='ar'?'تمت الموافقة':'Approved','success');await screenApprovals(content);}catch(e){toast(e.message,'error')}});
-  box.querySelectorAll('[data-rj]').forEach(b=>b.onclick=async()=>{const note=prompt(LANG==='ar'?'سبب الرفض':'Rejection note')||'';if(!note)return;try{await rawRpc('asset_admin_reject_housing_request',{p_request_id:Number(b.dataset.rj),p_review_notes:note});toast(LANG==='ar'?'تم الرفض':'Rejected','success');await screenApprovals(content);}catch(e){toast(e.message,'error')}});
+ const tr=AdvaconUI.text,res=await rawRpc('asset_admin_housing_pending_approvals',{p_limit:200}),items=res.items||[];
+ if(!content.isConnected)return;
+ content.innerHTML='<div class="page-head"><h1>'+tr('الموافقات المعلقة','Pending approvals')+'</h1></div><p class="au-updated">'+AdvaconUI.updatedAt(Date.now())+' · '+items.length+' '+tr('طلب معروض؛ الحد الأقصى 200','requests shown; maximum 200')+'</p><div class="au-toolbar"><input type="search" id="approvalSearch" aria-label="'+tr('بحث في الطلبات','Search requests')+'" placeholder="'+tr('بحث بالعملية أو صاحب الطلب أو الرقم','Search action, requester or number')+'"><button class="btn" id="approvalRefresh">'+tr('تحديث','Refresh')+'</button></div><div id="approvalList"></div>';
+ const box=content.querySelector('#approvalList');
+ function render(){
+  const q=content.querySelector('#approvalSearch').value.trim().toLowerCase();
+  const filtered=items.filter(x=>[x.id,housingActionName(x.action_key),x.requester_email,x.entity_id].join(' ').toLowerCase().includes(q));
+  box.innerHTML=filtered.map(x=>'<article class="au-request-card"><h3>#'+escapeHtml(x.id)+' · '+escapeHtml(housingActionName(x.action_key))+'</h3><div class="text-muted">'+escapeHtml(x.requester_email||x.requested_by||'')+' · '+fmtDateTime(x.requested_at)+'</div><span class="au-status pending">'+tr('بانتظار القرار — لم ينفذ','Pending decision — not executed')+'</span><button class="btn btn-primary" data-review="'+escapeHtml(x.id)+'">'+tr('مراجعة الطلب واتخاذ القرار','Review request and decide')+'</button></article>').join('')||'<div class="empty">'+tr('لا توجد طلبات مطابقة.','No matching requests.')+'</div>';
+  box.querySelectorAll('[data-review]').forEach(b=>b.onclick=()=>review(items.find(x=>String(x.id)===b.dataset.review)));
+ }
+ async function review(item){
+  if(!item)return;
+  const body=document.createElement('div');body.innerHTML=housingRequestDetails(item);
+  const field=document.createElement('div');field.className='field';const label=document.createElement('label'),notes=document.createElement('textarea');label.textContent=tr('ملاحظات القرار (مطلوبة للرفض)','Decision notes (required for rejection)');notes.rows=3;field.append(label,notes);body.append(field);
+  const footer=document.createElement('div');footer.className='au-actions';
+  const cancel=document.createElement('button'),reject=document.createElement('button'),approve=document.createElement('button');
+  cancel.className=reject.className='btn';approve.className='btn btn-primary';cancel.textContent=t('cancel');reject.textContent=tr('رفض الطلب','Reject request');approve.textContent=tr('اعتماد وتنفيذ','Approve and execute');footer.append(cancel,reject,approve);
+  const dialog=openModal({title:'#'+item.id+' · '+housingActionName(item.action_key),body,footer,wide:true});let sending=false;
+  cancel.onclick=()=>dialog.dismiss();
+  async function submit(accept){
+   if(sending)return;const note=notes.value.trim();if(!accept&&!note){notes.setCustomValidity(tr('اكتب سبب الرفض.','Enter a rejection reason.'));notes.reportValidity();notes.oninput=()=>notes.setCustomValidity('');return;}
+   sending=true;
+   if(accept&&!await confirmAction({title:tr('اعتماد الطلب','Approve request'),message:tr('ستُنفذ التغييرات المعروضة الآن وفق تحقق الخادم. هل تريد المتابعة؟','The displayed changes will execute now, subject to server validation. Continue?'),danger:item.action_key.endsWith('.delete'),confirmLabel:tr('اعتماد وتنفيذ','Approve and execute')})){sending=false;return;}
+   sending=true;dialog.setBusy(true);[cancel,reject,approve,notes].forEach(b=>b.disabled=true);body.setAttribute('aria-busy','true');
+   try{
+    const response=await rawRpc(accept?'asset_admin_approve_housing_request':'asset_admin_reject_housing_request',{p_request_id:Number(item.id),p_review_notes:note||null});
+    if(accept)await finishHousingApproval(response,item.action_key);else if(response?.ok===false)throw new Error(response.error||'rejection_failed');
+    dialog.close();toast(accept?tr('تم اعتماد الطلب وتنفيذه.','Request approved and executed.'):tr('تم رفض الطلب.','Request rejected.'),'success');if(content.isConnected)await screenApprovals(content);
+   }catch(e){toast(e.message,'error');const notice=document.createElement('p');notice.className='au-review-note';notice.textContent=tr('إذا انقطع الاتصال فقد يكون القرار وصل للخادم. أغلق هذه النافذة وحدّث قائمة الطلبات للتحقق قبل اتخاذ قرار آخر.','If the connection failed, the decision may have reached the server. Close this dialog and refresh requests before taking another decision.');body.append(notice);cancel.disabled=false;/* Decision buttons remain locked until the list is refreshed. */}
+   finally{dialog.setBusy(false);body.removeAttribute('aria-busy');}
+  }
+  approve.onclick=()=>submit(true);reject.onclick=()=>submit(false);
+ }
+ content.querySelector('#approvalSearch').oninput=render;content.querySelector('#approvalRefresh').onclick=e=>AdvaconUI.busy(e.currentTarget,()=>screenApprovals(content));render();
 }
+
 
 async function screenActivity(content){
   const res=await rawRpc('asset_admin_housing_activity',{p_limit:500}); const items=res.items||[];
@@ -3654,94 +3773,14 @@ async function screenActivity(content){
 }
 
 async function screenPermissions(content){
-  // Housing permissions are intentionally scoped to the active Housing Manager only.
-  // Admin does not need to browse users/roles here.
-  const usersR=await rawRpc('asset_admin_list_users',{p_module_key:'housing'});
-  const managers=(usersR.items||[]).filter(u=>u.role==='housing_manager' && u.is_active!==false);
-  const manager=managers[0];
-
-  if(!manager){
-    content.innerHTML=`<div class="page-head"><div><h1>${LANG==='ar'?'صلاحيات مشرف الإسكان':'Housing Manager Permissions'}</h1></div></div><div class="card empty">${LANG==='ar'?'لا يوجد مشرف Housing Manager نشط حالياً.':'No active Housing Manager is currently assigned.'}</div>`;
-    return;
-  }
-
-  content.innerHTML=`
-    <div class="page-head">
-      <div>
-        <h1>${LANG==='ar'?'صلاحيات مشرف الإسكان':'Housing Manager Permissions'}</h1>
-        <p class="text-muted">${escapeHtml(manager.email||'Housing Manager')}</p>
-      </div>
-    </div>
-    <div class="card" style="padding:0;overflow:hidden">
-      <div style="display:grid;grid-template-columns:minmax(240px,1fr) 120px 150px;gap:8px;align-items:center;padding:12px 16px;background:var(--surface-2,#f7f8fa);border-bottom:1px solid var(--line);font-weight:700">
-        <div>${LANG==='ar'?'الصلاحية':'Permission'}</div>
-        <div style="text-align:center">${LANG==='ar'?'سماح':'Allow'}</div>
-        <div style="text-align:center">${LANG==='ar'?'تحتاج موافقة':'Require Approval'}</div>
-      </div>
-      <div id="permMatrix"><div class="loading">${t('loading')}</div></div>
-    </div>
-    <div class="text-muted" style="margin-top:10px;font-size:12px">
-      ${LANG==='ar'?'إذا لم يتم تحديد أي خيار تكون الصلاحية ممنوعة. يتم حفظ كل تغيير مباشرة.':'If neither option is selected, the permission is denied. Every change is saved immediately.'}
-    </div>`;
-
-  const matrix=content.querySelector('#permMatrix');
-  try{
-    const r=await rawRpc('asset_admin_permission_matrix',{p_module_key:'housing',p_user_id:manager.user_id});
-    const ADMIN_ONLY_PERMISSION_SECTIONS=new Set(['settings','permissions','approvals','activity']);
-    const items=(r.items||[]).filter(x=>!ADMIN_ONLY_PERMISSION_SECTIONS.has((x.action_key||'').split('.')[0]));
-    const sectionNames={
-      dashboard:['لوحة المعلومات','Dashboard'], properties:['العقارات','Properties'], spaces:['المساحات','Spaces'],
-      landlords:['الملاك','Landlords'], contracts:['العقود','Contracts'], meters:['العدادات','Meters'],
-      bills:['الفواتير','Bills'], residents:['السكان','Residents'], expenses:['المصروفات','Expenses'],
-      attachments:['المرفقات','Attachments'], reports:['التقارير','Reports'], settings:['الإعدادات','Settings'],
-      permissions:['الصلاحيات','Permissions'], approvals:['الموافقات','Approvals'], activity:['سجل النشاط','Activity Log']
-    };
-    let lastSection='';
-    matrix.innerHTML=items.map(x=>{
-      const section=(x.action_key||'').split('.')[0]||'other';
-      const sectionTitle=(sectionNames[section]||[section,section])[LANG==='ar'?0:1];
-      const head=section!==lastSection?`<div style="padding:10px 16px;background:var(--surface-2,#f7f8fa);border-bottom:1px solid var(--line);font-weight:800">${escapeHtml(sectionTitle)}</div>`:'';
-      lastSection=section;
-      const mode=x.effective_mode||'deny';
-      return head+`<div class="perm-simple-row" data-perm-row="${escapeHtml(x.action_key)}" style="display:grid;grid-template-columns:minmax(240px,1fr) 120px 150px;gap:8px;align-items:center;padding:11px 16px;border-bottom:1px solid var(--line)">
-        <div><b>${escapeHtml(LANG==='ar'?x.label_ar:x.label_en)}</b></div>
-        <div style="text-align:center"><input type="checkbox" data-perm-direct="${escapeHtml(x.action_key)}" ${mode==='direct'?'checked':''} aria-label="Allow"></div>
-        <div style="text-align:center">${x.supports_approval?`<input type="checkbox" data-perm-approval="${escapeHtml(x.action_key)}" ${mode==='approval'?'checked':''} aria-label="Require approval">`:`<span class="text-muted">—</span>`}</div>
-      </div>`;
-    }).join('') || `<div class="empty">${t('noItems')}</div>`;
-
-    const saveMode=async(actionKey,mode,row)=>{
-      const controls=row.querySelectorAll('input[type="checkbox"]');
-      controls.forEach(el=>el.disabled=true);
-      try{
-        await rawRpc('asset_admin_set_user_permission',{p_user_id:manager.user_id,p_module_key:'housing',p_action_key:actionKey,p_mode:mode});
-        toast(LANG==='ar'?'تم حفظ الصلاحية':'Permission saved','success');
-      }catch(e){
-        toast(e.message,'error');
-        // Reload the matrix so the UI always reflects the backend after a failed save.
-        await screenPermissions(content);
-      }finally{
-        controls.forEach(el=>el.disabled=false);
-      }
-    };
-
-    matrix.querySelectorAll('[data-perm-direct]').forEach(cb=>cb.onchange=async()=>{
-      const key=cb.dataset.permDirect, row=cb.closest('[data-perm-row]');
-      const approval=row.querySelector('[data-perm-approval]');
-      if(cb.checked && approval) approval.checked=false;
-      const mode=cb.checked?'direct':(approval&&approval.checked?'approval':'deny');
-      await saveMode(key,mode,row);
-    });
-    matrix.querySelectorAll('[data-perm-approval]').forEach(cb=>cb.onchange=async()=>{
-      const key=cb.dataset.permApproval, row=cb.closest('[data-perm-row]');
-      const direct=row.querySelector('[data-perm-direct]');
-      if(cb.checked && direct) direct.checked=false;
-      const mode=cb.checked?'approval':(direct&&direct.checked?'direct':'deny');
-      await saveMode(key,mode,row);
-    });
-  }catch(e){
-    matrix.innerHTML=`<div class="empty">${escapeHtml(e.message)}</div>`;
-  }
+ const users=await rawRpc('asset_admin_list_users',{p_module_key:'housing'});
+ const manager=(users.items||[]).find(u=>u.role==='housing_manager'&&u.is_active!==false);
+ content.innerHTML='<div class="page-head"><div><h1>'+AdvaconUI.text('صلاحيات مشرف الإسكان','Housing Manager Permissions')+'</h1><p>'+escapeHtml(manager?.email||'')+'</p></div></div><p class="text-muted">'+AdvaconUI.text('اختر وضعًا واحدًا لكل صلاحية. يُحفظ كل تغيير مباشرة.','Choose one mode per permission. Each change saves immediately.')+'</p><div class="card" id="permMatrix"></div>';
+ const root=content.querySelector('#permMatrix');
+ if(!manager){root.textContent=AdvaconUI.text('لا يوجد مشرف إسكان نشط.','No active Housing Manager.');return;}
+ try{const res=await rawRpc('asset_admin_permission_matrix',{p_module_key:'housing',p_user_id:manager.user_id});
+ AdvaconUI.permissionMatrix(root,{items:(res.items||[]).filter(x=>!['settings','permissions','approvals','activity'].includes(x.action_key.split('.')[0])),onSave:async(key,mode)=>{const r=await rawRpc('asset_admin_set_user_permission',{p_user_id:manager.user_id,p_module_key:'housing',p_action_key:key,p_mode:mode});if(r?.ok===false)throw new Error(r.error||'permission_save_failed');}});
+ }catch(e){AdvaconUI.errorState(root,e,()=>screenPermissions(content));}
 }
 
 function fmtDateTime(iso) {
@@ -3793,6 +3832,14 @@ document.addEventListener('DOMContentLoaded', async () => {
    ========================= SCREEN IMPLEMENTATIONS ===========================
    ============================================================================ */
 /* screens are appended in the next chunk */
+</script>
+<script>
+document.addEventListener('DOMContentLoaded',()=>{
+ for(const name of ['renderNav','renderSidebar','route','catRender','invRender','dashRender','mvRender','aprRender','whmRender','repRender']){
+  const original=window[name];if(typeof original!=='function')continue;
+  window[name]=function(...args){const focus=AdvaconUI.captureFocus();const result=original.apply(this,args);AdvaconUI.restoreFocus(focus);if(result?.then)result.then(()=>AdvaconUI.enhance(document),()=>{});else AdvaconUI.enhance(document);return result;};
+ }
+});
 </script>
 </body>
 </html>
