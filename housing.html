@@ -240,6 +240,7 @@
 </style>
 <link rel="stylesheet" href="/advacon-ui.css">
 <script src="/advacon-ui.js"></script>
+<script src="/advacon-dialogs.js"></script>
 </head>
 <body>
 
@@ -298,7 +299,7 @@ const T = {
     bills: 'الفواتير', residents: 'الساكنون', expenses: 'المصاريف', reports: 'التقارير', settings: 'الإعدادات',
     landlords: 'الملاك', approvals:'الموافقات', permissions:'الصلاحيات', activity:'سجل النشاط', landlordType: 'نوع المالك', individual: 'فرد', organization: 'مؤسسة',
     email: 'البريد الإلكتروني', phone: 'الهاتف', nationalId: 'رقم الهوية',
-    add: 'إضافة', edit: 'تعديل', delete: 'حذف', save: 'حفظ', cancel: 'إلغاء', close: 'إغلاق',
+    attachmentHealth:'متابعة المرفقات', add: 'إضافة', edit: 'تعديل', delete: 'حذف', save: 'حفظ', cancel: 'إلغاء', close: 'إغلاق',
     yes: 'نعم', no: 'لا', ok: 'موافق', back: 'رجوع', view: 'عرض', activate: 'تفعيل', deactivate: 'إيقاف',
     search: 'بحث', filter: 'فلترة', all: 'الكل', none: 'لا يوجد',
     active: 'نشط', inactive: 'غير نشط', expired: 'منتهي', cancelled: 'ملغى',
@@ -341,7 +342,7 @@ const T = {
     bills: 'Bills', residents: 'Residents', expenses: 'Expenses', reports: 'Reports', settings: 'Settings',
     landlords: 'Landlords', approvals:'Approvals', permissions:'Permissions', activity:'Activity Log', landlordType: 'Type', individual: 'Individual', organization: 'Organization',
     email: 'Email', phone: 'Phone', nationalId: 'National ID',
-    add: 'Add', edit: 'Edit', delete: 'Delete', save: 'Save', cancel: 'Cancel', close: 'Close',
+    attachmentHealth:'Attachment health', add: 'Add', edit: 'Edit', delete: 'Delete', save: 'Save', cancel: 'Cancel', close: 'Close',
     yes: 'Yes', no: 'No', ok: 'OK', back: 'Back', view: 'View', activate: 'Activate', deactivate: 'Deactivate',
     search: 'Search', filter: 'Filter', all: 'All', none: 'None',
     active: 'Active', inactive: 'Inactive', expired: 'Expired', cancelled: 'Cancelled',
@@ -564,18 +565,9 @@ async function ensureHousingSessionImpl(){
 }
 function housingSession(){ return CTX.mode==='admin' ? admGetSession() : (CTX.mode==='asset' ? assetGetSession() : null); }
 
-function showSignInRequired(reason) {
-  document.getElementById('content').innerHTML = `
-    <div style="max-width: 560px; margin: 80px auto; text-align: center;">
-      <div class="card" style="padding: 32px;">
-        <h2 style="color: var(--navy); margin: 0 0 12px;">${t('signInRequired')}</h2>
-        <p class="text-muted mb-3">${t('sessionInvalid')}</p>
-        <div style="text-align:start; background:var(--panel-alt); padding:10px 14px; border-radius:var(--radius); font-size:12px; margin-bottom:16px; font-family:monospace; color:var(--muted);">
-          reason: ${escapeHtml(reason||'unknown')}
-        </div>
-        <a href="/asset" class="btn btn-primary">/asset</a>
-      </div>
-    </div>`;
+function showSignInRequired(reason){
+ const admin=CTX.mode==='admin',tr=AdvaconUI.text;
+ document.getElementById('content').innerHTML='<div class="access-shell"><div class="card" style="max-width:560px;margin:48px auto;padding:28px;text-align:center"><h2>'+tr('تسجيل الدخول مطلوب','Sign in required')+'</h2><p>'+ (admin?tr('ادخل من بوابة الإدارة، ثم افتح الإسكان.','Sign in to Admin, then open Housing.'):tr('افتح بوابة الأصول واختر الإسكان، ثم ادخل بحساب مشرف الإسكان.','Open Assets, choose Housing, then sign in with your Housing Manager account.'))+'</p><a class="btn btn-primary" href="'+(admin?'/admin':'/asset')+'">'+(admin?tr('بوابة الإدارة','Admin portal'):tr('بوابة الأصول','Asset portal'))+'</a></div></div>';
 }
 
 /* =====================================================================
@@ -685,96 +677,21 @@ function translateStorageError(err) {
    operator can find and clean it later.
    ===================================================================== */
 
-/* Upload a file to the housing bucket and register it in the DB.
-   On any failure, ensures no orphan file is left behind (best-effort).
-   Returns the register RPC response on success; throws on failure with
-   a translated error message. */
-async function uploadAndRegisterAttachment({ entityType, entityId, file, kindKey, notes }) {
-  const safeName = file.name.replace(/[^\w.-]/g,'_');
-  const path = `${entityType}/${entityId}/${Date.now()}_${safeName}`;
-  // Fail-closed: never proceed to Storage without a valid admin session
-  const okSess = await ensureHousingSession();
-  if (!okSess) throw new Error(LANG==='ar'?'جلسة مسؤول الإسكان غير صالحة':'Housing manager session is invalid');
-
-  if(!can('attachments.upload'))throw new Error('not_authorized');
-
-  // Step 1: upload to storage
-  const { error: upErr } = await sb.storage.from('housing-attachments').upload(path, file, { contentType: file.type });
-  if (upErr) throw new Error(translateStorageError(upErr));
-
-  // Step 2: register in DB. If it fails, compensate.
-  try {
-    return await rpc('housing_register_attachment', {
-      p_entity_type: entityType, p_entity_id: entityId, p_kind_key: kindKey,
-      p_storage_path: path, p_filename: file.name,
-      p_mime_type:   file.type, p_size_bytes: file.size,
-      p_notes:       notes || null,
-    });
-  } catch (regErr) {
-    if(regErr instanceof HousingApprovalPending)throw regErr;
-    // Compensating action: remove the just-uploaded file
-    let compensationFailed = null;
-    try {
-      const okC = await ensureHousingSession();
-      if (!okC) throw new Error('session_expired_during_compensation');
-      const { error: remErr } = await sb.storage.from('housing-attachments').remove([path]);
-      if (remErr) compensationFailed = remErr;
-    } catch (cErr) { compensationFailed = cErr; }
-
-    if (compensationFailed) {
-      // Storage now has an orphan file — log it so an operator can clean it up
-      try {
-        await rpc('housing_log_storage_issue', {
-          p_kind: 'upload',
-          p_paths: [path],
-          p_details: {
-            entity_type: entityType, entity_id: entityId, filename: file.name,
-            register_error: String(regErr.message || regErr),
-            compensation_error: String(compensationFailed.message || compensationFailed)
-          }
-        });
-      } catch(_) { /* if even logging fails, we've done our best */ }
-    }
-    // Bubble up the original register failure — with a hint if orphan was logged
-    const suffix = compensationFailed
-      ? (LANG==='ar' ? ' (سُجّل الملف كـ orphan للتنظيف اليدوي لاحقاً)' : ' (file logged as orphan for later cleanup)')
-      : '';
-    throw new Error((regErr.message || String(regErr)) + suffix);
-  }
+/* Lifecycle v2: the server reserves uploads and durably queues cleanup.
+   Never compensate an uncertain registration by deleting its Storage object. */
+async function uploadAndRegisterAttachment({entityType,entityId,file,kindKey,notes}){
+ if(!await ensureHousingSession())throw new Error('session_expired');
+ if(!can('attachments.upload'))throw new Error('not_authorized');
+ const reservation=await rawRpc('advacon_begin_attachment_upload',{p_entity_type:entityType,p_entity_id:entityId,p_filename:file.name},true);
+ if(reservation?.ok!==true||typeof reservation.storage_path!=='string'||!reservation.storage_path.startsWith('_advacon/'))throw new Error('attachment_reservation_failed');
+ const {error}=await sb.storage.from('housing-attachments').upload(reservation.storage_path,file,{contentType:file.type,upsert:false});
+ if(error)throw new Error(translateStorageError(error));
+ return await rpc('housing_register_attachment',{p_entity_type:entityType,p_entity_id:entityId,p_kind_key:kindKey,p_storage_path:reservation.storage_path,p_filename:file.name,p_mime_type:file.type,p_size_bytes:file.size,p_notes:notes||null});
 }
-
-/* Remove one or more storage files. On failure, log to audit_log as an
-   'orphan_delete' entry so operator can find and clean them later. Never
-   throws — deletion of storage files is a compensating step after a DB
-   delete has already committed. */
-async function removeStorageFilesWithFallback(paths, context) {
-  if (!paths || !paths.length) return;
-  let failed = null;
-  try {
-    // Fail-closed: no valid admin session means we should not attempt Storage;
-    // treat as an ordinary failure so the paths get logged for later cleanup.
-    const okSess = await ensureHousingSession();
-    if (!okSess) throw new Error('session_expired');
-    const { error } = await sb.storage.from('housing-attachments').remove(paths);
-    if (error) failed = error;
-  } catch (e) { failed = e; }
-
-  if (failed) {
-    try {
-      await rpc('housing_log_storage_issue', {
-        p_kind: 'delete',
-        p_paths: paths,
-        p_details: { ...(context || {}), error: String(failed.message || failed) }
-      });
-      // Non-fatal: DB is consistent, storage has stragglers. Show a soft warning.
-      toast(
-        LANG==='ar'
-          ? `تحذير: تعذّر حذف ${paths.length} ملف من Storage — سُجّل للتنظيف اليدوي`
-          : `Warning: could not remove ${paths.length} storage file(s) — logged for later cleanup`,
-        'error'
-      );
-    } catch(_) { /* even logging failed; nothing we can do here */ }
-  }
+async function removeStorageFilesWithFallback(paths,context){
+ // Compatibility with existing delete callers. The DB deletion trigger already queued these paths.
+ // No browser deletion: it could race a server commit after a lost response.
+ return {queued_by_server:true};
 }
 
 const HOUSING_RPC_ACTION = {
@@ -801,6 +718,10 @@ async function rawRpc(fn,args={},sessionVerified=false){
   if(!res.ok){let msg='http_'+res.status;try{const b=await res.json();msg=(b&&(b.message||b.error||b.details||b.hint))||msg;}catch(_){} throw new Error(String(msg).trim());}
   return await res.json();
 }
+async function ensureAttachmentLifecycle(sessionVerified=false){
+ const result=await rawRpc('advacon_attachment_lifecycle_ready',{},sessionVerified);
+ if(result?.ok!==true||result.version!==2)throw new Error(AdvaconUI.text('خدمة المرفقات غير جاهزة. تواصل مع مسؤول النظام لإكمال التحديث.','Attachment service is not ready. Ask your administrator to complete the update.'));
+}
 async function rpc(fn,args={}){
   if(fn==='housing_update_bill')args={p_status:null,p_paid_date:null,...args}; // Select the verified 12-argument overload.
   if(!await ensureHousingSession())throw new Error('session_expired');
@@ -823,6 +744,7 @@ async function rpc(fn,args={}){
       }
     }
   }
+  if(HOUSING_RPC_ACTION[fn]?.endsWith('.delete')&&args.p_dry_run!==true)await ensureAttachmentLifecycle(true);
   try{return await rawRpc(fn,args,true);}catch(e){throw new Error(translateError(e.message||String(e)));}
 }
 
@@ -1013,6 +935,7 @@ const NAV_ITEMS = [
   { key: 'approvals', route: 'approvals', icon: '✓', adminOnly: true },
   { key: 'permissions', route: 'permissions', icon: '🔐', adminOnly: true },
   { key: 'activity', route: 'activity', icon: '🕐', adminOnly: true },
+  { key: 'attachmentHealth', route: 'attachment-health', icon: '☁', adminOnly: true },
 ];
 
 function navAllowed(item){
@@ -1070,6 +993,7 @@ async function route() {
       case 'approvals': if(CTX.mode!=='admin') throw new Error('not_admin'); await screenApprovals(content); break;
       case 'permissions': if(CTX.mode!=='admin') throw new Error('not_admin'); await screenPermissions(content); break;
       case 'activity': if(CTX.mode!=='admin') throw new Error('not_admin'); await screenActivity(content); break;
+      case 'attachment-health': if(CTX.mode!=='admin')throw new Error('not_admin');await screenAttachmentHealth(content);break;
       case 'settings': await screenSettings(content); break;
       default:
         content.innerHTML = `<div class="error-box">Unknown route: ${escapeHtml(mainRoute)}</div>`;
@@ -3755,6 +3679,7 @@ async function screenApprovals(content){
    if(accept&&!await confirmAction({title:tr('اعتماد الطلب','Approve request'),message:tr('ستُنفذ التغييرات المعروضة الآن وفق تحقق الخادم. هل تريد المتابعة؟','The displayed changes will execute now, subject to server validation. Continue?'),danger:item.action_key.endsWith('.delete'),confirmLabel:tr('اعتماد وتنفيذ','Approve and execute')})){sending=false;return;}
    sending=true;dialog.setBusy(true);[cancel,reject,approve,notes].forEach(b=>b.disabled=true);body.setAttribute('aria-busy','true');
    try{
+    if(accept&&item.action_key.endsWith('.delete'))await ensureAttachmentLifecycle();
     const response=await rawRpc(accept?'asset_admin_approve_housing_request':'asset_admin_reject_housing_request',{p_request_id:Number(item.id),p_review_notes:note||null});
     if(accept)await finishHousingApproval(response,item.action_key);else if(response?.ok===false)throw new Error(response.error||'rejection_failed');
     dialog.close();toast(accept?tr('تم اعتماد الطلب وتنفيذه.','Request approved and executed.'):tr('تم رفض الطلب.','Request rejected.'),'success');if(content.isConnected)await screenApprovals(content);
@@ -3766,6 +3691,32 @@ async function screenApprovals(content){
  content.querySelector('#approvalSearch').oninput=render;content.querySelector('#approvalRefresh').onclick=e=>AdvaconUI.busy(e.currentTarget,()=>screenApprovals(content));render();
 }
 
+
+async function openLegacyAttachmentReview(){
+ if(CTX.mode!=='admin')throw new Error('not_admin');
+ const tr=AdvaconUI.text,body=document.createElement('div');
+ openModal({title:tr('مراجعة المرفقات القديمة','Review legacy attachments'),body,footer:null,wide:true,trackChanges:false});
+ async function load(){try{
+  const r=await rawRpc('advacon_legacy_attachment_candidates',{p_limit:50});if(!body.isConnected)return;
+  body.innerHTML='<p class="au-review-note">'+tr('هذه ملفات أقدم من 7 أيام دون مرجع أو طلب معلق داخل الإسكان. قد تبقى مستخدمة خارج النظام؛ عاين الملف وتأكد قبل إرساله للتنظيف. لن تُحذف تلقائيًا لمجرد ظهورها هنا.','These files are over 7 days old with no Housing reference or pending request. They may still be used outside this system. Preview and verify before queuing cleanup; appearing here does not cause automatic deletion.')+'</p><div id="legacyCandidates"></div>';
+  const list=body.querySelector('#legacyCandidates');
+  for(const x of r.items||[]){const row=document.createElement('article');row.className='au-request-card';const name=document.createElement('b');name.textContent=x.path;name.style.overflowWrap='anywhere';const date=document.createElement('small');date.textContent=fmtDateTime(x.created_at);const buttons=document.createElement('div');buttons.className='au-actions';const preview=document.createElement('button'),queue=document.createElement('button');preview.className='btn';queue.className='btn btn-danger';preview.textContent=tr('معاينة','Preview');queue.textContent=tr('إرسال للتنظيف','Queue cleanup');buttons.append(preview,queue);row.append(name,date,buttons);list.append(row);
+   preview.onclick=()=>AdvaconUI.busy(preview,async()=>{try{if(!await ensureHousingSession())throw new Error('session_expired');const result=await sb.storage.from('housing-attachments').createSignedUrl(x.path,300);if(result.error)throw result.error;const link=document.createElement('a');link.href=result.data.signedUrl;link.target='_blank';link.rel='noopener noreferrer';link.textContent=tr('فتح معاينة الملف','Open file preview');row.append(link);link.click();}catch(e){toast(e.message,'error');}});
+   queue.onclick=()=>AdvaconUI.busy(queue,async()=>{if(!await confirmAction({title:tr('تأكيد تنظيف ملف قديم','Confirm legacy cleanup'),message:tr('سيُحذف هذا الملف نهائيًا بعد مهلة التنظيف. تأكد أنه غير مطلوب: ','This file will be permanently deleted after the cleanup grace period. Verify it is no longer needed: ')+x.path,danger:true,confirmLabel:tr('أكدت أنه غير مطلوب','Confirmed no longer needed')}))return;try{const result=await rawRpc('advacon_queue_reviewed_orphan',{p_path:x.path});if(result?.ok!==true)throw new Error('cleanup_unconfirmed');row.remove();toast(tr('أُضيف الملف لطابور التنظيف.','File added to the cleanup queue.'),'success');}catch(e){toast(e.message,'error');}});
+  }
+  if(!(r.items||[]).length)list.textContent=tr('لا توجد ملفات مرشحة للمراجعة.','No files need legacy review.');
+ }catch(e){if(body.isConnected)AdvaconUI.errorState(body,e,load);}}
+ await load();
+}
+
+async function screenAttachmentHealth(content){
+ if(CTX.mode!=='admin')throw new Error('not_admin');
+ const tr=AdvaconUI.text,r=await rawRpc('advacon_attachment_health',{});if(!content.isConnected)return;
+ content.innerHTML='<div class="page-header"><h1>'+tr('متابعة المرفقات','Attachment health')+'</h1><button class="btn" id="refreshHealth">'+tr('تحديث','Refresh')+'</button></div><p class="au-updated">'+AdvaconUI.updatedAt(Date.now())+'</p><div class="stat-grid">'+[['queued',tr('بانتظار التنظيف','Queued')],['processing',tr('قيد التنظيف','Processing')],['completed',tr('مكتمل','Completed')],['blocked',tr('يحتاج مراجعة','Needs review')]].map(([k,l])=>'<div class="stat"><div class="stat-label">'+l+'</div><div class="stat-value">'+escapeHtml(r[k]??0)+'</div></div>').join('')+'</div><p class="au-review-note">'+tr('تُحفظ ملفات الطلبات المعلقة. الملفات المتروكة تُراجع بعد 24 ساعة، وتوجد مهلة ساعة قبل التنظيف. الحالات التي تحتاج مراجعة لا تُحذف تلقائيًا.','Pending requests retain their files. Abandoned uploads are reviewed after 24 hours, with a one-hour cleanup grace period. Blocked records are not automatically deleted.')+'</p><p>'+tr('آخر تنظيف مكتمل: ','Last completed cleanup: ')+fmtDateTime(r.last_completed_at)+'</p><div class="table-wrap"><table class="data"><thead><tr><th>#</th><th>'+tr('السبب','Reason')+'</th><th>'+t('status')+'</th><th>'+tr('المحاولات','Attempts')+'</th><th>'+tr('التاريخ','Date')+'</th></tr></thead><tbody>'+(r.items||[]).map(x=>'<tr><td>'+escapeHtml(x.id)+'</td><td>'+escapeHtml(({attachment_deleted:tr('حذف مرفق','Attachment deleted'),attachment_replaced:tr('استبدال مرفق','Attachment replaced'),upload_rejected:tr('طلب مرفوض','Rejected request'),upload_cancelled:tr('طلب ملغى','Cancelled request'),upload_abandoned:tr('رفع متروك','Abandoned upload')})[x.reason]||x.reason)+'</td><td>'+escapeHtml(x.state)+'</td><td>'+escapeHtml(x.attempts)+'</td><td>'+fmtDateTime(x.created_at)+'</td></tr>').join('')+'</tbody></table></div>';
+ const worker=document.createElement('p');worker.className='au-review-note';worker.textContent=r.worker_last_seen_at?tr('آخر اتصال لعامل التنظيف: ','Cleanup worker last seen: ')+fmtDateTime(r.worker_last_seen_at):tr('لم يتصل عامل التنظيف بعد. أكمل إعداد العامل والجدولة على الخادم.','The cleanup worker has not connected yet. Complete the server worker and schedule setup.');content.prepend(worker);
+ const review=document.createElement('button');review.className='btn';review.textContent=tr('مراجعة المرفقات القديمة','Review legacy attachments');review.onclick=openLegacyAttachmentReview;content.querySelector('.page-header').append(review);
+ content.querySelector('#refreshHealth').onclick=e=>AdvaconUI.busy(e.currentTarget,()=>screenAttachmentHealth(content));AdvaconUI.enhance(content);
+}
 
 async function screenActivity(content){
   const res=await rawRpc('asset_admin_housing_activity',{p_limit:500}); const items=res.items||[];

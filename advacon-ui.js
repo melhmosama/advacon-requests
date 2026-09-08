@@ -37,7 +37,7 @@
   while(mount.children.length>4)mount.firstElementChild.remove();
  }
  const dialogs=[];
- function modal({title='',body,footer,wide=false,narrow=false,onClose,trackChanges=true}={}){
+ function modal({title='',body,footer,wide=false,narrow=false,onClose,onDismiss,trackChanges=true,initialDirty=false,initialFocus=true}={}){
   const opener=document.activeElement,backdrop=document.createElement('div'),box=document.createElement('section');
   backdrop.className='au-modal-backdrop';box.className='au-modal'+(wide?' wide':'')+(narrow?' narrow':'');
   box.setAttribute('role','dialog');box.setAttribute('aria-modal','true');box.tabIndex=-1;
@@ -49,7 +49,7 @@
   if(typeof body==='string')bodyEl.innerHTML=body;else if(body)bodyEl.appendChild(body);
   if(typeof footer==='string')footerEl.innerHTML=footer;else if(footer)footerEl.appendChild(footer);
   box.append(head,bodyEl);if(footer!==false&&footer!==null)box.appendChild(footerEl);backdrop.appendChild(box);
-  let closed=false,dirty=false,asking=false,locked=false;
+  let closed=false,dirty=initialDirty,asking=false,locked=false;
   const inertState=[...document.body.children].filter(el=>el!==document.getElementById('advacon-notices')).map(el=>[el,el.inert]);
   inertState.forEach(([el])=>el.inert=true);document.body.appendChild(backdrop);dialogs.push(box);
   const previousOverflow=document.body.style.overflow;document.body.style.overflow='hidden';
@@ -57,6 +57,7 @@
   async function dismiss(){
    if(asking||locked)return;
    if(trackChanges&&dirty){asking=true;const leave=await confirm({title:text('تغييرات غير محفوظة','Unsaved changes'),message:text('هل تريد إغلاق النموذج وترك التغييرات؟','Close the form and discard your changes?'),danger:true,confirmLabel:text('ترك التغييرات','Discard changes')});asking=false;if(!leave)return;}
+   if(onDismiss&&await onDismiss()===false)return;
    close();
   }
   function key(e){if(dialogs.at(-1)!==box)return;if(e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation();dismiss();return;}if(e.key!=='Tab')return;
@@ -65,8 +66,8 @@
   }
   bodyEl.addEventListener('input',()=>dirty=true);bodyEl.addEventListener('change',()=>dirty=true);
   x.onclick=dismiss;backdrop.onclick=e=>{if(e.target===backdrop)dismiss();};document.addEventListener('keydown',key,true);
-  enhance(bodyEl);requestAnimationFrame(()=>{if(!closed)(bodyEl.querySelector('[autofocus],input:not([type=hidden]):not([disabled]),select:not([disabled]),textarea:not([disabled])')||x).focus();});
-  const api={close,dismiss,modal:box,backdrop,body:bodyEl,bodyEl,footerEl,markClean:()=>dirty=false,setBusy:value=>{locked=!!value;x.disabled=locked;box.setAttribute('aria-busy',String(locked));}};
+  enhance(bodyEl);requestAnimationFrame(()=>{if(!closed&&initialFocus)(bodyEl.querySelector('[autofocus],input:not([type=hidden]):not([disabled]),select:not([disabled]),textarea:not([disabled])')||x).focus();});
+  const api={close,dismiss,modal:box,backdrop,body:bodyEl,bodyEl,footerEl,markClean:()=>dirty=false,isDirty:()=>dirty,setBusy:value=>{locked=!!value;x.disabled=locked;box.setAttribute('aria-busy',String(locked));}};
   box.advaconDialog=api;return api;
  }
  function confirm({title='',message='',danger=false,confirmLabel,cancelLabel}={}){
