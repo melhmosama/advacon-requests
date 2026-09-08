@@ -2562,7 +2562,7 @@ function render(){
     return;
   }
   // admin: sidebar shell
-  const navk=["dashboard","manage","techtasks","assets","reports","settings"];
+  const navk=["dashboard","manage","techtasks","assets","all","reports","settings"];
   const rows=state.requests.map(calc);
   const pendingCount=rows.filter(isIncoming).length;
   let nav=navk.map(k=>{
@@ -2589,11 +2589,11 @@ function render(){
   if(state.route==='dashboard')v.innerHTML=adminHome();
   else if(state.route==='assets')v.innerHTML=viewAssets();
   else if(state.route==='manage')v.innerHTML=adminWorkView();
-  else if(state.route==='all'){adminResolveRoute('all');v.innerHTML=adminWorkView();}
-  else if(state.route==='techtasks')v.innerHTML=adminTeamTabs()+viewTechTasks();
+  else if(state.route==='all')v.innerHTML=adminRegistryView();
+  else if(state.route==='techtasks')v.innerHTML=adminTeamTabs()+adminTeamView();
   else if(state.route==='staffdir')v.innerHTML=adminTeamTabs()+viewStaffDir();
   else if(state.route==='open')v.innerHTML=viewOpen();
-  else if(state.route==='archive'){adminResolveRoute('archive');v.innerHTML=adminWorkView();}
+  else if(state.route==='archive'){adminResolveRoute('archive');v.innerHTML=adminRegistryView();}
   else if(state.route==='reports')v.innerHTML=viewReports();
   else if(state.route==='media')v.innerHTML=adminRequestTabs()+viewMedia();
   else if(state.route==='settings')v.innerHTML=viewSettings();
@@ -4519,7 +4519,7 @@ function needsAttention(){
   return `<div class="panel panel-pad na-panel"><div class="na-head"><span class="na-warn">⚠</span> <b>${t('naTitle')}</b> <span class="count-chip">${total}</span></div><div class="na-list">${rows}</div></div>`;
 }
 function viewManage(){
-  let all=state.requests.map(calc);
+  let all=adminFlowRows();
   const pending=byNumberDesc(all.filter(isIncoming));
   // assigned to staff = accepted, active, NOT pending-confirm, NOT recurring (recurring go to their own column)
   const assigned=byNumberDesc(all.filter(r=>isAccepted(r) && !r.pendingConfirm && !r.recurringId && r.effStatus!=='Complete' && r.effStatus!=='Cancelled' && r.status!=='Cancelled'));
@@ -4528,13 +4528,13 @@ function viewManage(){
   // pending confirmation = staff marked done, awaiting manager
   const pendConfirm=byNumberDesc(all.filter(r=>r.pendingConfirm && !r.archived));
   // recently completed: confirmed within last 8 hours, still shown in main list
-  const recentDone=byNumberDesc(all.filter(r=>r.effStatus==='Complete' && !r.archived && r.confirmedAt && (Date.now()-new Date(r.confirmedAt).getTime())<=8*60*60*1000));
+  const recentDone=byNumberDesc(all.filter(r=>adminRecentlyDone(r)));
   // --- card builders (clean & readable in a narrow column) ---
   const att=(r)=>{let img=0;try{img=JSON.parse(r.images||'[]').length;}catch(e){}const pdf=fileCount(r);let s='';if(img)s+=`<button class="lk" onclick="openGallery(${r.id})" title="${t('viewImages')}">🖼 ${img}</button>`;if(pdf)s+=fileLinks(r);return s?`<div class="mc-att">${s}</div>`:'';};
   const drow=(label,val)=>val&&val!=='—'?`<div class="mc-row"><span class="mc-lab">${label}</span><span class="mc-val">${val}</span></div>`:'';
-  const incCard=(r)=>`<div class="mcard">
+  const incCard=(r)=>`<div class="mcard" data-flow-id="${r.id}">
     <div class="mc-top"><span class="mc-id">${fmtID(r.id)}</span><span class="prio ${r.priority}">${esc(dispPri(r.priority))}</span></div>
-    ${mrCardBadge(r.id)?`<div class="mc-mrbadge">${mrCardBadge(r.id)}</div>`:''}
+    ${adminMaterialBadge(r)}
     <div class="mc-title">${state.role==='admin'?adminTaskLink(r):esc(r.title)}</div>
     <div class="mc-rows">
       ${drow(t('mReqBy'),esc(r.requestedBy||'—'))}
@@ -4547,9 +4547,9 @@ function viewManage(){
     ${att(r)}
     <div class="mc-acts">${mrProcBtn(r.id)}<button class="btn sm green" onclick="acceptReq(${r.id})">✓ ${t('accept')}</button><button class="btn sm danger" onclick="askReject(${r.id})">✕ ${t('decline')}</button></div>
   </div>`;
-  const workCard=(r)=>{const dl=dueCell(r);const schedBadge=r.isFuture?`<span class="sched-badge future">🗓️ ${t('badgeFuture')}</span>`:(r.isReady?`<span class="sched-badge ready">▶ ${t('badgeReady')}</span>`:'');return `<div class="mcard ${r.effStatus==='Overdue'?'ov':''}">
+  const workCard=(r)=>{const dl=dueCell(r);const schedBadge=adminScheduleBadge(r);return `<div data-flow-id="${r.id}" class="mcard ${r.effStatus==='Overdue'?'ov':''}">
     <div class="mc-top"><span class="mc-id">${fmtID(r.id)}</span>${schedBadge||stBadge(r.effStatus)}</div>
-    ${mrCardBadge(r.id)?`<div class="mc-mrbadge">${mrCardBadge(r.id)}</div>`:''}
+    ${adminMaterialBadge(r)}
     <div class="mc-title">${state.role==='admin'?adminTaskLink(r):esc(r.title)}</div>
     <div class="mc-rows">
       ${drow(t('mAssign'),esc(r.assignedTo||'—'))}
@@ -4568,9 +4568,9 @@ function viewManage(){
     ${att(r)}
     <div class="mc-acts">${mrProcBtn(r.id)}<button class="btn sm sec" onclick="openEdit(${r.id})">✎ ${t('edit')}</button><button class="btn sm green" onclick="askClose(${r.id})">✓ ${t('closeTask')}</button></div>
   </div>`;};
-  const pendCard=(r)=>`<div class="mcard pendrow">
+  const pendCard=(r)=>`<div class="mcard pendrow" data-flow-id="${r.id}">
     <div class="mc-top"><span class="mc-id">${fmtID(r.id)}</span><span class="pend-badge">⏳ ${t('pendBadge')}</span></div>
-    ${mrCardBadge(r.id)?`<div class="mc-mrbadge">${mrCardBadge(r.id)}</div>`:''}
+    ${adminMaterialBadge(r)}
     <div class="mc-title">${state.role==='admin'?adminTaskLink(r):esc(r.title)}</div>
     <div class="mc-rows">
       ${drow(t('mAssign'),esc(r.assignedTo||'—'))}
@@ -4594,7 +4594,7 @@ function viewManage(){
     const phead=`<div class="phead phead-row"><div><div class="eyebrow">${t('opsEye')}</div><h1>${t('viewPeriod')}</h1></div><button class="btn sec btn-back" onclick="manageView='cards';render()">← ${t('backBoard')}</button></div>`;
     return phead+viewPeriodTasks();
   }
-  const head=`<div class="phead phead-row"><div><div class="eyebrow">${t('opsEye')}</div><h1>${t('manageH1')}</h1></div>${periodBtn}</div>`+needsAttention();
+  const head='';
   const doneCard=(r)=>{let co=[];try{co=JSON.parse(r.closeoutImages||'[]');}catch(e){}return `<div class="mcard donecard">
     <div class="mc-top"><span class="mc-id">${fmtID(r.id)}</span>${stBadge('Complete')}</div>
     <div class="mc-title">${state.role==='admin'?adminTaskLink(r):esc(r.title)}</div>
@@ -4606,22 +4606,22 @@ function viewManage(){
     ${co.length?`<div class="co-shots"><div class="co-shots-lab">📸 ${t('closeoutPhoto')}</div><div class="co-shots-grid">${co.map((u,i)=>`<img src="${esc(u)}" onclick="openCloseoutGallery(${r.id},${i})"/>`).join('')}</div></div>`:''}${coFilesHtml(r)}${coNoteHtml(r)}
     <div class="mc-acts"><button class="btn sm" onclick="reopenTask(${r.id})">↺ ${t('reopen')}</button></div>
   </div>`;};
-  const doneSection=recentDone.length?`<div class="done-section"><div class="section-head" style="margin-top:26px"><span class="sec-dot done-dot"></span> ${t('recentDone')} <span class="count-chip" style="margin-inline-start:8px">${recentDone.length}</span> <span class="done-hint">${t('recentDoneHint')}</span></div><div class="done-grid">${recentDone.map(doneCard).join('')}</div></div>`:'';
+  const doneSection=recentDone.length?`<details class="done-section flow-done"><summary>${t('recentDone')} · ${recentDone.length} — ${t('recentDoneHint')}</summary><div><div class="section-head" style="margin-top:26px"><span class="sec-dot done-dot"></span> ${t('recentDone')} <span class="count-chip" style="margin-inline-start:8px">${recentDone.length}</span> <span class="done-hint">${t('recentDoneHint')}</span></div><div class="done-grid">${recentDone.map(doneCard).join('')}</div></div></details>`:'';
   return head+`
   <div class="manage-cols">
-    <div class="mcol">
+    <div class="mcol" data-flow-column="0">
       <div class="mcol-head"><span class="sec-dot inbox"></span> ${t('secIncoming')} <span class="count-chip">${pending.length}</span></div>
       <div class="mcol-body">${col1}</div>
     </div>
-    <div class="mcol">
+    <div class="mcol" data-flow-column="1">
       <div class="mcol-head"><span class="sec-dot work"></span> ${t('secAssigned')} <span class="count-chip">${assigned.length}</span></div>
       <div class="mcol-body">${col2}</div>
     </div>
-    <div class="mcol">
-      <div class="mcol-head"><span class="sec-dot periodic"></span> ${t('secPeriodic')} <span class="count-chip">${periodic.length}</span></div>
+    <div class="mcol" data-flow-column="2">
+      <div class="mcol-head"><span class="sec-dot periodic"></span> ${t('secPeriodic')} <button class="flow-templates" onclick="go('manage?section=period')">${L==='ar'?'القوالب':'Templates'}</button> <span class="count-chip">${periodic.length}</span></div>
       <div class="mcol-body">${colP}</div>
     </div>
-    <div class="mcol">
+    <div class="mcol" data-flow-column="3">
       <div class="mcol-head"><span class="sec-dot pend"></span> ${t('secPending')} <span class="count-chip">${pendConfirm.length}</span></div>
       <div class="mcol-body">${col3}</div>
     </div>
