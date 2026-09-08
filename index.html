@@ -1456,6 +1456,8 @@ html[dir=rtl] .tt-search input{padding:9px 34px 9px 12px}
 <script src="/advacon-ui.js"></script>
 <script src="/advacon-dialogs.js"></script>
 <script src="/advacon-experience.js"></script>
+<link rel="stylesheet" href="/advacon-admin.css">
+<script src="/advacon-admin.js"></script>
 </head>
 <body class="notranslate"><div id="gate"></div><div class="app" id="app" style="display:none"></div><div class="toast" id="toast"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -2459,7 +2461,7 @@ async function tryAdmin(){
   await repairManagerSnapshot();   // heal a pre-snapshot or stale manager record
   document.getElementById('gate').innerHTML='';document.getElementById('app').style.display='flex';applyDir();render();startRealtime();
 }
-async function enterAdminDirect(){state.role='admin';const h=(location.hash||'').replace('#','');const valid=['reports','assets','manage','archive','techtasks','staffdir','media','settings','all'];state.route=valid.includes(h)?h:'manage';if(!L)L='en';document.getElementById('gate').innerHTML='';document.getElementById('app').style.display='flex';applyDir();render();startRealtime();}
+async function enterAdminDirect(){state.role='admin';const h=(location.hash||'').replace('#','');const valid=['dashboard','reports','assets','manage','archive','techtasks','staffdir','media','settings','all'];state.route=valid.includes(h)?h:'dashboard';if(!L)L='en';document.getElementById('gate').innerHTML='';document.getElementById('app').style.display='flex';applyDir();render();startRealtime();}
 function enterPublic(role){state.role=role;if(role==='staff')L='ar';else if(!L)L='ar';document.getElementById('gate').innerHTML='';document.getElementById('app').style.display='block';applyDir();
   // A1: if a valid staff session exists, restore it and load tasks from the server
   if(role==='staff'){const sess=stfGetSession();if(sess&&sess.en){staffName=sess.en;render();loadStaffTasks();startPublicPolling();return;}}
@@ -2559,7 +2561,7 @@ function render(){
     return;
   }
   // admin: sidebar shell
-  const navk=["reports","manage","archive","techtasks","staffdir","assets","media","settings","all"];
+  const navk=["dashboard","manage","techtasks","staffdir","assets","reports","all","media","archive","settings"];
   const rows=state.requests.map(calc);
   const pendingCount=rows.filter(isIncoming).length;
   let nav=navk.map(k=>{
@@ -2583,7 +2585,8 @@ function render(){
       <main class="content"><div class="wrap" id="view"></div></main>
     </div>`;
   const v=document.getElementById('view');
-  if(state.route==='assets')v.innerHTML=viewAssets();
+  if(state.route==='dashboard')v.innerHTML=adminHome();
+  else if(state.route==='assets')v.innerHTML=viewAssets();
   else if(state.route==='manage')v.innerHTML=viewManage();
   else if(state.route==='all')v.innerHTML=viewAll();
   else if(state.route==='techtasks')v.innerHTML=viewTechTasks();
@@ -6352,3 +6355,4 @@ function renderAsset(){const gate=document.getElementById('gate'),app=document.g
 })();
 
 </script></body></html>
+
