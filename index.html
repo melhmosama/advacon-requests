@@ -1879,7 +1879,7 @@ async function sbFetchStaff(){
   if(res&&res.ok===true&&res.staff)return res.staff;
   return null;
 }
-async function sbFetchSettings(){try{const res=await fetch(SB_URL+'/rest/v1/app_settings?id=eq.main&select=*',{headers:SB_HEAD});if(!res.ok)throw 0;const a=await res.json();return a.length?a[0]:null;}catch(e){return null;}}
+async function sbFetchSettings(){try{const res=await fetch(SB_URL+'/rest/v1/app_settings?id=eq.main&select=*',{headers:SB_HEAD});if(!res.ok)throw 0;const a=await res.json();if(!a.length)return null;const pr=await fetch(SB_URL+'/rest/v1/rpc/advacon_project_options',{method:'POST',headers:{...SB_HEAD,'Content-Type':'application/json'},body:'{}'}).catch(()=>null);if(pr?.ok){const data=await pr.json();a[0].projectOptions=data.projects||[];}return a[0];}catch(e){return null;}}
 // The storage bucket. This declaration used to sit between sbSaveSettings and
 // sbUploadImage; removing the dead sbSaveSettings took it with it, which broke
 // every upload with an opaque 'connection failed' toast.
@@ -2271,7 +2271,7 @@ async function load(role){
   if(st!==null)state.staff=st;
   if(rec!==null)state.recurring=rec;
   if(cfg){
-    if(cfg.lists)state.lists=cfg.lists;
+    if(cfg.lists)state.lists=cfg.lists;if(cfg.projectOptions)state.projectOptions=cfg.projectOptions;
     if(cfg.widgets)state.widgets=Object.assign(JSON.parse(JSON.stringify(DEFAULT_WIDGETS)),cfg.widgets);
   }
   try{const r=await LS.get('advacon_lang');if(r&&r.value)L=r.value;}catch(e){}
@@ -2522,7 +2522,8 @@ function startRealtime(){
   // also attempt websocket realtime for near-instant updates
   try{if(_rt)return;const ws=SB_URL.replace('https://','wss://')+'/realtime/v1/websocket?apikey='+encodeURIComponent(SB_KEY)+'&vsn=1.0.0';_rt=new WebSocket(ws);_rt.onopen=()=>{_rt.send(JSON.stringify({topic:'realtime:public:requests',event:'phx_join',payload:{config:{postgres_changes:[{event:'*',schema:'public',table:'requests'}]}},ref:String(_rtRef++)}));_rtHb=setInterval(()=>{if(_rt&&_rt.readyState===1)_rt.send(JSON.stringify({topic:'phoenix',event:'heartbeat',payload:{},ref:String(_rtRef++)}));},25000);};_rt.onmessage=(m)=>{try{const d=JSON.parse(m.data);if(d.event==='postgres_changes'||(d.payload&&d.payload.data))scheduleAdminRefresh();}catch(e){}};_rt.onclose=()=>{_rt=null;if(_rtHb){clearInterval(_rtHb);_rtHb=null;}setTimeout(()=>{if(state.role==='admin')startRealtime();},3000);};_rt.onerror=()=>{try{_rt.close();}catch(e){}};}catch(e){}}
 
-function opts(arr,sel){return [`<option value="">${t('select')}</option>`].concat((arr||[]).map(x=>{const v=biVal(x),d=biDisp(x);return `<option value="${esc(v)}" ${v===sel?'selected':''}>${esc(d)}</option>`;})).join('');}
+function allProjectCodes(){return state.projectOptions?.length?state.projectOptions.map(p=>p.code):(state.lists.projects||[]);}
+function opts(arr,sel){return [`<option value="">${t('select')}</option>`].concat((arr||[]).map(x=>{const v=biVal(x),project=arr===state.lists.projects?(state.projectOptions||[]).find(p=>p.code===v):null,d=project?.name?v+' — '+project.name:biDisp(x);return `<option value="${esc(v)}" ${v===sel?'selected':''}>${esc(d)}</option>`;})).join('');}
 
 
 /* ===== RENDER SHELL ===== */
@@ -2591,8 +2592,8 @@ function render(){
   else if(state.route==='assets')v.innerHTML=viewAssets();
   else if(state.route==='manage')v.innerHTML=adminWorkView();
   else if(state.route==='all')v.innerHTML=adminRegistryView();
-  else if(state.route==='techtasks')v.innerHTML=adminTeamTabs()+adminTeamView();
-  else if(state.route==='staffdir'){v.innerHTML='<div id="org-directory"></div><details class="ad-surface"><summary>'+(L==='ar'?'حسابات الفنيين الحالية وإعداد مدير القسم':'Existing technician accounts & department manager')+'</summary>'+viewStaffDir()+'</details>';AdvaconOrganization.mount(v.querySelector('#org-directory'));}
+  else if(state.route==='techtasks')v.innerHTML=adminTeamTabs()+adminTeamView()+'<details class="ad-surface"><summary>'+(L==='ar'?'حسابات الفنيين ومدير القسم':'Technician accounts & department manager')+'</summary>'+viewStaffDir()+'</details>';
+  else if(state.route==='staffdir'){v.innerHTML='<div id="org-directory"></div>';AdvaconOrganization.mount(v.querySelector('#org-directory'));}
   else if(state.route==='open')v.innerHTML=viewOpen();
   else if(state.route==='archive'){adminResolveRoute('archive');v.innerHTML=adminRegistryView();}
   else if(state.route==='reports')v.innerHTML=adminReportsView();
@@ -2846,7 +2847,7 @@ function viewMedia(){
           <option value="">${t('weAllT')}</option>${opt(techs,weF.tech)}</select></div>
       <div class="we-fld"><label for="we_proj">${t('weProj')}</label>
         <select class="we-sel" id="we_proj" onchange="weeSet('proj',this.value)">
-          <option value="">${t('weAllP')}</option>${opt(state.lists.projects||[],weF.proj)}</select></div>
+          <option value="">${t('weAllP')}</option>${opt(allProjectCodes(),weF.proj)}</select></div>
       <div class="we-fld"><label for="we_stat">${t('weStat')}</label>
         <select class="we-sel" id="we_stat" onchange="weeSet('stat',this.value)">
           <option value="">${t('weAllS')}</option>${opt(sts,weF.stat)}</select></div>
@@ -3899,7 +3900,7 @@ function byNumberDesc(rows){return rows.sort((a,b)=>b.id-a.id);}
 let _soft=null;function rerenderSoft(){clearTimeout(_soft);_soft=setTimeout(()=>render(),300);}
 function filtBar(exportScope){return `<div class="filterbar">
   <select onchange="F().status=this.value;render()"><option value="">${t('allStatuses')}</option>${state.lists.statuses.map(s=>`<option ${F().status===s?'selected':''}>${esc(s)}</option>`).join('')}</select>
-  <select onchange="F().project=this.value;render()"><option value="">${t('allProjects')}</option>${state.lists.projects.map(s=>`<option ${F().project===s?'selected':''}>${esc(s)}</option>`).join('')}</select>
+  <select onchange="F().project=this.value;render()"><option value="">${t('allProjects')}</option>${allProjectCodes().map(s=>`<option ${F().project===s?'selected':''}>${esc(s)}</option>`).join('')}</select>
   <select onchange="F().assignee=this.value;render()"><option value="">${t('allEmployees')}</option>${filterStaffNames().map(s=>`<option value="${esc(s)}" ${F().assignee===s?'selected':''}>${esc(staffDisp(s))}</option>`).join('')}</select>
   <input placeholder="${t('search')}" value="${esc(F().q)}" oninput="F().q=this.value;rerenderSoft()"/>
   <div class="spacer"></div>
@@ -4374,7 +4375,7 @@ function openPeriodForm(id,presetCat){
   clearDirty();modal={type:'period'};renderModal();
 }
 function periodFormHTML(){
-  const f=periodForm;const projs=state.lists.projects||[];const cats=state.lists.categories||[];const pris=state.lists.priorities||[];
+  const f=periodForm;const projs=allProjectCodes();const cats=state.lists.categories||[];const pris=state.lists.priorities||[];
   // §12: no per-page filtering — activeStaffNames() is the single source. An
   // already-assigned inactive name is kept so editing an old template cannot
   // silently blank its technician.
@@ -5470,7 +5471,7 @@ function viewSettings(){
   const wt=ALL_WIDGETS.map(([k,en,ar])=>{const on=state.widgets[k];return `<div class="wtoggle"><span>${esc(L==='ar'?ar:en)}</span><button class="switch ${on?'on':''}" onclick="toggleWidget('${k}')"><span class="knob"></span></button></div>`;}).join('');
   return `<div class="phead"><div class="eyebrow">${t('setEye')}</div><h1>${t('setH1')}</h1><p>${t('setP')}</p></div>
   <div class="panel panel-pad" style="margin-bottom:20px"><h3 style="font-size:14px;color:var(--navy);margin-bottom:4px">${t('chartsCfg')}</h3><p class="hint" style="margin-bottom:14px">${L==='ar'?'تتحكم هذه الخيارات برسوم قسم الإحصائيات في التقارير. لا تغيّر لوحة اليوم أو الصفحة الرئيسية.':'These switches control Statistics charts in Reports. Today’s live dashboard and Home are unaffected.'}</p><div class="wtoggle-grid">${wt}</div></div>
-  <div class="settings-grid">${card(t('sProjects'),'projects')}${biCard(t('sCats'),'categories')}${biCard(t('sPris'),'priorities')}</div>`;
+  <div class="settings-grid">${biCard(t('sCats'),'categories')}${biCard(t('sPris'),'priorities')}</div>`;
 }
 /* ===== STAFF DIRECTORY (own page) ===== */
 /* Global task-card renderer — identical to the "Assigned to staff" column card,
@@ -6356,4 +6357,5 @@ function renderAsset(){const gate=document.getElementById('gate'),app=document.g
 })();
 
 </script></body></html>
+
 
