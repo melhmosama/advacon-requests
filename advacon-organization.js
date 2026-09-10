@@ -70,7 +70,7 @@ function inlineProfileDialog({title,body,footer}){
  const snapshot=body.tagName==='FORM'?JSON.stringify([...new FormData(body)]):null;const changed=()=>{profileDirty=JSON.stringify([...new FormData(body)])!==snapshot;};if(snapshot!==null){body.addEventListener('input',changed);body.addEventListener('change',changed);}
  return {modal:panel,close(){profileDirty=false;},dismiss(){leaveProfile(()=>profile(people.find(e=>e.id===activeProfile.id),activeProfile.tab));},setBusy(b){profileBusy=b;footer.querySelectorAll('button').forEach(x=>x.disabled=b);host.querySelectorAll('.org-profile-nav button,.org-back').forEach(x=>x.disabled=b);}};
 }
-function profile(e,tab='details'){
+function profile(e,tab='details',assetService=false){
  if(!e)return;activeProfile={id:e.id,tab};const legacy=host.parentElement.querySelector('details.ad-surface');if(legacy)legacy.hidden=true;profileDirty=false;profileBusy=false;++loadVersion;
  host.innerHTML='<div class="org-profile"><div class="org-profile-heading"></div><nav class="org-profile-nav" aria-label="'+tr('أقسام ملف الموظف','Employee profile sections')+'"></nav><section class="org-profile-content"></section></div>';
  const heading=host.querySelector('.org-profile-heading');heading.append(button(tr('← ADVACON موظفين','← ADVACON Employees'),()=>leaveProfile(()=>{activeProfile=null;reload();}),'btn sec org-back'));
@@ -91,7 +91,7 @@ function profile(e,tab='details'){
   if(!current.length)panel.insertAdjacentHTML('beforeend','<p>'+tr('لا يوجد مشروع حالي مسجل.','No current project recorded.')+'</p>');current.forEach(a=>projectRow(a,panel));
   panel.append(button(tr('إضافة مشروع','Assign project'),()=>form(tr('تكليف مشروع','Project assignment'),[{key:'project_ref',label:tr('المشروع المعرّف','Registered project'),required:true,options:projectChoices()},{key:'role_label',label:tr('الدور بالمشروع','Project role'),default:e.position,options:catalogOptions('position',e.position)},{key:'manager_id',label:tr('المدير المباشر','Direct manager'),options:people.filter(p=>p.id!==e.id).sort(hierarchyCompare).map(p=>({value:p.id,label:employeeName(p)}))},{key:'starts_on',label:tr('من تاريخ','From'),type:'date',required:true,default:day()},{key:'ends_on',label:tr('إلى تاريخ اختياري','To (optional)'),type:'date'}],{},'project.assign',{employee_id:e.id}),'btn'));
   if(other.length){const d=document.createElement('details');d.className='org-secondary';d.innerHTML='<summary>'+tr('التكليفات السابقة والمستقبلية','Past & future assignments')+'</summary>';other.forEach(a=>projectRow(a,d));panel.append(d);}
- }else if(tab==='assets')renderProfileAssets(e,panel);
+ }else if(tab==='assets'){if(!assetService)renderProfileAssets(e,panel);}
  else if(tab==='housing')renderProfileHousing(e,panel);
  else if(tab==='requests')renderEmployeeRequests(e,panel);
  else employeeHistory(e);
@@ -238,8 +238,8 @@ if(type==='profile'&&sections.includes('details')){const e=selected[0];content+=
 }
 
 async function beginAssetService(e,service){
- profile(e,'assets');try{const data=await api('advacon_fleet_list');if(activeProfile?.id!==e.id||activeProfile.tab!=='assets'||!independentReady(data))return;if(service==='asset_add'){addProfileAsset(e,data);return;}
- const mode=service.startsWith('vehicle_')?'vehicle':'card',owned=assetList(data,mode).filter(x=>assetHolder(data,mode,x.id)?.employee_id===e.id),panel=host.querySelector('.org-profile-content');panel.innerHTML='<div class="org-service-picker"><h2>'+esc(assetServices().find(([k])=>k===service)?.[1]||'')+'</h2></div>';const body=panel.firstElementChild;
+ profile(e,'assets',true);const panel=host.querySelector('.org-profile-content');panel.textContent=tr('جارٍ التحميل…','Loading…');try{const data=await api('advacon_fleet_list');if(!panel.isConnected||activeProfile?.id!==e.id||activeProfile.tab!=='assets'||!independentReady(data))return;if(service==='asset_add'){addProfileAsset(e,data);return;}
+ const mode=service.startsWith('vehicle_')?'vehicle':'card',owned=assetList(data,mode).filter(x=>assetHolder(data,mode,x.id)?.employee_id===e.id);panel.innerHTML='<div class="org-service-picker"><h2>'+esc(assetServices().find(([k])=>k===service)?.[1]||'')+'</h2></div>';const body=panel.firstElementChild;
  if(!owned.length){body.insertAdjacentHTML('beforeend','<p>'+tr('لا توجد عهدة مناسبة مسندة لهذا الموظف.','No assigned asset for this action.')+'</p>');return;}
  const fields=document.createElement('div');fields.className='org-form';body.append(fields);const select=labeledSelect(fields,tr('العهدة الحالية','Current asset'),'asset',owned.map(x=>({value:x.id,label:assetLabel(mode,x)})));if(owned.length===1)select.value=owned[0].id;
  body.append(button(tr('متابعة','Continue'),()=>{const item=owned.find(x=>x.id===select.value);if(!item)return;if(service==='balance')form(tr('تحديث رصيد البطاقة','Update card balance'),[{key:'amount',label:tr('الرصيد SAR','Balance SAR'),type:'number',required:true,min:0,step:'.01'},{key:'observed_at',label:tr('تاريخ القياس إن عُرف','Observation time, if known'),type:'datetime-local'},{key:'notes',label:tr('ملاحظة','Note')}],{},'fuel.balance',{id:item.id,source:'Employee actions'});else assetOperation(e,data,mode,item,service.split('_')[1]);},'btn'));

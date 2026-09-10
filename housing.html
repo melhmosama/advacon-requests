@@ -417,16 +417,16 @@ function assetSetSession(s){ try{localStorage.setItem(CFG.assetSessionKey,JSON.s
 function assetClearSession(){ try{localStorage.removeItem(CFG.assetSessionKey);}catch(e){} CTX.role=null; CTX.permissions={}; }
 async function assetRefresh(refreshToken){
   try{
-    const r=await fetch(SB_URL+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{'apikey':SB_KEY,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:refreshToken})});
+    const r=await AdvaconUI.sessionFetch(SB_URL+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{'apikey':SB_KEY,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:refreshToken})});
     const j=await r.json(); if(!r.ok||!j.access_token)return null;
     return {access_token:j.access_token,refresh_token:j.refresh_token||refreshToken,expires_at:j.expires_at||null,user_id:(j.user&&j.user.id)||null};
-  }catch(e){return null;}
+  }catch(e){throw e;}
 }
 async function tokenRpc(accessToken, fn, args={}){
-  const r=await fetch(SB_URL+'/rest/v1/rpc/'+fn,{method:'POST',headers:{'apikey':SB_KEY,'Authorization':'Bearer '+accessToken,'Content-Type':'application/json'},body:JSON.stringify(args||{})});
+  const r=await AdvaconUI.sessionFetch(SB_URL+'/rest/v1/rpc/'+fn,{method:'POST',headers:{'apikey':SB_KEY,'Authorization':'Bearer '+accessToken,'Content-Type':'application/json'},body:JSON.stringify(args||{})});
   if(!r.ok)return {ok:false,http:r.status}; return {ok:true,data:await r.json()};
 }
-async function assetEnsureSession(){
+async function assetEnsureSession(){try{
   let sess=assetGetSession(); if(!sess||!sess.access_token||!sess.refresh_token){assetClearSession();return false;}
   const nowSec=Math.floor(Date.now()/1000), exp=Number(sess.expires_at||0);
   if(!exp||exp<=nowSec+60){ const fresh=await assetRefresh(sess.refresh_token); if(!fresh){assetClearSession();return false;} assetSetSession(fresh); sess=fresh; }
@@ -437,7 +437,7 @@ async function assetEnsureSession(){
   if(!Object.values(perms).some(v=>v&&v!=='deny')){assetClearSession();return false;}
   CTX.role=roleR.data; CTX.permissions=perms;
   await syncSbAuth(sess); return true;
-}
+}catch(error){AdvaconUI.sessionUnavailable(error);return false;}}
 async function assetSignOut(){
   const sess=assetGetSession();
   if(sess&&sess.access_token){try{await fetch(SB_URL+'/auth/v1/logout?scope=local',{method:'POST',headers:{'apikey':SB_KEY,'Authorization':'Bearer '+sess.access_token,'Content-Type':'application/json'},body:'{}'});}catch(e){}}
@@ -468,7 +468,7 @@ function admClearSession() { try { localStorage.removeItem(CFG.adminSessionKey);
 
 async function admRefresh(refreshToken) {
   try {
-    const r = await fetch(SB_URL + '/auth/v1/token?grant_type=refresh_token', {
+    const r = await AdvaconUI.sessionFetch(SB_URL + '/auth/v1/token?grant_type=refresh_token', {
       method: 'POST', headers: {'apikey': SB_KEY, 'Content-Type': 'application/json'},
       body: JSON.stringify({refresh_token: refreshToken})
     });
@@ -476,22 +476,22 @@ async function admRefresh(refreshToken) {
     if (!r.ok || !j.access_token) return null;
     return { access_token: j.access_token, refresh_token: j.refresh_token || refreshToken,
       expires_at: j.expires_at || null, user_id: (j.user && j.user.id) || null };
-  } catch(e) { return null; }
+  } catch(e){throw e;}
 }
 
 async function admVerifyIsAdmin(accessToken) {
   try {
-    const r = await fetch(SB_URL + '/rest/v1/rpc/is_admin', {
+    const r = await AdvaconUI.sessionFetch(SB_URL + '/rest/v1/rpc/is_admin', {
       method: 'POST',
       headers: {'apikey': SB_KEY, 'Authorization': 'Bearer ' + accessToken, 'Content-Type': 'application/json'},
       body: '{}'
     });
     if (!r.ok) return false;
     return (await r.json()) === true;
-  } catch(e) { return false; }
+  } catch(e){throw e;}
 }
 
-async function admEnsureSession() {
+async function admEnsureSession() {try{
   let sess = admGetSession();
   if (!sess || !sess.access_token || !sess.refresh_token) { admClearSession(); return false; }
   const nowSec = Math.floor(Date.now() / 1000);
@@ -516,7 +516,7 @@ async function admEnsureSession() {
   // Sync the sb.auth session so sb.storage.* calls carry the JWT (RLS needs it)
   await syncSbAuth(sess);
   return true;
-}
+}catch(error){AdvaconUI.sessionUnavailable(error);return false;}}
 
 /* Mirror the localStorage-managed session into the Supabase JS client so that
    sb.storage.* / sb.auth.getUser() etc. carry the admin JWT. Without this,

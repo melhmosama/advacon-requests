@@ -1356,25 +1356,25 @@ function admSetSession(s){ try{ localStorage.setItem(CFG.adminSessionKey, JSON.s
 function admClearSession(){ try{ localStorage.removeItem(CFG.adminSessionKey); }catch(_){} }
 async function admRefresh(refreshToken){
   try{
-    const r = await fetch(SB_URL+'/auth/v1/token?grant_type=refresh_token',{
+    const r = await AdvaconUI.sessionFetch(SB_URL+'/auth/v1/token?grant_type=refresh_token',{
       method:'POST', headers:{'apikey':SB_KEY,'Content-Type':'application/json'},
       body: JSON.stringify({refresh_token: refreshToken})});
     const j = await r.json();
     if(!r.ok || !j.access_token) return null;
     return { access_token:j.access_token, refresh_token:j.refresh_token||refreshToken,
              expires_at:j.expires_at||null, user_id:(j.user&&j.user.id)||null };
-  }catch(_){ return null; }
+  }catch(_){throw _;}
 }
 async function admVerifyIsAdmin(accessToken){
   try{
-    const r = await fetch(SB_URL+'/rest/v1/rpc/is_admin',{
+    const r = await AdvaconUI.sessionFetch(SB_URL+'/rest/v1/rpc/is_admin',{
       method:'POST', headers:{'apikey':SB_KEY,'Authorization':'Bearer '+accessToken,'Content-Type':'application/json'},
       body:'{}'});
     if(!r.ok) return false;
     return (await r.json()) === true;
-  }catch(_){ return false; }
+  }catch(_){throw _;}
 }
-async function admEnsureSession(){
+async function admEnsureSession(){try{
   let s = admGetSession();
   if(!s || !s.access_token || !s.refresh_token){ admClearSession(); return false; }
   const nowSec = Math.floor(Date.now()/1000);
@@ -1392,7 +1392,7 @@ async function admEnsureSession(){
   }
   await syncSbAuth(s);
   return true;
-}
+}catch(error){AdvaconUI.sessionUnavailable(error);return false;}}
 async function admSignOut(){
   const s = admGetSession();
   if(s && s.access_token){
@@ -1409,25 +1409,25 @@ function assetSetSession(s){ try{ localStorage.setItem(CFG.assetSessionKey, JSON
 function assetClearSession(){ try{ localStorage.removeItem(CFG.assetSessionKey); }catch(_){} }
 async function assetRefresh(refreshToken){
   try{
-    const r = await fetch(SB_URL+'/auth/v1/token?grant_type=refresh_token',{
+    const r = await AdvaconUI.sessionFetch(SB_URL+'/auth/v1/token?grant_type=refresh_token',{
       method:'POST', headers:{'apikey':SB_KEY,'Content-Type':'application/json'},
       body: JSON.stringify({refresh_token: refreshToken})});
     const j = await r.json();
     if(!r.ok || !j.access_token) return null;
     return { access_token:j.access_token, refresh_token:j.refresh_token||refreshToken,
              expires_at:j.expires_at||null, user_id:(j.user&&j.user.id)||null };
-  }catch(_){ return null; }
+  }catch(_){throw _;}
 }
 async function assetFetchRole(accessToken){
   try{
-    const r = await fetch(SB_URL+'/rest/v1/rpc/get_my_role',{
+    const r = await AdvaconUI.sessionFetch(SB_URL+'/rest/v1/rpc/get_my_role',{
       method:'POST', headers:{'apikey':SB_KEY,'Authorization':'Bearer '+accessToken,'Content-Type':'application/json'},
       body:'{}'});
     if(!r.ok) return null;
     return await r.json(); // string like 'storekeeper' or null
-  }catch(_){ return null; }
+  }catch(_){throw _;}
 }
-async function assetEnsureSession(){
+async function assetEnsureSession(){try{
   let s = assetGetSession();
   if(!s || !s.access_token || !s.refresh_token){ assetClearSession(); return false; }
   const nowSec = Math.floor(Date.now()/1000);
@@ -1452,7 +1452,7 @@ async function assetEnsureSession(){
   s.role = role; assetSetSession(s);
   await syncSbAuth(s);
   return true;
-}
+}catch(error){AdvaconUI.sessionUnavailable(error);return false;}}
 async function assetSignOut(){
   const s = assetGetSession();
   if(s && s.access_token){

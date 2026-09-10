@@ -36,7 +36,23 @@
   if(kind!=='error')setTimeout(()=>notice.remove(),kind==='success'?5000:8000);
   while(mount.children.length>4)mount.firstElementChild.remove();
  }
+ async function sessionFetch(...args){
+  const response=await fetch(...args);
+  if(response.status>=500||[404,408,429].includes(response.status)){const error=new Error('session_service_unavailable');error.status=response.status;throw error;}
+  return response;
+ }
+ function sessionUnavailable(error){
+  console.warn('Session verification unavailable',{status:error?.status||null});
+  toast(text('تعذر التحقق من الاتصال الآن. جلستك محفوظة؛ أعد المحاولة عند عودة الاتصال.','Session verification is temporarily unavailable. Your session is retained; retry when connected.'));
+ }
  const dialogs=[];
+ const modalBackground=new Map();let modalOverflow='';
+ function syncModalBackground(){
+  if(!dialogs.length){for(const [el,value] of modalBackground)if(el.isConnected)el.inert=value;modalBackground.clear();document.body.style.overflow=modalOverflow;return;}
+  const top=dialogs.at(-1).parentElement;
+  for(const el of document.body.children){if(el.id==='advacon-notices')continue;if(!modalBackground.has(el))modalBackground.set(el,el.inert);el.inert=el!==top;}
+  document.body.style.overflow='hidden';
+ }
  function modal({title='',body,footer,wide=false,narrow=false,onClose,onDismiss,trackChanges=true,initialDirty=false,initialFocus=true}={}){
   const opener=document.activeElement,backdrop=document.createElement('div'),box=document.createElement('section');
   backdrop.className='au-modal-backdrop';box.className='au-modal'+(wide?' wide':'')+(narrow?' narrow':'');
@@ -50,10 +66,9 @@
   if(typeof footer==='string')footerEl.innerHTML=footer;else if(footer)footerEl.appendChild(footer);
   box.append(head,bodyEl);if(footer!==false&&footer!==null)box.appendChild(footerEl);backdrop.appendChild(box);
   let closed=false,dirty=initialDirty,asking=false,locked=false;
-  const inertState=[...document.body.children].filter(el=>el!==document.getElementById('advacon-notices')).map(el=>[el,el.inert]);
-  inertState.forEach(([el])=>el.inert=true);document.body.appendChild(backdrop);dialogs.push(box);
-  const previousOverflow=document.body.style.overflow;document.body.style.overflow='hidden';
-  const close=()=>{if(closed)return;closed=true;dialogs.splice(dialogs.indexOf(box),1);backdrop.remove();document.removeEventListener('keydown',key,true);inertState.forEach(([el,value])=>{if(el.isConnected)el.inert=value;});document.body.style.overflow=previousOverflow;if(opener?.isConnected)opener.focus();onClose?.();};
+  if(!dialogs.length)modalOverflow=document.body.style.overflow;
+  document.body.appendChild(backdrop);dialogs.push(box);syncModalBackground();
+  const close=()=>{if(closed)return;closed=true;dialogs.splice(dialogs.indexOf(box),1);backdrop.remove();document.removeEventListener('keydown',key,true);syncModalBackground();if(opener?.isConnected&&!opener.closest('[inert]'))opener.focus();else dialogs.at(-1)?.focus();onClose?.();};
   async function dismiss(){
    if(asking||locked)return;
    if(trackChanges&&dirty){asking=true;const leave=await confirm({title:text('تغييرات غير محفوظة','Unsaved changes'),message:text('هل تريد إغلاق النموذج وترك التغييرات؟','Close the form and discard your changes?'),danger:true,confirmLabel:text('ترك التغييرات','Discard changes')});asking=false;if(!leave)return;}
@@ -66,7 +81,7 @@
   }
   bodyEl.addEventListener('input',()=>dirty=true);bodyEl.addEventListener('change',()=>dirty=true);
   x.onclick=dismiss;backdrop.onclick=e=>{if(e.target===backdrop)dismiss();};document.addEventListener('keydown',key,true);
-  enhance(bodyEl);requestAnimationFrame(()=>{if(!closed&&initialFocus)(bodyEl.querySelector('[autofocus],input:not([type=hidden]):not([disabled]),select:not([disabled]),textarea:not([disabled])')||x).focus();});
+  enhance(bodyEl);requestAnimationFrame(()=>{if(!closed&&initialFocus&&dialogs.at(-1)===box)(bodyEl.querySelector('[autofocus],input:not([type=hidden]):not([disabled]),select:not([disabled]),textarea:not([disabled])')||x).focus();});
   const api={close,dismiss,modal:box,backdrop,body:bodyEl,bodyEl,footerEl,markClean:()=>dirty=false,isDirty:()=>dirty,setBusy:value=>{locked=!!value;x.disabled=locked;box.setAttribute('aria-busy',String(locked));}};
   box.advaconDialog=api;return api;
  }
@@ -121,7 +136,7 @@
  function restoreFocus(saved){if(!saved||saved.el.isConnected)return;const el=saved.id?document.getElementById(saved.id):[...document.querySelectorAll('input,textarea,select')].find(x=>saved.handler&&(x.getAttribute('oninput')===saved.handler||x.getAttribute('onchange')===saved.handler));if(el&&!el.disabled){el.focus({preventScroll:true});if(saved.start!=null)try{el.setSelectionRange(saved.start,saved.end);}catch(_){}}}
  function requestLabel(mode,direct){return mode==='approval'?text('إرسال للموافقة','Submit for approval'):direct;}
  function updatedAt(time){return text('آخر تحديث: ','Updated: ')+new Date(time).toLocaleTimeString(ar()?'ar-SA':'en-GB',{hour:'2-digit',minute:'2-digit'});}
- global.AdvaconUI={escape,text,singleFlight,humanError,toast,modal,confirm,busy,permissionMatrix,errorState,enhance,requestLabel,updatedAt,captureFocus,restoreFocus,currentDialog:()=>dialogs.at(-1)?.advaconDialog};
+ global.AdvaconUI={sessionFetch,sessionUnavailable,escape,text,singleFlight,humanError,toast,modal,confirm,busy,permissionMatrix,errorState,enhance,requestLabel,updatedAt,captureFocus,restoreFocus,currentDialog:()=>dialogs.at(-1)?.advaconDialog};
  document.addEventListener('DOMContentLoaded',()=>{
   enhance();
   const skip=document.createElement('a');skip.className='au-skip';skip.href=document.getElementById('content')?'#content':'#view';skip.textContent=text('انتقل إلى المحتوى','Skip to content');document.body.prepend(skip);
