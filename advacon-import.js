@@ -20,7 +20,7 @@ window.AdvaconReviewedImport=async function({api,people,reload,loadSheetJS,ar}){
   save.onclick=async()=>{if(save.disabled)return;const selected=[...body.querySelectorAll('tbody tr')].filter(el=>el.querySelector('[name="employee"]').checked);if(!selected.length)return;
    save.disabled=true;let completed=0;try{
     for(const el of selected){const r=rows[Number(el.dataset.row)],project=el.querySelector('[name="project"]').checked,assets=el.querySelector('[name="assets"]').checked,effective=body.elements.effective.value,observed=body.elements.observed.value;
-     if((project||(assets&&r.vehicle))&&!effective)throw Error(tr('أدخل وقت سريان العلاقات المؤكد.','Enter the confirmed relationship effective time.'));
+     if((project||(assets&&(r.vehicle||r.card)))&&!effective)throw Error(tr('أدخل وقت سريان العلاقات المؤكد.','Enter the confirmed relationship effective time.'));
      const payload={employee:{employee_no:'EMP-'+r.key.slice(0,8).toUpperCase(),name_ar:r.name_ar||r.name_en,name_en:r.name_en,iqama:r.iqama,phone:r.phone,nationality:r.nationality,position:r.position,grade:r.grade}};
      if(effective)payload.effective_at=new Date(effective).toISOString();
      if(project)payload.project_ref=r.project;
