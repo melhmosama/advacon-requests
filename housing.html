@@ -243,7 +243,7 @@
 <script src="/advacon-ui.js"></script>
 <script src="/advacon-dialogs.js"></script>
 <script src="/advacon-experience.js"></script>
-</head>
+<link rel="stylesheet" href="/advacon-organization.css"></head>
 <body>
 
 <div id="app">
@@ -1269,7 +1269,7 @@ async function screenPropertyDetail(el, id) {
     const res = await rpc('housing_get_property', { p_id: id });
     if (!res.ok || !res.property) { el.innerHTML = `<div class="error-box">Not found</div>`; return; }
     const p = res.property;
-    const tabs = ['summary','structure','contracts','meters','residents','expenses','attachments'];
+    const tabs = ['summary','structure','contracts','meters','residents','expenses','finance','attachments'];
     const activeTab = new URLSearchParams(location.hash.split('?')[1]||'').get('tab') || 'summary';
     el.innerHTML = `
       ${new URLSearchParams(location.hash.split('?')[1]||'').get('from')==='contracts'&&can('contracts.view')?'<a class="btn btn-ghost" href="#contracts">'+(LANG==='ar'?'العودة لقائمة العقود':'Back to contracts')+'</a>':''}
@@ -1290,7 +1290,7 @@ async function screenPropertyDetail(el, id) {
         <button class="btn btn-ghost" id="btnDeleteProp" ${housingActionAttrs('properties.delete')} style="color:var(--red); border-color:var(--red);">${t('delete')}</button>
       </div>
       <div class="tabs">
-        ${tabs.map(k => `<a class="tab ${k===activeTab?'active':''}" href="#properties/${id}?tab=${k}">${t('tab'+k.charAt(0).toUpperCase()+k.slice(1))}</a>`).join('')}
+        ${tabs.map(k => `<a class="tab ${k===activeTab?'active':''}" href="#properties/${id}?tab=${k}">${k==='finance'?(LANG==='ar'?'الاستحقاقات والدفع':'Dues & payments'):t('tab'+k.charAt(0).toUpperCase()+k.slice(1))}</a>`).join('')}
       </div>
       <div id="tabContent"><div class="loading">${t('loading')}</div></div>`;
     el.querySelector('#btnEditProp').addEventListener('click', () => openPropertyForm(p, load));
@@ -1381,6 +1381,7 @@ async function screenPropertyDetail(el, id) {
 async function renderPropertyTab(container, p, tab, refresh) {
   container.innerHTML = `<div class="loading">${t('loading')}</div>`;
   try {
+    if (tab === 'finance') return advaconPropertyFinance(container,p);
     if (tab === 'summary') return renderPropTabSummary(container, p);
     if (tab === 'structure') return renderPropTabStructure(container, p, refresh);
     if (tab === 'contracts') return renderPropTabContracts(container, p, refresh);
@@ -3847,6 +3848,6 @@ document.addEventListener('DOMContentLoaded',()=>{
  }
 });
 </script>
-</body>
+<script src="/advacon-organization.js"></script><script src="/advacon-housing-workspace.js"></script></body>
 </html>
 

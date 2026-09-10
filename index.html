@@ -1458,7 +1458,7 @@ html[dir=rtl] .tt-search input{padding:9px 34px 9px 12px}
 <script src="/advacon-experience.js"></script>
 <link rel="stylesheet" href="/advacon-admin.css">
 <script src="/advacon-admin.js"></script>
-</head>
+<link rel="stylesheet" href="/advacon-organization.css"><script src="/advacon-import.js"></script><script src="/advacon-organization.js"></script></head>
 <body class="notranslate"><div id="gate"></div><div class="app" id="app" style="display:none"></div><div class="toast" id="toast"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
@@ -2591,7 +2591,7 @@ function render(){
   else if(state.route==='manage')v.innerHTML=adminWorkView();
   else if(state.route==='all')v.innerHTML=adminRegistryView();
   else if(state.route==='techtasks')v.innerHTML=adminTeamTabs()+adminTeamView();
-  else if(state.route==='staffdir')v.innerHTML=adminTeamTabs()+viewStaffDir();
+  else if(state.route==='staffdir'){v.innerHTML=adminTeamTabs()+'<div id="org-directory"></div><details class="ad-surface"><summary>'+(L==='ar'?'حسابات الفنيين الحالية وإعداد مدير القسم':'Existing technician accounts & department manager')+'</summary>'+viewStaffDir()+'</details>';AdvaconOrganization.mount(v.querySelector('#org-directory'));}
   else if(state.route==='open')v.innerHTML=viewOpen();
   else if(state.route==='archive'){adminResolveRoute('archive');v.innerHTML=adminRegistryView();}
   else if(state.route==='reports')v.innerHTML=adminReportsView();
