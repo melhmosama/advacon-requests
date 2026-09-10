@@ -80,7 +80,7 @@ function profile(e,tab='details'){
  host.innerHTML='<div class="org-profile"><div class="org-profile-heading"></div><nav class="org-profile-nav" aria-label="'+tr('أقسام ملف الموظف','Employee profile sections')+'"></nav><section class="org-profile-content"></section></div>';
  const heading=host.querySelector('.org-profile-heading');heading.append(button(tr('← ADVACON موظفين','← ADVACON Employees'),()=>leaveProfile(()=>{activeProfile=null;reload();}),'btn sec org-back'));
  const title=document.createElement('div');title.innerHTML='<h1>'+esc(employeeName(e))+'</h1><p>'+esc(e.position||tr('المسمى غير مسجل','Position not recorded'))+' · '+tr('جريد','Grade')+' '+esc(e.grade||'—')+' · '+esc(e.employee_no)+'</p>';heading.append(title);
- const nav=host.querySelector('.org-profile-nav');for(const [key,label]of [['details',tr('البيانات','Details')],['projects',tr('المشاريع والمدير','Projects & manager')],['assets',tr('السيارة والوقود','Vehicle & fuel')],['housing',tr('السكن','Housing')],['history',tr('السجل','History')]]){const b=button(label,()=>leaveProfile(()=>profile(e,key)),key===tab?'btn':'btn sec');b.setAttribute('aria-current',key===tab?'page':'false');nav.append(b);}
+ const nav=host.querySelector('.org-profile-nav');for(const [key,label]of [['details',tr('البيانات','Details')],['projects',tr('المشاريع والمدير','Projects & manager')],['assets',tr('السيارة والوقود','Vehicle & fuel')],['housing',tr('السكن','Housing')],['requests',tr('الطلبات','Requests')],['history',tr('السجل','History')]]){const b=button(label,()=>leaveProfile(()=>profile(e,key)),key===tab?'btn':'btn sec');b.setAttribute('aria-current',key===tab?'page':'false');nav.append(b);}
  const panel=host.querySelector('.org-profile-content');
  if(tab==='details'){
   panel.innerHTML='<h2>'+tr('البيانات الشخصية والوظيفية','Personal & employment details')+'</h2><div class="org-person-details"></div>';
@@ -98,6 +98,7 @@ function profile(e,tab='details'){
   if(other.length){const d=document.createElement('details');d.className='org-secondary';d.innerHTML='<summary>'+tr('التكليفات السابقة والمستقبلية','Past & future assignments')+'</summary>';other.forEach(a=>projectRow(a,d));panel.append(d);}
  }else if(tab==='assets')renderProfileAssets(e,panel);
  else if(tab==='housing')renderProfileHousing(e,panel);
+ else if(tab==='requests')renderEmployeeRequests(e,panel);
  else employeeHistory(e);
 }
 async function renderProfileHousing(e,panel){
@@ -255,5 +256,12 @@ async function beginAssetService(e,service){
  }catch(err){error(err);}
 }
 
+async function renderEmployeeRequests(e,panel){
+ panel.innerHTML='<h2>'+tr('طلبات الموظف','Employee requests')+'</h2><p>'+tr('نفس الطلبات المسجلة بأرشيف الإدارة وأرقامها الأصلية.','The same requests and original task numbers as the administration register.')+'</p>';
+ const list=document.createElement('div');list.className='org-record-list';panel.append(list);let before=null;
+ const more=button(tr('تحميل الطلبات','Load requests'),async()=>{more.disabled=true;try{const r=await api('advacon_employee_requests',{p_employee_id:e.id,p_before_id:before});if(!panel.isConnected)return;for(const item of r.items){const row=document.createElement('article');row.className='org-record';row.innerHTML='<strong>TSK-'+esc(String(item.id).padStart(4,'0'))+'</strong><p>'+esc(item.title)+'</p><small>'+esc(item.project)+' · '+esc(item.status)+' · '+esc(item.received_at||item.received||'—')+'</small>';list.append(row);}if(!r.total)list.textContent=tr('لا توجد طلبات مرتبطة بعد.','No linked requests yet.');before=r.items.at(-1)?.id;more.hidden=r.items.length<50;more.textContent=tr('عرض المزيد','Show more');}catch(err){if(panel.isConnected){list.textContent=tr('تعذر عرض الطلبات. تحقق من صلاحية الإدارة وتثبيت التحديث.','Requests unavailable. Check administrator access and install the update.');}}finally{more.disabled=false;}},'btn sec');panel.append(more);more.click();
+}
+
 window.AdvaconOrganization={mount(el){activeProfile=null;profileDirty=false;hubSection='register';host=el;return reload();},reload,api};
 })();
+

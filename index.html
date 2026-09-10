@@ -1606,6 +1606,7 @@ async function admRpc(fn,args){
 // map admin RPC error codes → friendly messages
 function admOpError(res){
   const e=(res&&res.error)||'';
+  if(['identity_required','identity_expired','employee_not_registered','employee_phone_missing','ticket_already_used','request_details_required'].includes(e))return identityError(e);
   const ar=(L==='ar');
   const M={
     session: ar?'انتهت جلستك — سجّل الدخول من جديد':'Session expired — sign in again',
@@ -3793,14 +3794,22 @@ function viewChoose(){
     </div>
   </div>`;
 }
+
+let visitorIdentity={value:'',ticket:null,name_ar:'',name_en:'',phone:''},identitySequence=0,identityTimer=null;
+function identityError(code){const ar=L==='ar';return ({invalid_iqama:ar?'أدخل رقم إقامة من 10 أرقام.':'Enter a 10-digit identity number.',employee_not_registered:ar?'الإقامة غير معرّفة أو حساب الموظف غير نشط. راجع المسؤول.':'Identity is not registered or employee is inactive. Contact the administrator.',employee_phone_missing:ar?'رقم الجوال غير مسجّل في ملفك. راجع المسؤول لتحديثه.':'Your employee record has no mobile number. Contact the administrator.',lookup_rate_limited:ar?'محاولات كثيرة. انتظر دقيقة وأعد المحاولة.':'Too many attempts. Wait one minute and retry.',identity_expired:ar?'انتهت مدة التحقق. اضغط تحقق مجددًا.':'Identification expired. Select Verify again.',identity_required:ar?'أدخل الإقامة وتحقق من بياناتك أولًا.':'Enter your identity number first.',ticket_already_used:ar?'تم استخدام هذا التحقق لطلب سابق. تحقق مجددًا لطلب آخر.':'This identification was used for a previous request. Verify again.',request_details_required:ar?'أكمل تفاصيل الطلب.':'Complete the request details.'})[code]|| (ar?'تعذر التحقق. حاول مجددًا.':'Could not identify employee. Please retry.');}
+function paintIdentity(message=''){const name=document.getElementById('f_req'),phone=document.getElementById('f_phone'),msg=document.getElementById('identity_msg');if(name)name.value=visitorIdentity.ticket?(L==='ar'?visitorIdentity.name_ar:visitorIdentity.name_en||visitorIdentity.name_ar):'';if(phone)phone.value=visitorIdentity.ticket?visitorIdentity.phone||'':'';if(msg)msg.textContent=message;}
+function visitorIdentityChanged(input){clearTimeout(identityTimer);identitySequence++;visitorIdentity={value:input.value.replace(/[٠-٩۰-۹]/g,c=>String(c.charCodeAt(0)-(c<='٩'?1632:1776))).trim(),ticket:null,name_ar:'',name_en:'',phone:''};paintIdentity();if(/^\d{10}$/.test(visitorIdentity.value))identityTimer=setTimeout(identifyVisitor,400);}
+async function identifyVisitor(){clearTimeout(identityTimer);const seq=++identitySequence;visitorIdentity.ticket=null;paintIdentity(L==='ar'?'جارٍ جلب بيانات الموظف…':'Loading employee details…');if(!/^\d{10}$/.test(visitorIdentity.value)){paintIdentity(identityError('invalid_iqama'));return;}const r=await submitReqRpc('advacon_visitor_identify',{p_iqama:visitorIdentity.value});if(seq!==identitySequence)return;if(r?.ok){Object.assign(visitorIdentity,r);paintIdentity(L==='ar'?'تم العثور على الموظف. أكمل تفاصيل الطلب.':'Employee found. Complete the request details.');}else paintIdentity(identityError(r?.error));}
+
 function viewRequest(){
   return `<div class="panel emp-card">
     <button class="emp-back" onclick="state.route='choose';render()">‹ ${t('backChoose')}</button>
     <div class="emp-logo"><img src="${LOGO_URL}"/></div>
     <div class="req-head"><div class="eyebrow">${t('reqEye')}</div><h1>${t('reqH1')}</h1><p>${t('reqP')}</p></div>
     <div class="form-grid">
-      <div class="field"><label>${t('requestedBy')} <span class="req">*</span></label><input id="f_req" placeholder="${t('namePh')}"/></div>
-      <div class="field"><label>${t('reqPhone')} <span class="req">*</span></label><input id="f_phone" type="tel" inputmode="tel" placeholder="${t('reqPhonePh')}" dir="ltr"/></div>
+      <div class="field full"><label for="f_iqama">${L==='ar'?'رقم الإقامة':'Identity number'} <span class="req">*</span></label><div style="display:flex;gap:8px"><input id="f_iqama" inputmode="numeric" maxlength="10" autocomplete="off" value="${esc(visitorIdentity.value)}" oninput="visitorIdentityChanged(this)" style="flex:1;min-width:0"/><button type="button" class="btn sec" onclick="identifyVisitor()">${L==='ar'?'تحقق':'Verify'}</button></div><p id="identity_msg" role="status" aria-live="polite"></p></div>
+      <div class="field"><label>${t('requestedBy')}</label><input id="f_req" readonly value="${esc(visitorIdentity.ticket?(L==='ar'?visitorIdentity.name_ar:visitorIdentity.name_en||visitorIdentity.name_ar):'')}"/></div>
+      <div class="field"><label>${t('reqPhone')} <span class="req">*</span></label><input id="f_phone" type="tel" readonly value="${esc(visitorIdentity.ticket?visitorIdentity.phone||'':'')}" dir="ltr"/></div>
       <div class="field"><label>${t('projLoc')} <span class="req">*</span></label><select id="f_proj">${opts(state.lists.projects)}</select></div>
       <div class="field"><label>${t('svcType')} <span class="req">*</span></label><select id="f_cat">${opts(state.lists.categories)}</select></div>
       <div class="field full"><label>${t('needs')} <span class="req">*</span></label><textarea id="f_title" placeholder="${t('needsPh')}"></textarea></div>
@@ -3827,7 +3836,7 @@ function submitReqErr(res){
 async function submitReq(){
   if(uploadingCount>0){toast(t('waitUpload'));return;}
   const req=document.getElementById('f_req').value.trim(),phone=document.getElementById('f_phone').value.trim(),proj=document.getElementById('f_proj').value,cat=document.getElementById('f_cat').value,title=document.getElementById('f_title').value.trim();
-  if(!req||!phone||!proj||!cat||!title){toast(t('fillReq'));return;}
+  if(!visitorIdentity.ticket){toast(identityError('identity_required'));return;}if(!proj||!cat||!title){toast(t('fillReq'));return;}
   const btn=document.getElementById('submitBtn');if(btn){btn.disabled=true;btn.classList.add('loading');btn.textContent=t('sending');}
   // Visitor submit via the ATOMIC wrapper: creates the service request AND
   // (if any) the material request in ONE transaction. Materials fail →
@@ -3839,15 +3848,15 @@ async function submitReq(){
     : null;   // null → plain service request (pkg17 rule)
   let id=null;
   try{
-    const res=await submitReqRpc('create_request_with_materials',{
-      p_requested_by:req, p_phone:phone, p_project:proj, p_category:cat,
+    const res=await submitReqRpc('advacon_submit_employee_request',{
+      p_ticket:visitorIdentity.ticket, p_project:proj, p_category:cat,
       p_priority:document.getElementById('f_pri').value||'Medium', p_title:title,
       p_images:imagesJson, p_files:filesJson,
-      p_lines:materialLines, p_submitter_name:req, p_mr_note:null});
+      p_lines:materialLines});
     if(res&&res.ok===true){id=res.task_id;}
     else{toast(submitReqErr(res));if(btn){btn.disabled=false;btn.classList.remove('loading');btn.innerHTML=t('submit')+' →';}return;}
   }catch(e){toast(t('connErr'));if(btn){btn.disabled=false;btn.classList.remove('loading');btn.innerHTML=t('submit')+' →';}return;}
-  thanksInfo={id,project:proj,category:cat,received:today()};
+  thanksInfo={id,project:proj,category:cat,received:today()};visitorIdentity={value:'',ticket:null,name_ar:'',name_en:'',phone:''};++identitySequence;clearTimeout(identityTimer);
   reqImages=[];reqFiles=[];reqMaterials=[];mpList=null;mpDraft={};uploadingCount=0;
   state.route='thanks';render();
 }
