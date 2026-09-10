@@ -2574,6 +2574,7 @@ function render(){
   nav+=`<button onclick="openExternal('/')"><span class="ic">🌐</span><span>${t('navVisitor')}</span><span class="ext-ic">↗</span></button>`;
   nav+=`<button onclick="openExternal('/staff')"><span class="ic">🛠️</span><span>${t('navTech')}</span><span class="ext-ic">↗</span></button>`;
   nav+=`<button onclick="openExternal('/asset')"><span class="ic">📦</span><span>${t('navAssetPortal')}</span><span class="ext-ic">↗</span></button>`;
+  nav+=`<div class="side-sep"></div><button class="${state.route==='staffdir'?'active':''}" onclick="go('staffdir')"><span class="ic">♙</span><span>${L==='ar'?'ADVACON موظفين':'ADVACON Employees'}</span></button>`;
   app.innerHTML=`
     <button class="menu-btn" onclick="toggleSide()">☰</button>
     ${sideOpen?'<div class="scrim" onclick="toggleSide()"></div>':''}
@@ -2591,7 +2592,7 @@ function render(){
   else if(state.route==='manage')v.innerHTML=adminWorkView();
   else if(state.route==='all')v.innerHTML=adminRegistryView();
   else if(state.route==='techtasks')v.innerHTML=adminTeamTabs()+adminTeamView();
-  else if(state.route==='staffdir'){v.innerHTML=adminTeamTabs()+'<div id="org-directory"></div><details class="ad-surface"><summary>'+(L==='ar'?'حسابات الفنيين الحالية وإعداد مدير القسم':'Existing technician accounts & department manager')+'</summary>'+viewStaffDir()+'</details>';AdvaconOrganization.mount(v.querySelector('#org-directory'));}
+  else if(state.route==='staffdir'){v.innerHTML='<div id="org-directory"></div><details class="ad-surface"><summary>'+(L==='ar'?'حسابات الفنيين الحالية وإعداد مدير القسم':'Existing technician accounts & department manager')+'</summary>'+viewStaffDir()+'</details>';AdvaconOrganization.mount(v.querySelector('#org-directory'));}
   else if(state.route==='open')v.innerHTML=viewOpen();
   else if(state.route==='archive'){adminResolveRoute('archive');v.innerHTML=adminRegistryView();}
   else if(state.route==='reports')v.innerHTML=adminReportsView();

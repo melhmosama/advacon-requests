@@ -35,7 +35,7 @@ window.adminSetWork=function(key,value){work[key]=value;if(key!=='page')work.pag
 window.adminQueue=function(key){if(state.role!=='admin')return;flow.q='';go('manage?alert='+encodeURIComponent(key));};
 const taskLink=(r)=>`<button class="ad-title-button" data-request-id="${Number(r.id)}" onclick="adminDetail(${Number(r.id)})">${e(r.title)}</button>`;
 window.adminTaskLink=taskLink;
-window.adminTeamTabs=()=>`<div class="ad-tabs"><button aria-selected="${state.route==='techtasks'}" onclick="go('techtasks')">${tx('مهام الفريق','Team workload')}</button><button aria-selected="${state.route==='staffdir'}" onclick="go('staffdir')">${tx('الموظفون','Staff directory')}</button></div>`;
+window.adminTeamTabs=()=>'';
 const teamView={q:'',filter:'all'};
 const teamLabels=()=>({all:tx('كل العمل القائم','All current work'),working:tx('قيد التنفيذ','In progress'),scheduled:tx('مجدولة للمستقبل','Scheduled ahead'),ready:tx('لم تبدأ / حان موعدها','Not started / ready'),pending:tx('بانتظار التأكيد','Awaiting confirmation'),held:tx('معلّقة / تحتاج مراجعة','On hold / needs review'),overdue:tx('متأخرة','Overdue')});
 window.adminTeamBucket=r=>adminTaskStage(r)==='pending'?'pending':adminTaskStage(r)!=='open'?null:r.isFuture?'scheduled':['On Hold','Needs Review','Needs Update'].includes(r.status)?'held':r.status==='In Progress'?'working':'ready';
@@ -103,7 +103,7 @@ window.adminDetail=function(id,initialTab=0){
 };
 function decorate(){
  const admin=state.role==='admin';document.body.classList.toggle('ad-admin',admin);if(!admin)return;
- const activeRoute=['archive'].includes(state.route)?'all':['open','media'].includes(state.route)?'manage':state.route==='staffdir'?'techtasks':state.route;document.querySelectorAll('.side-nav button').forEach(b=>b.classList.toggle('active',b.getAttribute('onclick')===`go('${activeRoute}')`));
+ const activeRoute=['archive'].includes(state.route)?'all':['open','media'].includes(state.route)?'manage':state.route==='staffdir'?'staffdir':state.route;document.querySelectorAll('.side-nav button').forEach(b=>b.classList.toggle('active',b.getAttribute('onclick')===`go('${activeRoute}')`));
  const rename=(key,label)=>{const button=document.querySelector(`.side-nav [onclick="go('${key}')"]`);if(button?.children[1])button.children[1].textContent=label;};rename('dashboard',tx('الرئيسية','Home'));rename('reports',tx('التقارير والإحصاءات','Reports & statistics'));
  rename('all',tx('سجل الطلبات','Request register'));rename('manage',tx('الطلبات','Requests'));rename('techtasks',tx('الفريق','Team'));
  const statuses={'Overdue':'متأخرة','Not Started':'لم تبدأ','In Progress':'قيد التنفيذ','Complete':'مكتملة','Cancelled':'ملغاة','On Hold':'معلّقة','Needs Review':'بحاجة مراجعة','Needs Update':'بحاجة تحديث'};
