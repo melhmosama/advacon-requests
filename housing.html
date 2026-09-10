@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="color-scheme" content="light">
 <meta name="robots" content="noindex">
-<title>ADVACON — Housing & Offices</title>
+<title>ADVACON — Places & Contracts</title>
+<link rel="stylesheet" href="/advacon-housing-v2.css?v=20260910">
 <style>
   :root {
     --navy: #15406E; --med: #2A5C8A; --accent: #3E6E9E; --steel: #5B7A99;
@@ -295,7 +296,7 @@ const sb = supabase.createClient(CFG.supabaseUrl, CFG.supabaseAnonKey, {auth:{pe
    ===================================================================== */
 const T = {
   ar: {
-    modName: 'الإسكان والمكاتب', brandTitle: 'الإسكان والمكاتب', brandSub: 'وحدة الإدارة',
+    modName: 'الأماكن والإسكان والعقود', brandTitle: 'الأماكن والإسكان والعقود', brandSub: 'وحدة الإدارة',
     logout: 'تسجيل خروج', loading: 'جاري التحميل...',
     dashboard: 'لوحة التحكم', properties: 'الوحدات', contracts: 'العقود', meters: 'العدادات',
     bills: 'الفواتير', residents: 'الساكنون', expenses: 'المصاريف', reports: 'التقارير', settings: 'الإعدادات',
@@ -338,7 +339,7 @@ const T = {
     connectionError: 'خطأ في الاتصال بالخادم',
   },
   en: {
-    modName: 'Housing & Offices', brandTitle: 'Housing & Offices', brandSub: 'Management Console',
+    modName: 'Places, Housing & Contracts', brandTitle: 'Places, Housing & Contracts', brandSub: 'Management Console',
     logout: 'Sign out', loading: 'Loading…',
     dashboard: 'Dashboard', properties: 'Properties', contracts: 'Contracts', meters: 'Meters',
     bills: 'Bills', residents: 'Residents', expenses: 'Expenses', reports: 'Reports', settings: 'Settings',
@@ -994,6 +995,8 @@ async function route() {
         break;
       case 'alerts': await screenHousingAlert(content,rest[0]); break;
       case 'contracts': await screenContracts(content); break;
+      case 'obligations': await screenHousingObligations(content); break;
+      case 'administration': await screenHousingAdministration(content); break;
       case 'landlords': await screenLandlords(content); break;
       case 'meters': await screenMeters(content); break;
       case 'bills': await screenBills(content); break;
@@ -1213,10 +1216,10 @@ function renderPropTable(container, items) {
 
 async function openPropertyForm(existing, onSaved) {
   if(!can(existing?'properties.edit':'properties.create')){toast('not_authorized','error');return;}
-  const [cats, uses, owns] = await Promise.all([
+  const [cats, uses, owns, projectData] = await Promise.all([
     getRefOptions('building_categories'),
     getRefOptions('use_types'),
-    getRefOptions('ownership_types'),
+    getRefOptions('ownership_types'), rpc('advacon_project_options'),
   ]);
   const schema = { __cols: 2, fields: [
     { name: 'p_name_ar', label: LANG==='ar'?'الاسم بالعربي':'Arabic Name', required: true, spanAll: true },
@@ -3848,6 +3851,6 @@ document.addEventListener('DOMContentLoaded',()=>{
  }
 });
 </script>
-<script src="/advacon-organization.js"></script><script src="/advacon-housing-workspace.js"></script></body>
+<script src="/advacon-organization.js"></script><script src="/advacon-housing-workspace.js"></script><script src="/advacon-housing-v2.js?v=20260910"></script></body>
 </html>
 
