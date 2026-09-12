@@ -4071,7 +4071,7 @@ function repPrintReport(){
   window.addEventListener('afterprint',cleanup);
   // Safety net for browsers that don't fire afterprint reliably
   setTimeout(cleanup, 60000);
-  try{ window.print(); }
+  try{ AdvaconReports.printCurrent(); }
   catch(e){ cleanup(); }
 }
 
@@ -4125,5 +4125,5 @@ document.addEventListener('click',async event=>{
 <script src="/advacon-warehouse.js"></script>
 <script src="advacon-expiry.js?v=20260912"></script>
 <script src="advacon-review.js?v=20260912-2"></script>
-</body></html>
+<script src="/advacon-reports.js?v=20260912-1"></script></body></html>
 

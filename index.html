@@ -5042,14 +5042,14 @@ async function buildDailyExcel(data,label){
   XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(reportRows(data.ongoing).length?reportRows(data.ongoing):[{}]),'Ongoing Tasks');
   XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(reportRows(data.closed).length?reportRows(data.closed):[{}]),'Closed');
   XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(reportRows(data.rejected).length?reportRows(data.rejected):[{}]),'Rejected');
-  XLSX.writeFile(wb,'ADVACON_Daily_'+label.replace(/[^0-9]/g,'_')+'.xlsx');
+  await AdvaconReports.excel(wb,'ADVACON_Daily_'+label.replace(/[^0-9]/g,'_')+'.xlsx');
 }
 async function buildPeriodExcel(data,label){
   const XLSX=await loadSheetJS();const wb=XLSX.utils.book_new();
   const summary=[{'Metric':'Report Period','Value':label},{'Metric':'Total Requested','Value':data.all.length},{'Metric':'Completed','Value':data.completed.length},{'Metric':'Rejected','Value':data.rejected.length},{'Metric':'In Progress','Value':data.inprog.length},{'Metric':'Other (On Hold / Not Started)','Value':data.other.length}];
   XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(summary),'Summary');
   XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(reportRows(data.all).length?reportRows(data.all):[{}]),'All Requests');
-  XLSX.writeFile(wb,'ADVACON_Period_'+label.replace(/[^0-9]/g,'_')+'.xlsx');
+  await AdvaconReports.excel(wb,'ADVACON_Period_'+label.replace(/[^0-9]/g,'_')+'.xlsx');
 }
 function repTable(arr){
   const rows=arr.length?arr.map(r=>`<tr><td>${fmtID(r.id)}</td><td>${esc(r.title)}</td><td>${esc(r.requestedBy||'\u2014')}</td><td>${esc(r.assignedTo||'\u2014')}</td><td>${esc(r.effStatus)}</td><td>${fmtTime(r.receivedAt)}</td><td>${fmtTime(r.startedAt)}</td><td>${fmtTime(r.confirmedAt)}</td><td>${fmtDuration(r.receivedAt,r.confirmedAt)}</td></tr>`).join(''):`<tr><td colspan="9" style="text-align:center;color:#888">No records</td></tr>`;
@@ -5899,8 +5899,7 @@ function exportExcel(scope){
   else{rows=state.requests.map(calc).sort((a,b)=>a.id-b.id);}
   const head=['#','Project','Category','Priority','Assigned To','Task Title','Manager Note','Received','Start','Duration','Status','Task ID','Due','Closed','Days Left','Progress %','Requested By','Mobile'];
   const data=rows.map((r,i)=>[i+1,r.project,r.category,r.priority,r.assignedTo,r.title,r.notes,r.received,r.start,r.duration,r.effStatus,fmtID(r.id),r.due,r.closed,r.daysleft,Math.round((r.progress||0)*100)+'%',r.requestedBy,r.phone||'']);
-  let csv=[head].concat(data).map(row=>row.map(c=>{c=c==null?'':String(c);return /[",\n]/.test(c)?'"'+c.replace(/"/g,'""')+'"':c;}).join(',')).join('\n');
-  const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=fname;a.click();URL.revokeObjectURL(url);
+  AdvaconReports.rows([head,...data],fname.replace('.csv','.xlsx')).catch(()=>toast(t('repExcelErr')));
   toast(rows.length+' '+t('exported'));
 }
 
@@ -6410,6 +6409,6 @@ function renderAsset(){const gate=document.getElementById('gate'),app=document.g
   }
 })();
 
-</script></body></html>
+</script><script src="/advacon-reports.js?v=20260912-1"></script></body></html>
 
 
