@@ -2441,7 +2441,7 @@ async function catSaveEdit(){
     catDetailEdit=false; catInvalidateAfterMasterChange();
     await loadCatalog(true); await catEnsureInventory(true);
     toast(t('imdSaved'),'success');
-  }catch(e){
+  }catch(e){if(e&&e.reviewPending){toast(e.message,'info');return;}
     catDetailErr=catFriendlyBackendMissing(e)?t('imdBackendNeeded'):(e.message||t('imdSaveErr'));
     catRender();
   }finally{catDetailBusy=false;catRender();}
@@ -2462,7 +2462,7 @@ async function catUploadExistingImage(itemId,inputEl){
     catInvalidateAfterMasterChange();
     await loadCatalog(true); await catEnsureInventory(true);
     toast(t('imdImageSaved'),'success');
-  }catch(e){
+  }catch(e){if(e&&e.reviewPending){toast(e.message,'info');return;}
     if(path) await removeWarehouseImages([path]);
     catDetailErr=e.message||t('imdImageErr'); catRender();
   }finally{catDetailImgBusy=false;catRender();}
@@ -2516,7 +2516,7 @@ async function catSubmitNew(){
     });
     catNewOpen=false;catInvalidateAfterMasterChange();await loadCatalog(true);
     toast(t('catCreated'),'success');
-  }catch(e){catNewErr=e.message||t('catErrGeneric');catRender();}
+  }catch(e){if(e&&e.reviewPending){toast(e.message,'info');return;}catNewErr=e.message||t('catErrGeneric');catRender();}
   finally{catNewBusy=false;catRender();}
 }
 function catImgTag(raw,cls,alt,click){
@@ -2876,7 +2876,7 @@ async function whmSubmitNew(){
     toast(t('whmCreated'), 'success');
     whmLoaded = false;
     loadWarehouses(true);
-  }catch(e){
+  }catch(e){if(e&&e.reviewPending){toast(e.message,'info');return;}
     whmNewBusy = false;
     whmNewErr = e.message || t('whmErrGeneric');
     whmRender();
@@ -2893,7 +2893,7 @@ async function whmSetOpen(id, isOpen){
     toast(isOpen ? t('whmOpened') : t('whmClosed'), 'success');
     whmLoaded = false;
     loadWarehouses(true);
-  }catch(e){
+  }catch(e){if(e&&e.reviewPending){toast(e.message,'info');return;}
     whmBusy = null;
     toast(e.message || t('whmErrGeneric'), 'error');
     whmRender();
@@ -2914,7 +2914,7 @@ async function whmSetActive(id, isActive){
     toast(isActive ? t('whmActivated') : t('whmDeactivated'), 'success');
     whmLoaded = false;
     loadWarehouses(true);
-  }catch(e){
+  }catch(e){if(e&&e.reviewPending){toast(e.message,'info');return;}
     whmBusy = null;
     toast(e.message || t('whmErrGeneric'), 'error');
     whmRender();
@@ -3086,7 +3086,7 @@ async function whmSubmitShelf(){
     //   • refresh top-level warehouses_list so shelves_count on card + Overview tab updates
     whmShelves = null; whmLoadShelves();
     whmLoaded  = false; loadWarehouses(true);
-  }catch(e){
+  }catch(e){if(e&&e.reviewPending){toast(e.message,'info');return;}
     whmAddShelfBusy = false;
     whmAddShelfErr = e.message || t('whmErrGeneric');
     whmRender();
@@ -3122,7 +3122,7 @@ async function whmAssignShelf(iwId){
     dashLoaded = false;
     delete whmAssign[iwId];
     whmItems = null; whmLoadItems();
-  }catch(e){
+  }catch(e){if(e&&e.reviewPending){toast(e.message,'info');return;}
     whmAssignBusy = null;
     toast(e.message || t('whmErrGeneric'), 'error');
     whmRender();
@@ -4124,5 +4124,6 @@ document.addEventListener('click',async event=>{
 <link rel="stylesheet" href="/advacon-warehouse.css">
 <script src="/advacon-warehouse.js"></script>
 <script src="advacon-expiry.js?v=20260912"></script>
+<script src="advacon-review.js?v=20260912-2"></script>
 </body></html>
 
