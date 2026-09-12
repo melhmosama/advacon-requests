@@ -1461,7 +1461,7 @@ html[dir=rtl] .tt-search input{padding:9px 34px 9px 12px}
 <script src="/advacon-experience.js"></script>
 <link rel="stylesheet" href="/advacon-admin.css">
 <script src="/advacon-admin.js?v=20260912-report-quality"></script>
-<link rel="stylesheet" href="/advacon-organization.css"><script src="/advacon-import.js"></script><script src="/advacon-organization.js?v=20260912-report-quality"></script></head>
+<link rel="stylesheet" href="/advacon-organization.css"><script src="/advacon-import.js"></script><script src="/advacon-organization.js?v=request-flow-v1"></script></head>
 <body class="notranslate"><div id="gate"></div><div class="app" id="app" style="display:none"></div><div class="toast" id="toast"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
@@ -3816,6 +3816,7 @@ function viewRequest(){
       <div class="field"><label>${t('reqPhone')} <span class="req">*</span></label><input id="f_phone" type="tel" readonly value="${esc(visitorIdentity.ticket?visitorIdentity.phone||'':'')}" dir="ltr"/></div>
       <div class="field"><label>${t('projLoc')} <span class="req">*</span></label><select id="f_proj">${opts(state.lists.projects)}</select></div>
       <div class="field"><label>${t('svcType')} <span class="req">*</span></label><select id="f_cat">${opts(state.lists.categories)}</select></div>
+      <div class="field full" id="vehicle-request-fields"></div>
       <div class="field full"><label>${t('needs')} <span class="req">*</span></label><textarea id="f_title" placeholder="${t('needsPh')}"></textarea></div>
       <div class="field"><label>${t('priority')}</label><select id="f_pri">${opts(state.lists.priorities,'Medium')}</select></div>
       <div class="field"><label>${t('dateReq')}</label><input type="date" value="${today()}" readonly disabled style="background:var(--lgray);color:var(--grey)"/><span class="hint">${t('autoToday')}</span></div>
@@ -3827,6 +3828,7 @@ function viewRequest(){
 }
 // Map wrapper/backend error codes to a clear visitor message.
 function submitReqErr(res){
+  const vehicleError=window.AdvaconVehicleRequests?.errorMessage(res?.error);if(vehicleError)return vehicleError;
   const e=(res&&res.error)||'';
   const ar=(L==='ar');
   if(e.indexOf('insufficient_available')>=0)
@@ -3841,6 +3843,7 @@ async function submitReq(){
   if(uploadingCount>0){toast(t('waitUpload'));return;}
   const req=document.getElementById('f_req').value.trim(),phone=document.getElementById('f_phone').value.trim(),proj=document.getElementById('f_proj').value,cat=document.getElementById('f_cat').value,title=document.getElementById('f_title').value.trim();
   if(!visitorIdentity.ticket){toast(identityError('identity_required'));return;}if(!proj||!cat||!title){toast(t('fillReq'));return;}
+  let vehicleSelection;try{vehicleSelection=window.AdvaconVehicleRequests?.selection()||null;}catch(e){toast(e.message);return;}
   const btn=document.getElementById('submitBtn');if(btn){btn.disabled=true;btn.classList.add('loading');btn.textContent=t('sending');}
   // Visitor submit via the ATOMIC wrapper: creates the service request AND
   // (if any) the material request in ONE transaction. Materials fail →
@@ -3853,11 +3856,11 @@ async function submitReq(){
   const receiptSnapshot={requester:req,phone,project:document.getElementById('f_proj').selectedOptions[0]?.textContent||proj,category:cat,description:title,priority:dispPri(document.getElementById('f_pri').value||'Medium')};
   let id=null;
   try{
-    const res=await submitReqRpc('advacon_submit_employee_request',{
+    const res=await submitReqRpc(vehicleSelection?'advacon_submit_vehicle_request':'advacon_submit_employee_request',{
       p_ticket:visitorIdentity.ticket, p_project:proj, p_category:cat,
       p_priority:document.getElementById('f_pri').value||'Medium', p_title:title,
       p_images:imagesJson, p_files:filesJson,
-      p_lines:materialLines});
+      p_lines:materialLines,...(vehicleSelection?{p_vehicle:vehicleSelection}:{})});
     if(res&&res.ok===true){id=res.task_id;}
     else{toast(submitReqErr(res));if(btn){btn.disabled=false;btn.classList.remove('loading');btn.innerHTML=t('submit')+' →';}return;}
   }catch(e){toast(t('connErr'));if(btn){btn.disabled=false;btn.classList.remove('loading');btn.innerHTML=t('submit')+' →';}return;}
@@ -4269,7 +4272,7 @@ function taskRow(r){
     <td class="c-act">${acts}</td>
   </tr>`;
 }
-function confirmStaffDone(id){modal={type:'confirm',title:t('confirmDoneQ'),msg:fmtID(id),okLabel:t('confirmDone'),okClass:'',onok:'doConfirmStaffDone('+id+')'};renderModal();}
+function confirmStaffDone(id){modal={type:'close',id,staffConfirm:true};renderModal();}
 async function doConfirmStaffDone(id){
   modal=null;
   {
@@ -4770,7 +4773,7 @@ function viewArchive(){
 
 /* ===== actions (instant UI, background save) ===== */
 function acceptReq(id){modal={type:'accept',id};renderModal();}
-async function closeTask(id){await admTaskAction(id,'complete',null,'closedToast');}
+async function closeTask(id){askClose(id);}
 async function restoreTask(id){await admArchiveTask(id,'restore',null,'restoredToast');}
 function askReject(id){modal={type:'reject',id,reason:''};renderModal();}
 async function doReject(id,reason){await admArchiveTask(id,'reject',(reason||'').trim()||null,'rejectedToast');}
@@ -4779,7 +4782,7 @@ async function doReject(id,reason){await admArchiveTask(id,'reject',(reason||'')
 function openAddTask(){modal={type:'add'};renderModal();}
 function openEdit(id){clearDirty();modal={type:'edit',id};renderModal();}
 function askClose(id){modal={type:'close',id};renderModal();}
-async function doClose(id){modal=null;await admTaskAction(id,'complete',null,'closedToast');}
+async function doClose(id){if(window.vehicleCloseBusy)return;window.vehicleCloseBusy=true;try{if(!await AdvaconVehicleRequests.prepareClose(id))return;const staff=modal?.staffConfirm;modal=null;if(staff)await doConfirmStaffDone(id);else await admTaskAction(id,'complete',null,'closedToast');}catch(e){toast(e.message||t('connErr'));}finally{window.vehicleCloseBusy=false;}}
 function reopenTask(id){modal={type:'confirm',title:t('confirmReopenQ'),msg:fmtID(id),okLabel:t('reopen'),okClass:'',onok:'doReopenTask('+id+')'};renderModal();}
 async function doReopenTask(id){await admReopenTask(id,'savedToast');}
 function openLightbox(url){modal={type:'img',imgs:[url],idx:0};renderModal();}
@@ -5423,7 +5426,7 @@ function renderModal(){
     el.innerHTML=`<div class="modal-bg" ${close}><div class="modal" style="max-width:440px"><h3>${t('confirmRejTitle')}</h3><p>${t('confirmRejMsg')}<br><b>${fmtID(modal.id)}</b></p><div class="field full" style="margin-top:10px"><label>${t('rejReasonLbl')}</label><textarea id="rej_reason" placeholder="${t('rejReasonPh')}">${esc(modal.reason||'')}</textarea></div><div class="btnrow" style="justify-content:flex-end;margin-top:12px"><button class="btn sec" onclick="modal=null;renderModal()">${t('cancel')}</button><button class="btn danger" onclick="doReject(${modal.id},document.getElementById('rej_reason')?document.getElementById('rej_reason').value:'')">${t('confirmRejYes')}</button></div></div></div>`;return;
   }
   if(modal.type==='close'){
-    el.innerHTML=`<div class="modal-bg" ${close}><div class="modal" style="max-width:430px"><h3>${t('confirmCloseTitle')}</h3><p>${t('confirmCloseMsg')}<br><b>${fmtID(modal.id)}</b></p><div class="btnrow" style="justify-content:flex-end"><button class="btn sec" onclick="modal=null;renderModal()">${t('cancel')}</button><button class="btn green" onclick="doClose(${modal.id})">${t('confirmCloseYes')}</button></div></div></div>`;return;
+    el.innerHTML=`<div class="modal-bg" ${close}><div class="modal" style="max-width:740px"><h3>${t('confirmCloseTitle')}</h3><p>${t('confirmCloseMsg')}<br><b>${fmtID(modal.id)}</b></p><div id="vehicle-close-fields"></div><div class="btnrow" style="justify-content:flex-end"><button class="btn sec" onclick="modal=null;renderModal()">${t('cancel')}</button><button class="btn green" onclick="doClose(${modal.id})">${t('confirmCloseYes')}</button></div></div></div>`;AdvaconVehicleRequests.mountClose(modal.id);return;
   }
   if(modal.type==='img'){
     const imgs=modal.imgs||[];const i=modal.idx||0;const multi=imgs.length>1;
@@ -6448,6 +6451,6 @@ function renderAsset(){const gate=document.getElementById('gate'),app=document.g
   }
 })();
 
-</script><script src="/advacon-report-logo.js?v=20260912-report-quality"></script><script src="/advacon-vehicles.js?v=services-v1"></script><script src="/advacon-vehicle-service-catalog.js?v=1"></script><script src="/advacon-vehicle-services.js?v=1"></script></body></html>
+</script><script src="/advacon-report-logo.js?v=20260912-report-quality"></script><script src="/advacon-vehicles.js?v=services-v1"></script><script src="/advacon-vehicle-service-catalog.js?v=1"></script><script src="/advacon-vehicle-services.js?v=shared-intake-v1"></script><script src="/advacon-vehicle-requests.js?v=request-flow-v1"></script></body></html>
 
 

@@ -1,0 +1,14 @@
+body{margin:0;padding:28px 16px;background:#f2f5fa;color:#173652;font:16px/1.7 Tahoma,Arial,sans-serif}
+main{max-width:880px;margin:auto;background:white;border:1px solid #dce5ef;border-radius:18px;padding:28px;box-shadow:0 8px 28px #1736520a}
+#app{box-sizing:border-box;width:100%;max-width:880px}#app h1{font-size:20px}#app button{white-space:normal;overflow-wrap:anywhere}
+.vw-head{border-bottom:1px solid #e4eaf2;margin-bottom:24px;padding-bottom:16px}
+.vw-head h1{font-size:20px;margin:0}.vw-head:before{content:'ADVACON';font-weight:700;font-size:15px;letter-spacing:2px;color:#426181}
+#body h2{font-size:23px;line-height:1.7;margin:0 0 12px}#body p{color:#536a80}
+#body>button{display:block;width:100%;text-align:start;margin:12px 0}
+button{font:inherit;padding:12px 18px;border:1px solid #cbd8e6;border-radius:10px;background:#173e68;color:white;cursor:pointer}
+button:disabled{cursor:default;background:#edf6f0;color:#35684a;border-color:#d3e7d9;opacity:1}
+input,select{font:inherit;box-sizing:border-box;width:100%;max-width:100%;padding:11px;border:1px solid #cbd8e6;border-radius:8px;background:#fff;color:#173652}
+label{display:flex;flex-direction:column;gap:7px;margin:14px 0}input:focus,select:focus,button:focus-visible{outline:2px solid #739cc7;outline-offset:2px}
+details{border:1px solid #dce5ef;border-radius:10px;padding:14px;margin:12px 0}summary{cursor:pointer;font-weight:600}
+[hidden]{display:none!important}.au-skip{position:absolute;top:-100px}.au-skip:focus{top:0;background:white;padding:8px;z-index:999}
+img{max-width:100%}@media(max-width:550px){body{padding:16px 10px}main{padding:20px 16px}#body h2{font-size:21px}}
