@@ -2594,6 +2594,7 @@ function render(){
   const v=document.getElementById('view');
   if(state.route==='dashboard')v.innerHTML=adminHome();
   else if(state.route==='assets')v.innerHTML=viewAssets();
+  else if(state.route==='vehicles')AdvaconVehicles.mount(v,AdvaconOrganization.api);
   else if(state.route==='manage')v.innerHTML=adminWorkView();
   else if(state.route==='all')v.innerHTML=adminRegistryView();
   else if(state.route==='techtasks')v.innerHTML=adminTeamTabs()+adminTeamView()+'<details class="ad-surface"><summary>'+(L==='ar'?'حسابات الفنيين ومدير القسم':'Technician accounts & department manager')+'</summary>'+viewStaffDir()+'</details>';
@@ -6392,7 +6393,7 @@ function viewAssets(){
     const label=t('am_'+m.key);
     return `<button class="asset-card" onclick="location.href='${m.adminRoute}'"><span class="ac-ic">${m.ic}</span><span class="ac-lb">${label}</span></button>`;
   }).join('');
-  return `<div class="phead"><div class="eyebrow">${t('as_eye')}</div><h1>${t('as_h1')}</h1><p>${t('as_p')}</p></div><div class="asset-grid" style="max-width:640px">${cards}</div>`;
+  return `<div class="phead"><div class="eyebrow">${t('as_eye')}</div><h1>${t('as_h1')}</h1><p>${t('as_p')}</p></div><div class="asset-grid" style="max-width:640px">${cards}<button class="asset-card" onclick="go('vehicles')"><span class="ac-ic">🚗</span><span class="ac-lb">${t('am_fleet')}</span></button></div>`;
 }
 
 let assetRole=null, assetPermissions={}, assetView='landing', assetModule=null;
@@ -6447,6 +6448,6 @@ function renderAsset(){const gate=document.getElementById('gate'),app=document.g
   }
 })();
 
-</script><script src="/advacon-report-logo.js?v=20260912-report-quality"></script></body></html>
+</script><script src="/advacon-report-logo.js?v=20260912-report-quality"></script><script src="/advacon-vehicles.js?v=20260912-1"></script></body></html>
 
 
