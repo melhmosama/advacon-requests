@@ -1,0 +1,34 @@
+/* ADVACON paper layout. Embedded in standalone reports; print-only on app pages. */
+@page {size:A4 landscape;margin:14mm 12mm 16mm;
+ @top-left {content:""} @top-center {content:""} @top-right {content:""} @bottom-right {content:""}
+ @bottom-left {content:"ADVACON";font:8pt Arial;color:#617185}
+ @bottom-center {content:counter(page) " / " counter(pages);font:8pt Arial;color:#617185;direction:ltr}
+}
+*{font-family:Tahoma,Arial,sans-serif!important;box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body{font-family:Tahoma,Arial,sans-serif;color:#18334b;line-height:1.5}
+.rhead,header,.rep-preview-head{display:flex!important;align-items:center;gap:18px!important;background:white!important;color:#18334b!important;border-bottom:2px solid #193f65!important;padding:0 0 12px!important;margin-bottom:12px!important;break-inside:avoid}
+.rhead img,header img,.rph-brand img{width:140px!important;height:48px!important;object-fit:contain;flex-shrink:0}
+.rhead .t,header h1,.rep-preview-head h2{font-size:19pt!important;line-height:1.35!important;color:#193f65!important;margin:0!important}
+.rhead .s,.rmeta,.meta,.rph-meta{font-size:9pt!important;line-height:1.6;color:#53697c!important}
+.rkpis{display:flex;gap:10px;margin:12px 0 16px!important;flex-wrap:wrap}
+.rkpi{flex:0 1 auto!important;min-width:115px!important;border:0!important;border-inline-start:3px solid #bbcbd9!important;border-radius:0!important;text-align:start!important;padding:4px 14px!important}
+.rkpi .n{font-size:17pt!important}.rkpi .l{font-size:9pt!important}
+table,.tbl,.rep-tbl,.hv-table{border-collapse:collapse!important;width:100%!important;min-width:0!important;table-layout:fixed!important;font-size:9.5pt!important;line-height:1.5!important;margin:10px 0 16px!important}
+thead{display:table-header-group!important}tfoot{display:table-footer-group}
+th,td,.tbl th,.tbl td{padding:7px 6px!important;vertical-align:top!important;text-align:start!important;word-break:normal!important;overflow-wrap:break-word!important;white-space:normal!important;border:0!important;border-bottom:1px solid #dce4eb!important;max-width:none!important;font-size:inherit!important;line-height:inherit!important}
+th,.tbl th{background:#eaf0f5!important;color:#173d60!important;font-weight:700!important}
+th,.tbl th{overflow-wrap:normal!important}
+tbody tr:nth-child(even) td{background:#f7f9fb!important}
+.hv-table:has(>thead>tr>th:nth-child(5):last-child) th:first-child{width:34%}
+tr{break-inside:avoid}h2,h3{break-after:avoid;color:#193f65}
+.tbl-wrap,.report-table-scroll,.hv-table-wrap,.table-wrap,.rep-scroll{overflow:visible!important;max-height:none!important}
+.rep-sel,.rep-pager,.rep-regbtn{display:none!important}
+.adv-housing-print-head{display:flex;align-items:center;gap:18px;border-bottom:2px solid #193f65;padding-bottom:12px;margin-bottom:16px;break-inside:avoid}
+.adv-housing-print-head img{width:140px;height:48px;object-fit:contain}.adv-housing-print-head h1{font-size:19pt;margin:0}.adv-housing-print-head p{font-size:9pt;margin:6px 0;color:#53697c}
+body #content .hv-header{display:none!important}
+.rfoot{border-top:1px solid #cbd8e3;margin-top:18px;padding-top:10px;font-size:9pt;break-inside:avoid}
+.rep-sec{break-inside:auto!important}.rep-sec h3{break-after:avoid!important}
+.rep-reg-table{font-size:9pt!important}.rep-reg-table th,.rep-reg-table td{padding:6px!important}
+td.report-id,.tbl td.report-id{direction:ltr!important;unicode-bidi:isolate;white-space:nowrap!important}
+.report-date{direction:ltr;unicode-bidi:isolate}
+@media print{body{padding:0!important;margin:0!important;background:white!important}thead th{position:static!important}.hv-header{display:block!important}.hv-header p{font-size:9pt}.hv-header h1{font-size:19pt}.hv-follow-list,.hv-month-dues{max-height:none!important;overflow:visible!important}}

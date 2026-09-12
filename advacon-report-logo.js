@@ -7,15 +7,31 @@ async function excel(wb,filename){
  for(const name of wb.SheetNames){
    const data=X.utils.sheet_to_json(wb.Sheets[name],{header:1,raw:true,defval:null});
    const ws=X.utils.aoa_to_sheet([[],[],[],...data]);
-   ws['!cols']=wb.Sheets[name]['!cols'];
+   ws['!cols']=wb.Sheets[name]['!cols']||Array.from({length:Math.max(1,...data.map(r=>r.length))},(_,i)=>({wch:Math.min(38,Math.max(14,...data.map(r=>String(r[i]??'').length+2)))}));
    ws['!rows']=[{hpt:22},{hpt:22},{hpt:22}];X.utils.book_append_sheet(copy,ws,name);
    copy.Workbook.Names.push({Name:'_xlnm.Print_Titles',Sheet:copy.SheetNames.length-1,Ref:"'"+name.replace(/'/g,"''")+"'!$1:$4"});
  }
  const zip=await Zip.loadAsync(X.write(copy,{type:'array',bookType:'xlsx'}));
  zip.file('xl/media/advacon.png',logo.split(',')[1],{base64:true});
  const ns='http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+ const stylesPath='xl/styles.xml';let styles=await zip.file(stylesPath).async('string');
+ const doc=new DOMParser().parseFromString(styles,'application/xml'),sns=doc.documentElement.namespaceURI;
+ for(const font of doc.getElementsByTagName('font')){const sz=font.getElementsByTagName('sz')[0],name=font.getElementsByTagName('name')[0];if(sz)sz.setAttribute('val','11');if(name)name.setAttribute('val','Arial');}
+ const xfs=doc.getElementsByTagName('cellXfs')[0];
+ for(const xf of xfs.children){let a=xf.getElementsByTagName('alignment')[0];if(!a){a=doc.createElementNS(sns,'alignment');xf.append(a);}a.setAttribute('wrapText','1');a.setAttribute('vertical','top');xf.setAttribute('applyAlignment','1');}
+ const fonts=doc.getElementsByTagName('fonts')[0],headFont=fonts.children[0].cloneNode(true);headFont.append(doc.createElementNS(sns,'b'));const fontId=fonts.children.length;fonts.append(headFont);fonts.setAttribute('count',fonts.children.length);
+ const fills=doc.getElementsByTagName('fills')[0],fill=doc.createElementNS(sns,'fill'),pattern=doc.createElementNS(sns,'patternFill'),color=doc.createElementNS(sns,'fgColor');pattern.setAttribute('patternType','solid');color.setAttribute('rgb','FFEAF0F5');pattern.append(color);fill.append(pattern);const fillId=fills.children.length;fills.append(fill);fills.setAttribute('count',fills.children.length);
+ const headerStyle=xfs.children.length,head=xfs.children[0].cloneNode(true);head.setAttribute('fontId',fontId);head.setAttribute('fillId',fillId);head.setAttribute('applyFont','1');head.setAttribute('applyFill','1');xfs.append(head);xfs.setAttribute('count',xfs.children.length);
+ zip.file(stylesPath,new XMLSerializer().serializeToString(doc));
  for(let i=1;i<=copy.SheetNames.length;i++){
   const path='xl/worksheets/sheet'+i+'.xml';let xml=await zip.file(path).async('string');
+  xml=xml.replace('<worksheet ', '<worksheet ');
+  const landscape=(copy.Sheets[copy.SheetNames[i-1]]['!cols']||[]).length>5;
+  xml=xml.replace(/<c\b([^>]*\br="[A-Z]+4"[^>]*)>/g,(_,a)=>'<c'+a.replace(/\s+s="[^"]*"/g,'')+' s="'+headerStyle+'">');
+  xml=xml.replace(/<pageMargins\b[^>]*\/>/g,'').replace(/<pageSetup\b[^>]*\/>/g,'');
+  xml=xml.replace('</sheetData>','</sheetData><printOptions horizontalCentered="1"/><pageMargins left="0.4" right="0.4" top="0.5" bottom="0.5" header="0.2" footer="0.2"/><pageSetup paperSize="9" orientation="'+(landscape?'landscape':'portrait')+'" fitToWidth="1" fitToHeight="0"/><headerFooter><oddFooter>&amp;LADVACON&amp;R&amp;P / &amp;N</oddFooter></headerFooter>');
+  xml=xml.replace(/<sheetPr\s*\/>/,'<sheetPr><pageSetUpPr fitToPage="1"/></sheetPr>');
+  if(!xml.includes('<sheetPr'))xml=xml.replace(/(<worksheet[^>]*>)/,'$1<sheetPr><pageSetUpPr fitToPage="1"/></sheetPr>');
   xml=xml.replace('</worksheet>','<drawing xmlns:r="'+ns+'" r:id="advLogo"/></worksheet>');zip.file(path,xml);
   zip.file('xl/worksheets/_rels/sheet'+i+'.xml.rels','<?xml version="1.0"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="advLogo" Type="'+ns+'/drawing" Target="../drawings/advacon'+i+'.xml"/></Relationships>');
   zip.file('xl/drawings/advacon'+i+'.xml','<?xml version="1.0"?><xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><xdr:oneCellAnchor><xdr:from><xdr:col>0</xdr:col><xdr:colOff>0</xdr:colOff><xdr:row>0</xdr:row><xdr:rowOff>0</xdr:rowOff></xdr:from><xdr:ext cx="2286000" cy="731520"/><xdr:pic><xdr:nvPicPr><xdr:cNvPr id="1" name="ADVACON"/><xdr:cNvPicPr/></xdr:nvPicPr><xdr:blipFill><a:blip xmlns:r="'+ns+'" r:embed="logo"/><a:stretch><a:fillRect/></a:stretch></xdr:blipFill><xdr:spPr><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></xdr:spPr></xdr:pic><xdr:clientData/></xdr:oneCellAnchor></xdr:wsDr>');
@@ -30,7 +46,18 @@ window.AdvaconReportLogo={excel};
 
 // Add only an image to housing print output; preserve the original print function and CSS.
 if(/housing/.test(location.pathname)){
- const style=document.createElement('style');style.textContent='.adv-housing-print-logo{display:none}@media print{.adv-housing-print-logo{display:block;width:145px;height:47px;object-fit:contain;margin:0 0 10px auto;break-inside:avoid}}';document.head.append(style);
- window.addEventListener('beforeprint',()=>{const root=document.querySelector('#content');if(!root||root.querySelector('.adv-housing-print-logo'))return;const image=document.createElement('img');image.src=logo;image.alt='ADVACON';image.className='adv-housing-print-logo';root.prepend(image);});
+ const style=document.createElement('style');style.textContent='@media screen{.adv-housing-print-head{display:none}}.adv-housing-print-logo{display:none}@media print{.adv-housing-print-logo{display:block;width:145px;height:47px;object-fit:contain;margin:0 0 10px auto;break-inside:avoid}}';document.head.append(style);
+ window.addEventListener('beforeprint',()=>{
+ const root=document.querySelector('#content');if(!root)return;
+ root.querySelector('.adv-housing-print-head')?.remove();
+ const head=document.createElement('section');head.className='adv-housing-print-head';
+ const image=document.createElement('img');image.src=logo;image.alt='ADVACON';
+ const text=document.createElement('div'),title=document.createElement('h1'),meta=document.createElement('p');
+ title.textContent=root.querySelector('.hv-header h1,h1,h2')?.textContent||document.title;
+ const filters=[...root.querySelectorAll('.hv-toolbar input,.hv-toolbar select')].filter(e=>e.type!=='search'&&e.value).map(e=>e.tagName==='SELECT'?e.selectedOptions[0]?.textContent:e.value);
+ meta.textContent=[new Date().toLocaleDateString(document.documentElement.lang==='ar'?'ar-SA':'en-GB'),...filters].join(' · ');
+ text.append(title,meta);head.append(image,text);root.prepend(head);
+ });
+ window.addEventListener('afterprint',()=>document.querySelector('.adv-housing-print-head')?.remove());
 }
 })();

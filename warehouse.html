@@ -829,6 +829,7 @@
 <script src="/advacon-ui.js"></script>
 <script src="/advacon-dialogs.js"></script>
 <script src="/advacon-experience.js"></script>
+<link rel="stylesheet" media="print" href="advacon-report-print.css?v=20260912-1">
 </head>
 <body>
 
@@ -3817,7 +3818,7 @@ function repMovementSummary(ms,cmp){
   let cmpNote='';
   if(showCmp){ cmpNote=`<div class="rep-cmpnote">${t('repCompareVs')}: ${repFmtRange(cmp.prev_from, cmp.prev_to)}</div>`; }
   return `<div class="rep-sec"><h3>${t('repMovementSummary')}</h3>
-    <table class="rep-tbl">${head}${body}${totalRow}</table>${cmpNote}</div>`;
+    <table class="rep-tbl"><thead>${head}</thead><tbody>${body}${totalRow}</tbody></table>${cmpNote}</div>`;
 }
 
 /* Warehouse Summary (dynamic rows) */
@@ -3834,7 +3835,7 @@ function repWarehouseSummary(ws){
       <td>${fmtNum(w.receipts)}</td><td>${fmtNum(w.issues)}</td><td>${fmtNum(w.total_movements)}</td>
       <td class="${w.expired_batches>0?'rep-c-crit':''}">${fmtNum(w.expired_batches)}</td></tr>`;
   }).join('');
-  return `<div class="rep-sec"><h3>${t('repWarehouseSummary')}</h3><table class="rep-tbl">${head}${body}</table></div>`;
+  return `<div class="rep-sec"><h3>${t('repWarehouseSummary')}</h3><table class="rep-tbl"><thead>${head}</thead><tbody>${body}</tbody></table></div>`;
 }
 
 /* Inventory Health */
@@ -3872,7 +3873,7 @@ function repItemSummary(items){
       <td>${fmtNum(it.opening)}</td><td>${fmtNum(it.receipts)}</td><td>${fmtNum(it.issues)}</td>
       <td><b>${fmtNum(it.closing)}</b></td><td class="${stCls}">${stLbl}</td></tr>`;
   }).join('');
-  return `<div class="rep-sec"><h3>${t('repItemSummary')}</h3><div class="rep-scroll"><table class="rep-tbl rep-tbl-items">${head}${body}</table></div></div>`;
+  return `<div class="rep-sec"><h3>${t('repItemSummary')}</h3><div class="rep-scroll"><table class="rep-tbl rep-tbl-items"><thead>${head}</thead><tbody>${body}</tbody></table></div></div>`;
 }
 
 /* Batches / Expiry Summary */
@@ -4009,7 +4010,7 @@ function repRegisterCard(reg){
         <span>${fmtNum(from)}–${fmtNum(to)} ${t('mvOf')} ${fmtNum(total)}</span>
         <button class="rep-pbtn" ${!d.has_more?'disabled':''} onclick="repRegPage(1)">${t('mvNext')}</button>
       </div>`;
-      inner=`${typeSel}<div class="rep-scroll"><table class="rep-tbl rep-tbl-reg">${head}${rows}</table></div>${pager}`;
+      inner=`${typeSel}<div class="rep-scroll"><table class="rep-tbl rep-tbl-reg"><thead>${head}</thead><tbody>${rows}</tbody></table></div>${pager}`;
     }
   }
   return `<div class="rep-sec"><h3>${t('repMovementRegister')}</h3>${inner}</div>`;
