@@ -19,6 +19,10 @@
     {
       "source": "/warehouse",
       "destination": "/warehouse.html"
+    },
+    {
+      "source": "/vehicle-intake",
+      "destination": "/vehicle-intake.html"
     }
   ],
   "headers": [
