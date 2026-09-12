@@ -3889,22 +3889,33 @@ async function receiptImages(){
   const logo=new Image();logo.src=RECEIPT_LOGO;await logo.decode();
   if(document.fonts?.ready)await document.fonts.ready;
   const font='30px "Segoe UI",Tahoma,Arial';probe.font=font;
-  const lines=[];
-  for(const [k,v] of receiptFields())lines.push(...receiptWrap(probe,k+': '+v,864),'');
-  lines.push(ar?'وصف الطلب:':'Request description:',...receiptWrap(probe,thanksInfo.description||'',864));
-  // Bound each image for mobile canvas limits; additional pages preserve every line.
-  const files=[],perPage=55,pages=Math.max(1,Math.ceil(lines.length/perPage));
+  const fields=receiptFields().map(([label,value])=>({label,lines:receiptWrap(probe,value,600)}));
+  const metaHeight=fields.reduce((h,f)=>h+Math.max(64,f.lines.length*40+24),0);
+  const description=receiptWrap(probe,thanksInfo.description||'',840),perPage=38;
+  const pages=Math.max(1,Math.ceil(description.length/perPage)),files=[];
   for(let p=0;p<pages;p++){
-    const part=lines.slice(p*perPage,(p+1)*perPage),cv=document.createElement('canvas');cv.width=1080;cv.height=420+part.length*48;
-    const x=cv.getContext('2d');x.fillStyle='#16314c';x.fillRect(0,0,cv.width,cv.height);x.fillStyle='#fff';x.fillRect(48,48,984,cv.height-96);
-    const scale=Math.min(390/logo.naturalWidth,110/logo.naturalHeight),lw=logo.naturalWidth*scale,lh=logo.naturalHeight*scale;
-    x.drawImage(logo,(1080-lw)/2,64,lw,lh);
-    x.textAlign='center';x.fillStyle='#16314c';
-    x.font=font;x.fillText(ar?'تم استلام طلبك بنجاح':'Request received successfully',540,210);
-    x.font='bold 52px "Segoe UI",Tahoma,Arial';x.fillText(id,540,272);
-    x.font=font;x.textAlign=ar?'right':'left';x.direction=ar?'rtl':'ltr';
-    part.forEach((line,i)=>x.fillText(line,ar?972:108,320+i*48));
-    x.direction='ltr';x.textAlign='center';x.fillStyle='#64748b';x.font='24px "Segoe UI",Tahoma,Arial';x.fillText('advacon.services'+(pages>1?'  ·  '+(p+1)+' / '+pages:''),540,cv.height-75);
+    const part=description.slice(p*perPage,(p+1)*perPage),boxY=272+metaHeight,boxH=100+part.length*44;
+    const cv=document.createElement('canvas');cv.width=1080;cv.height=boxY+boxH+106;
+    const x=cv.getContext('2d');x.fillStyle='#eaf0f5';x.fillRect(0,0,1080,cv.height);x.fillStyle='#fff';x.fillRect(28,28,1024,cv.height-56);
+    x.fillStyle='#17436a';x.fillRect(28,28,1024,8);
+    const scale=Math.min(260/logo.naturalWidth,86/logo.naturalHeight),lw=logo.naturalWidth*scale,lh=logo.naturalHeight*scale;
+    x.drawImage(logo,ar?80:1000-lw,65,lw,lh);
+    x.direction=ar?'rtl':'ltr';x.textAlign=ar?'right':'left';const edge=ar?996:84;
+    x.fillStyle='#567086';x.font='26px "Segoe UI",Tahoma,Arial';x.fillText(ar?'تأكيد استلام الطلب':'Request confirmation',edge,93);
+    x.fillStyle='#173c5c';x.font='bold 50px "Segoe UI",Tahoma,Arial';x.fillText(id,edge,150);
+    x.fillStyle='#e9f5ee';x.fillRect(76,186,928,52);x.fillStyle='#28754c';x.font='26px "Segoe UI",Tahoma,Arial';x.fillText(ar?'تم استلام طلبك بنجاح':'Your request was received successfully',ar?984:96,222);
+    let y=260;
+    for(const f of fields){
+      const h=Math.max(64,f.lines.length*40+24);
+      x.fillStyle='#65798b';x.font='26px "Segoe UI",Tahoma,Arial';x.fillText(f.label,edge,y+36);
+      x.fillStyle='#173c5c';x.font=font;
+      f.lines.forEach((line,i)=>x.fillText(line,ar?752:328,y+36+i*40));
+      x.fillStyle='#e8eef3';x.fillRect(84,y+h-1,912,1);y+=h;
+    }
+    x.fillStyle='#f3f6f9';x.fillRect(76,boxY,928,boxH);
+    x.fillStyle='#173c5c';x.font='bold 29px "Segoe UI",Tahoma,Arial';x.fillText(ar?'وصف الطلب':'Request description',ar?972:108,boxY+43);
+    x.font=font;part.forEach((line,i)=>x.fillText(line,ar?972:108,boxY+88+i*44));
+    x.direction='ltr';x.textAlign='center';x.fillStyle='#6b8093';x.font='23px "Segoe UI",Tahoma,Arial';x.fillText('advacon.services'+(pages>1?'  ·  '+(p+1)+' / '+pages:''),540,cv.height-57);
     const blob=await new Promise(resolve=>cv.toBlob(resolve,'image/png'));if(!blob)throw Error('image_generation_failed');
     files.push(new File([blob],'request-'+id+(pages>1?'-'+(p+1):'')+'.png',{type:'image/png'}));
   }
