@@ -54,7 +54,7 @@
   catch(e){if(sequence===itemsSequence){whmItemsError=true;whmItems=null;}}
   finally{if(sequence===itemsSequence){whmItemsLoading=false;whmRender();}}
  };
- window.whmLoadShelves=async function(){if(!whDetailId)return;const id=whDetailId,sequence=++shelfSequence;whmShelvesLoading=true;try{const rows=await warehouseRpc('warehouse_shelves',{p_warehouse_id:id});if(sequence===shelfSequence&&id===whDetailId)whmShelves=Array.isArray(rows)?rows:[];}catch(e){if(sequence===shelfSequence){whmShelves=[];toast(e.message,'error');}}finally{if(sequence===shelfSequence){whmShelvesLoading=false;whmRender();}}};
+ window.whmLoadShelves=async function(){if(!whDetailId)return false;const id=whDetailId,sequence=++shelfSequence;whmShelvesLoading=true;try{const rows=await warehouseRpc('warehouse_shelves',{p_warehouse_id:id});if(sequence!==shelfSequence||id!==whDetailId)return false;if(!Array.isArray(rows))throw Error(t('rcvLoadShelvesFailed'));whmShelves=rows;return true;}catch(e){if(sequence===shelfSequence){whmShelves=[];toast(e.message||t('rcvLoadShelvesFailed'),'error');}return false;}finally{if(sequence===shelfSequence){whmShelvesLoading=false;whmRender();}}};
  function results(){
   queueMicrotask(hydrateImages);
   const view=state(),q=view.q.trim().toLowerCase();let rows=(whmItems||[]).filter(r=>[r.item_code,r.name_ar,r.name_en,r.shelf_name].join(' ').toLowerCase().includes(q));

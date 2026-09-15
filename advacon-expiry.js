@@ -28,7 +28,7 @@ warehouseRpc=async function(fn,args={}){
  if(busy)throw Error(tr('انتظر اكتمال العملية الحالية.','Wait for the current operation.'));
  busy=true;
  try{
- let tracks=null,allocations=null;await read();
+ let tracks=null,allocations=null;if(!master)await read();
  if(approval){
  const r=(aprList||[]).find(r=>r.id===args.p_approval_id);if(!r)throw Error(tr('حدّث قائمة الموافقات.','Refresh approvals.'));
  const item=itemFor({p_item_id:r.orig_item_id,p_item_warehouse_id:r.orig_item_warehouse_id});
