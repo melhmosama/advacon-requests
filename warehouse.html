@@ -1682,7 +1682,7 @@ async function warehouseRpc(fn, args, sessionVerified=false){
   const text = await res.text();
     if(!text) return { ok:true };
     try{
-      return JSON.parse(text);
+      const value=JSON.parse(text);return await whResolveResponseImages(value);
     }catch(_){
       return text;
     }
@@ -1705,13 +1705,105 @@ async function uploadWarehouseImage(file, path){
 }
 
 /* Create a short-lived signed URL for viewing an image. */
-async function getWarehouseImageSignedUrl(path, expiresIn){
-  const okSess = await ensureCurrentSession();
-  if(!okSess) throw new Error(translateError('session'));
-  const { data, error } = await sb.storage.from(CFG.imagesBucket).createSignedUrl(path, expiresIn || 300);
-  if(error) throw new Error(translateStorageError(error));
-  return data.signedUrl;
+async function getWarehouseImageSignedUrl(path){return whResolveImage(path);}
+
+// Private image paths stay canonical; signed URLs exist only in this session.
+const whImageCache=new Map();
+let whImageOwner='';
+function whImagePath(value){
+ const raw=String(value||'').trim();if(!raw)return null;
+ let path=raw;
+ if(/^https?:\/\//i.test(raw)){
+  const u=new URL(raw);if(u.origin!==new URL(SB_URL).origin)return null;
+  const prefix='/storage/v1/object/';if(!u.pathname.startsWith(prefix))return null;
+  const parts=u.pathname.slice(prefix.length).split('/');if(['sign','public','authenticated'].includes(parts[0]))parts.shift();
+  if(decodeURIComponent(parts.shift()||'')!==CFG.imagesBucket)return null;
+  path=parts.map(decodeURIComponent).join('/');
+ }else{
+  path=path.replace(/^\/+/, '');
+  if(path.startsWith(CFG.imagesBucket+'/'))path=path.slice(CFG.imagesBucket.length+1);
+  if(!path.startsWith('items/'))return null;
+ }
+ if(path.split('/').some(x=>x==='.'||x==='..')||/[\u0000-\u001f]/.test(path))return null;
+ return path;
 }
+function whImageCacheScope(){
+ const owner=CTX.mode+':'+CTX.userId;
+ if(owner!==whImageOwner){whImageCache.clear();whImageOwner=owner;}
+ return owner;
+}
+async function whSignPaths(paths,force=false){
+ const owner=whImageCacheScope(),now=Date.now();
+ const missing=[...new Set(paths)].filter(path=>{const x=whImageCache.get(path);return !x||(!x.pending&&(force||x.expires<=now));});
+ for(let offset=0;offset<missing.length;offset+=100){
+  const chunk=missing.slice(offset,offset+100);
+  const request=(async()=>{
+   if(!await ensureCurrentSession())throw Error(translateError('session'));
+   if(owner!==whImageCacheScope())throw Error(translateError('session'));
+   const {data,error}=await sb.storage.from(CFG.imagesBucket).createSignedUrls(chunk,900);
+   if(error)throw Error(translateStorageError(error));
+   if(!Array.isArray(data))throw Error('image_signing_failed');
+   return new Map(data.map(x=>[x.path,x.signedUrl||x.signedURL]));
+  })();
+  for(const path of chunk){
+   const entry={expires:0,pending:null,url:null};
+   entry.pending=request.then(rows=>{
+    const url=rows.get(path);if(!url)throw Error('image_unavailable');
+    if(owner!==whImageOwner)throw Error(translateError('session'));
+    entry.url=url;entry.expires=Date.now()+840000;entry.pending=null;return url;
+   }).catch(e=>{if(whImageCache.get(path)===entry)whImageCache.delete(path);throw e;});
+   whImageCache.set(path,entry);
+  }
+ }
+ const results=await Promise.allSettled(paths.map(path=>{const x=whImageCache.get(path);return x.pending||Promise.resolve(x.url);}));
+ const failed=results.find(x=>x.status==='rejected');if(failed)throw failed.reason;
+ return results.map(x=>x.value);
+}
+async function whResolveImage(raw,force=false){
+ if(!raw)return '';
+ const path=whImagePath(raw);
+ if(path)return (await whSignPaths([path],force))[0];
+ if(/^https?:\/\//i.test(raw)||/^data:image\//i.test(raw))return raw;
+ throw Error('image_url_invalid');
+}
+async function whResolveResponseImages(value){
+ const refs=[],paths=new Set();
+ function scan(x){if(!x||typeof x!=='object')return;
+  if(typeof x.image_url==='string'||typeof x.image_source==='string'){
+   const raw=x.image_source||x.image_url,path=whImagePath(raw);
+   if(path){refs.push([x,path]);paths.add(path);}
+  }
+  for(const v of Object.values(x))if(v&&typeof v==='object')scan(v);
+ }
+ scan(value);if(!paths.size)return value;
+ // A failed object never becomes a broken relative URL or poisons the next attempt.
+ await Promise.allSettled([whSignPaths([...paths])]);
+ let failures=0;
+ for(const [row,path] of refs){row.image_source=path;const entry=whImageCache.get(path);
+  row.image_url=entry?.url||'';row.image_load_error=!row.image_url;if(row.image_load_error)failures++;
+ }
+ if(failures)toast(LANG==='ar'?'تعذر تحميل بعض الصور. حدّث التقرير أو القائمة لإعادة المحاولة.':'Some images could not load. Refresh the report or list to retry.','error');
+ return value;
+}
+async function whWaitForReportImages(){
+ await whResolveResponseImages(repState.data);if(repState.regData)await whResolveResponseImages(repState.regData);
+ repRender();
+ const images=[...document.querySelectorAll('.rep-preview img,.rep-sheet img,.rep-thumb,.rep-thumb-sm')];
+ const results=await Promise.all(images.map(img=>{let timer;return Promise.race([
+  img.decode().then(()=>img.naturalWidth>0,()=>false),
+  new Promise(resolve=>{timer=setTimeout(()=>resolve(false),15000);})
+ ]).finally(()=>clearTimeout(timer));}));
+ const hasFailure=x=>!!x&&typeof x==='object'&&(x.image_load_error===true||Object.values(x).some(hasFailure));
+ if(results.some(x=>!x)||hasFailure(repState.data)||hasFailure(repState.regData))throw Error(LANG==='ar'?'لم تكتمل الصور بعد. أعد المحاولة قبل طباعة التقرير.':'Images are not ready. Retry before printing.');
+}
+// Recover an expired signed URL once without removing the image permanently.
+document.addEventListener('error',event=>{
+ const img=event.target;if(img?.tagName!=='IMG')return;
+ const raw=img.getAttribute('src'),path=whImagePath(raw);if(!path||img.dataset.whImageRetry)return;
+ event.stopImmediatePropagation();img.dataset.whImageRetry='1';
+ whResolveImage(path,true).then(url=>{if(img.isConnected)img.src=url;}).catch(()=>{img.hidden=true;img.title=LANG==='ar'?'تعذر تحميل الصورة؛ حدّث الصفحة للمحاولة.':'Image unavailable; refresh to retry.';});
+},true);
+
 
 /* Remove files from the warehouse bucket. Never throws — reports failure
    to the caller as the array of paths that failed (or via return {removed, failed}).
@@ -2472,8 +2564,7 @@ async function catUploadExistingImage(itemId,inputEl){
   let path=null;
   try{
     const up=await uploadWarehouseImage(file,catImagePath(itemId,file)); path=up.path;
-    const signed=await getWarehouseImageSignedUrl(path,31536000);
-    await warehouseRpc('admin_set_item_image',{p_item_id:itemId,p_image_url:signed});
+    await warehouseRpc('admin_set_item_image',{p_item_id:itemId,p_image_url:path});
     catInvalidateAfterMasterChange();
     await loadCatalog(true); await catEnsureInventory(true);
     toast(t('imdImageSaved'),'success');
@@ -2482,11 +2573,7 @@ async function catUploadExistingImage(itemId,inputEl){
     catDetailErr=e.message||t('imdImageErr'); catRender();
   }finally{catDetailImgBusy=false;catRender();}
 }
-async function catDisplayImage(raw){
-  if(!raw) return null;
-  if(/^https?:\/\//i.test(raw)) return raw;
-  try{return await getWarehouseImageSignedUrl(raw,900);}catch(_){return null;}
-}
+async function catDisplayImage(raw){return raw?whResolveImage(raw):null;}
 /* Resolve private object paths lazily after render. */
 async function catHydratePrivateImages(){
   const nodes=[...document.querySelectorAll('[data-whimg]')];
@@ -4099,9 +4186,10 @@ function repPreview(){
 /* PHASE D — Print / PDF. Same flow for both buttons; user picks "Save as PDF"
    in the browser dialog. Prints exactly what's on screen (register included only
    if the user opened it — NO background fetch of extra pages). */
-function repPrintReport(){
+async function repPrintReport(){
   if(!whDirect('reports.export'))return;
   if(!repState.data){ return; }
+  await whWaitForReportImages();
   document.body.classList.add('printing-report');
   const cleanup=()=>{ document.body.classList.remove('printing-report'); window.removeEventListener('afterprint',cleanup); };
   window.addEventListener('afterprint',cleanup);
@@ -4160,6 +4248,6 @@ document.addEventListener('click',async event=>{
 <link rel="stylesheet" href="/advacon-warehouse.css">
 <script src="/advacon-warehouse.js?v=20260915-catalog-receipt"></script>
 <script src="advacon-expiry.js?v=20260915-catalog-receipt"></script>
-<script src="advacon-review.js?v=20260912-2"></script>
+<script src="advacon-review.js?v=20260915-images"></script>
 </body></html>
 
