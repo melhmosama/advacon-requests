@@ -2272,7 +2272,7 @@ async function load(role){
     wantRecurring ? sbFetchRecurring() : Promise.resolve(null),
     sbFetchSettings()
   ]);
-  if(sb!==null)state.requests=sb;
+  if(sb!==null){state.requests=sb;if(role==='admin')_adminRequestsReady=true;}
   if(st!==null)state.staff=st;
   if(rec!==null)state.recurring=rec;
   if(cfg){
@@ -2496,31 +2496,34 @@ function startPublicPolling(){
 let _pubSig='';
 function applyDir(){document.body.setAttribute('dir',L==='ar'?'rtl':'ltr');document.documentElement.lang=L;}
 async function toggleLang(){L=(L==='en'?'ar':'en');if(state.role!=='staff')await saveLang();applyDir();render();}
-async function exitToGate(){state.role='employee';{await admSignOut();}clearAdminFlag();openAdmin();document.getElementById('app').style.display='none';}
+async function exitToGate(){state.role='employee';_adminRequestsReady=false;window.AdvaconRequestTools?.resetNotifications();{await admSignOut();}clearAdminFlag();openAdmin();document.getElementById('app').style.display='none';}
 function go(r){if(state.role==='admin')adminCloseDetail();state.route=state.role==='admin'?adminResolveRoute(r):r;sideOpen=false;try{history.pushState(history.state,'','#'+r);}catch(e){}render();}
 function openExternal(path){try{window.open(path,'_blank','noopener');}catch(e){}}
 function toggleSide(){sideOpen=!sideOpen;render();}
 
 /* realtime */
-let _rt=null,_rtRef=1,_rtHb=null,_poll=null;
-async function refreshNow(){return AdvaconUI.singleFlight('admin-refresh',refreshNowImpl);}
-async function refreshNowImpl(){if(state.role!=='admin'||document.hidden)return;
-  // don't disrupt if a modal is open or user is typing in a field
-  if(modal)return;
-  if(document.activeElement&&['INPUT','SELECT','TEXTAREA'].includes(document.activeElement.tagName))return;
+let _rt=null,_rtRef=1,_rtHb=null,_poll=null,_adminRequestsReady=false;
+const adminRefreshSafe=()=>state.role==='admin'&&!modal&&!['INPUT','SELECT','TEXTAREA'].includes(document.activeElement?.tagName);
+async function refreshNow(options={}){return AdvaconUI.singleFlight('admin-refresh',()=>refreshNowImpl(options));}
+async function refreshNowImpl({allowBackground=false}={}){
+  if(!adminRefreshSafe()||document.hidden&&!allowBackground)return;
+  const owner=admGetSession()?.user_id;
   const sb=await sbFetchAll();
-  if(state.role!=='admin'||document.hidden||modal||['INPUT','SELECT','TEXTAREA'].includes(document.activeElement?.tagName))return;
+  if(!adminRefreshSafe()||document.hidden&&!allowBackground||admGetSession()?.user_id!==owner)return;
   if(sb!==null){
-    // only re-render if data actually changed (avoid needless flicker)
-    const sig=JSON.stringify(sb.map(r=>[r.id,r.status,r.accepted,r.archived,r.assignedTo,r.duration,r.start,r.notes].join('|')));
-    if(sig!==_lastSig){_lastSig=sig;state.requests=sb;await admLoadMrBadges();render();}
-    else{state.requests=sb;}
+    const changed=!_adminRequestsReady||JSON.stringify(sb)!==JSON.stringify(state.requests);
+    state.requests=sb;_adminRequestsReady=true;
+    if(changed){
+      // Render and notify together, including a pending-confirm-only change.
+      render();
+      // Material badges must not delay the arrival of the request or its sound.
+      const badges=JSON.stringify(state.mrBadges);
+      void admLoadMrBadges().then(()=>{if(adminRefreshSafe()&&admGetSession()?.user_id===owner&&badges!==JSON.stringify(state.mrBadges))render();});
+    }
   }
 }
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&state.role==='admin')refreshNow();});
-let _realtimeRefreshTimer=null;
-function scheduleAdminRefresh(){if(_realtimeRefreshTimer)return;_realtimeRefreshTimer=setTimeout(()=>{_realtimeRefreshTimer=null;refreshNow();},300);}
-let _lastSig='';
+function scheduleAdminRefresh(){void refreshNow({allowBackground:true});}
 function startRealtime(){
   // websocket gives near-instant updates; keep a slower 20s poll only as a fallback
   if(!_poll)_poll=setInterval(refreshNow,20000);
@@ -2611,6 +2614,7 @@ function render(){
   AdvaconUI.enhance(app);
   adminDecorate();
   window.AdvaconRequestTools?.decorate();
+  if(_adminRequestsReady)window.AdvaconRequestTools?.rendered(state.requests);
 }
 
 
@@ -6460,7 +6464,7 @@ function renderAsset(){const gate=document.getElementById('gate'),app=document.g
   }
 })();
 
-</script><script src="/advacon-report-logo.js?v=20260912-report-quality"></script><script src="/advacon-vehicles.js?v=services-v1"></script><script src="/advacon-vehicle-service-catalog.js?v=1"></script><script src="/advacon-vehicle-services.js?v=shared-intake-v1"></script><script src="/advacon-vehicle-requests.js?v=request-flow-v1"></script><script src="/advacon-request-tools.js?v=20260927"></script>
+</script><script src="/advacon-report-logo.js?v=20260912-report-quality"></script><script src="/advacon-vehicles.js?v=services-v1"></script><script src="/advacon-vehicle-service-catalog.js?v=1"></script><script src="/advacon-vehicle-services.js?v=shared-intake-v1"></script><script src="/advacon-vehicle-requests.js?v=request-flow-v1"></script><script src="/advacon-request-tools.js?v=20260927-sound-sync"></script>
 </body></html>
 
 
