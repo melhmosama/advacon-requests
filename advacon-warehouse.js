@@ -3,7 +3,7 @@
  'use strict';
  const tr=(ar,en)=>LANG==='ar'?ar:en,html=value=>AdvaconUI.escape(value);
  const oldList=viewWarehouses,oldDetail=whmDetailPage,oldRoute=route,oldMovementRender=mvRender,oldCatalogRender=catRender,oldCatalogClose=catClose;
- const warehouseTab=WH_SUBNAV.find(x=>x.key==='shelves');if(warehouseTab){warehouseTab.label_ar='المستودعات';warehouseTab.label_en='Warehouses';WH_SUBNAV.splice(WH_SUBNAV.indexOf(warehouseTab),1);WH_SUBNAV.splice(0,0,warehouseTab);}
+ const warehouseTab=WH_SUBNAV.find(x=>x.key==='shelves');if(warehouseTab){warehouseTab.label_ar='المستودعات';warehouseTab.label_en='Warehouses';}
  const homeTab=WH_SUBNAV.find(x=>x.key==='dashboard');if(homeTab){homeTab.label_ar='الرئيسية';homeTab.label_en='Home';}
  const views=new Map();let listQuery='',listError=null,listLoading=null,itemsSequence=0,shelfSequence=0,itemDialog=null,contextMovement=false,hadMovement=false,contextCatalog=false,stockOrigin='shelves',catalogOriginHash='';
  const name=w=>(LANG==='ar'?(w.name_ar||w.name_en):(w.name_en||w.name_ar))||w.code||w.item_code||'—';
