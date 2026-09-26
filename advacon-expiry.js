@@ -59,7 +59,7 @@ warehouseRpc=async function(fn,args={}){
  else if(kind==='return'&&item.tracks_expiry){const date=await datePrompt();if(!date)throw Error(tr('أُلغيت العملية.','Operation cancelled.'));args={...args,p_expiry_date:date};}
  else{allocations=await allocate(item,args,kind);if(!allocations)throw Error(tr('أُلغيت العملية.','Operation cancelled.'));if(kind==='return'){if(allocations.length!==1)throw Error(tr('أرجع كل تاريخ صلاحية بعملية مستقلة.','Return each expiry date separately.'));args={...args,p_batch_no:allocations[0].batch_no};allocations=null;}}
  }
- const result=await raw('advacon_expiry_execute',{p_function:fn,p_args:args,p_allocations:allocations,p_tracks:tracks});data=null;return result;
+ const result=await window.warehouseRpc('advacon_expiry_execute',{p_function:fn,p_args:args,p_allocations:allocations,p_tracks:tracks});data=null;return result;
  }catch(e){throw Error(friendly(e));}finally{busy=false;}
 };
 function policy(value,handler){return `<label>${tr('هل للصنف صلاحية؟','Does this item have expiry?')} *<select class="rc-in" onchange="${handler}(this.value)"><option value="">${tr('اختر','Choose')}</option><option value="no" ${value===false?'selected':''}>${tr('لا','No')}</option><option value="yes" ${value===true?'selected':''}>${tr('نعم','Yes')}</option></select></label>`;}

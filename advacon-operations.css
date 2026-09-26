@@ -1,0 +1,15 @@
+/* Scoped layout improvements: avoid changing unrelated report templates. */
+.register-column-options{display:grid!important;grid-template-columns:repeat(7,minmax(0,1fr));gap:14px 20px;padding:18px 0}
+.register-column-options label{display:flex!important;align-items:center;gap:9px;margin:0!important;min-height:30px;font-size:13px}
+.register-column-options input[type=checkbox]{appearance:auto!important;inline-size:18px!important;block-size:18px!important;min-width:18px!important;min-height:18px!important;max-height:18px!important;max-width:18px!important;transform:none!important;flex:0 0 18px;margin:0!important;padding:0!important;accent-color:#173f6d}
+.team-task-top,.stf-card .trk-top{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.team-task-top .prio,.stf-card .prio{white-space:nowrap}
+.org-project-list{display:grid!important;grid-template-columns:repeat(auto-fill,minmax(225px,1fr));gap:14px}
+.org-project-list .org-record{margin:0;padding:16px;min-width:0;cursor:grab}.org-project-list .org-record:active{cursor:grabbing}
+.org-project-code{font-size:20px;display:block;color:#173f6d}.org-project-list p{margin:8px 0;overflow-wrap:anywhere}.org-project-list button{margin-inline-end:5px}
+.ops-staff-filters{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0}.ops-staff-filters [aria-pressed=true]{background:#173f6d;color:white}
+.side-foot:has(#request-sound-toggle){flex-wrap:wrap}#request-sound-toggle{flex-basis:100%;font-size:12px}
+.tbl td,.tbl th{vertical-align:middle}.cat-thumb{width:42px;height:42px;object-fit:contain}
+@media(max-width:1100px){.register-column-options{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(max-width:640px){.register-column-options{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.org-project-list{grid-template-columns:repeat(2,minmax(0,1fr))}.org-project-list .org-record{padding:12px}}
+
+.cat-table th,.cat-table td{vertical-align:middle;text-align:start;line-height:1.5}.cat-table tbody tr{height:68px}.cat-table .cat-seq{width:44px;text-align:center;font-variant-numeric:tabular-nums}.cat-table .inv-thumb{width:42px;height:42px;object-fit:contain;display:block}

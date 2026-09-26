@@ -1460,8 +1460,9 @@ html[dir=rtl] .tt-search input{padding:9px 34px 9px 12px}
 <script src="/advacon-dialogs.js"></script>
 <script src="/advacon-experience.js"></script>
 <link rel="stylesheet" href="/advacon-admin.css">
-<script src="/advacon-admin.js?v=20260912-report-quality"></script>
-<link rel="stylesheet" href="/advacon-organization.css"><script src="/advacon-import.js"></script><script src="/advacon-organization.js?v=request-flow-v1"></script></head>
+<script src="/advacon-admin.js?v=20260927"></script>
+<link rel="stylesheet" href="/advacon-organization.css"><script src="/advacon-import.js"></script><script src="/advacon-organization.js?v=20260927"></script><link rel="stylesheet" href="/advacon-operations.css?v=20260927">
+</head>
 <body class="notranslate"><div id="gate"></div><div class="app" id="app" style="display:none"></div><div class="toast" id="toast"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
@@ -1737,7 +1738,7 @@ async function admAddTask(payload,okMsgKey){
   if(adminActionBusy)return false;
   adminActionBusy=true;
   try{
-    const res=await admRpc('admin_add_task',payload);
+    const res=await AdvaconRequestTools.submit(payload);
     if(res&&res.ok===true){await admReloadRequests();finishModal(t(okMsgKey||'added'));return true;}
     toast(admOpError(res));if(res&&res.error==='session'){admSessionGone();}
     return false;
@@ -2465,7 +2466,7 @@ async function tryAdmin(){
   await repairManagerSnapshot();   // heal a pre-snapshot or stale manager record
   document.getElementById('gate').innerHTML='';document.getElementById('app').style.display='flex';applyDir();render();startRealtime();
 }
-async function enterAdminDirect(){state.role='admin';const h=(location.hash||'').replace('#','');const valid=['dashboard','reports','assets','manage','archive','techtasks','staffdir','media','settings','all'];state.route=adminResolveRoute(valid.includes(h.split('?')[0])||['open'].includes(h.split('?')[0])?h:'dashboard');if(!L)L='en';document.getElementById('gate').innerHTML='';document.getElementById('app').style.display='flex';applyDir();render();startRealtime();}
+async function enterAdminDirect(){state.role='admin';const h=(location.hash||'').replace('#','');const valid=['dashboard','reports','assets','manage','archive','techtasks','staffdir','projects','media','settings','all'];state.route=adminResolveRoute(valid.includes(h.split('?')[0])||['open'].includes(h.split('?')[0])?h:'dashboard');if(!L)L='en';document.getElementById('gate').innerHTML='';document.getElementById('app').style.display='flex';applyDir();render();startRealtime();}
 function enterPublic(role){state.role=role;if(role==='staff')L='ar';else if(!L)L='ar';document.getElementById('gate').innerHTML='';document.getElementById('app').style.display='block';applyDir();
   // A1: if a valid staff session exists, restore it and load tasks from the server
   if(role==='staff'){const sess=stfGetSession();if(sess&&sess.en){staffName=sess.en;render();loadStaffTasks();startPublicPolling();return;}}
@@ -2580,6 +2581,7 @@ function render(){
   nav+=`<button onclick="openExternal('/staff')"><span class="ic">🛠️</span><span>${t('navTech')}</span><span class="ext-ic">↗</span></button>`;
   nav+=`<button onclick="openExternal('/asset')"><span class="ic">📦</span><span>${t('navAssetPortal')}</span><span class="ext-ic">↗</span></button>`;
   nav+=`<div class="side-sep"></div><button class="${state.route==='staffdir'?'active':''}" onclick="go('staffdir')"><span class="ic">♙</span><span>${L==='ar'?'ADVACON موظفين':'ADVACON Employees'}</span></button>`;
+  nav+=`<button class="${state.route==='projects'?'active':''}" onclick="go('projects')"><span class="ic">▦</span><span>${L==='ar'?'المشاريع':'Projects'}</span></button>`;
   app.innerHTML=`
     <button class="menu-btn" onclick="toggleSide()">☰</button>
     ${sideOpen?'<div class="scrim" onclick="toggleSide()"></div>':''}
@@ -2598,6 +2600,7 @@ function render(){
   else if(state.route==='manage')v.innerHTML=adminWorkView();
   else if(state.route==='all')v.innerHTML=adminRegistryView();
   else if(state.route==='techtasks')v.innerHTML=adminTeamTabs()+adminTeamView()+'<details class="ad-surface"><summary>'+(L==='ar'?'حسابات الفنيين ومدير القسم':'Technician accounts & department manager')+'</summary>'+viewStaffDir()+'</details>';
+  else if(state.route==='projects'){v.innerHTML='<div id="org-projects"></div>';AdvaconOrganization.mountProjects(v.querySelector('#org-projects'));}
   else if(state.route==='staffdir'){v.innerHTML='<div id="org-directory"></div>';AdvaconOrganization.mount(v.querySelector('#org-directory'));}
   else if(state.route==='open')v.innerHTML=viewOpen();
   else if(state.route==='archive'){adminResolveRoute('archive');v.innerHTML=adminRegistryView();}
@@ -2607,7 +2610,9 @@ function render(){
   renderModal();
   AdvaconUI.enhance(app);
   adminDecorate();
+  window.AdvaconRequestTools?.decorate();
 }
+
 
 async function renderDecisionSummary(root){
  const section=document.createElement('section');section.className='au-decision-summary card';const heading=document.createElement('h2');heading.textContent=AdvaconUI.text('يحتاج قرارك','Needs your decision');section.append(heading);root.prepend(section);
@@ -4616,6 +4621,7 @@ function viewManage(){
     <div class="mc-title">${state.role==='admin'?adminTaskLink(r):esc(r.title)}</div>
     <div class="mc-rows">
       ${drow(t('mAssign'),esc(r.assignedTo||'—'))}
+      ${drow(t('mReqBy'),esc(r.requestedBy||'—'))}
       ${r.schedStart?drow(t('taskStartLbl'),fmtTime(r.schedStart)):''}
       ${drow(t('mProj'),esc(r.project))}
       ${drow(t('svcType'),esc(dispCat(r.category)))}
@@ -4637,6 +4643,7 @@ function viewManage(){
     <div class="mc-title">${state.role==='admin'?adminTaskLink(r):esc(r.title)}</div>
     <div class="mc-rows">
       ${drow(t('mAssign'),esc(r.assignedTo||'—'))}
+      ${drow(t('mReqBy'),esc(r.requestedBy||'—'))}
       ${drow(t('mProj'),esc(r.project))}
       ${drow(t('svcType'),esc(dispCat(r.category)))}
       ${drow(t('priority'),`<span class="prio ${r.priority}">${esc(dispPri(r.priority))}</span>`)}
@@ -4779,7 +4786,7 @@ function askReject(id){modal={type:'reject',id,reason:''};renderModal();}
 async function doReject(id,reason){await admArchiveTask(id,'reject',(reason||'').trim()||null,'rejectedToast');}
 
 /* ===== task form (accept / edit / add) + close/reopen + lightbox ===== */
-function openAddTask(){modal={type:'add'};renderModal();}
+function openAddTask(){if(!getDepartmentManager()){toast(L==='ar'?'حدد مدير القسم من الفريق أولًا.':'Configure the department manager in Team first.');return;}AdvaconRequestTools.reset();modal={type:'add'};renderModal();}
 function openEdit(id){clearDirty();modal={type:'edit',id};renderModal();}
 function askClose(id){modal={type:'close',id};renderModal();}
 async function doClose(id){if(window.vehicleCloseBusy)return;window.vehicleCloseBusy=true;try{if(!await AdvaconVehicleRequests.prepareClose(id))return;const staff=modal?.staffConfirm;modal=null;if(staff)await doConfirmStaffDone(id);else await admTaskAction(id,'complete',null,'closedToast');}catch(e){toast(e.message||t('connErr'));}finally{window.vehicleCloseBusy=false;}}
@@ -5476,7 +5483,7 @@ function renderModal(){
   if(modal.type==='add'){
     el.innerHTML=`<div class="modal-bg" ${close}><div class="modal"><h3>${t('addTaskTitle')}</h3>
       <div class="form-grid">
-        <div class="field"><label>${t('requestedBy')}</label><input id="tf_req" placeholder="—"/></div>
+        <div class="field"><label>${t('requestedBy')}</label><input id="tf_req" value="${esc(mgrName())}" readonly aria-readonly="true"/><small>${esc(mgrPhone())}</small></div>
         ${fieldSelect('tf_proj',state.lists.projects,'',t('mProj'),true)}
         ${fieldSelect('tf_cat',state.lists.categories,'',t('mCat'),true)}
         ${fieldSelect('tf_pri',state.lists.priorities,'Medium',t('priority'),true)}
@@ -5484,6 +5491,8 @@ function renderModal(){
         <div class="field"><label>${t('mDur')} <span class="req">*</span></label><input type="number" min="1" id="tf_dur" placeholder="${t('mDur')}"/></div>
         <div class="field full"><label>${t('needs')} <span class="req">*</span></label><textarea id="tf_title" placeholder="${t('needsPh')}"></textarea></div>
         <div class="field full"><label>${t('noteLabel')}</label><input id="tf_notes" placeholder="${t('notesPh')}"/></div>
+        <div class="field"><label for="admin-request-image">${t('addImages')}</label><input id="admin-request-image" type="file" accept="image/jpeg,image/png,image/webp" onchange="AdvaconRequestTools.attachment(this,'image')"/><small id="admin-image-state"></small></div>
+        <div class="field"><label for="admin-request-file">${t('addFiles')}</label><input id="admin-request-file" type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt" onchange="AdvaconRequestTools.attachment(this,'file')"/><small id="admin-file-state"></small></div>
         <div class="field full"><label>${t('aatReceivedLbl')} <span style="color:var(--grey);font-weight:400">(${t('optional')})</span></label><input type="datetime-local" id="tf_received"/><div class="fld-hint">${t('aatReceivedHint')}</div></div>
       </div>
       <div class="btnrow" style="justify-content:flex-end;margin-top:14px"><button class="btn sec" onclick="modal=null;renderModal()">${t('cancel')}</button><button class="btn green" onclick="saveTaskForm('add')">${t('save')}</button></div>
@@ -6046,15 +6055,15 @@ function viewStaff(){
   // until the manager moves it back to work (or to Not Started → returns to manager).
   // Show: In Progress + locked statuses + re-assigned (Not Started & accepted).
   // Hide: Not Started that returned to manager (accepted=false), Complete, Cancelled.
-  const mine=state.requests.map(calc).filter(r=>r.assignedTo===staffName && r.accepted && !r.archived && r.effStatus!=='Complete' && r.status!=='Cancelled' && r.effStatus!=='Cancelled').sort((a,b)=>b.id-a.id);
+  const mine=state.requests.map(calc).filter(r=>r.assignedTo===staffName && r.accepted && AdvaconRequestTools.staffMatch(r)).sort((a,b)=>b.id-a.id);
   if(staffModal){return staffDetail(staffModal);}
-  const cards=mine.length?mine.map(r=>{
+  const cards=mine.length?mine.slice(0,AdvaconRequestTools.staffLimit()).map(r=>{
     let imgs=[];try{imgs=JSON.parse(r.images||'[]');}catch(e){}
     const pend=r.pendingConfirm?`<span class="stf-pend">⏳ ${t('stfPendBadge')}</span>`:'';
     const locked=LOCKED_STATUSES.includes(r.status);
     const lockBadge=locked?`<span class="stf-lock-badge">🔒 ${esc(stfStatusLabel(r.status))}</span>`:'';
     return `<div class="stf-card" onclick="openStaffTask(${r.id})">
-      <div class="trk-top"><span class="trk-id">${fmtID(r.id)}</span>${pend}${lockBadge}</div>
+      <div class="trk-top"><span class="trk-id">${fmtID(r.id)}</span>${pend}${lockBadge}${!pend&&!lockBadge?stBadge(r.effStatus):''}<span class="prio ${esc(r.priority)}">${esc(dispPri(r.priority))}</span></div>
       <div class="trk-title">${esc(r.title)}</div>
       <div class="trk-meta">${esc(r.project)}${imgs.length?' · 🖼 '+imgs.length:''}</div>
       <div class="stf-open">${t('stfOpen')} →</div>
@@ -6068,7 +6077,7 @@ function viewStaff(){
     </div>
     <div class="stf-welcome">${t('stfWelcome')} ${esc(staffSelfDisp())} 👋</div>
     <div class="req-head" style="margin-top:4px"><h1 style="font-size:22px">${t('stfMyTasks')} <span style="color:var(--accent)">(${mine.length})</span></h1></div>
-    <div class="stf-list">${cards}</div>
+    ${AdvaconRequestTools.staffControls(mine.length)}<div class="stf-list">${cards}</div>
   </div>`;
 }
 let staffCodeInput='';let staffLoginErr=false;let stfMat=null;
@@ -6451,6 +6460,7 @@ function renderAsset(){const gate=document.getElementById('gate'),app=document.g
   }
 })();
 
-</script><script src="/advacon-report-logo.js?v=20260912-report-quality"></script><script src="/advacon-vehicles.js?v=services-v1"></script><script src="/advacon-vehicle-service-catalog.js?v=1"></script><script src="/advacon-vehicle-services.js?v=shared-intake-v1"></script><script src="/advacon-vehicle-requests.js?v=request-flow-v1"></script></body></html>
+</script><script src="/advacon-report-logo.js?v=20260912-report-quality"></script><script src="/advacon-vehicles.js?v=services-v1"></script><script src="/advacon-vehicle-service-catalog.js?v=1"></script><script src="/advacon-vehicle-services.js?v=shared-intake-v1"></script><script src="/advacon-vehicle-requests.js?v=request-flow-v1"></script><script src="/advacon-request-tools.js?v=20260927"></script>
+</body></html>
 
 
