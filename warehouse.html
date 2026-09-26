@@ -1535,7 +1535,7 @@ function whCan(key){return ['direct','approval'].includes(whPermissionMode(key))
 function whDirect(key){return whPermissionMode(key)==='direct';}
 const WH_MOVE_ACTION={ISSUE:'movements.issue',RECEIPT:'movements.receive',RETURN:'movements.return',TRANSFER:'movements.transfer',ADJUSTMENT:'movements.adjust',DISPOSAL:'movements.dispose'};
 const WH_MOVE_RPC={ISSUE:['admin_issue','request_issue_approval'],RECEIPT:['admin_receive_stock','request_receipt_approval'],RETURN:['admin_return','request_return_approval'],TRANSFER:['admin_transfer_stock','request_transfer_approval'],ADJUSTMENT:['admin_adjustment','request_adjustment_approval'],DISPOSAL:['admin_disposal','request_disposal_approval']};
-const WH_RPC_ACTION={warehouse_dashboard:'dashboard.view',inventory_list:'inventory.view',item_catalog_list:'catalog.view',movements_list:'movements.view',warehouses_list:'warehouses.view',warehouse_shelves:'shelves.view',batches_expiry_list:'batches.view',warehouse_report:'reports.view',warehouse_report_movements:'reports.view',create_item_master:'catalog.create',admin_update_item_master:'catalog.edit',admin_set_item_image:'catalog.edit',admin_create_warehouse:'warehouses.create',admin_set_warehouse_open:'warehouses.edit',admin_set_warehouse_active:'warehouses.edit',admin_add_shelf:'shelves.manage',admin_set_item_warehouse_shelf:'shelves.manage'};
+const WH_RPC_ACTION={advacon_warehouse_dashboard:'dashboard.view',warehouse_dashboard:'dashboard.view',inventory_list:'inventory.view',item_catalog_list:'catalog.view',movements_list:'movements.view',warehouses_list:'warehouses.view',warehouse_shelves:'shelves.view',batches_expiry_list:'batches.view',warehouse_report:'reports.view',warehouse_report_movements:'reports.view',create_item_master:'catalog.create',admin_update_item_master:'catalog.edit',admin_set_item_image:'catalog.edit',admin_create_warehouse:'warehouses.create',admin_set_warehouse_open:'warehouses.edit',admin_set_warehouse_active:'warehouses.edit',admin_add_shelf:'shelves.manage',admin_set_item_warehouse_shelf:'shelves.manage'};
 function whAnyMovement(){return Object.values(WH_MOVE_ACTION).some(whCan);}
 function whTabAllowed(tab){
  if(!tab)return false;
@@ -1876,7 +1876,7 @@ function showAccessScreen(reason){
    ===================================================================== */
 function renderSidebar(){
   const nav = document.getElementById('mainNav');
-  nav.innerHTML = WH_SUBNAV.filter(whTabAllowed).filter(tab=>!(tab.key==='dashboard'&&whTabAllowed(WH_SUBNAV.find(x=>x.key==='shelves')))&&!(tab.key==='inventory'&&whTabAllowed(WH_SUBNAV.find(x=>x.key==='catalog')))).map(tab => {
+  nav.innerHTML = WH_SUBNAV.filter(whTabAllowed).filter(tab=>!(tab.key==='inventory'&&whTabAllowed(WH_SUBNAV.find(x=>x.key==='catalog')))).map(tab => {
     const label = ['catalog','inventory'].includes(tab.key)?(LANG==='ar'?'الأصناف':'Items'):(LANG==='ar') ? tab.label_ar : tab.label_en;
     const activeClass = (currentTab() === tab.key || currentTab()==='inventory'&&tab.key==='catalog') ? 'active' : '';
     return `
@@ -4246,9 +4246,11 @@ document.addEventListener('click',async event=>{
 </script>
 
 <link rel="stylesheet" href="/advacon-warehouse.css">
-<script src="/advacon-warehouse.js?v=20260927"></script>
+<script src="/advacon-warehouse.js?v=20260927-dashboard"></script>
 <script src="advacon-expiry.js?v=20260927"></script>
 <script src="advacon-review.js?v=20260915-images"></script>
 <link rel="stylesheet" href="/advacon-operations.css?v=20260927"><link rel="stylesheet" href="/advacon-warehouse-documents.css?v=20260927"><script src="/advacon-warehouse-documents.js?v=20260927"></script>
+<link rel="stylesheet" href="/advacon-warehouse-dashboard.css?v=20260927">
+<script src="/advacon-warehouse-dashboard.js?v=20260927"></script>
 </body></html>
 
