@@ -6,17 +6,19 @@ let command=crypto.randomUUID(),generation=0,uploads={image:null,file:null},pend
 let audio=null,enabled=localStorage.getItem('advacon-request-sound')!=='off',busy=false,identity='',baseline=null,staffFilter='current',staffCount=50;
 const currentIdentity=()=>{const s=admGetSession();return s?.user?.id||s?.user_id||s?.email||'admin';};
 async function unlock(){if(!enabled||state.role!=='admin')return;try{audio=audio||new(window.AudioContext||window.webkitAudioContext)({latencyHint:'interactive'});if(audio.state==='suspended')await audio.resume();decorate();}catch{}}
-// One arrival is one continuous tone, with no second delayed beep.
-function sound(){
+// Each stage has a distinct continuous tone, with no repeated beep per stage.
+function sound(stage='incoming',delay=0){
  if(!enabled||audio?.state!=='running')return;
- const o=audio.createOscillator(),gain=audio.createGain(),at=audio.currentTime;
- o.frequency.value=780;
+ const confirmation=stage==='confirmation',duration=confirmation?.46:.30;
+ const o=audio.createOscillator(),gain=audio.createGain(),at=audio.currentTime+delay;
+ o.frequency.setValueAtTime(confirmation?520:780,at);
+ if(confirmation)o.frequency.exponentialRampToValueAtTime(390,at+.40);
  gain.gain.setValueAtTime(0,at);gain.gain.linearRampToValueAtTime(.30,at+.02);
- gain.gain.exponentialRampToValueAtTime(.001,at+.28);
- o.connect(gain);gain.connect(audio.destination);o.start(at);o.stop(at+.30);
+ gain.gain.exponentialRampToValueAtTime(.001,at+duration-.02);
+ o.connect(gain);gain.connect(audio.destination);o.start(at);o.stop(at+duration);
  o.onended=()=>{o.disconnect();gain.disconnect();};
 }
-function decorate(){if(state.role!=='admin')return;const area=document.querySelector('.side-foot');if(!area)return;let b=document.getElementById('request-sound-toggle');if(!b){b=document.createElement('button');b.id='request-sound-toggle';b.type='button';b.onclick=async()=>{enabled=!enabled;localStorage.setItem('advacon-request-sound',enabled?'on':'off');if(enabled){await unlock();sound();}decorate();};area.prepend(b);}b.textContent=enabled?(audio?.state==='running'?tr('الصوت مفعّل','Sound on'):tr('تفعيل صوت التنبيهات','Enable alert sound')):tr('الصوت مكتوم','Sound muted');b.setAttribute('aria-pressed',String(enabled));b.title=tr('تنبيه الطلبات الواردة وبانتظار التأكيد','Incoming and confirmation request alerts');if(enabled&&audio?.state!=='running')b.onclick=async()=>{await unlock();sound();decorate();};}
+function decorate(){if(state.role!=='admin')return;const area=document.querySelector('.side-foot');if(!area)return;let b=document.getElementById('request-sound-toggle');if(!b){b=document.createElement('button');b.id='request-sound-toggle';b.type='button';b.onclick=async()=>{enabled=!enabled;localStorage.setItem('advacon-request-sound',enabled?'on':'off');if(enabled){await unlock();sound();}decorate();};area.prepend(b);}b.textContent=enabled?(audio?.state==='running'?tr('الصوت مفعّل','Sound on'):tr('تفعيل صوت التنبيهات','Enable alert sound')):tr('الصوت مكتوم','Sound muted');b.setAttribute('aria-pressed',String(enabled));b.title=tr('طلب جديد: نغمة قصيرة حادة • بانتظار التأكيد: نغمة أخفض وأطول','New request: short high tone • Pending confirmation: lower, longer tone');if(enabled&&audio?.state!=='running')b.onclick=async()=>{await unlock();sound();decorate();};}
 // The same rendered request snapshot drives the cards and sound. The lightweight
 // notification RPC only wakes that refresh; it never plays an independent alert.
 const eventKey=x=>x.id+':'+x.stage+':'+(x.at&&!Number.isNaN(Date.parse(x.at))?new Date(x.at).toISOString():x.at||'');
@@ -26,7 +28,8 @@ function resetNotifications(){identity='';baseline=null;}
 function rendered(rows){
  if(state.role!=='admin'){resetNotifications();return;}
  const owner=currentIdentity();if(owner!==identity){identity=owner;baseline=null;}
- const next=transition(baseline,requestEvents(rows));baseline=next.now;
+ const events=requestEvents(rows),stages=new Map(events.map(e=>[eventKey(e),e.stage]));
+ const next=transition(baseline,events);baseline=next.now;
  if(!next.newItems.length||!enabled||audio?.state!=='running')return;
  const key='advacon-request-alert:'+owner,detected=performance.now();
  const deliver=()=>{
@@ -38,7 +41,12 @@ function rendered(rows){
   for(const k of fresh)seen[k]=Date.now();
   for(const k of Object.keys(seen))if(Date.now()-seen[k]>86400000)delete seen[k];
   try{localStorage.setItem(key,JSON.stringify(seen));}catch{}
-  sound();
+  // Batch arrivals of the same stage into one alert. If both stages arrive
+  // together, play each stage once in sequence so neither is masked.
+  const arrived=new Set(fresh.map(k=>stages.get(k)));let delay=0;
+  for(const stage of ['incoming','confirmation'])if(arrived.has(stage)){
+   sound(stage,delay);delay+=(stage==='confirmation'?.46:.30)+.12;
+  }
  };
  if(navigator.locks)void navigator.locks.request(key,{ifAvailable:true},lock=>{if(lock)deliver();}).catch(()=>{});
  else deliver();
