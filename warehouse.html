@@ -833,6 +833,7 @@
 <script src="/advacon-dialogs.js"></script>
 <script src="/advacon-experience.js"></script>
 <link rel="stylesheet" media="print" href="advacon-report-print.css?v=20260912-1">
+<script src="/advacon-images.js?v=20260927-images"></script>
 </head>
 <body>
 
@@ -1697,6 +1698,8 @@ async function warehouseRpc(fn, args, sessionVerified=false){
 /* Upload a file to the warehouse-images bucket at the given path. Returns
    { path } on success. Never uses the anon key — always the current JWT. */
 async function uploadWarehouseImage(file, path){
+  file=await AdvaconImages.prepare(file);
+  path=path.replace(/\.[^./]+$/,'')+(file.type==='image/png'?'.png':'.jpg');
   const okSess = await ensureCurrentSession();
   if(!okSess) throw new Error(translateError('session'));
   const { error: upErr } = await sb.storage.from(CFG.imagesBucket).upload(path, file, { contentType: file.type });
@@ -1790,7 +1793,7 @@ async function whWaitForReportImages(){
  repRender();
  const images=[...document.querySelectorAll('.rep-preview img,.rep-sheet img,.rep-thumb,.rep-thumb-sm')];
  const results=await Promise.all(images.map(img=>{let timer;return Promise.race([
-  img.decode().then(()=>img.naturalWidth>0,()=>false),
+  AdvaconImages.ready(img).then(()=>img.naturalWidth>0,()=>false),
   new Promise(resolve=>{timer=setTimeout(()=>resolve(false),15000);})
  ]).finally(()=>clearTimeout(timer));}));
  const hasFailure=x=>!!x&&typeof x==='object'&&(x.image_load_error===true||Object.values(x).some(hasFailure));
@@ -2599,7 +2602,7 @@ async function catNewUploadImage(inputEl){
     /* New item has no UUID yet, so use a staging path. It remains private. */
     const ext=(file.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'')||'jpg';
     const path=`items/new/${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;
-    await uploadWarehouseImage(file,path);catNew.image_url=path;catRender();
+    const uploaded=await uploadWarehouseImage(file,path);catNew.image_url=uploaded.path;catRender();
   }catch(e){catNew.image_url='';catNewErr=e.message||t('imdImageErr');}
   finally{catNewImgBusy=false;catRender();}
 }
@@ -2663,7 +2666,7 @@ function catDetailDrawer(){
     <div class="imd-body">
       <div class="imd-hero"><div>
         ${catImgTag(r.image_url,'imd-photo',r.item_code,true)}
-        ${admin?`<div class="imd-photo-actions"><label class="imd-upload ${catDetailImgBusy?'busy':''}">${catDetailImgBusy?t('invImgUploading'):(r.image_url?t('invChangeImg'):t('invAddImg'))}<input type="file" accept="image/*" capture="environment" onchange="catUploadExistingImage('${AdvaconExperience.jsSingle(id)}',this)"/></label></div>`:''}
+        ${admin?`<div class="imd-photo-actions"><label class="imd-upload ${catDetailImgBusy?'busy':''}">${catDetailImgBusy?t('invImgUploading'):(r.image_url?t('invChangeImg'):t('invAddImg'))}<input type="file" accept="${AdvaconImages.accept}" capture="environment" onchange="catUploadExistingImage('${AdvaconExperience.jsSingle(id)}',this)"/></label></div>`:''}
       </div><div>
         <div class="imd-statusline">${status}<span class="imd-stat">${whCan('inventory.view')?fmtInt(inv.length):'—'} ${t('catWhCount')}</span></div>
         <div class="imd-grid">
@@ -2704,7 +2707,7 @@ function catNewPanel(){
   const opts=(arr,val,ph)=>`<option value="">${t(ph)}</option>`+(arr||[]).map(x=>`<option value="${x.id}" ${String(val)===String(x.id)?'selected':''}>${esc(LANG==='ar'?(x.name_ar||x.name_en):(x.name_en||x.name_ar))}</option>`).join('');
   return `<div class="panel whm-newbox"><h3>${t('catNewTitle')}</h3>
     ${catDetailRefLoading?`<div class="empty">${t('loading')}</div>`:`<div class="imd-form">
-      <label class="full">${t('catImgLbl')} *<div class="imd-photo-actions">${a.image_url?`<span class="cat-badge on">${t('imdImageReady')}</span>`:''}<label class="imd-upload ${catNewImgBusy?'busy':''}">${catNewImgBusy?t('invImgUploading'):(a.image_url?t('invChangeImg'):t('invAddImg'))}<input type="file" accept="image/*" capture="environment" onchange="catNewUploadImage(this)"/></label></div></label>
+      <label class="full">${t('catImgLbl')} *<div class="imd-photo-actions">${a.image_url?`<span class="cat-badge on">${t('imdImageReady')}</span>`:''}<label class="imd-upload ${catNewImgBusy?'busy':''}">${catNewImgBusy?t('invImgUploading'):(a.image_url?t('invChangeImg'):t('invAddImg'))}<input type="file" accept="${AdvaconImages.accept}" capture="environment" onchange="catNewUploadImage(this)"/></label></div></label>
       <label>${t('whmAiNameAr')} *<input value="${esc(a.name_ar)}" oninput="catNewSet('name_ar',this.value)"/></label>
       <label>${t('whmAiNameEn')}<input value="${esc(a.name_en)}" oninput="catNewSet('name_en',this.value)"/></label>
       <label>${t('whmAiCat')} *<select onchange="catNewSet('category_id',this.value)">${opts(ref.categories,a.category_id,'whmAiCatSel')}</select></label>

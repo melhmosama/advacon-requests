@@ -48,10 +48,10 @@ async function poll(){
 async function watch(){await poll();setTimeout(watch,2000);}
 async function attachment(input,kind){
  const file=input.files?.[0],own=generation;uploads[kind]=null;failed.delete(kind);const status=document.getElementById('admin-'+kind+'-state');if(!file){if(status)status.textContent='';return;}
- if(!uploadAllowed(file)||kind==='image'&&!/^image\/(jpeg|png|webp)$/.test(file.type)){failed.add(kind);status.textContent=t('fileRejected');return;}
+ if(!uploadAllowed(file)||kind==='image'&&!AdvaconImages.isImage(file)){failed.add(kind);status.textContent=t('fileRejected');return;}
  pending++;input.disabled=true;status.textContent=t('uploading');
  try{const url=await(kind==='image'?sbUploadImage(file):sbUploadFile(file));if(own!==generation)return;uploads[kind]=kind==='image'?url:{url,name:file.name};status.textContent=tr('تم رفع: ','Uploaded: ')+file.name;}
- catch{if(own===generation){failed.add(kind);status.textContent=tr('تعذّر الرفع. اختر الملف مجددًا أو أزله قبل الحفظ.','Upload failed. Reselect or remove the file before saving.');}}
+ catch(e){if(own===generation){failed.add(kind);status.textContent=AdvaconImages.uploadError(e,tr('تعذّر الرفع. اختر الملف مجددًا أو أزله قبل الحفظ.','Upload failed. Reselect or remove the file before saving.'));}}
  finally{if(own===generation)pending--;if(input.isConnected)input.disabled=false;}
 }
 async function submit(payload){if(pending){toast(t('waitUpload'));return {ok:false,error:'attachments_uploading'};}if(failed.size){toast(tr('أكمل رفع المرفق أو أزله قبل الحفظ.','Upload or remove the failed attachment first.'));return {ok:false,error:'attachment_upload_failed'};}return admRpc('advacon_admin_add_request',{p_command_id:command,p_payload:{...payload,images:uploads.image?[uploads.image]:[],files:uploads.file?[uploads.file]:[]}});}

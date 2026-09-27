@@ -1462,6 +1462,7 @@ html[dir=rtl] .tt-search input{padding:9px 34px 9px 12px}
 <link rel="stylesheet" href="/advacon-admin.css">
 <script src="/advacon-admin.js?v=20260927"></script>
 <link rel="stylesheet" href="/advacon-organization.css"><script src="/advacon-import.js"></script><script src="/advacon-organization.js?v=20260927"></script><link rel="stylesheet" href="/advacon-operations.css?v=20260927">
+<script src="/advacon-images.js?v=20260927-images"></script>
 </head>
 <body class="notranslate"><div id="gate"></div><div class="app" id="app" style="display:none"></div><div class="toast" id="toast"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -1890,6 +1891,7 @@ async function sbFetchSettings(){try{const res=await fetch(SB_URL+'/rest/v1/app_
 // every upload with an opaque 'connection failed' toast.
 const SB_BUCKET='request-images';
 async function sbUploadImage(file){
+  file=await AdvaconImages.prepare(file);
   const ext=((file.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,5))||'jpg';
   const name=Date.now()+'_'+Math.random().toString(36).slice(2,8)+'.'+ext;
   const res=await fetch(SB_URL+'/storage/v1/object/'+SB_BUCKET+'/'+name,{method:'POST',headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':file.type||'image/jpeg'},body:file});
@@ -1897,6 +1899,7 @@ async function sbUploadImage(file){
   return SB_URL+'/storage/v1/object/public/'+SB_BUCKET+'/'+name;
 }
 async function sbUploadFile(file){
+  if(AdvaconImages.isImage(file))return sbUploadImage(file);
   const ext=((file.name.split('.').pop()||'bin').toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,5))||'bin';
   const name=Date.now()+'_'+Math.random().toString(36).slice(2,8)+'.'+ext;
   const res=await fetch(SB_URL+'/storage/v1/object/'+SB_BUCKET+'/'+name,{method:'POST',headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':file.type||'application/octet-stream'},body:file});
@@ -2669,10 +2672,10 @@ function weDay(back){
    columns, but a file column can still hold an image, so classify by type rather
    than by which column it came from. MIME first (when the record carries one),
    extension as the fallback. */
-const WE_IMG_EXT=['jpg','jpeg','png','gif','webp','heic','heif','bmp','tif','tiff','svg','avif'];
+const WE_IMG_EXT=['jpg','jpeg','jpe','jfif','png','gif','webp','heic','heif','bmp','tif','tiff','svg','avif'];
 function weIsImage(f){
-  if(f&&f.type)return String(f.type).toLowerCase().indexOf('image/')===0;
-  const u=String((f&&(f.name||f.url))||f||'').split('?')[0];
+  if(f&&/^image\//i.test(f.type||''))return true;
+  const u=String((f&&(f.name||f.url))||f||'').split(/[?#]/)[0];
   const e=u.split('.').pop().toLowerCase();
   return WE_IMG_EXT.indexOf(e)>=0;
 }
@@ -3741,12 +3744,12 @@ async function handleReqImages(input){
   for(const f of files){
     // images had no size check at all — an oversized one used to fail with a raw
     // server error after the upload had already started
-    if(!uploadAllowed(f)){toast(t('fileRejected'));continue;}
+    if(!AdvaconImages.isImage(f)||!uploadAllowed(f)){toast(t('fileRejected'));continue;}
     const tmpId='t'+Math.random().toString(36).slice(2,8);
     if(wrap){const d=document.createElement('div');d.className='img-prev';d.id=tmpId;d.innerHTML='<span class="upl">'+t('uploading')+'</span>';wrap.appendChild(d);}
     uploadingCount++;setSubmitState();
     try{const url=await sbUploadImage(f);reqImages.push({url,name:f.name});const el=document.getElementById(tmpId);if(el)el.innerHTML='<img src="'+url+'"/><button type="button" onclick="removeReqImage(\''+url+'\')">×</button>';}
-    catch(e){console.error('upload failed:',e&&e.message?e.message:e);const el=document.getElementById(tmpId);if(el)el.remove();toast(t('connErr'));}
+    catch(e){console.error('upload failed:',e&&e.message?e.message:e);const el=document.getElementById(tmpId);if(el)el.remove();toast(AdvaconImages.uploadError(e,t('connErr')));}
     finally{uploadingCount=Math.max(0,uploadingCount-1);setSubmitState();}
   }
   input.value='';
@@ -3765,7 +3768,8 @@ const UPLOAD_MIME_OK=['image/jpeg','image/png','image/webp','image/heic','image/
   'application/vnd.ms-powerpoint',
   'application/vnd.openxmlformats-officedocument.presentationml.presentation'];
 function uploadAllowed(f){
-  if(f.size>UPLOAD_MAX_BYTES)return false;
+  if(!f?.size||f.size>UPLOAD_MAX_BYTES)return false;
+  if(AdvaconImages.isImage(f))return true;
   if(f.type&&UPLOAD_MIME_OK.indexOf(f.type)>=0)return true;
   // some browsers report an empty type; fall back to the extension
   return /\.(jpe?g|png|webp|heic|heif|pdf|docx?|xlsx?|pptx?)$/i.test(f.name);
@@ -3780,7 +3784,7 @@ async function handleReqFiles(input){
     if(wrap){const d=document.createElement('div');d.className='file-prev';d.id=tmpId;d.innerHTML='<span class="upl">'+t('uploading')+'</span>';wrap.appendChild(d);}
     uploadingCount++;setSubmitState();
     try{const url=await sbUploadFile(f);reqFiles.push({url,name:f.name});const el=document.getElementById(tmpId);if(el)el.innerHTML='<span class="fic">📄</span><span class="fnm">'+esc(f.name)+'</span><button type="button" onclick="removeReqFile(\''+url+'\')">×</button>';}
-    catch(e){console.error('upload failed:',e&&e.message?e.message:e);const el=document.getElementById(tmpId);if(el)el.remove();toast(t('connErr'));}
+    catch(e){console.error('upload failed:',e&&e.message?e.message:e);const el=document.getElementById(tmpId);if(el)el.remove();toast(AdvaconImages.uploadError(e,t('connErr')));}
     finally{uploadingCount=Math.max(0,uploadingCount-1);setSubmitState();}
   }
   input.value='';
@@ -3829,7 +3833,7 @@ function viewRequest(){
       <div class="field full"><label>${t('needs')} <span class="req">*</span></label><textarea id="f_title" placeholder="${t('needsPh')}"></textarea></div>
       <div class="field"><label>${t('priority')}</label><select id="f_pri">${opts(state.lists.priorities,'Medium')}</select></div>
       <div class="field"><label>${t('dateReq')}</label><input type="date" value="${today()}" readonly disabled style="background:var(--lgray);color:var(--grey)"/><span class="hint">${t('autoToday')}</span></div>
-      <div class="field full"><label>${t('addImages')}</label><div class="img-upload"><label class="img-btn">📷 ${t('addImages')}<input type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.jpg,.jpeg,.png,.webp,.heic,.heif" multiple style="display:none" onchange="handleReqImages(this)"/></label><span class="hint">${t('addImagesHint')}</span><div class="img-previews" id="img-previews"></div></div></div>
+      <div class="field full"><label>${t('addImages')}</label><div class="img-upload"><label class="img-btn">📷 ${t('addImages')}<input type="file" accept="${AdvaconImages.accept}" multiple style="display:none" onchange="handleReqImages(this)"/></label><span class="hint">${t('addImagesHint')}</span><div class="img-previews" id="img-previews"></div></div></div>
       <div class="field full"><label>${t('addFiles')}</label><div class="img-upload"><label class="img-btn file-btn">📄 ${t('addFiles')}<input type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation" multiple style="display:none" onchange="handleReqFiles(this)"/></label><span class="hint">${t('addFilesHint')}</span><div class="file-previews" id="file-previews"></div></div></div>
     </div>
     <div class="btnrow" style="justify-content:center;margin-top:18px"><button class="btn btn-lg" id="submitBtn" onclick="submitReq()">${t('submit')} →</button></div>
@@ -4209,10 +4213,10 @@ async function coAddImages(input){
   if(!coEdit||!input.files||!input.files.length) return;
   const files=Array.from(input.files); input.value='';
   for(const f of files){
-    if(!uploadAllowed(f)){ toast(t('fileRejected')); continue; }
+    if(!AdvaconImages.isImage(f)||!uploadAllowed(f)){ toast(t('fileRejected')); continue; }
     coEdit.upl++; coEdit.busy=true; renderModal();
     try{ const url=await sbUploadImage(f); coEdit.images.push(url); }
-    catch(e){ console.error('co upload img',e&&e.message); toast(t('connErr')); }
+    catch(e){ console.error('co upload img',e&&e.message); toast(AdvaconImages.uploadError(e,t('connErr'))); }
     finally{ coEdit.upl--; if(coEdit.upl<=0)coEdit.busy=false; renderModal(); }
   }
 }
@@ -4223,7 +4227,7 @@ async function coAddFiles(input){
     if(!uploadAllowed(f)){ toast(t('fileRejected')); continue; }
     coEdit.upl++; coEdit.busy=true; renderModal();
     try{ const url=await sbUploadFile(f); coEdit.files.push({url,name:f.name||'PDF'}); }
-    catch(e){ console.error('co upload file',e&&e.message); toast(t('connErr')); }
+    catch(e){ console.error('co upload file',e&&e.message); toast(AdvaconImages.uploadError(e,t('connErr'))); }
     finally{ coEdit.upl--; if(coEdit.upl<=0)coEdit.busy=false; renderModal(); }
   }
 }
@@ -5135,7 +5139,7 @@ td.report-id,.tbl td.report-id{direction:ltr!important;unicode-bidi:isolate;whit
     ${bodyHtml}
     <div class="rfoot">${(function(){const m=getDepartmentManager();
       return m?('<b>'+esc(L==='ar'?(m.ar||m.en):(m.en||m.ar))+'</b><br>'+esc(t('mgrRole'))):esc(t('mgrNone'));})()}</div>
-    <script>window.onload=function(){Promise.all([document.fonts.ready,...Array.from(document.images).map(function(i){return i.decode().catch(function(){});})]).then(function(){window.print();});}<\/script>
+    <script>window.onload=function(){Promise.all([document.fonts.ready,...Array.from(document.images).map(function(i){return (window.opener?.AdvaconImages?window.opener.AdvaconImages.ready(i):i.decode()).catch(function(){});})]).then(function(){window.print();});}<\/script>
   </body></html>`;
 }
 function openReportWindow(html){const w=window.open('','_blank');if(!w){toast(t('repPopup'));return;}w.document.write(html);w.document.close();}
@@ -5419,7 +5423,7 @@ function renderModal(){
       <div class="field full" style="margin-top:10px">
         <label>${t('coImagesLbl')} (${c.images.length})</label>
         ${imgGrid}
-        <label class="co-add-btn ${busy?'co-dis':''}">📷 ${t('coAddImages')}<input type="file" accept="image/*" multiple style="display:none" ${busy?'disabled':''} onchange="coAddImages(this)"></label>
+        <label class="co-add-btn ${busy?'co-dis':''}">📷 ${t('coAddImages')}<input type="file" accept="${AdvaconImages.accept}" multiple style="display:none" ${busy?'disabled':''} onchange="coAddImages(this)"></label>
       </div>
       <div class="field full" style="margin-top:10px">
         <label>${t('coFilesLbl')} (${c.files.length})</label>
@@ -5495,7 +5499,7 @@ function renderModal(){
         <div class="field"><label>${t('mDur')} <span class="req">*</span></label><input type="number" min="1" id="tf_dur" placeholder="${t('mDur')}"/></div>
         <div class="field full"><label>${t('needs')} <span class="req">*</span></label><textarea id="tf_title" placeholder="${t('needsPh')}"></textarea></div>
         <div class="field full"><label>${t('noteLabel')}</label><input id="tf_notes" placeholder="${t('notesPh')}"/></div>
-        <div class="field"><label for="admin-request-image">${t('addImages')}</label><input id="admin-request-image" type="file" accept="image/jpeg,image/png,image/webp" onchange="AdvaconRequestTools.attachment(this,'image')"/><small id="admin-image-state"></small></div>
+        <div class="field"><label for="admin-request-image">${t('addImages')}</label><input id="admin-request-image" type="file" accept="${AdvaconImages.accept}" onchange="AdvaconRequestTools.attachment(this,'image')"/><small id="admin-image-state"></small></div>
         <div class="field"><label for="admin-request-file">${t('addFiles')}</label><input id="admin-request-file" type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt" onchange="AdvaconRequestTools.attachment(this,'file')"/><small id="admin-file-state"></small></div>
         <div class="field full"><label>${t('aatReceivedLbl')} <span style="color:var(--grey);font-weight:400">(${t('optional')})</span></label><input type="datetime-local" id="tf_received"/><div class="fld-hint">${t('aatReceivedHint')}</div></div>
       </div>
@@ -6218,7 +6222,7 @@ function staffDetail(id){
             :isFuture?`<div class="stf-future-block">🔒 ${t('futureLockMsg')}</div>`
             :effectivelyRunning?`<div class="stf-closeout">
                 <div class="co-block">
-                  <label class="img-btn co-btn">📷 ${t('closeoutPhoto')}<input type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.jpg,.jpeg,.png,.webp,.heic,.heif" multiple style="display:none" onchange="handleCloseout(this)"/></label>
+                  <label class="img-btn co-btn">📷 ${t('closeoutPhoto')}<input type="file" accept="${AdvaconImages.accept}" multiple style="display:none" onchange="handleCloseout(this)"/></label>
                   <div class="img-previews" id="co-previews">${closeoutPhotos.map((u,i)=>`<div class="img-prev"><img src="${esc(u)}"/><button type="button" onclick="removeCloseout('${AdvaconExperience.jsSingle(u)}','')">×</button></div>`).join('')}</div>
                 </div>
                 <div class="co-block">
@@ -6263,7 +6267,7 @@ async function handleCloseoutFiles(input){
     if(wrap){const d=document.createElement('div');d.className='co-fileitem';d.id=tmpId;d.innerHTML='<span class="upl">'+t('uploading')+'</span>';wrap.appendChild(d);}
     coUploading++;
     try{const url=await sbUploadFile(f);closeoutFiles.push({url,name:f.name});const el=document.getElementById(tmpId);if(el)el.innerHTML='<span>📄 '+esc(f.name)+'</span><button type="button" onclick="removeCloseoutFileByUrl(\''+url+'\',\''+tmpId+'\')">×</button>';}
-    catch(e){console.error('upload failed:',e&&e.message?e.message:e);const el=document.getElementById(tmpId);if(el)el.remove();toast(t('connErr'));}
+    catch(e){console.error('upload failed:',e&&e.message?e.message:e);const el=document.getElementById(tmpId);if(el)el.remove();toast(AdvaconImages.uploadError(e,t('connErr')));}
     finally{coUploading--;}
   }
   input.value='';
@@ -6277,12 +6281,12 @@ async function handleCloseout(input){
     // Same rule as the requester's uploads: image/* would accept an SVG (which runs
     // script) and had no size check at all — the server would reject it with an
     // opaque connection error instead of a clear message.
-    if(!uploadAllowed(f)){toast(t('fileRejected'));continue;}
+    if(!AdvaconImages.isImage(f)||!uploadAllowed(f)){toast(t('fileRejected'));continue;}
     const tmpId='co'+Math.random().toString(36).slice(2,8);
     if(wrap){const d=document.createElement('div');d.className='img-prev';d.id=tmpId;d.innerHTML='<span class="upl">'+t('uploading')+'</span>';wrap.appendChild(d);}
     coUploading++;if(btn){btn.disabled=true;btn.style.opacity=.6;}
     try{const url=await sbUploadImage(f);closeoutPhotos.push(url);const el=document.getElementById(tmpId);if(el)el.innerHTML='<img src="'+url+'"/><button type="button" onclick="removeCloseout(\''+url+'\',\''+tmpId+'\')">×</button>';}
-    catch(e){console.error('upload failed:',e&&e.message?e.message:e);const el=document.getElementById(tmpId);if(el)el.remove();toast(t('connErr'));}
+    catch(e){console.error('upload failed:',e&&e.message?e.message:e);const el=document.getElementById(tmpId);if(el)el.remove();toast(AdvaconImages.uploadError(e,t('connErr')));}
     finally{coUploading--;if(coUploading<=0&&btn){btn.disabled=false;btn.style.opacity=1;}}
   }
   input.value='';
@@ -6464,7 +6468,7 @@ function renderAsset(){const gate=document.getElementById('gate'),app=document.g
   }
 })();
 
-</script><script src="/advacon-report-logo.js?v=20260912-report-quality"></script><script src="/advacon-vehicles.js?v=services-v1"></script><script src="/advacon-vehicle-service-catalog.js?v=1"></script><script src="/advacon-vehicle-services.js?v=shared-intake-v1"></script><script src="/advacon-vehicle-requests.js?v=request-flow-v1"></script><script src="/advacon-request-tools.js?v=20260927-sound-sync"></script>
+</script><script src="/advacon-report-logo.js?v=20260912-report-quality"></script><script src="/advacon-vehicles.js?v=services-v1"></script><script src="/advacon-vehicle-service-catalog.js?v=1"></script><script src="/advacon-vehicle-services.js?v=20260927-images"></script><script src="/advacon-vehicle-requests.js?v=20260927-images"></script><script src="/advacon-request-tools.js?v=20260927-images"></script>
 </body></html>
 
 

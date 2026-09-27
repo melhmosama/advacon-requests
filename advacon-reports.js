@@ -13,7 +13,7 @@ function brand(html){
  doc.body.innerHTML='<table class="adv-report-frame"><thead><tr><td><div class="adv-report-head"><div><h1>'+esc(title)+'</h1><small>'+esc(ar()?'تاريخ الإصدار: ':'Issued: ')+esc(stamp())+'</small></div><img alt="ADVACON" src="'+logo+'"></div></td></tr></thead><tbody><tr><td>'+content+'</td></tr></tbody></table>';
  return '<!doctype html>'+doc.documentElement.outerHTML;
 }
-function open(html){const w=window.open('','_blank');if(!w)throw Error(ar()?'اسمح بفتح نافذة التقرير':'Allow report popups');w.document.open();w.document.write(brand(html));w.document.close();Promise.all([...w.document.images].map(i=>i.decode().catch(()=>{}))).then(()=>{w.focus();w.print();});}
+function open(html){const w=window.open('','_blank');if(!w)throw Error(ar()?'اسمح بفتح نافذة التقرير':'Allow report popups');w.document.open();w.document.write(brand(html));w.document.close();Promise.all([...w.document.images].map(i=>(window.AdvaconImages?AdvaconImages.ready(i):i.decode()).catch(()=>{}))).then(()=>{w.focus();w.print();});}
 function printCurrent(){
  const root=document.querySelector('.rep-preview')||(document.querySelector('#reportBody')?.textContent.trim()?document.querySelector('#reportBody'):null)||document.querySelector('#content');if(!root)return;
  const clone=root.cloneNode(true);clone.querySelectorAll('button,script,nav').forEach(e=>e.remove());
