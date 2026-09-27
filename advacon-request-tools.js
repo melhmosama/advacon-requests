@@ -6,7 +6,16 @@ let command=crypto.randomUUID(),generation=0,uploads={image:null,file:null},pend
 let audio=null,enabled=localStorage.getItem('advacon-request-sound')!=='off',busy=false,identity='',baseline=null,staffFilter='current',staffCount=50;
 const currentIdentity=()=>{const s=admGetSession();return s?.user?.id||s?.user_id||s?.email||'admin';};
 async function unlock(){if(!enabled||state.role!=='admin')return;try{audio=audio||new(window.AudioContext||window.webkitAudioContext)({latencyHint:'interactive'});if(audio.state==='suspended')await audio.resume();decorate();}catch{}}
-function sound(){if(!enabled||audio?.state!=='running')return;[0,.18].forEach((delay,i)=>{const o=audio.createOscillator(),gain=audio.createGain(),at=audio.currentTime+delay;o.frequency.value=i?880:660;gain.gain.setValueAtTime(0,at);gain.gain.linearRampToValueAtTime(.30,at+.02);gain.gain.exponentialRampToValueAtTime(.001,at+.15);o.connect(gain);gain.connect(audio.destination);o.start(at);o.stop(at+.17);});}
+// One arrival is one continuous tone, with no second delayed beep.
+function sound(){
+ if(!enabled||audio?.state!=='running')return;
+ const o=audio.createOscillator(),gain=audio.createGain(),at=audio.currentTime;
+ o.frequency.value=780;
+ gain.gain.setValueAtTime(0,at);gain.gain.linearRampToValueAtTime(.30,at+.02);
+ gain.gain.exponentialRampToValueAtTime(.001,at+.28);
+ o.connect(gain);gain.connect(audio.destination);o.start(at);o.stop(at+.30);
+ o.onended=()=>{o.disconnect();gain.disconnect();};
+}
 function decorate(){if(state.role!=='admin')return;const area=document.querySelector('.side-foot');if(!area)return;let b=document.getElementById('request-sound-toggle');if(!b){b=document.createElement('button');b.id='request-sound-toggle';b.type='button';b.onclick=async()=>{enabled=!enabled;localStorage.setItem('advacon-request-sound',enabled?'on':'off');if(enabled){await unlock();sound();}decorate();};area.prepend(b);}b.textContent=enabled?(audio?.state==='running'?tr('الصوت مفعّل','Sound on'):tr('تفعيل صوت التنبيهات','Enable alert sound')):tr('الصوت مكتوم','Sound muted');b.setAttribute('aria-pressed',String(enabled));b.title=tr('تنبيه الطلبات الواردة وبانتظار التأكيد','Incoming and confirmation request alerts');if(enabled&&audio?.state!=='running')b.onclick=async()=>{await unlock();sound();decorate();};}
 // The same rendered request snapshot drives the cards and sound. The lightweight
 // notification RPC only wakes that refresh; it never plays an independent alert.
