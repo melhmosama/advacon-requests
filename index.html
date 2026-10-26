@@ -1461,7 +1461,7 @@ html[dir=rtl] .tt-search input{padding:9px 34px 9px 12px}
 <script src="/advacon-experience.js?v=20261026-release"></script>
 <link rel="stylesheet" href="/advacon-admin.css">
 <script src="/advacon-admin.js?v=20261026-vehicles3"></script>
-<link rel="stylesheet" href="/advacon-organization.css?v=20261026-release"><script src="/advacon-import.js?v=20261026-release"></script><script src="/advacon-organization.js?v=20261026-release"></script><link rel="stylesheet" href="/advacon-operations.css?v=20261026-release">
+<link rel="stylesheet" href="/advacon-organization.css?v=20261026-release"><script src="/advacon-import.js?v=20261026-release"></script><script src="/advacon-organization.js?v=20261026-vehicle-controls"></script><link rel="stylesheet" href="/advacon-operations.css?v=20261026-release">
 <script src="/advacon-images.js?v=20260927-images"></script>
 </head>
 <body class="notranslate"><div id="gate"></div><div class="app" id="app" style="display:none"></div><div class="toast" id="toast"></div>
@@ -1722,6 +1722,7 @@ async function admTaskAction(id,action,note,okMsgKey){
     if(note!=null)args.p_note=note;
     const res=await admRpc('admin_task_action',args);
     if(res&&res.ok===true){finishModal(fmtID(id)+' '+t(okMsgKey||'savedToast'),actionContext);admPostWriteSync(id,res);return true;}
+    if(action==='complete')window.AdvaconVehicleRequests?.closeFailed?.(id,res);
     toast(admOpError(res));if(res&&res.error==='session'){admSessionGone();}
     return false;
   }finally{adminActionBusy=false;}
@@ -2469,7 +2470,7 @@ async function tryAdmin(){
   await repairManagerSnapshot();   // heal a pre-snapshot or stale manager record
   document.getElementById('gate').innerHTML='';document.getElementById('app').style.display='flex';applyDir();render();startRealtime();
 }
-async function enterAdminDirect(){state.role='admin';const h=(location.hash||'').replace('#','');const valid=['dashboard','reports','assets','manage','archive','techtasks','staffdir','projects','media','settings','all'];state.route=adminResolveRoute(valid.includes(h.split('?')[0])||['open'].includes(h.split('?')[0])?h:'dashboard');if(!L)L='en';document.getElementById('gate').innerHTML='';document.getElementById('app').style.display='flex';applyDir();render();startRealtime();}
+async function enterAdminDirect(){state.role='admin';const h=(location.hash||'').replace('#','');const valid=['dashboard','reports','assets','vehicles','manage','archive','techtasks','staffdir','projects','media','settings','all'];state.route=adminResolveRoute(valid.includes(h.split('?')[0])||['open'].includes(h.split('?')[0])?h:'dashboard');if(!L)L='en';document.getElementById('gate').innerHTML='';document.getElementById('app').style.display='flex';applyDir();render();startRealtime();}
 function enterPublic(role){state.role=role;if(role==='staff')L='ar';else if(!L)L='ar';document.getElementById('gate').innerHTML='';document.getElementById('app').style.display='block';applyDir();
   // A1: if a valid staff session exists, restore it and load tasks from the server
   if(role==='staff'){const sess=stfGetSession();if(sess&&sess.en){staffName=sess.en;render();loadStaffTasks();startPublicPolling();return;}}
@@ -4297,18 +4298,17 @@ function taskRow(r){
 }
 function confirmStaffDone(id){modal={type:'close',id,staffConfirm:true};renderModal();}
 async function doConfirmStaffDone(id){
-  modal=null;
-  {
-    if(adminActionBusy||admRequestSyncPending(id))return;
+    const actionContext=modal;
+    if(adminActionBusy||admRequestSyncPending(id))return false;
     adminActionBusy=true;
     try{
       const res=await admRpc('admin_confirm_task',{p_task_id:id});
-      if(res&&res.ok===true){toast(fmtID(id)+' '+t('closedToast'));admPostWriteSync(id,res);}
-      else{toast(admOpError(res));if(res&&res.error==='session'){admSessionGone();}}
+      if(res&&res.ok===true){finishModal(fmtID(id)+' '+t('closedToast'),actionContext);admPostWriteSync(id,res);return true;}
+      window.AdvaconVehicleRequests?.closeFailed?.(id,res);
+      toast(admOpError(res));if(res&&res.error==='session'){admSessionGone();}
+      return false;
     }finally{adminActionBusy=false;}
-    return;
-  }
-  }
+}
 function returnStaffTask(id){modal={type:'confirm',title:t('confirmReturnQ'),msg:fmtID(id),okLabel:t('returnTask'),okClass:'',onok:'doReturnStaffTask('+id+')'};renderModal();}
 async function doReturnStaffTask(id){
   modal=null;
@@ -4813,8 +4813,8 @@ async function doClose(id){
  window.vehicleCloseBusy=true;if(button)button.disabled=true;
  try{
   if(!await AdvaconVehicleRequests.prepareClose(id)||modal!==context)return;
-  modal=null;renderModal();if(staff)await doConfirmStaffDone(id);else await admTaskAction(id,'complete',null,'closedToast');
- }catch(e){toast(e.message||t('connErr'));}
+  if(staff)await doConfirmStaffDone(id);else await admTaskAction(id,'complete',null,'closedToast');
+ }catch(e){window.AdvaconVehicleRequests?.closeFailed?.(id,e);toast(window.AdvaconVehicleRequests?.errorMessage(e?.message)||e.message||t('connErr'));}
  finally{window.vehicleCloseBusy=false;if(button?.isConnected)button.disabled=false;}
 }
 function reopenTask(id){modal={type:'confirm',title:t('confirmReopenQ'),msg:fmtID(id),okLabel:t('reopen'),okClass:'',onok:'doReopenTask('+id+')'};renderModal();}
@@ -6513,7 +6513,7 @@ function renderAsset(){const gate=document.getElementById('gate'),app=document.g
   }
 })();
 
-</script><script src="/advacon-report-logo.js?v=20261026-release"></script><script src="/advacon-vehicles.js?v=20261026-vehicles3"></script><script src="/advacon-vehicle-service-catalog.js?v=1"></script><script src="/advacon-vehicle-services.js?v=20261026-vehicles3"></script><script src="/advacon-vehicle-requests.js?v=20261026-vehicles3"></script><script src="/advacon-request-tools.js?v=20261026-release"></script>
+</script><script src="/advacon-report-logo.js?v=20261026-release"></script><script src="/advacon-vehicles.js?v=20261026-vehicle-controls"></script><script src="/advacon-vehicle-service-catalog.js?v=1"></script><script src="/advacon-vehicle-services.js?v=20261026-vehicle-controls"></script><script src="/advacon-vehicle-requests.js?v=20261026-vehicle-controls"></script><script src="/advacon-request-tools.js?v=20261026-release"></script>
 </body></html>
 
 
