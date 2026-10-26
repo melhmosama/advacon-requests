@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <meta name="robots" content="noindex, nofollow, noarchive">
+  <title>ADVACON — مراجعة ربط طلبات السيارات</title>
+  <link rel="icon" type="image/png" href="/assets/advacon-d4f79155b1f2.png">
+  <link rel="stylesheet" href="/vehicle-link-review.css?v=20261026-v1">
+  <script src="/vehicle-link-review.js?v=20261026-v1" defer></script>
+</head>
+<body>
+  <main id="review-app" class="review-shell">
+    <header class="page-header">
+      <img class="brand-logo" src="/assets/advacon-d4f79155b1f2.png" alt="ADVACON" width="189" height="60">
+      <div class="heading"><p class="eyebrow">إدارة أصول الشركة</p><h1>مراجعة ربط طلبات السيارات</h1><p class="intro">اختر المركبة الصحيحة لكل طلب، ثم راجع الربط واعتمده مرة واحدة.</p></div>
+    </header>
+    <section id="page-notice" class="notice" role="status" aria-live="polite" hidden></section>
+    <section id="loading-panel" class="state-panel" aria-live="polite"><span class="loading-mark" aria-hidden="true"></span><h2>جارٍ تحميل الطلبات…</h2><p>ستظهر الطلبات المخصصة لهذا الرابط فقط.</p></section>
+    <section id="summary" class="summary-panel" aria-label="تقدم المراجعة" hidden>
+      <div class="summary-heading"><div><p class="eyebrow">تقدم المراجعة</p><p id="progress-copy" class="progress-copy"></p></div><button id="refresh-button" class="button button-secondary" type="button">تحديث القائمة</button></div>
+      <progress id="review-progress" value="0" max="34" aria-label="عدد الطلبات المعتمدة"></progress>
+      <div class="summary-bottom"><span id="remaining-copy"></span><span id="expiry-copy"></span></div>
+    </section>
+    <section id="review-controls" class="review-controls" aria-label="البحث وتصفية الطلبات" hidden>
+      <label class="search-field" for="request-search"><span>البحث في الطلبات</span><input id="request-search" type="search" placeholder="رقم الطلب، الاسم أو وصف الطلب" autocomplete="off"></label>
+      <div class="filter-buttons" role="group" aria-label="حالة المراجعة"><button id="filter-pending" type="button" class="filter-button selected" aria-pressed="true">بانتظار الربط <span id="pending-count"></span></button><button id="filter-accepted" type="button" class="filter-button" aria-pressed="false">تم اعتمادها <span id="accepted-count"></span></button></div>
+    </section>
+    <p id="results-copy" class="results-copy" aria-live="polite" hidden></p>
+    <section id="request-list" class="request-list" aria-label="طلبات ربط السيارات"></section>
+    <section id="empty-panel" class="state-panel compact" hidden></section>
+    <footer>ربط الطلب يحفظه في سجل المركبة، ولا يغيّر حالة الطلب أو عهدة السيارة.</footer>
+  </main>
+  <dialog id="vehicle-dialog" class="review-dialog" aria-labelledby="vehicle-dialog-title">
+    <div class="dialog-heading"><div><p id="vehicle-dialog-request" class="eyebrow"></p><h2 id="vehicle-dialog-title">اختيار المركبة</h2></div><button id="close-vehicle-dialog" type="button" class="icon-button" aria-label="إغلاق اختيار المركبة">×</button></div>
+    <p class="dialog-intro">ابحث باللوحة أو اسم الموظف أو وصف السيارة. الاختيار من السجلات الموجودة فقط.</p>
+    <label class="search-field" for="vehicle-search"><span>البحث عن مركبة</span><input id="vehicle-search" type="search" placeholder="اللوحة أو الموظف أو وصف السيارة" autocomplete="off"></label>
+    <p id="vehicle-results-copy" class="results-copy" aria-live="polite"></p>
+    <div id="vehicle-options" class="vehicle-options" role="radiogroup" aria-label="المركبات المتاحة"></div>
+    <div class="dialog-actions"><button id="confirm-vehicle-choice" class="button button-primary" type="button" disabled>تأكيد اختيار المركبة</button><button id="cancel-vehicle-choice" class="button button-secondary" type="button">إلغاء</button></div>
+  </dialog>
+  <dialog id="confirm-dialog" class="review-dialog confirmation-dialog" aria-labelledby="confirm-title">
+    <div class="dialog-heading"><div><p class="eyebrow">مراجعة قبل الاعتماد</p><h2 id="confirm-title">تأكيد ربط الطلب بالمركبة</h2></div><button id="close-confirm-dialog" type="button" class="icon-button" aria-label="إغلاق التأكيد">×</button></div>
+    <div id="confirmation-details"></div>
+    <p class="confirmation-note">بالاعتماد، تؤكد أن هذا الطلب يخص المركبة المحددة. الربط يُعتمد مرة واحدة، ولا يُغلق الطلب ولا ينقل عهدة السيارة.</p>
+    <p id="confirm-status" class="confirm-status" role="status" aria-live="polite"></p>
+    <div class="dialog-actions"><button id="accept-button" class="button button-primary" type="button">اعتماد الربط</button><button id="cancel-confirmation" class="button button-secondary" type="button">رجوع للمراجعة</button></div>
+  </dialog>
+  <noscript><p class="noscript-message">يلزم تفعيل JavaScript لعرض الطلبات ومراجعتها.</p></noscript>
+</body>
+</html>
