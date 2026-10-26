@@ -705,7 +705,7 @@
 .rep-print-footer{display:none}
 @media print{
   /* page geometry */
-  @page{ size:A4; margin:14mm 12mm; }
+  @page{ size:A4 portrait; margin:14mm 12mm; }
   /* reset chrome: hide everything, then reveal only the report preview */
   body{ background:#fff !important; }
   body.printing-report .gate, body.printing-report #gate,
@@ -831,8 +831,8 @@
 <link rel="stylesheet" href="/advacon-ui.css">
 <script src="/advacon-ui.js"></script>
 <script src="/advacon-dialogs.js"></script>
-<script src="/advacon-experience.js"></script>
-<link rel="stylesheet" media="print" href="advacon-report-print.css?v=20260912-1">
+<script src="/advacon-experience.js?v=20261026-release"></script>
+<link rel="stylesheet" media="print" href="advacon-report-print.css?v=20261026-release">
 <script src="/advacon-images.js?v=20260927-images"></script>
 </head>
 <body>
@@ -893,6 +893,7 @@ const WH_SUBNAV = [
   { key:'shelves',     ic:'🗄', label_ar:'المستودعات والأرفف',  label_en:'Warehouses & Shelves' },
   { key:'batches',     ic:'⏳', label_ar:'الدفعات والصلاحية',   label_en:'Batches & Expiry' },
   { key:'reports',     ic:'📈', label_ar:'التقارير',           label_en:'Reports' },
+  { key:'finance',     ic:'▤', label_ar:'المالية',           label_en:'Finance' },
   { key:'permissions', ic:'🔐', label_ar:'الصلاحيات',          label_en:'Permissions', adminOnly:true },
 ];
 
@@ -1381,33 +1382,27 @@ async function admVerifyIsAdmin(accessToken){
     return (await r.json()) === true;
   }catch(_){throw _;}
 }
-async function admEnsureSession(){try{
-  let s = admGetSession();
-  if(!s || !s.access_token || !s.refresh_token){ admClearSession(); return false; }
-  const nowSec = Math.floor(Date.now()/1000);
-  const exp = Number(s.expires_at||0);
-  if(!exp || exp <= nowSec+60){
-    const fresh = await admRefresh(s.refresh_token);
-    if(!fresh){ admClearSession(); return false; }
-    admSetSession(fresh); s = fresh;
-  }
-  const ok = await admVerifyIsAdmin(s.access_token);
-  if(!ok){
-    const fresh = await admRefresh(s.refresh_token);
-    if(fresh){ admSetSession(fresh); if(await admVerifyIsAdmin(fresh.access_token)){ await syncSbAuth(fresh); return true; } }
-    admClearSession(); return false;
-  }
-  await syncSbAuth(s);
-  return true;
-}catch(error){AdvaconUI.sessionUnavailable(error);return false;}}
+function warehouseSessionIdentity(s){return s?.user_id||s?.user?.id||'';}
+function warehouseSessionStamp(s){return s?JSON.stringify([warehouseSessionIdentity(s),s.access_token||'',s.refresh_token||'']):'';}
+function warehouseSessionFor(mode){return mode==='admin'?admGetSession():mode==='asset'?assetGetSession():null;}
+async function warehouseEnsurePortal(mode){
+ const read=mode==='admin'?admGetSession:assetGetSession,set=mode==='admin'?admSetSession:assetSetSession,clear=mode==='admin'?admClearSession:assetClearSession,refresh=mode==='admin'?admRefresh:assetRefresh;
+ let session=read(),stamp=warehouseSessionStamp(session);const current=()=>warehouseSessionStamp(read())===stamp;
+ try{
+  if(!session?.access_token||!session?.refresh_token){if(current())clear();return false;}
+  if(!Number(session.expires_at)||Number(session.expires_at)<=Math.floor(Date.now()/1000)+60){const fresh=await refresh(session.refresh_token);if(!current())return false;if(!fresh){clear();return false;}session=fresh;}
+  const verify=token=>mode==='admin'?admVerifyIsAdmin(token):assetFetchRole(token);
+  let role=await verify(session.access_token);if(!current())return false;
+  if(mode==='admin'?role!==true:role!=='storekeeper'){const fresh=await refresh(session.refresh_token);if(!current())return false;if(!fresh){clear();return false;}session=fresh;role=await verify(session.access_token);if(!current())return false;if(mode==='admin'?role!==true:role!=='storekeeper'){clear();return false;}}
+  if(mode==='asset')session.role=role;if(!current())return false;set(session);stamp=warehouseSessionStamp(session);
+  if(!current())return false;return !!(await syncSbAuth(session,mode,stamp))&&current();
+ }catch(error){if(current())AdvaconUI.sessionUnavailable(error);return false;}
+}
+async function admEnsureSession(){return warehouseEnsurePortal('admin');}
 async function admSignOut(){
-  const s = admGetSession();
-  if(s && s.access_token){
-    try{ await fetch(SB_URL+'/auth/v1/logout?scope=local',{ method:'POST',
-      headers:{'apikey':SB_KEY,'Authorization':'Bearer '+s.access_token,'Content-Type':'application/json'}, body:'{}'});
-    }catch(_){}
-  }
-  admClearSession();
+ const session=admGetSession();admClearSession();
+ whAuthSync=whAuthSync.catch(()=>{}).then(async()=>{if(!warehouseSessionFor('admin'))try{await sb.auth.signOut({scope:'local'});}catch(_){}});
+ if(session?.access_token)try{await fetch(SB_URL+'/auth/v1/logout?scope=local',{method:'POST',headers:{apikey:SB_KEY,Authorization:'Bearer '+session.access_token,'Content-Type':'application/json'},body:'{}'});}catch(_){}
 }
 
 /* -- ASSET session (storekeeper etc.) -- */
@@ -1434,46 +1429,20 @@ async function assetFetchRole(accessToken){
     return await r.json(); // string like 'storekeeper' or null
   }catch(_){throw _;}
 }
-async function assetEnsureSession(){try{
-  let s = assetGetSession();
-  if(!s || !s.access_token || !s.refresh_token){ assetClearSession(); return false; }
-  const nowSec = Math.floor(Date.now()/1000);
-  const exp = Number(s.expires_at||0);
-  if(!exp || exp <= nowSec+60){
-    const fresh = await assetRefresh(s.refresh_token);
-    if(!fresh){ assetClearSession(); return false; }
-    fresh.role = s.role; assetSetSession(fresh); s = fresh;
-  }
-  const role = await assetFetchRole(s.access_token);
-  if(role !== 'storekeeper'){
-    const fresh = await assetRefresh(s.refresh_token);
-    if(fresh){
-      const r2 = await assetFetchRole(fresh.access_token);
-      if(r2 === 'storekeeper'){
-        fresh.role = r2; assetSetSession(fresh);
-        await syncSbAuth(fresh); return true;
-      }
-    }
-    assetClearSession(); return false;
-  }
-  s.role = role; assetSetSession(s);
-  await syncSbAuth(s);
-  return true;
-}catch(error){AdvaconUI.sessionUnavailable(error);return false;}}
+async function assetEnsureSession(){return warehouseEnsurePortal('asset');}
 async function assetSignOut(){
-  const s = assetGetSession();
-  if(s && s.access_token){
-    try{ await fetch(SB_URL+'/auth/v1/logout?scope=local',{ method:'POST',
-      headers:{'apikey':SB_KEY,'Authorization':'Bearer '+s.access_token,'Content-Type':'application/json'}, body:'{}'});
-    }catch(_){}
-  }
-  assetClearSession();
+ const session=assetGetSession();assetClearSession();
+ whAuthSync=whAuthSync.catch(()=>{}).then(async()=>{if(!warehouseSessionFor('asset'))try{await sb.auth.signOut({scope:'local'});}catch(_){}});
+ if(session?.access_token)try{await fetch(SB_URL+'/auth/v1/logout?scope=local',{method:'POST',headers:{apikey:SB_KEY,Authorization:'Bearer '+session.access_token,'Content-Type':'application/json'},body:'{}'});}catch(_){}
 }
 
 /* Sync current session with the sb JS client (so sb.storage.* carries the JWT). */
-async function syncSbAuth(sess){
-  if(!sess || !sess.access_token) return;
-  try{ await sb.auth.setSession({ access_token: sess.access_token, refresh_token: sess.refresh_token||'' }); }catch(_){}
+let whAuthSync=Promise.resolve();
+async function syncSbAuth(sess,mode,expected){
+ if(!sess?.access_token)return false;
+ mode=mode||(warehouseSessionStamp(admGetSession())===warehouseSessionStamp(sess)?'admin':'asset');expected=expected||warehouseSessionStamp(sess);
+ const run=async()=>{if(warehouseSessionStamp(warehouseSessionFor(mode))!==expected)return false;try{const result=await sb.auth.setSession({access_token:sess.access_token,refresh_token:sess.refresh_token||''});if(result?.error)return false;}catch(_){return false;}return warehouseSessionStamp(warehouseSessionFor(mode))===expected;};
+ const task=whAuthSync.catch(()=>{}).then(run);whAuthSync=task;return task;
 }
 
 /* =====================================================================
@@ -1515,22 +1484,18 @@ async function detectContext(){
   return false;
 }
 
+let warehousePermissionRevision=0,warehousePermissionOwner='';
 async function loadWarehousePermissions(){
-  if(CTX.mode==='admin'){ CTX.permissions={}; return {}; }
-  const sess=assetGetSession();
-  if(!sess||!sess.access_token){ CTX.permissions={}; return {}; }
-  try{
-    const r=await fetch(SB_URL+'/rest/v1/rpc/asset_my_permissions',{
-      method:'POST',
-      headers:{'apikey':SB_KEY,'Authorization':'Bearer '+sess.access_token,'Content-Type':'application/json'},
-      body:JSON.stringify({p_module_key:'warehouses'})
-    });
-    if(!r.ok){ CTX.permissions={}; return {}; }
-    const v=await r.json();
-    CTX.permissions=(v&&typeof v==='object'&&!Array.isArray(v))?v:{};
-    return CTX.permissions;
-  }catch(_){CTX.permissions={};return {};}
+ const revision=++warehousePermissionRevision,mode=CTX.mode,sess=warehouseSessionFor(mode),stamp=warehouseSessionStamp(sess),owner=mode+':'+stamp;
+ const current=()=>revision===warehousePermissionRevision&&CTX.mode===mode&&warehouseSessionStamp(warehouseSessionFor(mode))===stamp;
+ if(warehousePermissionOwner!==owner){CTX.permissions={};warehousePermissionOwner=owner;}
+ if(mode==='admin'||!sess?.access_token){if(current())CTX.permissions={};return {};}
+ try{const r=await fetch(SB_URL+'/rest/v1/rpc/asset_my_permissions',{method:'POST',headers:{apikey:SB_KEY,Authorization:'Bearer '+sess.access_token,'Content-Type':'application/json'},body:JSON.stringify({p_module_key:'warehouses'})});
+  if(!current())return {};if(!r.ok){CTX.permissions={};return {};}
+  const value=await r.json();if(!current())return {};CTX.permissions=value&&typeof value==='object'&&!Array.isArray(value)?value:{};return CTX.permissions;
+ }catch(_){if(current())CTX.permissions={};return {};}
 }
+
 function whPermissionMode(key){return CTX.mode==='admin'?'direct':(CTX.permissions[key]||'deny');}
 function whCan(key){return ['direct','approval'].includes(whPermissionMode(key));}
 function whDirect(key){return whPermissionMode(key)==='direct';}
@@ -1542,6 +1507,7 @@ function whTabAllowed(tab){
  if(!tab)return false;
  if(CTX.mode==='admin')return true;
  if(CTX.mode!=='asset'||tab.adminOnly)return false;
+ if(tab.key==='finance')return ['finance.view','finance.create','finance.edit'].some(whCan);
  const action={dashboard:'dashboard.view',inventory:'inventory.view',catalog:'catalog.view',movements:'movements.view',shelves:'warehouses.view',batches:'batches.view',reports:'reports.view'}[tab.key];
  return tab.key==='materialreq'||!!action&&whCan(action);
 }
@@ -1556,7 +1522,7 @@ async function warehouseMovementRpc(type,args){
 }
 function whMovementMessage(result,key){if(result.pending_approval)AdvaconExperience.requestReceipt(result.result,()=>{location.hash='materialreq';});return result.pending_approval?t('aprReqFiled'):t(key);}
 
-async function ensureCurrentSession(){ return AdvaconUI.singleFlight('warehouse-session-'+CTX.mode,()=>CTX.mode==='admin' ? admEnsureSession() : (CTX.mode==='asset' ? assetEnsureSession() : false)); }
+async function ensureCurrentSession(){const mode=CTX.mode,sess=warehouseSessionFor(mode),key='warehouse-session-'+mode+':'+warehouseSessionStamp(sess);return AdvaconUI.singleFlight(key,()=>mode==='admin'?admEnsureSession():mode==='asset'?assetEnsureSession():false);}
 function currentAccessToken(){ const s=CTX.mode==='admin' ? admGetSession() : (CTX.mode==='asset' ? assetGetSession() : null); return s&&s.access_token; }
 async function currentSignOut(){
   resetPhase1Caches();
@@ -1645,8 +1611,10 @@ function translateStorageError(err){
      • treats 401/403 as "session gone" → clears session + shows access screen
    ===================================================================== */
 async function warehouseRpc(fn, args, sessionVerified=false){
+  const ownerMode=CTX.mode,owner=warehouseSessionIdentity(warehouseSessionFor(ownerMode));const sameOwner=()=>CTX.mode===ownerMode&&!!warehouseSessionFor(ownerMode)&&warehouseSessionIdentity(warehouseSessionFor(ownerMode))===owner;
   const okSess = sessionVerified || await ensureCurrentSession();
-  if(!okSess){ showAccessScreen('session_expired'); throw new Error(translateError('session')); }
+  if(!okSess){ if(CTX.mode===ownerMode&&(!warehouseSessionFor(ownerMode)||sameOwner()))showAccessScreen('session_expired'); throw new Error(translateError('session')); }
+  if(!sameOwner())throw new Error(translateError('session'));
   if(CTX.mode==='asset'){
     if(!sessionVerified)await loadWarehousePermissions();
     const action=WH_RPC_ACTION[fn];
@@ -1655,6 +1623,7 @@ async function warehouseRpc(fn, args, sessionVerified=false){
     if(movement){const mode=whPermissionMode(WH_MOVE_ACTION[movement[0]]);if(mode!==(fn===movement[1][0]?'direct':'approval'))throw new Error(translateError('not_authorized'));}
     if(['admin_receipt','admin_transfer','add_item_to_warehouse'].includes(fn))throw new Error(translateError('not_authorized'));
   }
+  if(!sameOwner())throw new Error(translateError('session'));
   const token = currentAccessToken();
   if(!token) throw new Error(translateError('session'));
   let res;
@@ -1667,11 +1636,10 @@ async function warehouseRpc(fn, args, sessionVerified=false){
   }catch(_){ throw new Error(translateError('network')); }
   if(res.status === 401){
     // Session lost mid-request; wipe and route to access screen
-    if(CTX.mode === 'admin') admClearSession();
-    else if(CTX.mode === 'asset') assetClearSession();
-    showAccessScreen('http_'+res.status);
+    if(sameOwner()&&currentAccessToken()===token){if(CTX.mode==='admin')admClearSession();else if(CTX.mode==='asset')assetClearSession();showAccessScreen('http_'+res.status);}
     throw new Error(translateError('session'));
   }
+  if(!sameOwner())throw new Error(translateError('session'));
   if(!res.ok){
     let msg = 'http_' + res.status;
     try{
@@ -1681,6 +1649,7 @@ async function warehouseRpc(fn, args, sessionVerified=false){
     const err=new Error(translateError(String(msg).trim()));err.code=String(msg).trim();err.status=res.status;throw err;
   }
   const text = await res.text();
+    if(!sameOwner())throw new Error(translateError('session'));
     if(!text) return { ok:true };
     try{
       const value=JSON.parse(text);return await whResolveResponseImages(value);
@@ -2010,6 +1979,7 @@ async function route(){
     case 'shelves':     el.innerHTML = viewWarehouses(); break;
     case 'batches':     el.innerHTML = viewBatches(); break;
     case 'reports':     el.innerHTML = viewWhReports(); break;
+    case 'finance': el.innerHTML=window.AdvaconWarehouseFinance?AdvaconWarehouseFinance.render():'<p>'+esc(LANG==='ar'?'تعذر تحميل المالية.':'Finance could not be loaded.')+'</p>';if(window.AdvaconWarehouseFinance)AdvaconWarehouseFinance.bind();break;
     case 'permissions': {const html=await viewWarehousePermissions();if(version===warehouseRouteSerial)el.innerHTML=html;break;}
     default:            el.innerHTML = `<div class="empty">${esc((LANG==='ar')?'شاشة غير معروفة':'Unknown screen')}</div>`;
   }
@@ -2836,7 +2806,7 @@ function mvTfSet(k,v){mvTf[k]=v;mvTfErr='';if(k==='src_wh'){mvTf.item_iw='';mvTf
 async function mvSubmitTransfer(){if(mvTfSubmitting)return;const q=Number(mvTf.qty);if(!mvTf.src_wh){mvTfErr=t('mvTfErrSrc');mvRender();return}if(!mvTf.item_iw){mvTfErr=t('mvTfErrItem');mvRender();return}if(!mvTf.dest_wh){mvTfErr=t('mvTfErrDest');mvRender();return}if(!mvTf.qty||!Number.isFinite(q)||q<=0){mvTfErr=t('mvRcErrQty');mvRender();return}const inDest=mvTfItemInDest();let shelf=null;if(!inDest){const sh=mvShelves[mvTf.dest_wh];if(!Array.isArray(sh)||!sh.length){mvTfErr=t('mvTfErrNoShelf');mvRender();return}if(!mvTf.dest_shelf){mvTfErr=t('whmAiErrShelf');mvRender();return}shelf=mvTf.dest_shelf}mvTfSubmitting=true;mvRender();try{const moveResult=await warehouseMovementRpc('TRANSFER',{p_source_iw_id:mvTf.item_iw,p_dest_warehouse_id:mvTf.dest_wh,p_dest_shelf_id:shelf,p_qty:q,p_note:(mvTf.note||'').trim()||null,p_batch_no:(mvTf.batch_no||'').trim()||null});toast(whMovementMessage(moveResult,'mvTfOk'),'success');mvModal=null;mvInvalidate();loadMovements(true)}catch(e){mvTfErr=e.message||t('mvTfErrGeneric')}finally{mvTfSubmitting=false;mvRender()}}
 
 function viewMovements(){
-  if(!mvLoaded){loadMovements();return `<div class="empty">${t('mvLoading')}</div>`} const rows=mvData||[];
+  if(!mvLoaded){if(!mvLoading)loadMovements();return `<div class="empty">${t('mvLoading')}</div>`} const rows=mvData||[];
   let whOpts=`<option value="">${t('mvAllWh')}</option>`;let whList=(dashData&&Array.isArray(dashData.warehouses))?dashData.warehouses:[];if(!whList.length){const seen={};rows.forEach(r=>{if(r.warehouse_id&&!seen[r.warehouse_id]){seen[r.warehouse_id]=1;whList.push({id:r.warehouse_id,code:r.warehouse_code,name_ar:r.warehouse_name_ar,name_en:r.warehouse_name_en})}})}whList.forEach(w=>{const nm=LANG==='ar'?(w.name_ar||w.code):(w.name_en||w.name_ar||w.code);whOpts+=`<option value="${w.id}" ${mvFilters.warehouse===w.id?'selected':''}>${esc(nm)}</option>`});
   const TYPES=['OPENING_BALANCE','RECEIPT','ISSUE','RETURN','TRANSFER_IN','TRANSFER_OUT','DISPOSAL','ADJUSTMENT'];let typeOpts=`<option value="">${t('mvAllTypes')}</option>`;TYPES.forEach(tp=>typeOpts+=`<option value="${tp}" ${mvFilters.type===tp?'selected':''}>${t('mvT_'+tp)}</option>`);
   let itemPicker;if(mvFilters.item_id)itemPicker=`<div class="mv-chip">${t('mvItem')}: ${esc(mvFilters.item_label)} <span class="mv-chip-x" onclick="mvClearItem()">×</span></div>`;else{let dd='';if(mvItemOpen){const q=(mvItemQuery||'').trim().toLowerCase();let list=mvItemList||[];if(q)list=list.filter(r=>((r.item_code||'').toLowerCase().includes(q)||(r.name_ar||'').toLowerCase().includes(q)||(r.name_en||'').toLowerCase().includes(q)));const uniq=new Map();list.forEach(r=>{if(r.item_id&&!uniq.has(r.item_id))uniq.set(r.item_id,r)});list=[...uniq.values()].slice(0,30);dd=`<div class="mv-pick-dd"><input class="mv-pick-search" placeholder="${t('mvItemPh')}" value="${esc(mvItemQuery)}" oninput="mvItemSearch(this.value)" autofocus/><div class="mv-pick-list">${list.length?list.map(r=>{const nm=LANG==='ar'?(r.name_ar||r.name_en):(r.name_en||r.name_ar);const lab=(r.item_code||'')+' · '+(nm||'');return `<div class="mv-pick-row" onclick="mvPickItem('${r.item_id}','${AdvaconExperience.jsSingle(lab).replace(/'/g,"\\'")}')"><span class="mv-pick-code">${esc(r.item_code||'')}</span>${esc(nm||'')}</div>`}).join(''):`<div class="mv-pick-load">${t('mvNoItems')}</div>`}</div></div>`}itemPicker=`<div class="mv-pick-wrap"><button class="mv-pick-btn" onclick="mvToggleItemPicker()">${t('mvItemPick')} ▾</button>${dd}</div>`}
@@ -4249,11 +4219,12 @@ document.addEventListener('click',async event=>{
 </script>
 
 <link rel="stylesheet" href="/advacon-warehouse.css">
-<script src="/advacon-warehouse.js?v=20260927-dashboard"></script>
-<script src="advacon-expiry.js?v=20260927"></script>
-<script src="advacon-review.js?v=20260915-images"></script>
-<link rel="stylesheet" href="/advacon-operations.css?v=20260927"><link rel="stylesheet" href="/advacon-warehouse-documents.css?v=20260927"><script src="/advacon-warehouse-documents.js?v=20260927"></script>
-<link rel="stylesheet" href="/advacon-warehouse-dashboard.css?v=20260927">
-<script src="/advacon-warehouse-dashboard.js?v=20260927"></script>
+<script src="/advacon-warehouse.js?v=20261026-release"></script>
+<script src="advacon-expiry.js?v=20261026-release"></script>
+<script src="advacon-review.js?v=20261026-release"></script>
+<link rel="stylesheet" href="/advacon-operations.css?v=20261026-release"><link rel="stylesheet" href="/advacon-warehouse-documents.css?v=20261026-release"><script src="/advacon-warehouse-documents.js?v=20261026-release"></script>
+<link rel="stylesheet" href="/advacon-warehouse-dashboard.css?v=20261026-release">
+<script src="/advacon-warehouse-dashboard.js?v=20261026-release"></script>
+<link rel="stylesheet" href="/advacon-warehouse-finance.css?v=20261026-release"><script src="/advacon-warehouse-finance.js?v=20261026-release"></script>
 </body></html>
 

@@ -31,7 +31,7 @@
  function jsArg(value){return AdvaconUI.escape(JSON.stringify(String(value??'')).replace(/</g,'\\u003c').replace(/>/g,'\\u003e').replace(/'/g,'\\u0027'));}
  function jsSingle(value){return AdvaconUI.escape(String(value??'').replace(/\\/g,'\\\\').replace(/'/g,'\\u0027').replace(/\r/g,'\\r').replace(/\n/g,'\\n').replace(/\u2028/g,'\\u2028').replace(/\u2029/g,'\\u2029'));}
  function requestReceipt(result,open){
-  const id=result?.request_id??result?.id;
+  const id=typeof result==='string'||typeof result==='number'?result:result?.request_id??result?.id;
   const panel=document.createElement('aside');panel.className='au-request-receipt';panel.setAttribute('role','status');
   const text=document.createElement('span');text.textContent=AdvaconUI.text('أُرسل للموافقة؛ لم يُنفذ بعد','Submitted for approval; not executed')+(id!=null?' #'+String(id):'');
   const link=document.createElement('button');link.className='btn';link.textContent=AdvaconUI.text('متابعة الطلب','Track request');link.onclick=()=>{open(id);panel.remove();};

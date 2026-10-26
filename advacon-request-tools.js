@@ -72,7 +72,53 @@ async function attachment(input,kind){
  finally{if(own===generation)pending--;if(input.isConnected)input.disabled=false;}
 }
 async function submit(payload){if(pending){toast(t('waitUpload'));return {ok:false,error:'attachments_uploading'};}if(failed.size){toast(tr('أكمل رفع المرفق أو أزله قبل الحفظ.','Upload or remove the failed attachment first.'));return {ok:false,error:'attachment_upload_failed'};}return admRpc('advacon_admin_add_request',{p_command_id:command,p_payload:{...payload,images:uploads.image?[uploads.image]:[],files:uploads.file?[uploads.file]:[]}});}
-window.AdvaconRequestTools={decorate,attachment,submit,transition,rendered,resetNotifications,
+function shareSnapshot(row,completion=false){
+ const snapshot={id:row.id,requester:row.requestedBy,phone:row.phone,project:requestProjectLabel(row.project),category:row.category,priority:dispPri(row.priority),description:row.title||'',received:row.received,submittedAt:row.receivedAt};
+ if(completion){
+  snapshot.heading=tr('ملخص إنجاز الطلب','Request completion summary');
+  snapshot.subtitle=row.pendingConfirm?tr('بانتظار تأكيد المدير','Pending manager confirmation'):tr('ملخص بيانات الإنجاز','Completion details');
+  snapshot.extraFields=[[tr('الفني المكلف','Assigned technician'),row.assignedTo],[tr('حالة الطلب','Request status'),row.pendingConfirm?tr('بانتظار التأكيد','Pending confirmation'):stfStatusLabel(row.status)],[tr('تاريخ إرسال الإنجاز','Completion submitted'),row.pendingConfirmAt?fmtTime(row.pendingConfirmAt):'']];
+  snapshot.descriptionLabel=tr('تفاصيل الطلب والإنجاز','Request & completion details');
+  snapshot.description=[[tr('وصف الطلب','Request description'),row.title],[tr('ملاحظات الطلب','Request notes'),row.notes],[tr('ملاحظات مدير القسم','Department manager notes'),row.managerNote],[tr('ملاحظات الفني','Technician notes'),row.closeoutNote]].map(([label,value])=>label+'\n'+(value||tr('لا توجد ملاحظات','No notes'))).join('\n\n');
+ }
+ return snapshot;
+}
+function shareAttachments(row){
+ const parse=value=>{try{const data=typeof value==='string'?JSON.parse(value):value;return Array.isArray(data)?data:[];}catch{return [];}};
+ return [...parse(row.closeoutImages).map((value,i)=>({url:typeof value==='string'?value:value.url,name:tr('صورة إنجاز ','Completion image ')+(i+1),image:true})),...parse(row.closeoutFiles).map((value,i)=>({url:typeof value==='string'?value:value.url,name:typeof value==='string'?tr('تقرير إنجاز ','Completion report ')+(i+1):value.name||tr('تقرير إنجاز ','Completion report ')+(i+1),image:false}))].filter(file=>AdvaconExperience.safeURL(file.url));
+}
+function share(id,completion=false){
+ const row=state.requests.find(r=>Number(r.id)===Number(id));if(!row)return;
+ const snapshot=shareSnapshot(row,completion),files=completion?shareAttachments(row):[],urls=[];
+ const body=document.createElement('div');body.className='request-share-preview';
+ body.innerHTML='<p class="request-share-id">'+esc(fmtID(id))+'</p><dl>'+receiptFields(snapshot).map(([key,value])=>'<div><dt>'+esc(key)+'</dt><dd dir="auto">'+esc(value)+'</dd></div>').join('')+'</dl><h3>'+esc(snapshot.descriptionLabel||tr('وصف الطلب','Request description'))+'</h3><div class="request-description" dir="auto">'+esc(snapshot.description)+'</div>';
+ if(files.length){const group=document.createElement('fieldset');group.innerHTML='<legend>'+tr('مرفقات الإنجاز الاختيارية','Optional completion attachments')+'</legend>';files.forEach((file,index)=>{const label=document.createElement('label'),input=document.createElement('input');input.type='checkbox';input.dataset.attachment=index;label.append(input,document.createTextNode(file.name));group.append(label);});body.append(group);}
+ const message=document.createElement('p');message.setAttribute('role','status');body.append(message);
+ const downloads=document.createElement('div');downloads.className='request-share-downloads';body.append(downloads);
+ const footer=document.createElement('div');footer.className='btnrow';const shareButton=document.createElement('button');shareButton.className='btn';shareButton.textContent=tr('مشاركة','Share');footer.append(shareButton);
+ const dialog=AdvaconUI.modal({title:completion?tr('مشاركة ملخص الإنجاز','Share completion summary'):tr('مشاركة الطلب','Share request'),body,footer,wide:true,trackChanges:false,onClose:()=>urls.forEach(url=>URL.revokeObjectURL(url))});
+ shareButton.onclick=async()=>{
+  if(shareButton.disabled)return;shareButton.disabled=true;dialog.setBusy(true);message.textContent=tr('جارٍ تجهيز المشاركة…','Preparing share…');
+  try{
+   const output=await receiptImages(snapshot);
+   for(const checkbox of body.querySelectorAll('[data-attachment]:checked')){
+    const file=files[Number(checkbox.dataset.attachment)],response=await fetch(file.url,{credentials:'omit'});if(!response.ok)throw Error('attachment_unavailable');
+    const blob=await response.blob();if(!blob.size)throw Error('attachment_unavailable');
+    let name=file.name.replace(/[\\/:*?"<>|]/g,'_');if(file.image&&!/\.[a-z0-9]{2,5}$/i.test(name))name+='.'+(blob.type==='image/png'?'png':blob.type==='image/webp'?'webp':'jpg');
+    const attachment=new File([blob],name,{type:blob.type||'application/octet-stream'});output.push(file.image?await AdvaconImages.prepare(attachment):attachment);
+   }
+   const text=tr('رقم الطلب: ','Request number: ')+fmtID(id);
+   let shared=false;
+   if(navigator.canShare?.({files:output})){try{await navigator.share({files:output,title:fmtID(id),text});shared=true;}catch(error){if(error.name==='AbortError'){message.textContent='';return;}}}
+   if(shared){message.textContent=tr('تمت المشاركة.','Shared.');return;}
+   urls.splice(0).forEach(url=>URL.revokeObjectURL(url));downloads.replaceChildren();const caption=document.createElement('p');caption.textContent=text;caption.style.userSelect='all';downloads.append(caption);
+   for(const file of output){const link=document.createElement('a');link.href=URL.createObjectURL(file);urls.push(link.href);link.download=file.name;link.textContent=file.name;downloads.append(link);}
+   message.textContent=tr('المشاركة المباشرة غير متاحة في هذا المتصفح. حمّل الصور والمرفقات وأرفق معها رقم الطلب الظاهر أدناه.','Direct sharing is unavailable in this browser. Download the images and attachments and use the request number below as the caption.');
+  }catch(error){message.textContent=tr('تعذر تجهيز أحد المرفقات. أعد المحاولة أو أزل اختياره للمشاركة.','An attachment could not be prepared. Retry or deselect it.');}
+  finally{shareButton.disabled=false;dialog.setBusy(false);}
+ };
+}
+window.AdvaconRequestTools={decorate,attachment,submit,transition,rendered,resetNotifications,share,shareSnapshot,shareAttachments,
  reset(){command=crypto.randomUUID();generation++;pending=0;failed.clear();uploads={image:null,file:null};},
  staffMatch(r){const closed=['Complete','Cancelled','Rejected'].includes(r.status);return staffFilter==='all'||(staffFilter==='current'?!closed:closed);},
  staffLimit:()=>staffCount,

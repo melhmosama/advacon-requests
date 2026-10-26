@@ -105,6 +105,29 @@
  });
 })();
 
+// Preserve interactive report columns and group related fields on printed A4 pages.
+(function warehousePortraitReports(){
+ if(typeof repItemSummary!=='function'||typeof repRegisterCard!=='function')return;
+ const originalItems=repItemSummary,originalRegister=repRegisterCard;
+ const local=(r,a,b)=>LANG==='ar'?(r[a]||r[b]||''):(r[b]||r[a]||'');
+ const image=url=>{const safe=url&&AdvaconExperience.safeURL(url);return safe?'<img class="wh-print-photo" alt="" src="'+esc(safe)+'">':'';};
+ const wrap=(screen,print)=>'<div class="wh-report-screen-only">'+screen+'</div><div class="wh-report-print-only">'+print+'</div>';
+ repItemSummary=function(items){
+  const screen=originalItems(items);if(!screen||!items?.length)return screen;
+  const rows=items.map(it=>'<tr><td>'+image(it.image_url)+'<strong dir="ltr">'+esc(it.item_code||'')+'</strong><div>'+esc(local(it,'name_ar','name_en'))+'</div></td><td>'+esc(local(it,'warehouse_name_ar','warehouse_name_en')||it.warehouse_code||'')+'<small>'+esc(local(it,'unit_name_ar','unit_name_en'))+'</small></td><td>'+fmtNum(it.opening)+'</td><td>'+fmtNum(it.receipts)+'</td><td>'+fmtNum(it.issues)+'</td><td><strong>'+fmtNum(it.closing)+'</strong><small>'+t(it.stock_status==='out'?'repOutStock':it.stock_status==='low'?'repLowStock':'repHealthy')+'</small></td></tr>').join('');
+  return wrap(screen,'<section class="rep-sec"><h3>'+t('repItemSummary')+'</h3><table class="rep-tbl wh-print-items"><colgroup><col style="width:30%"><col style="width:22%"><col style="width:12%"><col style="width:12%"><col style="width:12%"><col style="width:12%"></colgroup><thead><tr>'+['repItem','repWh','repOpening','mvT_RECEIPT','mvT_ISSUE','repClosing'].map(k=>'<th>'+t(k)+'</th>').join('')+'</tr></thead><tbody>'+rows+'</tbody></table></section>');
+ };
+ repRegisterCard=function(reg){
+  const screen=originalRegister(reg),rows=repState.regData?.movements;
+  if(!screen||!repState.regOpen||repState.regLoading||repState.regError||!rows?.length)return screen;
+  const body=rows.map(m=>'<tr><td>'+repFmtDT(m.created_at)+'<small>'+esc(t('mvT_'+m.movement_type))+'</small></td><td>'+image(m.image_url)+'<strong dir="ltr">'+esc(m.item_code||'')+'</strong><div>'+esc(local(m,'item_name_ar','item_name_en'))+'</div></td><td>'+esc(local(m,'warehouse_name_ar','warehouse_name_en')||m.warehouse_code||'')+'</td><td>'+fmtNum(m.qty)+'<small>'+esc(local(m,'unit_name_ar','unit_name_en'))+'</small></td><td><div>'+esc(m.note||'—')+'</div><small>'+t('repBatch')+': '+esc(m.batch_no||'—')+'</small>'+(CTX.mode==='admin'?'<small>'+t('repActor')+': <bdi>'+esc(m.actor_email||'—')+'</bdi></small>':'')+'</td></tr>').join('');
+  return wrap(screen,'<section class="rep-sec"><h3>'+t('repMovementRegister')+'</h3><table class="rep-tbl wh-print-movements"><colgroup><col style="width:19%"><col style="width:28%"><col style="width:17%"><col style="width:10%"><col style="width:26%"></colgroup><thead><tr>'+['repDate','repItem','repWh','repQty','repNote'].map(k=>'<th>'+t(k)+'</th>').join('')+'</tr></thead><tbody>'+body+'</tbody></table><p>'+fmtNum(repState.regOffset+1)+'–'+fmtNum(Math.min(repState.regOffset+rows.length,repState.regData.total_count||rows.length))+' '+t('mvOf')+' '+fmtNum(repState.regData.total_count||rows.length)+'</p></section>');
+ };
+})();
 
 
 
+
+
+// One click enlarges stock photos; a second click (or Escape) restores the page.
+(function(){let preview=null,previous=null;function close(){if(!preview)return;preview.remove();preview=null;previous?.focus?.();}document.addEventListener('click',e=>{if(preview&&e.target.closest('.wd-photo-preview')){e.preventDefault();e.stopImmediatePropagation();close();return;}const img=e.target.closest('img.inv-thumb,img.dwr-img,img.apr-thumb,.ww-item-name img,[data-work-image]');if(!img||!img.currentSrc||!img.naturalWidth)return;e.preventDefault();e.stopImmediatePropagation();close();previous=document.activeElement;preview=document.createElement('div');preview.className='wd-photo-preview';preview.setAttribute('role','dialog');preview.setAttribute('aria-modal','true');preview.setAttribute('aria-label',LANG==='ar'?'صورة الصنف':'Item image');const full=document.createElement('img');full.src=img.currentSrc;full.alt=img.alt||'';const button=document.createElement('button');button.type='button';button.textContent='×';button.setAttribute('aria-label',LANG==='ar'?'إغلاق':'Close');preview.append(full,button);document.body.append(preview);button.focus();},true);document.addEventListener('keydown',e=>{if(!preview)return;if(e.key==='Escape'){e.preventDefault();close();}if(e.key==='Tab'){e.preventDefault();preview.querySelector('button').focus();}});window.addEventListener('hashchange',close);})();

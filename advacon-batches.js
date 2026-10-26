@@ -4,6 +4,9 @@ const tr=(a,b)=>LANG==='ar'?a:b;
 const original=warehouseRpc;
 const actions={issue:'issue',transfer:'transfer',return:'return',adjustment:'adjust',disposal:'dispose'};
 let choosing=false;
+function viewer(){const get=CTX.mode==='admin'?(typeof admGetSession==='function'?admGetSession:null):(typeof assetGetSession==='function'?assetGetSession:null);if(!get)return CTX.userId||'';const session=get();if(!session?.access_token)return '';return session.user_id||session.user?.id||CTX.userId||'';}
+const identity=()=>CTX.mode+':'+viewer()+':'+JSON.stringify(Object.entries(CTX.permissions||{}).sort(([a],[b])=>a.localeCompare(b)));
+const assertContext=key=>{if(key!==identity())throw Error(tr('تغيّرت الجلسة؛ أعد فتح العملية.','Session changed; reopen the operation.'));};
 async function choose(rows,requested){
  const match=rows.find(b=>(b.is_default?'':b.batch_no)===(requested||''));
  if(rows.length===1&&match)return match;
@@ -23,11 +26,13 @@ warehouseRpc=async function(fn,args={}){
  const kind=match[1]||match[2],iw=args.p_source_iw_id||args.p_item_warehouse_id;
  if(!iw||kind==='return'&&args.p_ref_issue_movement_id)return original(fn,args);
  if(choosing)throw Error(tr('أكمل اختيار الدفعة الحالية أولًا.','Finish the current batch selection first.'));
- choosing=true;
+ choosing=true;const key=identity();
  try{
   const rows=await original('advacon_warehouse_batch_options',{p_item_warehouse_id:iw,p_action:'movements.'+actions[kind]});
+  assertContext(key);
   if(!Array.isArray(rows)||!rows.length)throw Error(tr('لا توجد دفعة نشطة لهذا الصنف في المستودع المحدد.','No active batch exists for this item in the selected warehouse.'));
   const selected=await choose(rows,args.p_batch_no);
+  assertContext(key);
   if(!selected)throw Error(tr('لم تُرسل العملية. يمكنك مراجعة الاختيارات والمحاولة مجددًا.','Nothing was submitted. Review your choices and try again.'));
   return await original(fn,{...args,p_batch_no:selected.is_default?null:selected.batch_no});
  }finally{choosing=false;}

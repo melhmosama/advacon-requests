@@ -26,7 +26,7 @@ async function excel(wb,filename){
  for(let i=1;i<=copy.SheetNames.length;i++){
   const path='xl/worksheets/sheet'+i+'.xml';let xml=await zip.file(path).async('string');
   xml=xml.replace('<worksheet ', '<worksheet ');
-  const landscape=(copy.Sheets[copy.SheetNames[i-1]]['!cols']||[]).length>5;
+  const landscape=/(?:^|\/)housing(?:\.html)?\/?$/i.test(location.pathname)&&(copy.Sheets[copy.SheetNames[i-1]]['!cols']||[]).length>5;
   xml=xml.replace(/<c\b([^>]*\br="[A-Z]+4"[^>]*)>/g,(_,a)=>'<c'+a.replace(/\s+s="[^"]*"/g,'')+' s="'+headerStyle+'">');
   xml=xml.replace(/<pageMargins\b[^>]*\/>/g,'').replace(/<pageSetup\b[^>]*\/>/g,'');
   xml=xml.replace('</sheetData>','</sheetData><printOptions horizontalCentered="1"/><pageMargins left="0.4" right="0.4" top="0.5" bottom="0.5" header="0.2" footer="0.2"/><pageSetup paperSize="9" orientation="'+(landscape?'landscape':'portrait')+'" fitToWidth="1" fitToHeight="0"/><headerFooter><oddFooter>&amp;LADVACON&amp;R&amp;P / &amp;N</oddFooter></headerFooter>');
