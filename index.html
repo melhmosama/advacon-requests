@@ -1460,7 +1460,7 @@ html[dir=rtl] .tt-search input{padding:9px 34px 9px 12px}
 <script src="/advacon-dialogs.js"></script>
 <script src="/advacon-experience.js?v=20261026-release"></script>
 <link rel="stylesheet" href="/advacon-admin.css">
-<script src="/advacon-admin.js?v=20261026-release"></script>
+<script src="/advacon-admin.js?v=20261026-vehicles3"></script>
 <link rel="stylesheet" href="/advacon-organization.css?v=20261026-release"><script src="/advacon-import.js?v=20261026-release"></script><script src="/advacon-organization.js?v=20261026-release"></script><link rel="stylesheet" href="/advacon-operations.css?v=20261026-release">
 <script src="/advacon-images.js?v=20260927-images"></script>
 </head>
@@ -1615,6 +1615,7 @@ async function admRpc(fn,args){
 // map admin RPC error codes → friendly messages
 function admOpError(res){
   const e=(res&&res.error)||'';
+  const vehicleError=window.AdvaconVehicleRequests?.errorMessage(e);if(vehicleError)return vehicleError;
   if(['identity_required','identity_expired','employee_not_registered','employee_phone_missing','ticket_already_used','request_details_required'].includes(e))return identityError(e);
   const ar=(L==='ar');
   const M={
@@ -3875,7 +3876,7 @@ async function submitReq(){
   const materialLines = reqMaterials.length
     ? reqMaterials.map(r=>({item_id:r.item_id, requested_qty:Number(r.qty)}))
     : null;   // null → plain service request (pkg17 rule)
-  const receiptSnapshot={requester:req,phone,project:document.getElementById('f_proj').selectedOptions[0]?.textContent||proj,category:cat,description:title,priority:dispPri(document.getElementById('f_pri').value||'Medium')};
+  const receiptSnapshot={requester:req,phone,project:document.getElementById('f_proj').selectedOptions[0]?.textContent||proj,category:cat,description:title,priority:dispPri(document.getElementById('f_pri').value||'Medium'),vehicle:window.AdvaconVehicleRequests?.receiptSnapshot(vehicleSelection)||null};
   let id=null;
   try{
     const res=await submitReqRpc(vehicleSelection?'advacon_submit_vehicle_request':'advacon_submit_employee_request',{
@@ -3885,7 +3886,7 @@ async function submitReq(){
       p_lines:materialLines,...(vehicleSelection?{p_vehicle:vehicleSelection}:{})});
     if(res&&res.ok===true){id=res.task_id;}
     else{toast(submitReqErr(res));if(btn){btn.disabled=false;btn.classList.remove('loading');btn.innerHTML=t('submit')+' →';}return;}
-  }catch(e){toast(t('connErr'));if(btn){btn.disabled=false;btn.classList.remove('loading');btn.innerHTML=t('submit')+' →';}return;}
+  }catch(e){toast(window.AdvaconVehicleRequests?.errorMessage(e?.message)||t('connErr'));if(btn){btn.disabled=false;btn.classList.remove('loading');btn.innerHTML=t('submit')+' →';}return;}
   thanksInfo={id,...receiptSnapshot,received:today(),submittedAt:new Date().toISOString()};visitorIdentity={value:'',ticket:null,name_ar:'',name_en:'',phone:''};++identitySequence;clearTimeout(identityTimer);
   reqImages=[];reqFiles=[];reqMaterials=[];mpList=null;mpDraft={};uploadingCount=0;
   state.route='thanks';render();
@@ -3894,9 +3895,10 @@ const RECEIPT_LOGO='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAXoAAAB4CAYAAA
 function receiptFields(snapshot=thanksInfo){
   if(!snapshot)return [];
   const ar=L==='ar',r=snapshot;
-  return [[ar?'مقدم الطلب':'Requested by',r.requester],[ar?'رقم الجوال':'Mobile',r.phone],[ar?'المشروع / الموقع':'Project / location',r.project],[ar?'فئة الطلب':'Category',r.category?dispCat(r.category):''],[ar?'الأولوية':'Priority',r.priority],[ar?'تاريخ التقديم':'Submitted',r.submittedAt?new Date(r.submittedAt).toLocaleString(ar?'ar-SA':'en-GB',{calendar:'gregory',timeZone:'Asia/Riyadh'}):r.received],...(r.extraFields||[])].filter(x=>x[1]);
+  const vehicle=r.vehicle?[[ar?'المركبة':'Vehicle',r.vehicle.label],[ar?'الخدمات المطلوبة':'Requested services',(r.vehicle.services||[]).join('، ')],[ar?'قراءة العداد عند تقديم الطلب':'Odometer at submission',r.vehicle.odometer==null?'':String(r.vehicle.odometer)+' '+(ar?'كم':'km')]]:[];
+  return [[ar?'مقدم الطلب':'Requested by',r.requester],[ar?'رقم الجوال':'Mobile',r.phone],[ar?'المشروع / الموقع':'Project / location',r.project],[ar?'فئة الطلب':'Category',r.category?dispCat(r.category):''],[ar?'الأولوية':'Priority',r.priority],[ar?'تاريخ التقديم':'Submitted',r.submittedAt?new Date(r.submittedAt).toLocaleString(ar?'ar-SA':'en-GB',{calendar:'gregory',timeZone:'Asia/Riyadh'}):r.received],...vehicle,...(r.extraFields||[])].filter(x=>x[1]);
 }
-function receiptDetails(){return thanksInfo?`<section class="receipt-details" style="text-align:start;margin:22px 0;padding:18px;background:#f4f7fa;border-radius:14px;overflow-wrap:anywhere" dir="${L==='ar'?'rtl':'ltr'}">${receiptFields().map(([k,v])=>`<div style="margin-bottom:10px"><strong>${esc(k)}:</strong> <span dir="auto">${esc(v)}</span></div>`).join('')}<strong>${L==='ar'?'وصف الطلب':'Request description'}</strong><div dir="auto" style="white-space:pre-wrap;margin-top:8px;line-height:1.8">${esc(thanksInfo.description||'')}</div></section>`:'';}
+function receiptDetails(){const photo=window.AdvaconVehicleRequests?.requestPhoto(thanksInfo?.vehicle?.photo);return thanksInfo?`<section class="receipt-details" style="text-align:start;margin:22px 0;padding:18px;background:#f4f7fa;border-radius:14px;overflow-wrap:anywhere" dir="${L==='ar'?'rtl':'ltr'}">${receiptFields().map(([k,v])=>`<div style="margin-bottom:10px"><strong>${esc(k)}:</strong> <span dir="auto">${esc(v)}</span></div>`).join('')}<strong>${L==='ar'?'وصف الطلب':'Request description'}</strong><div dir="auto" style="white-space:pre-wrap;margin-top:8px;line-height:1.8">${esc(thanksInfo.description||'')}</div>${photo?`<div class="vr-evidence"><strong>${L==='ar'?'صورة العداد عند تقديم الطلب':'Odometer photo at submission'}</strong><img src="${esc(photo)}" alt="${L==='ar'?'صورة العداد':'Odometer photo'}"/></div>`:''}</section>`:'';}
 function receiptWrap(ctx,text,width){
   const lines=[];
   for(const paragraph of String(text).split('\n')){
@@ -5318,6 +5320,7 @@ async function saveTaskForm(mode,id){
     }
     // Manual add via admin_add_task RPC (server sets status/accepted/archived; received = provided or now).
     const payload={p_requested_by:req||null,p_project:proj,p_category:cat,p_priority:pri,p_title:title,p_assigned_to:assign,p_duration:Number(dur),p_note:note||null};
+    try{const vehicle=window.AdvaconVehicleRequests?.adminSelection(cat);if(vehicle)payload.vehicle=vehicle;}catch(error){toast(error.message);return;}
     if(recvIso)payload.p_received_at=recvIso;
     await admAddTask(payload,'added');
     return;
@@ -5534,6 +5537,7 @@ function renderModal(){
         <div class="field"><label>${t('requestedBy')}</label><input id="tf_req" value="${esc(mgrName())}" readonly aria-readonly="true"/><small>${esc(mgrPhone())}</small></div>
         ${fieldSelect('tf_proj',state.lists.projects,'',t('mProj'),true)}
         ${fieldSelect('tf_cat',state.lists.categories,'',t('mCat'),true)}
+        <div class="field full" id="admin-vehicle-request-fields" hidden></div>
         ${fieldSelect('tf_pri',state.lists.priorities,'Medium',t('priority'),true)}
         ${empSelect('tf_assign','',true)}
         <div class="field"><label>${t('mDur')} <span class="req">*</span></label><input type="number" min="1" id="tf_dur" placeholder="${t('mDur')}"/></div>
@@ -5544,7 +5548,7 @@ function renderModal(){
         <div class="field full"><label>${t('aatReceivedLbl')} <span style="color:var(--grey);font-weight:400">(${t('optional')})</span></label><input type="datetime-local" id="tf_received"/><div class="fld-hint">${t('aatReceivedHint')}</div></div>
       </div>
       <div class="btnrow" style="justify-content:flex-end;margin-top:14px"><button class="btn sec" onclick="modal=null;renderModal()">${t('cancel')}</button><button class="btn green" onclick="saveTaskForm('add')">${t('save')}</button></div>
-    </div></div>`;return;
+    </div></div>`;document.getElementById('tf_cat').addEventListener('change',()=>window.AdvaconVehicleRequests?.mountAdmin());window.AdvaconVehicleRequests?.mountAdmin();return;
   }
 }
 
@@ -6254,6 +6258,7 @@ function staffDetail(id){
       </div>
       ${isFuture?`<div class="stf-future">🗓️ ${t('futureTaskMsg')} <b>${fmtTime(r.schedStart)}</b></div>`:''}
       ${r.notes?`<div class="stf-note"><span>${t('noteLabel')}</span><p>${esc(r.notes)}</p></div>`:''}
+      <section data-vehicle-request-detail="${Number(r.id)}" data-vehicle-detail-role="staff"></section>
       ${gal}
       ${pdfList}
       <div id="stf_materials">${stfMaterialsHtml()}</div>
@@ -6508,7 +6513,7 @@ function renderAsset(){const gate=document.getElementById('gate'),app=document.g
   }
 })();
 
-</script><script src="/advacon-report-logo.js?v=20261026-release"></script><script src="/advacon-vehicles.js?v=20261026-release"></script><script src="/advacon-vehicle-service-catalog.js?v=1"></script><script src="/advacon-vehicle-services.js?v=20261026-release"></script><script src="/advacon-vehicle-requests.js?v=20261026-release"></script><script src="/advacon-request-tools.js?v=20261026-release"></script>
+</script><script src="/advacon-report-logo.js?v=20261026-release"></script><script src="/advacon-vehicles.js?v=20261026-vehicles3"></script><script src="/advacon-vehicle-service-catalog.js?v=1"></script><script src="/advacon-vehicle-services.js?v=20261026-release"></script><script src="/advacon-vehicle-requests.js?v=20261026-vehicles3"></script><script src="/advacon-request-tools.js?v=20261026-release"></script>
 </body></html>
 
 

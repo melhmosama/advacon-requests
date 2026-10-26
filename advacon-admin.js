@@ -80,6 +80,7 @@ window.adminDetail=function(id,initialTab=0){
  const body=document.createElement('div');body.className='ad-detail';
  const tabs=document.createElement('div');tabs.className='ad-tabs';tabs.setAttribute('role','tablist');
  const panel=document.createElement('div');panel.className='ad-detail-content';panel.setAttribute('role','tabpanel');
+ const vehicleEvidence=document.createElement('section');vehicleEvidence.dataset.vehicleRequestDetail=String(id);vehicleEvidence.dataset.vehicleDetailRole='admin';
  const actionbar=document.createElement('div');actionbar.className='ad-detail-actions';
  const add=(label,fn)=>{const b=document.createElement('button');b.className='btn sec';b.textContent=label;b.onclick=()=>{detail.close();detail=null;fn();};actionbar.append(b);};
  if(isIncoming(r)){add(tx('قبول الطلب','Accept request'),()=>acceptReq(id));add(tx('رفض الطلب','Decline request'),()=>askReject(id));}
@@ -100,7 +101,8 @@ window.adminDetail=function(id,initialTab=0){
  tabs.addEventListener('keydown',ev=>{if(!['ArrowLeft','ArrowRight','Home','End'].includes(ev.key))return;ev.preventDefault();const buttons=[...tabs.children],i=buttons.indexOf(document.activeElement),next=ev.key==='Home'?0:ev.key==='End'?buttons.length-1:(i+(ev.key==='ArrowRight'?1:-1)+buttons.length)%buttons.length;buttons[next].focus();buttons[next].click();});
  panel.addEventListener('click',event=>{if(event.target.closest('button[onclick]')&&detail){detail.close();detail=null;}},true);
  tabs.children[initialTab]?.click();
- body.append(tabs,panel,actionbar);detail=AdvaconUI.modal({title:fmtID(id)+' · '+r.title,body,footer:false,onClose:()=>{detail=null;if(new URLSearchParams(location.hash.split('?')[1]||'').get('task')===String(id))history.replaceState(history.state,'',returnHash);}});detail.modal.classList.add('ad-detail-modal');
+ body.append(tabs,panel,vehicleEvidence,actionbar);detail=AdvaconUI.modal({title:fmtID(id)+' · '+r.title,body,footer:false,onClose:()=>{detail=null;if(new URLSearchParams(location.hash.split('?')[1]||'').get('task')===String(id))history.replaceState(history.state,'',returnHash);}});detail.modal.classList.add('ad-detail-modal');
+ window.AdvaconVehicleRequests?.mountEvidence(vehicleEvidence,id,'admin');
 };
 function decorate(){
  const admin=state.role==='admin';document.body.classList.toggle('ad-admin',admin);if(!admin)return;
