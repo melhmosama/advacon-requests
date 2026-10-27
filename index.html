@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" translate="no"><head><meta charset="UTF-8"><meta name="advacon-release" content="20261027-visitor-mobile-v1"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0"><meta name="google" content="notranslate"><!-- Production: Warehouse module fully separated to /warehouse -->
+<html lang="en" translate="no"><head><meta charset="UTF-8"><meta name="advacon-release" content="20261027-fuel-cards-v1"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0"><meta name="google" content="notranslate"><!-- Production: Warehouse module fully separated to /warehouse -->
 <title>ADVACON — Service Requests</title><style>
 :root{
   --navy:#15406E;--navy2:#1B4D7E;--med:#2A5C8A;--accent:#3E6E9E;--steel:#5B7A99;
@@ -1461,7 +1461,8 @@ html[dir=rtl] .tt-search input{padding:9px 34px 9px 12px}
 <script src="/advacon-experience.js?v=20261026-release"></script>
 <link rel="stylesheet" href="/advacon-admin.css">
 <script src="/advacon-admin.js?v=20261026-vehicles3"></script>
-<link rel="stylesheet" href="/advacon-organization.css?v=20261026-release"><script src="/advacon-import.js?v=20261026-release"></script><script src="/advacon-organization.js?v=20261026-vehicle-controls"></script><link rel="stylesheet" href="/advacon-operations.css?v=20261026-release">
+<link rel="stylesheet" href="/advacon-organization.css?v=20261026-release"><script src="/advacon-import.js?v=20261026-release"></script><script src="/advacon-organization.js?v=20261027-fuel-cards-v1"></script><link rel="stylesheet" href="/advacon-operations.css?v=20261026-release">
+<link rel="stylesheet" href="/advacon-fuel-cards.css?v=20261027-fuel-cards-v1">
 <script src="/advacon-images.js?v=20260927-images"></script>
 </head>
 <body class="notranslate"><div id="gate"></div><div class="app" id="app" style="display:none"></div><div class="toast" id="toast"></div>
@@ -2470,7 +2471,7 @@ async function tryAdmin(){
   await repairManagerSnapshot();   // heal a pre-snapshot or stale manager record
   document.getElementById('gate').innerHTML='';document.getElementById('app').style.display='flex';applyDir();render();startRealtime();
 }
-async function enterAdminDirect(){state.role='admin';const h=(location.hash||'').replace('#','');const valid=['dashboard','reports','assets','vehicles','manage','archive','techtasks','staffdir','projects','media','settings','all'];state.route=adminResolveRoute(valid.includes(h.split('?')[0])||['open'].includes(h.split('?')[0])?h:'dashboard');if(!L)L='en';document.getElementById('gate').innerHTML='';document.getElementById('app').style.display='flex';applyDir();render();startRealtime();}
+async function enterAdminDirect(){state.role='admin';const h=(location.hash||'').replace('#','');const valid=['dashboard','reports','assets','vehicles','fuel-cards','manage','archive','techtasks','staffdir','projects','media','settings','all'];state.route=adminResolveRoute(valid.includes(h.split('?')[0])||['open'].includes(h.split('?')[0])?h:'dashboard');if(!L)L='en';document.getElementById('gate').innerHTML='';document.getElementById('app').style.display='flex';applyDir();render();startRealtime();}
 function enterPublic(role){state.role=role;if(role==='staff')L='ar';else if(!L)L='ar';document.getElementById('gate').innerHTML='';document.getElementById('app').style.display='block';applyDir();
   // A1: if a valid staff session exists, restore it and load tasks from the server
   if(role==='staff'){const sess=stfGetSession();if(sess&&sess.en){staffName=sess.en;render();loadStaffTasks();startPublicPolling();return;}}
@@ -2598,12 +2599,12 @@ function render(){
     return;
   }
   // admin: sidebar shell
-  const navk=["dashboard","manage","techtasks","assets","all","reports"];
+  const navk=["dashboard","manage","techtasks","assets","fuel-cards","all","reports"];
   const rows=state.requests.map(calc);
   const pendingCount=rows.filter(isIncoming).length;
   let nav=navk.map(k=>{
     const badge=(k==='manage'&&pendingCount>0)?`<span class="badge">${pendingCount}</span>`:'';
-    return `<button class="${state.route===k?'active':''}" onclick="go('${k}')"><span class="ic">${t('navIc')[k]}</span><span>${t('nav')[k]}</span>${badge}</button>`;
+    return `<button class="${state.route===k?'active':''}" onclick="go('${k}')"><span class="ic">${k==='fuel-cards'?'⛽':t('navIc')[k]}</span><span>${k==='fuel-cards'?(L==='ar'?'بطاقات الوقود':'Fuel cards'):t('nav')[k]}</span>${badge}</button>`;
   }).join('');
   nav+=`<div class="side-sep"></div><button class="${state.route==='staffdir'?'active':''}" onclick="go('staffdir')"><span class="ic">♙</span><span>${L==='ar'?'ADVACON موظفين':'ADVACON Employees'}</span></button>`;
   nav+=`<button class="${state.route==='projects'?'active':''}" onclick="go('projects')"><span class="ic">▦</span><span>${L==='ar'?'المشاريع':'Projects'}</span></button>`;
@@ -2624,6 +2625,7 @@ function render(){
   if(state.route==='dashboard')v.innerHTML=adminHome();
   else if(state.route==='assets')v.innerHTML=viewAssets();
   else if(state.route==='vehicles')AdvaconVehicles.mount(v,AdvaconOrganization.api);
+  else if(state.route==='fuel-cards')AdvaconFuelCards.mount(v,AdvaconOrganization.api);
   else if(state.route==='manage')v.innerHTML=adminWorkView();
   else if(state.route==='all')v.innerHTML=adminRegistryView();
   else if(state.route==='techtasks')v.innerHTML=adminTeamTabs()+adminTeamView()+'<details class="ad-surface"><summary>'+(L==='ar'?'حسابات الفنيين ومدير القسم':'Technician accounts & department manager')+'</summary>'+viewStaffDir()+'</details>';
@@ -6509,7 +6511,7 @@ function viewAssets(){
     const label=t('am_'+m.key);
     return `<button class="asset-card" onclick="location.href='${m.adminRoute}'"><span class="ac-ic">${m.ic}</span><span class="ac-lb">${label}</span></button>`;
   }).join('');
-  return `<div class="phead"><div class="eyebrow">${t('as_eye')}</div><h1>${t('as_h1')}</h1><p>${t('as_p')}</p></div><div class="asset-grid" style="max-width:640px">${cards}<button class="asset-card" onclick="go('vehicles')"><span class="ac-ic">🚗</span><span class="ac-lb">${t('am_fleet')}</span></button></div>`;
+  return `<div class="phead"><div class="eyebrow">${t('as_eye')}</div><h1>${t('as_h1')}</h1><p>${t('as_p')}</p></div><div class="asset-grid" style="max-width:640px">${cards}<button class="asset-card" onclick="go('vehicles')"><span class="ac-ic">🚗</span><span class="ac-lb">${t('am_fleet')}</span></button><button class="asset-card" onclick="go('fuel-cards')"><span class="ac-ic">⛽</span><span class="ac-lb">${L==='ar'?'سجل بطاقات الوقود':'Fuel card register'}</span></button></div>`;
 }
 
 let assetRole=null, assetPermissions={}, assetView='landing', assetModule=null;
@@ -6565,7 +6567,7 @@ function renderAsset(){const gate=document.getElementById('gate'),app=document.g
   }
 })();
 
-</script><script src="/advacon-report-logo.js?v=20261026-release"></script><script src="/advacon-vehicles.js?v=20261026-vehicle-controls"></script><script src="/advacon-vehicle-service-catalog.js?v=1"></script><script src="/advacon-vehicle-services.js?v=20261026-vehicle-controls"></script><script src="/advacon-vehicle-requests.js?v=20261027-visitor-mobile-v1"></script><script src="/advacon-request-tools.js?v=20261026-release"></script>
+</script><script src="/advacon-report-logo.js?v=20261026-release"></script><script src="/advacon-vehicles.js?v=20261027-fuel-cards-v1"></script><script src="/advacon-fuel-cards.js?v=20261027-fuel-cards-v1"></script><script src="/advacon-vehicle-service-catalog.js?v=1"></script><script src="/advacon-vehicle-services.js?v=20261026-vehicle-controls"></script><script src="/advacon-vehicle-requests.js?v=20261027-visitor-mobile-v1"></script><script src="/advacon-request-tools.js?v=20261026-release"></script>
 <script src="/advacon-visitor-update.js?v=20261027-visitor-mobile-v1"></script>
 </body></html>
 

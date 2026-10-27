@@ -136,6 +136,7 @@ async function renderProfileAssets(e,panel){
  panel.insertAdjacentHTML('beforeend','<p class="org-empty">'+tr('عهد مستقلة باسم الموظف؛ نقل السيارة لا ينقل البطاقة.','Independent employee assets; moving a vehicle does not move a card.')+'</p>');
  for(const mode of ['vehicle','card']){const section=document.createElement('section');section.innerHTML='<h3>'+tr(mode==='vehicle'?'السيارات الحالية':'البطاقات الحالية',mode==='vehicle'?'Current vehicles':'Current cards')+'</h3>';const owned=assetList(data,mode).filter(x=>assetHolder(data,mode,x.id)?.employee_id===e.id);
  for(const x of owned){const row=document.createElement('article');row.className='org-asset-record';row.innerHTML='<strong>'+esc(assetLabel(mode,x))+'</strong>';if(mode==='card'){const b=data.balances.filter(b=>b.card_id===x.id).sort((a,b)=>Date.parse(b.recorded_at)-Date.parse(a.recorded_at))[0];row.innerHTML+='<p>'+tr('آخر رصيد مسجل: ','Latest reported balance: ')+(b?esc(b.amount)+' SAR':tr('غير مسجل','Not recorded'))+'</p>'+(b?'<small>'+tr('تاريخ القياس: ','Observed: ')+dateText(b.observed_at)+' · '+tr('سُجل: ','Recorded: ')+dateText(b.recorded_at)+'</small>':'');}if(mode==='vehicle'){row.append(button(tr('ملف السيارة وسجلها','Vehicle file & history'),()=>AdvaconVehicles.detail(panel,x.id,api,()=>renderProfileAssets(e,panel))));row.append(button(tr('تعديل بيانات السيارة','Edit vehicle details'),()=>AdvaconVehicles.editVehicle(panel,x.id,api,{onSaved:()=>{if(panel.isConnected)renderProfileAssets(e,panel);}})),button(tr('إدارة السيارة','Manage vehicle'),()=>AdvaconVehicles.manageVehicle(panel,x.id,api,{expectedEmployeeId:e.id,onSaved:()=>{if(panel.isConnected)renderProfileAssets(e,panel);}})));}section.append(row);}if(!owned.length)section.insertAdjacentHTML('beforeend','<p>'+tr('لا توجد عهدة حالية من هذا النوع.','No current assets of this type.')+'</p>');panel.append(section);}
+ const cardTools=document.createElement('div');cardTools.className='btnrow';cardTools.append(button(tr('إدارة بطاقات الوقود','Manage fuel cards'),()=>AdvaconFuelCards.manage(panel,e.id,api,{onSaved:()=>{if(panel.isConnected)renderProfileAssets(e,panel);}})),button(tr('سجل بطاقات الوقود','Fuel card registry'),()=>AdvaconFuelCards.mount(panel,api)));panel.append(cardTools);
  const controls=document.createElement('div');controls.className='org-form';const select=labeledSelect(controls,tr('الإجراء','Action'),'asset_service',assetServices().map(([value,label])=>({value,label})));controls.append(button(tr('متابعة','Continue'),()=>{if(select.value)beginAssetService(e,select.value);},'btn'));panel.append(controls);
  const history=document.createElement('details');history.className='org-secondary';history.innerHTML='<summary>'+tr('سجل العهد والأرصدة','Asset & balance history')+'</summary>';
  for(const mode of ['vehicle','card'])for(const a of assetRows(data,mode).filter(a=>a.employee_id===e.id).sort((a,b)=>Date.parse(b.starts_on)-Date.parse(a.starts_on))){const item=assetList(data,mode).find(x=>x.id===a[mode==='vehicle'?'vehicle_id':'card_id']);const row=document.createElement('p');row.textContent=(item?assetLabel(mode,item):'—')+' · '+dateText(a.starts_on)+' — '+(a.ends_on?dateText(a.ends_on):tr('مستمر','Ongoing'));history.append(row);}
@@ -157,20 +158,13 @@ function addProfileAsset(e,data){
    else AdvaconVehicles.assignVehicle(panel,e.id,api,{onSaved});
    return;
   }
-  const choices=assetList(data,'card').filter(x=>x.active!==false&&!assetHolder(data,'card',x.id));
-  if(source.value==='existing'&&!choices.length){AdvaconUI.toast(tr('لا توجد بطاقة متاحة.','No available card.'));return;}
-  const fs=source.value==='existing'?[{key:'asset_id',label:tr('البطاقة المتاحة','Available card'),required:true,options:choices.map(x=>({value:x.id,label:assetLabel('card',x)}))}]:[{key:'card_number',label:tr('رقم البطاقة','Card number'),required:true}];
-  form(tr('إسناد بطاقة','Assign card'),[...fs,...assetDateFields()],{},'asset.assign',{employee_id:e.id,mode:'card'});
+   AdvaconFuelCards.manage(panel,e.id,api,{action:'asset.assign',addNew:source.value==='new',onSaved});
  },'btn'));
 }
 function assetDateFields(){return [{key:'starts_on',label:tr('تاريخ ووقت الإجراء','Effective date & time'),type:'datetime-local',default:localMoment(),required:true},{key:'notes',label:tr('ملاحظة (اختياري)','Note (optional)')}];}
 function assetOperation(e,data,mode,item,operation){
  if(mode==='vehicle'){const panel=host.querySelector('.org-profile-content');AdvaconVehicles.manageVehicle(panel,item.id,api,{action:'asset.'+operation,expectedEmployeeId:e.id,onSaved:()=>{if(panel.isConnected)renderProfileAssets(e,panel);}});return;}
- const current=assetHolder(data,mode,item.id),fields=[];
- if(['transfer','swap'].includes(operation))fields.push({key:'target_employee_id',label:tr('الموظف الآخر','Other employee'),required:true,options:people.filter(p=>p.id!==e.id&&p.employment_status!=='inactive').sort(hierarchyCompare).map(p=>({value:p.id,label:employeeName(p)}))});
- if(['replace','swap'].includes(operation)){const choices=assetList(data,mode).filter(x=>x.id!==item.id&&x.active!==false).map(x=>{const a=assetHolder(data,mode,x.id);return {value:x.id,label:assetLabel(mode,x),owner_id:a?.employee_id,assignment_id:a?.id};}).filter(x=>operation==='replace'?!x.owner_id:x.owner_id&&x.owner_id!==e.id);fields.push({key:'replacement_asset_id',label:tr('العهدة البديلة','Replacement asset'),required:true,options:choices,...(operation==='swap'?{dependsOn:'target_employee_id'}:{})});}
- const title=assetServices().find(([k])=>k===mode+'_'+operation)?.[1]||operation;
- form(title+' — '+assetLabel(mode,item),[...fields,...assetDateFields()],{},'asset.'+operation,{employee_id:e.id,mode,asset_id:item.id,previous_assignment_id:current?.id});
+ const panel=host.querySelector('.org-profile-content');AdvaconFuelCards.manage(panel,e.id,api,{cardId:item.id,action:'asset.'+operation,onSaved:()=>{if(panel.isConnected)renderProfileAssets(e,panel);}});
 }
 
 function drawInlineProjects(cell,employee){
