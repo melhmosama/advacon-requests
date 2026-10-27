@@ -18,7 +18,8 @@ style.textContent+=`
 @media(max-width:380px){#vehicle-request-fields .vr-choices>label{font-size:12px;padding:7px!important;gap:5px}}
 `;
 style.textContent=style.textContent.replaceAll('#vehicle-request-fields',':is(#vehicle-request-fields,#admin-vehicle-request-fields)');
-let publicState=null,closeState=null,adminState=null;
+let publicState=null,publicSession=null,closeState=null,adminState=null;
+const publicOptionsTimeout=15000;
 function readingValue(vehicle){const value=vehicle?.odometer;if(value===null||value===undefined||value==='')return null;const n=Number(value);return Number.isFinite(n)&&n>=0?n:null;}
 function selectedVehicle(data){return data?.vehicles?.find(v=>v.id===data.cars.value)||null;}
 function readingReference(vehicle){const km=readingValue(vehicle);return km===null?T('لا توجد قراءة عداد سابقة مسجلة لهذه السيارة.','No previous odometer is recorded for this vehicle.'):T('آخر قراءة مسجلة: ','Latest recorded odometer: ')+km+' '+T('كم','km')+(vehicle.observed_on?' · '+vehicle.observed_on:'');}
@@ -26,30 +27,111 @@ function vehicleVersion(value){return value!==null&&value!==undefined&&/^[1-9][0
 function isVehicleCategory(value){return /^(vehicles? maintenance|car maintenance|صيانة مركبات|صيانة المركبات|صيانة السيارات)$/i.test(String(value||'').trim());}
 function vehicleCategory(){const el=document.getElementById('f_cat');return isVehicleCategory(el?.value)||isVehicleCategory(el?.selectedOptions?.[0]?.textContent);}
 function categoryChanged(){const host=document.getElementById('vehicle-request-fields');if(!host)return;host.hidden=!vehicleCategory();if(publicState?.check){publicState.check.checked=vehicleCategory();publicState.check.dispatchEvent(new Event('change'));}mountPublic();}
-async function mountPublic(){
- const host=document.getElementById('vehicle-request-fields');const ticket=visitorIdentity.ticket;if(!host)return;host.hidden=!vehicleCategory();if(host.dataset.ticket===(ticket||''))return;host.dataset.ticket=ticket||'';host.replaceChildren();publicState=null;if(!ticket)return;
- let config;try{config=await submitReqRpc('advacon_vehicle_request_options',{p_ticket:ticket});}catch(e){if(!host.isConnected||visitorIdentity.ticket!==ticket)return;const retry=N('button',T('إعادة تحميل السيارات','Retry vehicle loading'));retry.type='button';retry.onclick=()=>{delete host.dataset.ticket;mountPublic();};host.replaceChildren(N('p',T('تعذر تحميل بيانات السيارات. أعد المحاولة.','Vehicle details could not load. Please retry.')),retry);return;}
- if(!host.isConnected||visitorIdentity.ticket!==ticket||!config?.ok||!config.enabled)return;
+function publicTicket(){return typeof visitorIdentity==='undefined'?'':visitorIdentity.ticket||'';}
+function publicIdentityKey(){const value=typeof visitorIdentity==='undefined'?'':String(visitorIdentity.value||'').trim();return /^\d{10}$/.test(value)?value:'';}
+function activePublicData(){return publicState&&publicSession?.ticket===publicTicket()&&publicSession.host.isConnected?publicState:null;}
+function hasPublicDraft(){const data=activePublicData();return !!(data&&(data.vehicleChosen||data.km.value!==''||data.image||data.imagePending||data.picture.files.length||data.selected.some(([,input])=>input.checked)||data.mode.value==='other'||data.other.value));}
+function isPublicBusy(){const data=activePublicData();return !!(publicSession?.ticket===publicTicket()&&publicSession.host.isConnected&&(publicSession.pending||data?.imagePending||data?.verificationPending));}
+// The caller uses this only after confirmed submission. Failed submissions retain the draft.
+function resetPublicAfterSubmit(){if(publicSession)publicSession.sequence++;publicSession=null;publicState=null;}
+function publicSessionCurrent(session){return publicSession===session&&publicTicket()===session.ticket;}
+function publicLoadError(error,retained=false){
+ const code=String(error?.message||error?.error||error||'');let message;
+ if(code.includes('vehicle_options_timeout'))message=T('استغرق تحميل السيارات وقتًا طويلًا. تحقق من الاتصال وأعد المحاولة.','Vehicle loading timed out. Check your connection and retry.');
+ else if(/identity_required|invalid_ticket|ticket_expired|identity_expired|invalid_identity|expired_identity|visitor_ticket/.test(code))message=T('تعذر التحقق من هوية الموظف. أعد المحاولة، وإذا استمرت المشكلة فتحقق من رقم الإقامة مجددًا.','The employee identity could not be verified. Retry, then verify the iqama again if the problem continues.');
+ else message=errorMessage(code)||T('تعذر تحميل بيانات السيارات. تحقق من الاتصال وأعد المحاولة.','Vehicle details could not load. Check your connection and retry.');
+ return message+(retained?T(' بياناتك والصورة المختارة محفوظة في هذه الصفحة.',' Your entered details and selected photo are kept on this page.'):'');
+}
+function publicOptions(result){if(!result?.ok)throw Error(result?.error||'vehicle_options_unavailable');if(!result.enabled)throw Error('vehicle_requests_disabled');return result;}
+function publicRpc(name,args){return new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('vehicle_options_timeout')),publicOptionsTimeout);Promise.resolve().then(()=>submitReqRpc(name,args)).then(value=>{clearTimeout(timer);resolve(value);},error=>{clearTimeout(timer);reject(error);});});}
+function publicStatus(session,status,message='',retry=false){
+ session.status=status;session.host.dataset.vehicleState=status;session.notice.hidden=!message;session.notice.replaceChildren();
+ if(message)session.notice.append(N('p',message));
+ if(retry){const button=N('button',T('إعادة تحميل السيارات','Retry vehicle loading'));button.type='button';button.className='btn sec';button.onclick=()=>refreshPublic({reason:'retry'});session.notice.append(button);}
+}
+function ensurePublicSession(){
+ const host=document.getElementById('vehicle-request-fields');if(!host)return null;const ticket=publicTicket(),identityKey=publicIdentityKey();host.hidden=!vehicleCategory();
+ if(!ticket){if(publicSession||host.childNodes.length){resetPublicAfterSubmit();host.replaceChildren();}host.dataset.vehicleState='idle';delete host.dataset.ticket;return null;}
+ // A renewed ticket for the same verified iqama is not a change of employee.
+ if(publicSession?.ticket!==ticket&&identityKey&&publicSession?.identityKey===identityKey){
+  publicSession.sequence++;publicSession.pending=null;publicSession.ticket=ticket;publicSession.status='idle';host.dataset.ticket=ticket;
+  if(publicState){publicState.ticket=ticket;publicState.holderSequence++;publicState.verificationPending=false;publicState.verify.disabled=false;}
+ }
+ if(publicSession?.ticket===ticket){
+  // Move the existing DOM, including FileList, if the surrounding page was rendered again.
+  if(publicSession.host!==host){publicSession.host=host;host.replaceChildren(publicSession.surface);host.dataset.ticket=ticket;host.dataset.vehicleState=publicSession.status;}
+  return publicSession;
+ }
+ resetPublicAfterSubmit();const surface=N('div'),notice=N('div'),body=N('div');notice.className='vr-load-status';notice.setAttribute('role','status');notice.setAttribute('aria-live','polite');surface.append(notice,body);
+ const session={ticket,identityKey,host,surface,notice,body,status:'idle',sequence:0,pending:null,config:null};publicSession=session;host.dataset.ticket=ticket;host.dataset.vehicleState='idle';host.replaceChildren(surface);return session;
+}
+function cancelPublicRefresh(session){session.sequence++;session.pending=null;publicStatus(session,'loaded');}
+function loadPublicOptions(session){
+ if(session.pending)return session.pending;
+ const data=publicState,holderSequence=data?.holderSequence,otherTicket=data?.mode.value==='other'?data.otherTicket:null,sequence=++session.sequence;
+ const current=()=>publicSessionCurrent(session)&&session.sequence===sequence;
+ publicStatus(session,'loading',T('جارٍ تحميل السيارات…','Loading vehicles…'));
+ session.pending=(async()=>{
+  try{
+   const args={p_ticket:session.ticket};if(otherTicket)args.p_other_ticket=otherTicket;
+   const config=publicOptions(await publicRpc('advacon_vehicle_request_options',args));if(!current())return false;
+   if(!otherTicket)session.config=config;
+   if(!publicState)buildPublic(session,config);
+   else if(publicState===data&&data.holderSequence===holderSequence){
+    data.blockedError='';data.updateServices(config.services);
+    if(data.mode.value==='self'||otherTicket)data.showCars(config.vehicles,true);
+   }
+   publicStatus(session,'loaded');return true;
+  }catch(error){
+   if(!current())return false;
+   if(data&&/vehicle_requests_disabled|identity_required|invalid_ticket|ticket_expired|identity_expired|invalid_identity|expired_identity|visitor_ticket/.test(String(error?.message)))data.blockedError=publicLoadError(error,true);
+   publicStatus(session,'error',publicLoadError(error,!!publicState),true);return false;
+  }finally{if(current())session.pending=null;}
+ })();return session.pending;
+}
+function mountPublic(){const session=ensurePublicSession();if(!session)return Promise.resolve(false);if(session.status==='idle')return loadPublicOptions(session);return session.pending||Promise.resolve(session.status==='loaded');}
+function refreshPublic({reason='retry'}={}){if(typeof visitorSubmitting!=='undefined'&&visitorSubmitting)return Promise.resolve(false);const session=ensurePublicSession();if(!session)return Promise.resolve(false);if(publicState?.verificationPending)return Promise.resolve(false);return loadPublicOptions(session);}
+function buildPublic(session,config){
+ const ticket=session.ticket,host=session.body;
  const check=N('input');check.type='checkbox';check.checked=vehicleCategory();const categoryMarker=N('div');categoryMarker.hidden=true;categoryMarker.append(check);host.append(categoryMarker);
  const box=N('div');box.hidden=!vehicleCategory();host.append(box);
  const mode=N('select');mode.add(new Option(T('سيارتي','My vehicle'),'self'));mode.add(new Option(T('سيارة موظف آخر','Another employee’s vehicle'),'other'));box.append(field(T('صاحب السيارة','Vehicle holder'),mode));
  const other=N('input');other.inputMode='numeric';other.maxLength=10;const verify=N('button',T('تحقق','Verify'));verify.type='button';const otherBox=N('div');otherBox.hidden=true;otherBox.append(field(T('إقامة الموظف الآخر','Other employee’s iqama'),other),verify);box.append(otherBox);
  const cars=N('select'),message=N('p');box.append(message,field(T('السيارة','Vehicle'),cars));
  box.append(N('p',T('اختر الخدمات المطلوبة؛ قراءة العداد وصورته إلزاميتان لكل طلب سيارة.','Select the services needed. Every vehicle request requires an odometer reading and photo.')));
- const choices=N('div');choices.className='vr-choices';choices.setAttribute('role','group');choices.setAttribute('aria-label',T('خدمات المركبة','Vehicle services'));box.append(choices);const selected=[];for(const c of (config.services||AdvaconVehicleServiceCatalog)){const i=N('input');i.type='checkbox';i.value=c.key;choices.append(field(T(c.ar,c.en),i));selected.push([c.key,i]);}
+ const choices=N('div');choices.className='vr-choices';choices.setAttribute('role','group');choices.setAttribute('aria-label',T('خدمات المركبة','Vehicle services'));box.append(choices);const selected=[];
  const km=N('input');km.type='number';km.min=0;km.max=10000000;km.required=true;km.inputMode='numeric';const picture=N('input');picture.type='file';picture.required=true;picture.accept=AdvaconImages.accept;box.append(field(T('قراءة العداد الحالية (كم) *','Current odometer (km) *'),km),field(T('صورة واضحة للعداد *','Clear odometer photo *'),picture));
  const photoStatus=N('p'),preview=N('img');photoStatus.className='vr-photo-status';photoStatus.setAttribute('role','status');preview.className='vr-photo-preview';preview.alt=T('صورة العداد المختارة','Selected odometer photo');preview.hidden=true;box.append(photoStatus,preview);
- const reference=N('p');reference.className='vr-reading-reference';box.append(reference);const data={ticket,check,cars,selected,km,image:null,otherTicket:null,ready:true,vehicles:[]};publicState=data;let imageSeq=0;const showReference=()=>{const vehicle=selectedVehicle(data);reference.textContent=vehicle?readingReference(vehicle):'';km.min=readingValue(vehicle)??0;};
- const clearReading=()=>{imageSeq++;data.image=null;km.value='';picture.value='';photoStatus.textContent='';preview.hidden=true;preview.removeAttribute('src');};cars.onchange=()=>{clearReading();showReference();};
- picture.onchange=async()=>{const n=++imageSeq;data.image=null;preview.hidden=true;preview.removeAttribute('src');photoStatus.textContent='';const file=picture.files[0];if(!file)return;photoStatus.textContent=T('جارٍ تجهيز الصورة…','Preparing photo…');try{const image=await AdvaconVehicleServices.photo(file);if(n===imageSeq&&publicState===data&&host.isConnected){data.image=image;preview.src=image;preview.hidden=false;photoStatus.textContent=T('الصورة جاهزة. تأكد أن أرقام العداد واضحة.','Photo ready. Check that the odometer digits are clear.');}}catch(e){if(n===imageSeq&&publicState===data&&host.isConnected)photoStatus.textContent=e.message;}};
- const showCars=vs=>{data.vehicles=Array.isArray(vs)?vs:[];cars.replaceChildren(new Option(T('اختر السيارة','Choose vehicle'),''));for(const v of data.vehicles)cars.add(new Option([v.plate,v.description].filter(Boolean).join(' — '),v.id));if(data.vehicles.length===1)cars.value=data.vehicles[0].id;if(!data.vehicles.length)message.textContent=T('لا توجد سيارة مسندة لهذا الموظف','No vehicle assigned to this employee');showReference();};showCars(config.vehicles);
+ const reference=N('p');reference.className='vr-reading-reference';box.append(reference);const data={ticket,check,cars,selected,km,picture,mode,other,verify,image:null,imagePending:false,verificationPending:false,holderSequence:0,vehicleChosen:false,otherTicket:null,otherIqama:'',holderName:'',ready:true,blockedError:'',vehicles:[],allowedVehicles:new Set(),allowedServices:new Set()};publicState=data;let imageSeq=0;const current=()=>publicSessionCurrent(session)&&publicState===data;
+ const showReference=()=>{const vehicle=selectedVehicle(data);reference.textContent=vehicle?readingReference(vehicle):'';km.min=readingValue(vehicle)??0;};
+ const clearReading=()=>{imageSeq++;data.image=null;data.imagePending=false;data.vehicleChosen=false;km.value='';picture.value='';photoStatus.textContent='';preview.hidden=true;preview.removeAttribute('src');};cars.onchange=()=>{clearReading();data.vehicleChosen=!!cars.value;showReference();};
+ picture.onchange=async()=>{const n=++imageSeq;data.image=null;data.imagePending=false;preview.hidden=true;preview.removeAttribute('src');photoStatus.textContent='';const file=picture.files[0];if(!file)return;data.imagePending=true;photoStatus.textContent=T('جارٍ تجهيز الصورة…','Preparing photo…');try{const image=await AdvaconVehicleServices.photo(file);if(n===imageSeq&&current()){data.image=image;preview.src=image;preview.hidden=false;photoStatus.textContent=T('الصورة جاهزة. تأكد أن أرقام العداد واضحة.','Photo ready. Check that the odometer digits are clear.');}}catch(e){if(n===imageSeq&&current())photoStatus.textContent=e.message;}finally{if(n===imageSeq&&current())data.imagePending=false;}};
+ data.updateServices=services=>{
+  const list=Array.isArray(services)?services:(window.AdvaconVehicleServiceCatalog||[]);data.allowedServices=new Set(list.map(service=>service.key));
+  for(const service of list){const existing=selected.find(([key])=>key===service.key);if(existing){existing[1].parentElement.hidden=false;continue;}const input=N('input');input.type='checkbox';input.value=service.key;choices.append(field(T(service.ar,service.en),input));selected.push([service.key,input]);}
+  for(const [key,input]of selected)input.parentElement.hidden=!data.allowedServices.has(key)&&!input.checked;
+ };
+ const showCars=(vs,preserve=false)=>{
+  const value=preserve?cars.value:'',previous=selectedVehicle(data);data.vehicles=Array.isArray(vs)?vs.slice():[];data.allowedVehicles=new Set(data.vehicles.map(vehicle=>vehicle.id));
+  // An outdated selection remains visible until the employee explicitly changes it.
+  if(value&&!data.allowedVehicles.has(value)&&previous)data.vehicles.push(previous);
+  cars.replaceChildren(new Option(T('اختر السيارة','Choose vehicle'),''));for(const v of data.vehicles)cars.add(new Option([v.plate,v.description].filter(Boolean).join(' — '),v.id));
+  if(preserve)cars.value=value;else if(data.vehicles.length===1)cars.value=data.vehicles[0].id;
+  if(value&&!data.allowedVehicles.has(value))message.textContent=T('تغيّرت السيارات المسندة. اختيارك وبياناتك محفوظة؛ اختر سيارة مسندة حاليًا قبل الإرسال.','Vehicle assignments changed. Your selection and details are kept; choose a currently assigned vehicle before submitting.');
+  else if(!data.vehicles.length)message.textContent=T('لا توجد سيارة مسندة لهذا الموظف','No vehicle assigned to this employee');else message.textContent=mode.value==='other'?data.holderName:'';showReference();
+ };data.showCars=showCars;data.updateServices(config.services);showCars(config.vehicles);
  check.onchange=()=>box.hidden=!check.checked;
- let seq=0;
- mode.onchange=()=>{seq++;clearReading();data.otherTicket=null;message.textContent='';otherBox.hidden=mode.value==='self';data.ready=mode.value==='self';showCars(mode.value==='self'?config.vehicles:[]);};
- other.oninput=()=>{seq++;clearReading();data.ready=false;data.otherTicket=null;data.vehicles=[];cars.replaceChildren();showReference();};
- verify.onclick=async()=>{const n=++seq;verify.disabled=true;try{const id=await submitReqRpc('advacon_visitor_identify',{p_iqama:other.value});if(n!==seq)return;if(!id?.ok)throw Error(T('تعذر التحقق من الإقامة','Identity verification failed'));const r=await submitReqRpc('advacon_vehicle_request_options',{p_ticket:ticket,p_other_ticket:id.ticket});if(n!==seq)return;if(!r?.ok||!r.enabled)throw Error(T('الخدمة غير متاحة','Service unavailable'));data.otherTicket=id.ticket;data.ready=true;message.textContent=id.name_ar||id.name_en;showCars(r.vehicles);}catch(e){message.textContent=e.message;}finally{verify.disabled=false;}};
+ const holderChanged=()=>{data.holderSequence++;data.verificationPending=false;verify.disabled=false;cancelPublicRefresh(session);clearReading();data.otherTicket=null;data.otherIqama='';data.holderName='';data.blockedError='';message.textContent='';};
+ mode.onchange=()=>{holderChanged();otherBox.hidden=mode.value==='self';data.ready=mode.value==='self';showCars(mode.value==='self'?session.config.vehicles:[]);};
+ other.oninput=()=>{holderChanged();data.ready=false;data.vehicles=[];data.allowedVehicles.clear();cars.replaceChildren();showReference();};
+ verify.onclick=async()=>{
+  const n=++data.holderSequence,iqama=other.value,preserve=data.otherIqama===iqama&&data.ready;cancelPublicRefresh(session);data.verificationPending=true;verify.disabled=true;message.textContent=T('جارٍ التحقق من الموظف…','Verifying employee…');
+  const own=()=>current()&&n===data.holderSequence&&mode.value==='other'&&other.value===iqama;
+  try{const id=await publicRpc('advacon_visitor_identify',{p_iqama:iqama});if(!own())return;if(!id?.ok||!id.ticket)throw Error('invalid_identity');const r=publicOptions(await publicRpc('advacon_vehicle_request_options',{p_ticket:session.ticket,p_other_ticket:id.ticket}));if(!own())return;data.otherTicket=id.ticket;data.otherIqama=iqama;data.holderName=id.name_ar||id.name_en||'';data.ready=true;data.blockedError='';data.updateServices(r.services);showCars(r.vehicles,preserve);
+  }catch(e){if(own())message.textContent=publicLoadError(e,preserve);}finally{if(own()){data.verificationPending=false;verify.disabled=false;}}
+ };
 }
-function selection(){if(!vehicleCategory())return null;if(!publicState?.check.isConnected||!publicState.ready)throw new Error(T('انتظر تحميل بيانات السيارة أو أعد المحاولة','Wait for vehicle details to load or retry'));if(!publicState.check.checked)publicState.check.checked=true;if(publicState.ticket!==visitorIdentity.ticket)throw Error(T('تحقق من الإقامة مجددًا','Verify identity again'));const s=publicState.selected.filter(x=>x[1].checked).map(x=>x[0]);if(!publicState.ready||!publicState.cars.value||!s.length)throw Error(T('اختر السيارة والخدمات المطلوبة','Choose the vehicle and required services'));const floor=readingValue(selectedVehicle(publicState));if(publicState.km.value!==''&&floor!==null&&Number(publicState.km.value)<floor)throw Error(errorMessage('odometer_below_recorded'));if(publicState.km.value===''||!publicState.km.checkValidity()||!publicState.image)throw Error(T('أدخل قراءة العداد وأرفق صورته وانتظر اكتمال تحميلها','Enter the odometer and wait for its photo to load'));return {vehicle_id:publicState.cars.value,other_ticket:publicState.otherTicket,services:s,odometer:Number(publicState.km.value),image:publicState.image};}
+function selection(){if(!vehicleCategory())return null;if(!publicState?.check.isConnected||!publicState.ready||publicState.verificationPending)throw new Error(T('انتظر تحميل بيانات السيارة أو أعد المحاولة','Wait for vehicle details to load or retry'));if(!publicState.check.checked)publicState.check.checked=true;if(publicState.ticket!==visitorIdentity.ticket)throw Error(T('تحقق من الإقامة مجددًا','Verify identity again'));if(publicState.blockedError)throw Error(publicState.blockedError);const s=publicState.selected.filter(x=>x[1].checked).map(x=>x[0]);if(!publicState.ready||!publicState.cars.value||!s.length)throw Error(T('اختر السيارة والخدمات المطلوبة','Choose the vehicle and required services'));if(!publicState.allowedVehicles.has(publicState.cars.value))throw Error(errorMessage('vehicle_not_assigned'));if(s.some(key=>!publicState.allowedServices.has(key)))throw Error(errorMessage('invalid_services'));const floor=readingValue(selectedVehicle(publicState));if(publicState.km.value!==''&&floor!==null&&Number(publicState.km.value)<floor)throw Error(errorMessage('odometer_below_recorded'));if(publicState.km.value===''||!publicState.km.checkValidity()||!publicState.image||publicState.imagePending)throw Error(T('أدخل قراءة العداد وأرفق صورته وانتظر اكتمال تحميلها','Enter the odometer and wait for its photo to load'));return {vehicle_id:publicState.cars.value,other_ticket:publicState.otherTicket,services:s,odometer:Number(publicState.km.value),image:publicState.image};}
 async function mountAdmin(){
  const host=document.getElementById('admin-vehicle-request-fields'),category=document.getElementById('tf_cat');if(!host||!category)return;
  const applies=isVehicleCategory(category.value)||isVehicleCategory(category.selectedOptions[0]?.textContent);host.hidden=!applies;
@@ -143,7 +225,7 @@ function closeFailed(id,error){
  return true;
 }
 function errorMessage(code){const text=String(code||'');const messages={version_required:['حدّث بيانات المركبة قبل حفظ التنفيذ.','Refresh vehicle details before saving the execution.'],record_changed_refresh:['تغيّرت بيانات المركبة أثناء العمل. حدّثها وراجع التنفيذ مجددًا.','The vehicle changed while you were working. Refresh it and review the execution again.'],vehicle_changed_refresh:['تغيّرت بيانات المركبة. أعد تحميلها قبل الحفظ.','Vehicle details changed. Reload before saving.'],vehicle_version_conflict:['تغيّرت بيانات المركبة. أعد تحميلها قبل الحفظ.','Vehicle details changed. Reload before saving.'],odometer_date_before_recorded:['تاريخ القراءة أقدم من القراءة الحالية. راجع التاريخ؛ السجل التاريخي لا يستبدل القراءة الحالية.','The reading date is older than the current observation. Check the date; history does not replace the current reading.'],vehicle_details_required:['اختر المركبة والخدمات وأدخل قراءة العداد وأرفق صورته.','Choose the vehicle and services, enter the odometer and attach its photo.'],department_manager_employee_required:['اربط مدير القسم بسجل الموظف قبل إضافة طلب مركبة.','Link the department manager to their employee record before adding a vehicle request.'],invalid_services:['اختر خدمات المركبة من القائمة.','Choose vehicle services from the list.'],vehicle_requests_disabled:['خدمات السيارات لم تُفعّل بعد.','Vehicle requests are not enabled yet.'],vehicle_not_assigned:['تغيّرت عهدة السيارة. تحقق من الموظف واختر سيارته مجددًا.','Vehicle custody changed. Verify the employee and select their vehicle again.'],vehicle_service_not_due:['الخدمة لم تستحق بعد حسب القاعدة المعتمدة. راجع المسؤول إن كان هناك عطل طارئ.','This service is not due under the configured rule. Contact the administrator for an urgent fault.'],odometer_below_recorded:['قراءة العداد أقل من القراءة المسجلة للسيارة. تحقق منها.','The odometer is below the recorded reading. Check it.'],odometer_photo_required:['أرفق صورة واضحة للعداد.','Attach an odometer photo.'],invalid_current_reading:['تحقق من قراءة العداد وتاريخها.','Check the odometer reading and its date.']};for(const [key,labels]of Object.entries(messages))if(text.includes(key))return T(...labels);return null;}
-window.AdvaconVehicleRequests={mountPublic,selection,mountClose,prepareClose,closeFailed,errorMessage,categoryChanged,mountEvidence,receiptSnapshot,requestPhoto,mountAdmin,adminSelection};
-new MutationObserver(changes=>{mountPublic();for(const change of changes)for(const node of change.addedNodes)discoverEvidence(node);}).observe(document.body,{childList:true,subtree:true});
+window.AdvaconVehicleRequests={mountPublic,refreshPublic,hasPublicDraft,isPublicBusy,resetPublicAfterSubmit,selection,mountClose,prepareClose,closeFailed,errorMessage,categoryChanged,mountEvidence,receiptSnapshot,requestPhoto,mountAdmin,adminSelection};
+new MutationObserver(changes=>{mountPublic();if(typeof visitorSubmitting!=='undefined'&&visitorSubmitting&&typeof lockVisitorSubmission==='function')lockVisitorSubmission(true);for(const change of changes)for(const node of change.addedNodes)discoverEvidence(node);}).observe(document.body,{childList:true,subtree:true});
 discoverEvidence(document.body);
 })();
